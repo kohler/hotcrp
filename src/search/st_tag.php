@@ -163,12 +163,13 @@ class Tag_SearchTerm extends SearchTerm {
             if ($f === "true" || !str_starts_with($f, self::SQLEXPR_PREFIX)) {
                 return "true";
             } else if ($f === self::SQLEXPR_PREFIX . ")") {
-                return $f;
-            } else {
+                $x = null;
+            } else if ($x !== null) {
                 $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -1);
             }
         }
-        return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
+        $sfx = $x === null ? "" : " and (" . join(" or ", $x) . ")";
+        return self::SQLEXPR_PREFIX . $sfx . ")";
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->tsm->test($row->searchable_tags($this->tsm->user));

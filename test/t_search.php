@@ -111,6 +111,20 @@ class Search_Tester {
         xassert_search($this->u_root, "8-,7-,6-,5- XOR 10-100000", "5 6 7 8 9");
     }
 
+    function test_tag_or_prefilter_is_superset() {
+        $old = $this->conf->setting_data("tag_hidden");
+        $this->conf->save_refresh_setting("tag_hidden", 1, "sekrit");
+        $this->conf->invalidate_caches("tags");
+        $this->conf->qe("insert into PaperTag set paperId=1, tag='sekrit', tagIndex=0");
+        $u = $this->conf->checked_user_by_email("mjh@isi.edu"); // PC, conflicted with #1
+        xassert(!$u->can_view_tag($this->conf->checked_paper_by_id(1), "sekrit"));
+        $all = join(" ", (new PaperSearch($u, ""))->paper_ids());
+        xassert_search($u, "tag:any OR tag:none", $all);
+        $this->conf->qe("delete from PaperTag where tag='sekrit'");
+        $this->conf->save_refresh_setting("tag_hidden", $old === null ? null : 1, $old);
+        $this->conf->invalidate_caches("tags");
+    }
+
     function test_review_term_to_round_mask() {
         $rl = $this->conf->round_list();
         xassert_eqq($rl[0], "");
