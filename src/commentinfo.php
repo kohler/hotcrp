@@ -212,6 +212,10 @@ class CommentInfo {
                 | ($this->prow->blind ? self::CT_BLIND : 0)
                 | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT | self::CTM_BOT));
         } else if (($ctype & self::CTM_BYAUTHOR) !== 0) {
+            if (($ctype & self::CTM_VIS) !== self::CTVIS_ADMINONLY
+                && ($ctype & self::CTM_VIS) !== self::CTVIS_AUTHOR) {
+                $ctype = ($ctype & ~self::CTM_VIS) | self::CTVIS_AUTHOR;
+            }
             return self::CT_BYAUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
                 | ($ctype & (self::CTM_TOPIC | self::CTM_VIS | self::CT_SUBMIT | self::CTM_BOT));
