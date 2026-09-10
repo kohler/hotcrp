@@ -20,4 +20,25 @@ class Ht_Tester {
             ], 2),
             '<span class="select"><select name="x" data-default-value="2"><optgroup label="a"><option value="1">One</option><option value="2" selected>Two</option></optgroup><option value="3">Three</option></select></span>');
     }
+    function test_link_urls() {
+        // basic linkification
+        xassert_eqq(Ht::link_urls("see http://ex.com/a here"),
+            'see <a href="http://ex.com/a" rel="noreferrer">http://ex.com/a</a> here');
+        // trailing sentence punctuation is not part of the URL
+        xassert_eqq(Ht::link_urls("go to https://x.org."),
+            'go to <a href="https://x.org" rel="noreferrer">https://x.org</a>.');
+        // a scheme glued to a preceding word character is not a link
+        xassert_eqq(Ht::link_urls("xhttp://foo.com"), "xhttp://foo.com");
+        xassert_eqq(Ht::link_urls("1http://foo.com"), "1http://foo.com");
+        xassert_eqq(Ht::link_urls("_http://foo.com"), "_http://foo.com");
+        // but a boundary character before the scheme still links
+        xassert_eqq(Ht::link_urls("(http://foo.com)"),
+            '(<a href="http://foo.com" rel="noreferrer">http://foo.com</a>)');
+        // no catastrophic backtracking: a crafted run finishes fast
+        $evil = str_repeat("ftp://", 20000) . '"x';
+        $t0 = microtime(true);
+        Ht::link_urls($evil);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
 }

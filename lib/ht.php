@@ -626,7 +626,8 @@ class Ht {
     /** @param string $html
      * @return string */
     static function link_urls($html) {
-        return preg_replace('/((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;?!&])(["().,:;?!]*)(?=[\s<>&]|\z)/s', '<a href="$1" rel="noreferrer">$1</a>$2', $html);
+        // Linear-time linkifier
+        return preg_replace('/(?<!\w)((?:https?|ftp):\/\/(?:[^\s<>"&().,:;?!]|&amp;|[().,:;?!]++(?=[^\s<>"&().,:;?!]|&amp;))++)([().,:;?!]*+)(?=[\s<>"&]|\z)/s', '<a href="$1" rel="noreferrer">$1</a>$2', $html);
     }
 
     /** @param string $text
