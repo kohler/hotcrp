@@ -298,7 +298,7 @@ class Autoassign_Page {
             if (count($rev_rounds) > 1) {
                 echo '&nbsp;', Ht::select("all:round", $rev_rounds, $expected_round);
             } else {
-                echo $expected_round;
+                echo htmlspecialchars($expected_round);
             }
             echo "</div>";
         }
