@@ -66,7 +66,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
             return [CountMatcher::RELEQ, [$sym]];
         }
         // match with relation
-        if (preg_match('/\A([=!<>]=?+|≠|≤|≥)\s*(.*)\z/', $word, $m)) {
+        if (preg_match('/\A([=!<>]=?+|≠|≤|≥)\s*+(.*+)\z/s', $word, $m)) {
             $op = CountMatcher::parse_relation($m[1]);
             if (($sym = $f->find_symbol($m[2])) === null
                 || ($sym === 0 && $op !== CountMatcher::RELEQ && $op !== CountMatcher::RELNE)) {
@@ -77,8 +77,9 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
         // comma-separated, possibly ranges
         $rel = CountMatcher::RELEQ;
         $r = [];
-        while ($word !== "") {
-            if (!preg_match('/\A([^-,.]*?)(\.\.\.?+|…|-|–|—|(?=,)|\z)([^,]*+)[,\s]*+(.*)\z/s', $word, $m)) {
+        $pos = 0;
+        while ($pos !== strlen($word)) {
+            if (!preg_match('/\G([^-,.]*?)(\.\.\.?+|…|-|–|—|(?=,)|\z)([^,]*+)[,\s]*+/s', $word, $m, 0, $pos)) {
                 return null;
             }
             $sym = $f->find_symbol(trim($m[1]));
@@ -92,7 +93,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
                 if (!$has_count) {
                     $rel |= ReviewSearchMatcher::RELALL;
                     if (empty($r)
-                        && $m[4] === ""
+                        && $pos + strlen($m[0]) === strlen($word)
                         && ($m[2] === "-" || $m[2] === "–" || $m[2] === "—")
                         && $f->conf->opt("allowObsoleteScoreSearch")
                         && $f instanceof Score_ReviewField) {
@@ -121,7 +122,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
                     $rel |= ReviewSearchMatcher::RELALL;
                 }
             }
-            $word = $m[4];
+            $pos += strlen($m[0]);
         }
 
         return empty($r) ? null : [$rel, array_values(array_unique($r))];
