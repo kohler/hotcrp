@@ -521,7 +521,7 @@ function is_base64url_string($text) {
 
 /** @return string */
 function json_encode_browser($x, $flags = 0) {
-    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
+    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);
 }
 
 /** @return string */

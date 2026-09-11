@@ -51,7 +51,7 @@ class GetJson_ListAction extends ListAction {
         $dopt->set_attachment(true);
         $dopt->set_log_user($user);
         if ($this->iszip) {
-            $this->zipdoc->add_string_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
+            $this->zipdoc->add_string_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             if ($this->zipdoc->prepare_download($dopt)) {
                 return $dopt;
             }
@@ -59,7 +59,7 @@ class GetJson_ListAction extends ListAction {
         }
         $dopt->set_mimetype(Mimetype::JSON_UTF8_TYPE)
             ->set_filename($pj_filename)
-            ->set_content(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+            ->set_content(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
         return $dopt;
     }
 }
