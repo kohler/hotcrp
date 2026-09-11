@@ -15695,7 +15695,7 @@ return function (n, scheme, flip) {
 
 // score charts
 var scorechart = (function ($) {
-var blackcolor = [0, 0, 0], graycolor = [190, 190, 255];
+const blackcolor = [0, 0, 0], whitecolor = [255, 255, 255], graycolor = [190, 190, 255];
 
 function setup_canvas(canvas, w, h) {
     var ctx = canvas.getContext("2d"),
@@ -15776,8 +15776,13 @@ function scorechart1_s1(sc) {
             continue;
         var color = anal.fx.rgb_array(vindex + 1), t,
             y = anal.h && anal.h.indexOf(vindex + 1) >= 0 ? 2 : 1;
-        if (y === 2)
-            svg.appendChild($svg("path", {d: rectd(x, 1), fill: color_unparse(rgb_interp(blackcolor, color, 0.5))}));
+        if (y === 2) {
+            // own-score marker: score color shaded toward the page background’s opposite
+            const hlight = color_unparse(rgb_interp(blackcolor, color, 0.5)),
+                hdark = color_unparse(rgb_interp(whitecolor, color, 0.3));
+            svg.appendChild($svg("path", {d: rectd(x, 1), fill: hlight,
+                style: "fill:light-dark(".concat(hlight, ",", hdark, ")")}));
+        }
         if (y <= anal.v[vindex]) {
             t = "";
             for (; y <= anal.v[vindex]; ++y)
