@@ -69,15 +69,21 @@ class Conflict_PaperColumn extends PaperColumn {
             && !$pl->user->can_view_authors($row)) {
             $ct = Conflict::CT_DEFAULT;
         }
+        if (($ct & Conflict::F_PIN) !== 0
+            && (!$this->editable
+                || $pl->user->allow_manage($row))) {
+            $ct &= ~Conflict::F_PIN;
+        }
         return $ct;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $act = $this->conflict_type($pl, $a);
         $bct = $this->conflict_type($pl, $b);
-        if ($this->description) {
+        if ($this->description || $this->editable) {
             return $act <=> $bct;
         }
-        return ($act ? 1 : 0) <=> ($bct ? 1 : 0);
+        return ($act > CONFLICT_MAXUNCONFLICTED ? 1 : 0)
+            <=> ($bct > CONFLICT_MAXUNCONFLICTED ? 1 : 0);
     }
     function header(PaperList $pl, $is_text) {
         if ((!$this->show_user && !$this->not_me && !$this->editable)
