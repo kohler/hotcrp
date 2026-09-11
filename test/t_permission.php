@@ -406,6 +406,46 @@ class Permission_Tester {
         self::check_rights_version($users);
     }
 
+    function test_ghost_review_confers_no_track_view() {
+        $user_chair = $this->u_chair;
+        $user_pfrancis = $this->conf->checked_user_by_email("pfrancis@ntt.jp"); // pc, blue
+
+        // find a paper pfrancis is unrelated to
+        $pid = null;
+        foreach ($this->conf->paper_set(["finalized" => true], $user_chair) as $prow) {
+            $p = $this->conf->checked_paper_by_id($prow->paperId, $user_pfrancis);
+            $ci = $p->contact_info($user_pfrancis);
+            if ($ci->reviewType === 0
+                && $ci->conflictType <= CONFLICT_MAXUNCONFLICTED
+                && !$p->has_author($user_pfrancis)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert_neqq($pid, null);
+
+        // restrict viewing to PC members tagged red; pfrancis is blue
+        $this->conf->save_refresh_setting("tracks", 1, json_encode_db(["_" => ["view" => "+red"]]));
+        // chair records a tentative (ghost) review assignment for pfrancis
+        self::run_assignment($user_chair, "paper,action,email,ghost\n{$pid},primary,pfrancis@ntt.jp,yes\n", true);
+        $user_pfrancis = $this->conf->checked_user_by_email("pfrancis@ntt.jp");
+
+        // the ghost confers no rights on pfrancis: the paper stays invisible on
+        // every path, including review-keyword search (which loads review
+        // signatures rather than the masked myReviewPermissions)
+        $ppf = $this->conf->checked_paper_by_id($pid, $user_pfrancis);
+        xassert(!$user_pfrancis->can_view_paper($ppf));
+        xassert(!in_array($pid, (new PaperSearch($user_pfrancis, ""))->paper_ids(), true));
+        xassert(!in_array($pid, (new PaperSearch($user_pfrancis, "re:any"))->paper_ids(), true));
+        xassert(!in_array($pid, (new PaperSearch($user_pfrancis, "re:none OR re:any"))->paper_ids(), true));
+
+        // but a manager can still find the ghost assignment through search
+        xassert(in_array($pid, (new PaperSearch($user_chair, "re:pfrancis@ntt.jp"))->paper_ids(), true));
+
+        self::run_assignment($user_chair, "paper,action,email\n{$pid},clearreview,pfrancis@ntt.jp\n", true);
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
     function test_tags() {
         $user_chair = $this->u_chair;
         $user_mgbaker = $this->u_mgbaker;

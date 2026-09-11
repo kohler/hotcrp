@@ -351,13 +351,13 @@ final class PaperContactInfo {
         if (($rflags & ReviewInfo::RFM_TYPES) === 0) {
             return;
         }
-        $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
-        $this->reviewRound = $reviewRound;
-        // ghost reviews don't count
+        // ghost reviews confer no review rights
         $m = $conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
         if (($rflags & $m) === 0) {
             return;
         }
+        $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
+        $this->reviewRound = $reviewRound;
         if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
             || $reviewNeedsSubmit === 0) {
             $this->review_status = self::CIRS_SUBMITTED;
