@@ -2110,9 +2110,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @param string $text */
     function apply_capability_text($text) {
-        // Add capabilities from arguments
-        foreach (explode(" ", $text) as $s) {
-            if ($s !== "" && ($uf = $this->conf->token_handler($s))) {
+        // Add capabilities from arguments; program defensively
+        $words = preg_split('/ ++/', substr($text, 0, 4096), 33, PREG_SPLIT_NO_EMPTY);
+        foreach ($words as $i => $s) {
+            if ($i < 32 && ($uf = $this->conf->token_handler($s))) {
                 call_user_func($uf->apply_function, $this, $uf, $s);
             }
         }

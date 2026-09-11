@@ -80,6 +80,8 @@ class TokenInfo {
     private $_changes;
 
     const SALT_PREFIX = "hc";
+    const SALT_MIN_LENGTH = 12;
+    const SALT_MAX_LENGTH = 255;
 
     const RESETPASSWORD = 1;
     const CHANGEEMAIL = 2;
@@ -332,7 +334,10 @@ class TokenInfo {
      * @return ?TokenInfo */
     static function find_from($token, Conf $conf, $is_cdb) {
         $db = $is_cdb ? $conf->contactdb() : $conf->dblink;
-        if ($token === null || strlen($token) < 5 || !$db) {
+        if ($token === null
+            || strlen($token) < self::SALT_MIN_LENGTH
+            || strlen($token) > self::SALT_MAX_LENGTH
+            || !$db) {
             return null;
         }
         $extra = $is_cdb ? ", (select email from ContactInfo where contactDbId=Capability.contactId) email" : "";
@@ -512,6 +517,10 @@ class TokenInfo {
         for ($tries = 0; $tries < ($need_salt ? 5 : 1); ++$tries) {
             if ($need_salt) {
                 $this->salt = $this->instantiate_token();
+            }
+            if (strlen($this->salt) < self::SALT_MIN_LENGTH
+                || strlen($this->salt) > self::SALT_MAX_LENGTH) {
+                break;
             }
             $qv[0] = $this->salt;
             $qv[1] = Conf::$now;
