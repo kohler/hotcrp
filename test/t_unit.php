@@ -1214,6 +1214,67 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 10), "aaaaaaaa");
         xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_\xCC\x8E", 1), "\xCC\x90_\xCC\x8E");
         xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_ \xCC\x8E", 1), "\xCC\x90_");
+        xassert_eqq(UnicodeHelper::utf8_word_prefix("ab ç", 4), "ab ç");
+        xassert_eqq(UnicodeHelper::utf8_word_prefix("ab çd", 4), "ab");
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("Uber cote", 9), "Uber cote");
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("Über côté", 9), "Über côté");
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("Über côté x", 9), "Über côté...");
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("Über côtés", 9), "Über...");
+        xassert_eqq(prefix_word_wrap("", "hello world", 0, 11), "hello world\n");
+        xassert_eqq(prefix_word_wrap("", "héllo wörld", 0, 11), "héllo wörld\n");
+        xassert_eqq(prefix_word_wrap("", "héllo wörld again", 0, 11), "héllo wörld\nagain\n");
+    }
+
+    function test_utf8_word_prefix_long() {
+        // utf8_word_prefix must accept large `$len` and stay roughly
+        // linear on long clusters and long words
+
+        // large `$len`
+        $w = str_repeat("mot ", 17000);
+        xassert(UnicodeHelper::utf8_word_prefix($w, 300) === substr($w, 0, 299));
+        xassert(UnicodeHelper::utf8_word_prefix($w, 10000) === substr($w, 0, 9999));
+        xassert(UnicodeHelper::utf8_word_prefix($w, 65535) === substr($w, 0, 65535));
+        xassert(prefix_word_wrap("", substr($w, 0, 19999), 0, 10000)
+                === substr($w, 0, 9999) . "\n" . substr($w, 0, 9999) . "\n");
+
+        // ordinary text
+        $tw = INF;
+        for ($i = 0; $i !== 3; ++$i) {
+            $t0 = microtime(true);
+            $a = str_repeat("mot ", 16000);
+            xassert_eqq(UnicodeHelper::utf8_word_abbreviate($a, 300), substr($a, 0, 299) . "...");
+            xassert_eqq(UnicodeHelper::utf8_word_abbreviate("{$a}x", 300), substr($a, 0, 299) . "...");
+            xassert_eqq(UnicodeHelper::utf8_word_abbreviate("x {$a} y", 1), "x...");
+            xassert(UnicodeHelper::utf8_line_break_parts("{$a}x y", 70) === [substr($a, 0, 67), substr($a, 68) . "x y"]);
+            $a = str_repeat("\xE1\xB8\x81 bcd, ", 16000);
+            xassert_eqq(UnicodeHelper::utf8_word_abbreviate($a, 300), substr($a, 0, 386) . "...");
+            xassert_eqq(UnicodeHelper::utf8_word_abbreviate("x {$a} y", 1), "x...");
+            xassert(UnicodeHelper::utf8_line_break_parts($a, 70) === [substr($a, 0, 89), substr($a, 90)]);
+            $tw = min($tw, microtime(true) - $t0);
+        }
+
+        // unusual text of the same size -- a long word, long runs of
+        // combining marks, regional indicators, emoji ZWJ sequences --
+        // takes not much longer
+        $t0 = microtime(true);
+        $a = "a" . str_repeat("bcde", 32000);
+        xassert(UnicodeHelper::utf8_word_abbreviate($a, 300) === $a);
+        xassert(UnicodeHelper::utf8_word_abbreviate("{$a} x", 300) === "{$a}...");
+        $a = str_repeat("\xCC\x80", 32000);
+        xassert(UnicodeHelper::utf8_word_abbreviate($a, 300) === $a);
+        xassert(UnicodeHelper::utf8_word_abbreviate("{$a}x", 300) === "{$a}x");
+        xassert(UnicodeHelper::utf8_word_abbreviate("a{$a}", 300) === "a{$a}");
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("x {$a} y", 1), "x...");
+        xassert(UnicodeHelper::utf8_line_break_parts("{$a}x y", 70) === ["{$a}x y", ""]);
+        $b = str_repeat("y", 100);
+        xassert(UnicodeHelper::utf8_line_break_parts("{$a}x {$b}", 70) === ["{$a}x", $b]);
+        $a = "a" . str_repeat("\xF0\x9F\x87\xA6", 32000);
+        xassert(UnicodeHelper::utf8_word_abbreviate($a, 300) === $a);
+        xassert(UnicodeHelper::utf8_word_abbreviate("{$a} x", 300) === "{$a}...");
+        $a = "a" . str_repeat("\xF0\x9F\x91\xA9\xE2\x80\x8D", 16000);
+        xassert(UnicodeHelper::utf8_word_abbreviate($a, 300) === $a);
+        xassert_eqq(UnicodeHelper::utf8_word_abbreviate("x {$a} y", 1), "x...");
+        xassert_lt(microtime(true) - $t0, max(2.0, 50 * $tw));
     }
 
     function test_utf8_char_abbreviate() {

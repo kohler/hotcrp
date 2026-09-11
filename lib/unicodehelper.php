@@ -370,12 +370,25 @@ class UnicodeHelper {
      * @param int $len
      * @return string */
     static function utf8_word_prefix($str, $len) {
-        if (strlen($str) > $len
-            && (preg_match('/\A\pM*\X{0,' . max($len - 1, 0) . '}(?!\pZ|\s)\X(?=\pZ|\s)/u', $str, $m)
-                || preg_match('/\A\pM*\X{1,' . max($len, 1) . '}(?:(?!\pZ|\s)\X)*/u', $str, $m))) {
-            return $m[0];
+        // possessive matches only: backtracking into `\X` is quadratic on
+        // long clusters (e.g., thousands of combining marks)
+        // `$m[1]` is the first `$len` clusters; `$m[0]` adds one character
+        if (strlen($str) <= $len
+            || !preg_match('/\A(\pM*+\X{1,' . max($len, 1) . '}+).?/su', $str, $m)
+            || strlen($m[1]) === strlen($str)) {
+            return $str;
         }
-        return $str;
+        // If `$m[1]` contains a word break, return through the last one,
+        // i.e., up to the last space run that follows a non-space
+        if (preg_match('/\A(?:[^\pZ\s]*+([\pZ\s]++))++/u', $m[0], $mm)
+            && strlen($mm[0]) !== strlen($mm[1])) {
+            return substr($str, 0, strlen($mm[0]) - strlen($mm[1]));
+        }
+        // Otherwise, complete its last word
+        if (preg_match('/\G[^\pZ\s]++/u', $str, $mm, 0, strlen($m[1]))) {
+            return $m[1] . $mm[0];
+        }
+        return $m[1];
     }
 
     /** @param string $str
