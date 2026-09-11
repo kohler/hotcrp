@@ -290,7 +290,8 @@ class OAuth_Page {
                 MessageItem::inform("<0>HotCRP requires your email to sign you in.")
             ];
         }
-        if (friendly_boolean($jid->email_verified ?? null) === false) {
+        if (property_exists($jid, "email_verified")
+            && !friendly_boolean($jid->email_verified)) {
             return [
                 MessageItem::error("<0>The {$authi->title()} authenticator hasn’t verified your email"),
                 MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
