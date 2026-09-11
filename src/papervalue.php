@@ -211,9 +211,10 @@ final class PaperValue implements JsonSerializable {
         return $this->document_set()->as_list();
     }
     /** @param int $index
+     * @param bool $full
      * @return ?DocumentInfo */
-    function document($index) {
-        return $this->document_set()->document_by_index($index);
+    function document($index, $full = false) {
+        return $this->document_set($full)->document_by_index($index);
     }
     /** @param int $index
      * @return string|false */

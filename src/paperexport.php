@@ -108,7 +108,7 @@ class PaperExport {
 
 
     /** @return ?object */
-    function document_json(?DocumentInfo $doc) {
+    function document_json(?DocumentInfo $doc, $options = []) {
         if (!$doc) {
             return null;
         }
@@ -129,7 +129,8 @@ class PaperExport {
         if (($sz = $doc->size()) >= 0) {
             $d->size = $sz;
         }
-        if ($doc->filename) {
+        if (($options["want_filename"] ?? true)
+            && $doc->filename) {
             $d->filename = $doc->filename;
         }
         if ($this->include_document_content

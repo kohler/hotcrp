@@ -1515,7 +1515,9 @@ class Document_PaperOption extends PaperOption {
         if (!$this->value_present($ov)) {
             return null;
         }
-        return $pex->document_json($ov->document(0)) ?? false;
+        $want_filename = $pex->viewer->allow_view_authors($ov->prow);
+        return $pex->document_json($ov->document(0, $want_filename),
+            ["want_filename" => $want_filename]) ?? false;
     }
     function value_check(PaperValue $ov, Contact $user) {
         parent::value_check($ov, $user);
