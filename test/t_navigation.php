@@ -139,6 +139,51 @@ class Navigation_Tester {
         xassert_eqq($ns->unproxied, $unproxied);
     }
 
+    // `resolve_relative_path` merges `$path` with `$ref`, then applies RFC 3986
+    // remove_dot_segments. Two properties matter to `resolve_within`, which uses
+    // the result for a prefix containment check: a `.` or `..` in final position
+    // leaves a trailing slash, and the result is never empty.
+    function test_resolve_relative_path() {
+        $tests = [
+            // no dot segments: returned unchanged
+            ["/a/b", "/base/ref", "/a/b"],
+            ["/", "/base/ref", "/"],
+            ["/.well-known/x", "/base/ref", "/.well-known/x"],
+            ["/a/.b", "/base/ref", "/a/.b"],
+            ["/a/..b", "/base/ref", "/a/..b"],
+            // interior dot segments collapse
+            ["/a/./b", "/base/ref", "/a/b"],
+            ["/a/../b", "/base/ref", "/b"],
+            ["/a/b/../c", "/base/ref", "/a/c"],
+            ["/x/./././y", "/base/ref", "/x/y"],
+            ["/a/b/c/../../d", "/base/ref", "/a/d"],
+            // a trailing dot segment leaves a trailing slash
+            ["/a/.", "/base/ref", "/a/"],
+            ["/a/b/.", "/base/ref", "/a/b/"],
+            ["/a/b/./", "/base/ref", "/a/b/"],
+            ["/a/b/..", "/base/ref", "/a/"],
+            // reduction to the root yields "/", never ""
+            ["/.", "/base/ref", "/"],
+            ["/..", "/base/ref", "/"],
+            ["/a/..", "/base/ref", "/"],
+            ["/a/b/../..", "/base/ref", "/"],
+            // `..` cannot escape the root
+            ["/a/../../b", "/base/ref", "/b"],
+            // a relative path merges with the reference first
+            ["./x", "/base/ref", "/base/x"],
+            ["../y", "/base/ref", "/y"],
+            ["a/../b", "/base/ref", "/base/b"],
+            ["..", "/base/ref", "/"],
+            ["a", "/base/ref", "/base/a"],
+            // empty segments are preserved
+            ["/a//b/..", "/base/ref", "/a//"]
+        ];
+        foreach ($tests as $t) {
+            xassert_eqq(NavigationState::resolve_relative_path($t[0], $t[1]), $t[2],
+                        "resolve_relative_path({$t[0]}, {$t[1]})");
+        }
+    }
+
     function test_analyze_apache_fpm_proxy() {
         // ProxyPass /base fcgi://localhost:9000/$hotcrp/index.php
         // ProxyFCGIBackendType FPM
