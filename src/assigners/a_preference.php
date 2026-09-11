@@ -48,7 +48,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($state->user->can_manage_reviews($prow)) {
-            return $state->pc_users();
+            return $state->pc_members();
         }
         return [$state->user];
     }

@@ -730,6 +730,92 @@ class UserStatus_Tester {
         $probe($au, true);
     }
 
+    // `F_USERID` resolves numeric contact IDs. A viewer who can enumerate
+    // the PC can name PC-visible users by ID; a chair can name any user,
+    // unless `F_PC` restricts the search to PC-like roles.
+    function test_contactsearch_userid() {
+        $conf = $this->conf;
+        $email = "unlid@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $pc = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $au = $conf->checked_user_by_email("micke@cdt.luth.se");
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        $puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $unl = $conf->checked_user_by_email($email);
+        xassert($chair->privChair);
+        xassert($pc->isPC && !$pc->privChair);
+        xassert(!$au->isPC && $au->can_view_pc());
+        xassert($estrin->isPC && !$puneet->isPC);
+        xassert_eqq($unl->roles, Contact::ROLE_UNLISTEDPC);
+        $none = $conf->fetch_ivalue("select max(contactId) from ContactInfo") + 1000;
+        $pcflags = ContactSearch::F_USER | ContactSearch::F_PC | ContactSearch::F_USERID;
+        $uflags = ContactSearch::F_USER | ContactSearch::F_USERID;
+
+        $ids = function (Contact $viewer, $flags, $text) {
+            return (new ContactSearch($flags, $text, $viewer))->user_ids();
+        };
+
+        // chair: any user by ID, but only PC-like users under `F_PC`
+        xassert_eqq($ids($chair, $pcflags, (string) $estrin->contactId), [$estrin->contactId]);
+        xassert_eqq($ids($chair, $pcflags, (string) $unl->contactId), [$unl->contactId]);
+        xassert_eqq($ids($chair, $pcflags, (string) $puneet->contactId), []);
+        xassert_eqq($ids($chair, $uflags, (string) $puneet->contactId), [$puneet->contactId]);
+        xassert_eqq($ids($chair, $uflags, (string) $estrin->contactId), [$estrin->contactId]);
+        xassert_eqq($ids($chair, $pcflags, (string) $none), []);
+        xassert_eqq($ids($chair, $uflags, (string) $none), []);
+        xassert_eqq($ids($chair, $uflags, "0"), []);
+
+        // PC member: PC-like users only, `F_PC` or not
+        foreach ([$pcflags, $uflags] as $flags) {
+            xassert_eqq($ids($pc, $flags, (string) $estrin->contactId), [$estrin->contactId]);
+            xassert_eqq($ids($pc, $flags, (string) $unl->contactId), [$unl->contactId]);
+            xassert_eqq($ids($pc, $flags, (string) $chair->contactId), [$chair->contactId]);
+            xassert_eqq($ids($pc, $flags, (string) $puneet->contactId), []);
+            xassert_eqq($ids($pc, $flags, (string) $none), []);
+        }
+
+        // non-PC user on a public PC: listed PC and chairs, not unlisted PC
+        xassert_eqq($ids($au, $pcflags, (string) $estrin->contactId), [$estrin->contactId]);
+        xassert_eqq($ids($au, $pcflags, (string) $chair->contactId), [$chair->contactId]);
+        xassert_eqq($ids($au, $pcflags, (string) $unl->contactId), []);
+        xassert_eqq($ids($au, $pcflags, (string) $puneet->contactId), []);
+        xassert_eqq($ids($au, $uflags, (string) $puneet->contactId), []);
+
+        // lists keep input order and drop unresolvable entries
+        $list = "{$puneet->contactId}, {$estrin->contactId},{$none},{$chair->contactId}";
+        xassert_eqq($ids($chair, $pcflags, $list), [$estrin->contactId, $chair->contactId]);
+        xassert_eqq($ids($chair, $uflags, $list), [$puneet->contactId, $estrin->contactId, $chair->contactId]);
+        xassert_eqq($ids($pc, $uflags, $list), [$estrin->contactId, $chair->contactId]);
+
+        // a supplied set is the universe
+        $cset = $conf->pc_members();
+        $cs = new ContactSearch($uflags, (string) $estrin->contactId, $au, $cset);
+        xassert_eqq($cs->user_ids(), [$estrin->contactId]);
+        $cs = new ContactSearch($uflags, (string) $puneet->contactId, $chair, $cset);
+        xassert_eqq($cs->user_ids(), []);
+        $cs = new ContactSearch($uflags, $list, $chair, $cset);
+        xassert_eqq($cs->user_ids(), [$estrin->contactId, $chair->contactId]);
+
+        // privatePC: non-PC users can’t resolve IDs at all
+        $conf->set_opt("privatePC", true);
+        Contact::update_rights();
+        xassert_eqq($ids($au, $pcflags, (string) $estrin->contactId), []);
+        xassert_eqq($ids($au, $uflags, (string) $chair->contactId), []);
+        xassert_eqq($ids($pc, $pcflags, (string) $estrin->contactId), [$estrin->contactId]);
+        $conf->set_opt("privatePC", null);
+        Contact::update_rights();
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_edit_own_password() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
         xassert_eqq($u->email, "estrin@usc.edu");

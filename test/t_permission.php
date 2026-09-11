@@ -2491,6 +2491,71 @@ class Permission_Tester {
         xassert_eqq($lead(), 0);
     }
 
+    // `shepherd` maps to UU_PC_REVIEWERS when `extrev_shepherd` is set, so
+    // `resolve_users` unions the viewable PC with the paper's reviewers and
+    // resolves a `uid` column against that set through ContactSearch. The union
+    // must preserve contactId keys: `array_merge` renumbers them, which both
+    // drops valid reviewers and admits any uid smaller than the set's size,
+    // since the set is only an existence gate and the raw uid is what gets
+    // assigned. Only a numeric uid covers this path; a bare email, the form the
+    // UI sends, short-circuits on the exact-email match in `pre_resolve_users`
+    // and never reaches ContactSearch.
+    function test_assign_uid_pc_reviewers_universe() {
+        $conf = $this->conf;
+        $chair = $this->u_chair;
+        $old_extrev = $conf->setting("extrev_shepherd");
+        $conf->save_refresh_setting("extrev_shepherd", 1);
+
+        $email = "extshep@example.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        xassert_assign($chair, "paper,action,email,name\n1,review,{$email},Ext Shepherd\n");
+        $conf->invalidate_caches("users", "pc", "paper");
+
+        $ext = $conf->checked_user_by_email($email);
+        $marina = $this->u_marina;   // PC, not a reviewer of #1
+        $kohler = $this->u_kohler;   // neither PC nor a reviewer of #1
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert(!$ext->isPC);
+        xassert_eqq($p1->review_type($ext), REVIEW_EXTERNAL);
+        xassert($marina->isPC);
+        xassert_eqq($p1->review_type($marina), 0);
+        xassert(!$kohler->isPC);
+        xassert_eqq($p1->review_type($kohler), 0);
+
+        $shepherd = function () use ($conf) {
+            return $conf->fetch_ivalue("select shepherdContactId from Paper where paperId=1");
+        };
+
+        // the PC side of the union resolves by uid
+        xassert_assign($chair, "paper,action,uid\n1,shepherd,{$marina->contactId}\n");
+        xassert_eqq($shepherd(), $marina->contactId);
+
+        // so does the reviewer side
+        xassert_assign($chair, "paper,action,uid\n1,shepherd,{$ext->contactId}\n");
+        xassert_eqq($shepherd(), $ext->contactId);
+
+        // a uid outside the union is refused, even though it is smaller than
+        // the set's size
+        xassert_assign_fail($chair, "paper,action,uid\n1,shepherd,{$kohler->contactId}\n");
+        xassert_eqq($shepherd(), $ext->contactId);
+
+        // without `extrev_shepherd` the universe narrows to UU_PC, so the
+        // external reviewer stops being nameable and the PC member does not
+        xassert_assign($chair, "paper,action,user\n1,clearshepherd,any\n");
+        $conf->save_refresh_setting("extrev_shepherd", null);
+        xassert_assign_fail($chair, "paper,action,uid\n1,shepherd,{$ext->contactId}\n");
+        xassert_eqq($shepherd(), 0);
+        xassert_assign($chair, "paper,action,uid\n1,shepherd,{$marina->contactId}\n");
+        xassert_eqq($shepherd(), $marina->contactId);
+
+        xassert_assign($chair, "paper,action,user\n1,clearshepherd,any\n");
+        $conf->qe("delete from PaperReview where contactId=?", $ext->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $ext->contactId);
+        $conf->save_refresh_setting("extrev_shepherd", $old_extrev);
+        $conf->invalidate_caches("users", "pc", "paper");
+    }
+
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);

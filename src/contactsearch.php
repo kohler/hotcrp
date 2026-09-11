@@ -104,19 +104,32 @@ class ContactSearch {
                 || ($this->viewer->roles & Contact::ROLE_PCLIKE) !== 0)) {
             return [$this->viewer->contactId];
         }
-        if (($this->type & self::F_USERID) !== 0
-            && strspn($this->text, "0123456789 ,") === strlen($this->text)) {
-            preg_match_all('/\d+/', $this->text, $m);
-            $ids = [];
-            foreach ($m[0] as $d) {
-                $d = intval($d);
-                if ($d > 0
-                    && (($this->type & self::F_PC) !== 0
-                        || $this->conf->pc_user_by_id($d))) {
-                    $ids[] = $d;
+        if (($this->type & (self::F_USERID | self::F_QUOTED)) === self::F_USERID
+            && strspn($this->text, "0123456789 ,") === strlen($this->text)
+            && ($this->cset !== null || $this->viewable_roles !== 0)) {
+            preg_match_all('/\d++/', $this->text, $m);
+            $uids1 = $uids2 = [];
+            foreach ($m[0] as $s) {
+                if (($uid = stoi($s) ?? 0) > 0) {
+                    $this->cset !== null || $this->conf->prefetch_user_by_id($uid);
+                    $uids1[] = $uid;
                 }
             }
-            return $ids;
+            foreach ($uids1 as $uid) {
+                if ($this->cset !== null) {
+                    $u = $this->cset[$uid] ?? null;
+                } else if (($u = $this->conf->user_by_id($uid))
+                           && ($this->viewer->privChair
+                               ? ($this->type & self::F_PC) !== 0
+                                 && ($u->roles & Contact::ROLE_PCLIKE) === 0
+                               : ($u->roles & $this->viewable_roles) === 0)) {
+                    $u = null;
+                }
+                if ($u) {
+                    $uids2[] = $uid;
+                }
+            }
+            return $uids2;
         }
         if ($this->viewable_roles !== 0) {
             $allow_dormant = true;
@@ -236,8 +249,12 @@ class ContactSearch {
         // contact database if not restricted to PC or cset
         if ($this->cset !== null) {
             $cs = $this->cset;
-        } else if ($this->type & self::F_PC) {
+        } else if (($this->type & self::F_PC) !== 0) {
             $cs = $this->conf->viewable_pc_members($this->viewer);
+        } else if (ctype_digit($this->text)
+                   && ($this->type & self::F_QUOTED) === 0) {
+            // unquoted numeral must be a user ID
+            $cs = [];
         } else {
             $where = [];
             if ($n !== "") {

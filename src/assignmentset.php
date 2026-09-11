@@ -547,8 +547,8 @@ final class AssignmentState extends MessageSet {
         return $this->invalid_user;
     }
     /** @return array<int,Contact> */
-    function pc_users() {
-        return $this->cmap->pc_users();
+    function pc_members() {
+        return $this->cmap->pc_members();
     }
     /** @return array<int,Contact> */
     function reviewer_users() {
@@ -788,13 +788,13 @@ class AssignerContacts {
         return $c ? $this->store($c) : null;
     }
     /** @return array<int,Contact> */
-    function pc_users() {
+    function pc_members() {
         $this->ensure_pc();
         return $this->conf->viewable_pc_members($this->viewer);
     }
     /** @return array<int,Contact> */
     function reviewer_users($pids) {
-        $rset = $this->pc_users();
+        $rset = $this->pc_members();
         $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a and reviewType>0 group by ContactInfo.contactId", $pids);
         while ($result && ($c = Contact::fetch($result, $this->conf))) {
             $rset[$c->contactId] = $this->store($c);
@@ -1478,6 +1478,7 @@ class AssignmentSet {
 
         foreach ([["action", "assignment", "type"],
                   ["paper", "pid", "paperid", "paper_id", "id", "search"],
+                  ["uid", "userid", "user_id"],
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
                   ["reviewtype", "review_type"],
@@ -1657,6 +1658,18 @@ class AssignmentSet {
             return [$this->astate->none_user()];
         }
 
+        // check user ID
+        if (($req["uid"] ?? "") !== "") {
+            if (($uid = stoi($req["uid"])) < 0) {
+                $this->error("<0>Invalid user ID");
+                return "error";
+            } else if ($uid === 0) {
+                return [$this->astate->none_user()];
+            } else {
+                return "retry";
+            }
+        }
+
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"])) {
             self::apply_user_parts($req, Text::split_name($req["name"]));
@@ -1716,7 +1729,7 @@ class AssignmentSet {
         if ($this->user_universe === AssignmentParser::UU_PC) {
             $ret = ContactSearch::make_cset(self::req_user_text($req, NAME_E|NAME_L),
                                             $this->user,
-                                            $this->astate->pc_users());
+                                            $this->astate->pc_members());
             if ($ret->resolved_unique()) {
                 return $ret->users();
             } else if ($ret->is_empty()) {
@@ -1862,17 +1875,21 @@ class AssignmentSet {
             // check the requested universe, if any
             $cset = null;
             if (($this->user_universe & AssignmentParser::UU_PC) !== 0) {
-                $cset = $this->astate->pc_users();
+                $cset = $this->astate->pc_members();
             }
             if (($this->user_universe & AssignmentParser::UU_REVIEWERS) !== 0) {
-                $cset = array_merge($cset ?? [], $this->query_reviewers($prow));
+                $cset = ($cset ?? []) + $this->query_reviewers($prow);
             }
             if ($cset !== null) {
-                $ret = ContactSearch::make_cset(self::req_user_text($req, NAME_E|NAME_L),
-                                                $this->astate->user, $cset);
-                if ($ret->resolved_unique()) {
-                    return $ret->users();
-                } else if ($ret->is_empty()) {
+                if (($req["uid"] ?? "") !== "") {
+                    $csrch = new ContactSearch(ContactSearch::F_USERID, $req["uid"], $this->astate->user, $cset);
+                } else {
+                    $text = self::req_user_text($req, NAME_E | NAME_L);
+                    $csrch = new ContactSearch(ContactSearch::F_USER, $text, $this->astate->user, $cset);
+                }
+                if ($csrch->resolved_unique()) {
+                    return $csrch->users();
+                } else if ($csrch->is_empty()) {
                     return [$this->astate->not_found_user()];
                 }
                 return [$this->astate->ambiguous_user()];
@@ -1928,17 +1945,19 @@ class AssignmentSet {
         if ($auser === $this->poison_user) {
             // suppress duplicate error message
             return;
-        } else if ($auser === $this->astate->none_user()) {
+        }
+        $utext = ($req["uid"] ?? "") !== "" ? "#" . trim($req["uid"]) : "‘" . self::req_user_text($req) . "’";
+        if ($auser === $this->astate->none_user()) {
             $this->astate->paper_error("<0>User ‘none’ not allowed here");
         } else if ($auser === $this->astate->not_found_user()) {
             if ($this->user_universe === AssignmentParser::UU_PC
                 && !$this->astate->user->can_view_pc()) {
                 $this->astate->paper_error("<0>You don’t have permission to view the PC");
             } else {
-                $this->astate->paper_error("<0>{$what} ‘" . self::req_user_text($req) . "’ not found");
+                $this->astate->paper_error("<0>{$what} {$utext} not found");
             }
         } else if ($auser === $this->astate->ambiguous_user()) {
-            $this->astate->paper_error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$lcwhat}");
+            $this->astate->paper_error("<0>{$utext} matches more than one {$lcwhat}");
             if (!$this->ambiguous_user_complaint) {
                 $this->ambiguous_user_complaint = true;
                 $this->astate->append_item_here(MessageItem::inform("<0>Use a full email address to disambiguate."));
@@ -1946,7 +1965,7 @@ class AssignmentSet {
         } else if ($auser === $this->astate->invalid_user()) {
             $this->astate->paper_error("<0>Email address ‘" . $req["email"] . "’ invalid");
         } else {
-            $this->astate->paper_error("<0>{$what} ‘" . self::req_user_text($req) . "’ cannot be assigned to " . $req["action"] . " #{$prow->paperId}");
+            $this->astate->paper_error("<0>{$what} {$utext} cannot be assigned to " . $req["action"] . " #{$prow->paperId}");
             return; // do not set poison_user
         }
         $this->poison_user = $this->poison_user ?? $auser;
