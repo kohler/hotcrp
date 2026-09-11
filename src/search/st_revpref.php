@@ -148,7 +148,7 @@ class Revpref_SearchTerm extends SearchTerm {
         if (($match = $this->rpsm->preference_expertise_match())) {
             $where[] = $match;
         }
-        return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
+        return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->conservative_nonnegative_comparison();
     }
     function test(PaperInfo $row, $xinfo) {
         $vps = $this->user->view_preference_state($row);
