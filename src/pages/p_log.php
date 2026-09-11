@@ -69,7 +69,7 @@ class Log_Page {
         $ids = [];
         $accts = new SearchParser($query);
         while (($word = $accts->shift_balanced_parens()) !== "") {
-            $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
+            $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED | ContactSearch::F_USERID;
             if (substr($word, 0, 1) === "\"") {
                 $flags |= ContactSearch::F_QUOTED;
                 $word = preg_replace('/(?:\A"|"\z)/', "", $word);

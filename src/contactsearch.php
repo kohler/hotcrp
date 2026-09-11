@@ -104,7 +104,7 @@ class ContactSearch {
                 || ($this->viewer->roles & Contact::ROLE_PCLIKE) !== 0)) {
             return [$this->viewer->contactId];
         }
-        if (($this->type & (self::F_USERID | self::F_QUOTED)) === self::F_USERID
+        if (($this->type & (self::F_USERID | self::F_QUOTED)) === self::F_USERID // NB always !QUOTED here
             && strspn($this->text, "0123456789 ,") === strlen($this->text)
             && ($this->cset !== null || $this->viewable_roles !== 0)) {
             preg_match_all('/\d++/', $this->text, $m);
@@ -218,6 +218,12 @@ class ContactSearch {
 
     /** @return list<int> */
     private function check_user() {
+        // ID-like strings never match here
+        if (($this->type & self::F_QUOTED) === 0
+            && strspn($this->text, "0123456789 ,") === strlen($this->text)) {
+            return null;
+        }
+
         if (strcasecmp($this->text, "anonymous") === 0
             && $this->cset === null
             && ($this->type & self::F_PC) === 0) {
@@ -251,10 +257,6 @@ class ContactSearch {
             $cs = $this->cset;
         } else if (($this->type & self::F_PC) !== 0) {
             $cs = $this->conf->viewable_pc_members($this->viewer);
-        } else if (ctype_digit($this->text)
-                   && ($this->type & self::F_QUOTED) === 0) {
-            // unquoted numeral must be a user ID
-            $cs = [];
         } else {
             $where = [];
             if ($n !== "") {
