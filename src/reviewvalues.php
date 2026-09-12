@@ -381,7 +381,8 @@ class ReviewValues extends MessageSet {
                     $line = substr($line, 1);
                 }
                 if ($field !== null) {
-                    $this->req[$field] = ($this->req[$field] ?? "") . $line;
+                    $this->req[$field] = $this->req[$field] ?? "";
+                    $this->req[$field] .= $line;
                 }
                 $mode = 2;
             }
