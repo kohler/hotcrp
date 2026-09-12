@@ -84,39 +84,40 @@ class SettingParser {
             return 0.0;
         } else if (is_numeric($v)) {
             return floatval($v);
-        } else if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
+        } else if (preg_match('/\A\s*+(\d++):(\d++\.?+\d*+|\.\d++)\s*+\z/', $v, $m)) {
             return ((float) $m[1]) * 60 + (float) $m[2];
         }
         $t = 0.0;
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*y(?:ears?|rs?|)(?![a-z])/i', $v, $m)) {
+        $pos = 0;
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+y(?:ears?+|rs?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 3600 * 24 * 365;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*mo(?:nths?|ns?|s|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+mo(?:nths?+|ns?+|s|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 3600 * 24 * 30;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*w(?:eeks?|ks?|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+w(?:eeks?+|ks?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 3600 * 24 * 7;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*d(?:ays?|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+d(?:ays?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 3600 * 24;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*h(?:rs?|ours?|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+h(?:rs?+|ours?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 3600;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*m(?:inutes?|ins?|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+m(?:inutes?+|ins?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += ((float) $m[1]) * 60;
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*s(?:econds?|ecs?|)(?![a-z])/i', $v, $m)) {
+        if (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+s(?:econds?+|ecs?+|)(?![a-z])/i', $v, $m, 0, $pos)) {
             $t += (float) $m[1];
-            $v = substr($v, strlen($m[0]));
+            $pos += strlen($m[0]);
         }
-        if (trim($v) === "") {
+        if ($pos + strspn($v, " \n\r\t\x0B\x0C", $pos) === strlen($v)) {
             return $t;
         }
         return null;
