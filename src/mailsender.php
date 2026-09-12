@@ -200,7 +200,7 @@ class MailSender {
 
     /** @return bool */
     function prepare_sending_mailid() {
-        $result = $this->conf->qe("update MailLog set status=1 where mailId=? and status=-1", $this->mailid());
+        $result = $this->conf->qe("update MailLog set status=1 where mailId=? and contactId=? and status=-1", $this->mailid(), $this->user->contactId);
         $ok = $result->affected_rows > 0;
         $result->close();
         return $ok;
