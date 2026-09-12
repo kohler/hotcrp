@@ -10,6 +10,95 @@ const UTF8_ALPHA_TRANS_3 = "\xE1\xB8\x80\xE1\xB8\x81\xE1\xB8\x82\xE1\xB8\x83\xE1
 
 const UTF8_ALPHA_TRANS_3_OUT = "A  a  B  b  B  b  B  b  C  c  D  d  D  d  D  d  D  d  D  d  E  e  E  e  E  e  E  e  E  e  F  f  G  g  H  h  H  h  H  h  H  h  H  h  I  i  I  i  K  k  K  k  K  k  L  l  L  l  L  l  L  l  M  m  M  m  M  m  N  n  N  n  N  n  N  n  O  o  O  o  O  o  O  o  P  p  P  p  R  r  R  r  R  r  R  r  S  s  S  s  S  s  S  s  S  s  T  t  T  t  T  t  T  t  U  u  U  u  U  u  U  u  U  u  V  v  V  v  W  w  W  w  W  w  W  w  W  w  X  x  X  x  Y  y  Z  z  Z  z  Z  z  h  t  w  y  s  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  E  e  E  e  E  e  E  e  E  e  E  e  E  e  E  e  I  i  I  i  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  U  u  U  u  U  u  U  u  U  u  U  u  U  u  Y  y  Y  y  Y  y  Y  y  -  -  -  -  '  '  \"  \"  K  ff fi fl ffifflst st (  )  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  ]  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z  {  }  ";
 
+const UTF8_START = "\xC0\xC1\xC2\xC3\xC4\xC5\xC6\xC7\xC8\xC9\xCA\xCB\xCC\xCD\xCE\xCF\xD0\xD1\xD2\xD3\xD4\xD5\xD6\xD7\xD8\xD9\xDA\xDB\xDC\xDD\xDE\xDF\xE0\xE1\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF\xF0\xF1\xF2\xF3\xF4\xF5\xF6\xF7\xF8\xF9\xFA\xFB\xFC\xFD\xFE\xFF";
+
+
+class UnicodePiecewiseTranslation {
+    /** @var string
+     * @readonly */
+    public $in;
+    /** @var string
+     * @readonly */
+    public $out;
+    /** @var list<int>
+     * @readonly
+     *
+     * Sorted list of offsets, alternating out and in, starting with [0, 0]
+     * and ending with a PHP_INT_MAX sentinel.
+     * The character at `$this->out[$this->offsets[2*$i]]` corresponds to the
+     * character at `$this->in[$this->offsets[2*$i+1]]`; characters up to the
+     * `out` position map one-to-one. */
+    public $offsets;
+    /** @var int */
+    private $cursor = 0;
+
+    function __construct($str) {
+        $this->in = $str;
+        $this->offsets = [0, 0];
+        $pos = strcspn($str, UTF8_START);
+        $len = strlen($str);
+        if ($pos === $len) {
+            $this->out = $str;
+        } else {
+            $da = UnicodeHelper::deaccent_map();
+            $pos0 = 0;
+            $this->out = "";
+            while ($pos !== $len) {
+                $chlen = ord($str[$pos]) < 0xE0 ? 2 : 3;
+                $ch = substr($str, $pos, $chlen);
+                if (($di = $da[$ch] ?? null) !== null) {
+                    $this->out .= substr($str, $pos0, $pos - $pos0)
+                        . UnicodeHelper::deaccent_result($di);
+                    $pos0 = $pos + $chlen;
+                    $this->offsets[] = strlen($this->out);
+                    $this->offsets[] = $pos0;
+                }
+                $pos += 1 + strcspn($str, UTF8_START, $pos + 1);
+            }
+            $this->out .= substr($str, $pos0);
+        }
+        $this->offsets[] = PHP_INT_MAX;
+    }
+
+    /** @param int $l      left edge of range, 0 <= $l < count($this->offsets)
+     * @param int $r       right edge of range
+     * @param int $pos     position being searched for
+     * @param 0|1 $offset  whether `$pos` is out or in
+     * @return int */
+    private function segment_lower_bound($l, $r, $pos, $offset) {
+        while ($l + 2 < $r) {
+            $m = $l + ((($r - $l) >> 1) & ~1);
+            $p = $this->offsets[$m + $offset];
+            if ($pos < $p) {
+                $r = $m;
+            } else {
+                $l = $m;
+            }
+        }
+        return $l;
+    }
+
+    /** @param int $pos
+     * @return int */
+    function reverse($pos) {
+        $i = $this->cursor;
+        if ($pos < $this->offsets[$i]) {
+            if ($i > 128) {
+                $i = $this->segment_lower_bound(0, $i, $pos, 0);
+            } else {
+                $i = 0;
+            }
+        } else if (count($this->offsets) - $i > 128
+                   && $pos > $this->offsets[$i + 10]) {
+            $i = $this->segment_lower_bound($i, count($this->offsets) - 1, $pos, 0);
+        }
+        while ($pos >= $this->offsets[$i + 2]) {
+            $i += 2;
+        }
+        $this->cursor = $i;
+        return $this->offsets[$i + 1] + ($pos - $this->offsets[$i]);
+    }
+}
 
 class UnicodeHelper {
     /** @readonly */
@@ -31,47 +120,51 @@ class UnicodeHelper {
         }
     }
 
-    private static function make_deaccent_map() {
+    /** @return array<string,int> */
+    static function deaccent_map() {
         if (self::$deaccent_map === null) {
             self::$deaccent_map = [];
             self::add_deaccent_map(UTF8_ALPHA_TRANS_2, 2);
             self::add_deaccent_map(UTF8_ALPHA_TRANS_3, 3);
         }
+        return self::$deaccent_map;
     }
 
     /** @param int $di
      * @return string */
-    private static function deaccent_result($di) {
+    static function deaccent_result($di) {
         if (($di & 1) !== 0) {
             return trim(substr(UTF8_ALPHA_TRANS_3_OUT, $di >> 1, 3));
         }
         return trim(substr(UTF8_ALPHA_TRANS_2_OUT, $di >> 1, 2));
     }
 
-    /** @param string $s
+    /** @param string $str
      * @return ?string */
-    static function maybe_deaccent($s) {
-        if (!preg_match_all("/[\xC0-\xFF]/", $s, $m, PREG_OFFSET_CAPTURE)) {
+    static function maybe_deaccent($str) {
+        $pos = strcspn($str, UTF8_START);
+        $len = strlen($str);
+        if ($pos === $len) {
             return null;
         }
-        if (self::$deaccent_map === null) {
-            self::make_deaccent_map();
-        }
-        $first = 0;
+        $da = UnicodeHelper::deaccent_map();
+        $pos0 = 0;
         $out = "";
-        foreach ($m[0] as $mx) {
-            $i = $mx[1];
-            $l = ord($mx[0]) < 0xE0 ? 2 : 3;
-            $ch = substr($s, $i, $l);
-            if (($di = self::$deaccent_map[$ch] ?? null) !== null) {
-                $out .= substr($s, $first, $i - $first) . self::deaccent_result($di);
-                $first = $i + $l;
+        while ($pos !== $len) {
+            $chlen = ord($str[$pos]) < 0xE0 ? 2 : 3;
+            $ch = substr($str, $pos, $chlen);
+            if (($di = $da[$ch] ?? null) !== null) {
+                $out .= substr($str, $pos0, $pos - $pos0)
+                    . UnicodeHelper::deaccent_result($di);
+                $pos0 = $pos + $chlen;
             }
+            $pos += 1 + strcspn($str, UTF8_START, $pos + 1);
         }
-        if ($first === 0) {
+        if ($pos0 === 0) {
             return null;
         }
-        return $out . substr($s, $first);
+        $out .= substr($str, $pos0);
+        return $out;
     }
 
     /** @param string $s
@@ -81,40 +174,9 @@ class UnicodeHelper {
     }
 
     /** @param string $s
-     * @return array{string,list<int>} */
+     * @return UnicodePiecewiseTranslation */
     static function deaccent_offsets($s) {
-        $offsetmap = [0, 0];
-        if (preg_match_all("/[\xC0-\xFF]/", $s, $m, PREG_OFFSET_CAPTURE)) {
-            if (self::$deaccent_map === null) {
-                self::make_deaccent_map();
-            }
-            $first = 0;
-            $out = "";
-            foreach ($m[0] as $mx) {
-                $i = $mx[1];
-                $l = ord($mx[0]) < 0xE0 ? 2 : 3;
-                $ch = substr($s, $i, $l);
-                if (($di = self::$deaccent_map[$ch] ?? null) !== null) {
-                    $out .= substr($s, $first, $i - $first) . self::deaccent_result($di);
-                    $first = $i + $l;
-                    $offsetmap[] = strlen($out);
-                    $offsetmap[] = $first;
-                }
-            }
-            $s = $out . substr($s, $first);
-        }
-        return [$s, $offsetmap];
-    }
-
-    /** @param list<int> $offsetmap
-     * @param int $offset
-     * @return int */
-    static function deaccent_translate_offset($offsetmap, $offset) {
-        $n = count($offsetmap);
-        for ($i = 2; $i < $n && $offsetmap[$i] <= $offset; $i += 2) {
-            /* do nothing */;
-        }
-        return $offsetmap[$i - 1] + ($offset - $offsetmap[$i - 2]);
+        return new UnicodePiecewiseTranslation($s);
     }
 
     /** @param string $str

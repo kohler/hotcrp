@@ -232,12 +232,12 @@ class Text {
                 /* do nothing */;
             } else if ($name[strlen($name) - 1] === ">"
                        && preg_match('/\A(?:\"(.*?)\"|(.*?))\s*<([^<>]+)>\z/', $name, $m)) {
-                list($name, $email) = [$m[1] . $m[2], $m[3]];
+                [$name, $email] = [$m[1] . $m[2], $m[3]];
             } else if (strpos($name, "@") === false) {
                 /* skip */;
             } else if ($name[0] === "\""
                        && preg_match('/\A\s*\"(.*)\"\s+(\S+@\S+)\z/', $name, $m)) {
-                list($name, $email) = [$m[1], $m[2]];
+                [$name, $email] = [$m[1], $m[2]];
             } else if (!preg_match('/\A(.*?)\s+(\S+)\z/', $name, $m)) {
                 return ["", "", trim($name)];
             } else if (strpos($m[2], "@") !== false) {
@@ -271,7 +271,7 @@ class Text {
             // see also split_von
             if (strpos($ret[0], " ") !== false
                 && preg_match('/\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]|al))+)\z/i', $ret[0], $m)) {
-                list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
+                [$ret[0], $ret[1]] = [$m[1], ltrim($m[2]) . " " . $ret[1]];
             }
         } else if ($m[1] !== ""
                    && $m[2] !== ""
@@ -365,6 +365,10 @@ class Text {
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
+    // Highlight at most this many matches per string; the remainder is shown
+    // unhighlighted. Bounds output size and work regardless of match count.
+    const HIGHLIGHT_LIMIT = 200;
+
     /** @param string $word
      * @param bool $literal
      * @return string */
@@ -432,7 +436,7 @@ class Text {
         }
 
         $mtext = $text;
-        $offsetmap = null;
+        $do = null;
         $flags = "";
         if (is_object($match)) {
             if ($match->preg_raw === null) {
@@ -441,7 +445,8 @@ class Text {
             } else if (is_usascii($text)) {
                 $match = $match->preg_raw;
             } else {
-                list($mtext, $offsetmap) = UnicodeHelper::deaccent_offsets($mtext);
+                $do = UnicodeHelper::deaccent_offsets($mtext);
+                $mtext = $do->out;
                 $match = $match->preg_utf8;
                 $flags = "u";
             }
@@ -455,18 +460,18 @@ class Text {
             if ($match[0] !== "{") {
                 $match = "{(" . $match . ")}is" . $flags;
             }
-            $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
+            $s = preg_split($match, $mtext, self::HIGHLIGHT_LIMIT + 1, PREG_SPLIT_DELIM_CAPTURE);
         }
         if (!$s || count($s) == 1) {
             return htmlspecialchars($text);
         }
 
         $n = (int) (count($s) / 2);
-        if ($offsetmap) {
+        if ($do) {
             for ($i = $b = $o = 0; $i < count($s); ++$i) {
                 if ($s[$i] !== "") {
                     $o += strlen($s[$i]);
-                    $e = UnicodeHelper::deaccent_translate_offset($offsetmap, $o);
+                    $e = $do->reverse($o);
                     $s[$i] = substr($text, $b, $e - $b);
                     $b = $e;
                 }
