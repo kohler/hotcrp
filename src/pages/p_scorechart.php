@@ -127,7 +127,11 @@ class Scorechart_Page {
         $scale = $this->scale;
         $maxY = min(max($this->maxY, 3), 200);
         $valMax = min($this->valMax, 200);
-        // These restrictions ensure a max image size of ~20Kx20K pixels.
+        // limit image size
+        if ($this->maxY * $this->valMax * $this->scale * $this->scale > 160000) {
+            self::fail("400 Bad Request", "Invalid parameters", true);
+            throw new PageCompletion;
+        }
 
         // set shape constants
         $blockHeight = $blockWidth = 3 * $scale;
@@ -242,7 +246,8 @@ class Scorechart_Page {
         $scale = $params["scale"] ?? "1";
 
         if ($v === null
-            || ($v !== "" && !preg_match('/\A\d+(,\d+)*\z/', $v))
+            || ($v !== "" && !preg_match('/\A\d++(?:,\d++)*+\z/', $v))
+            || strlen($v) > 1000
             || $s === ""
             || !ctype_digit($s)
             || ($sn = intval($s)) < 1
