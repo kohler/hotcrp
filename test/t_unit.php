@@ -881,6 +881,9 @@ class Unit_Tester {
         // check for short encodings
         xassert(strlen(SessionList::encode_ids([10,9,8,7])) <= 5);
         xassert(strlen(SessionList::encode_ids([10,9,8,7,5,4,1])) <= 7);
+
+        // reject decodings that would expand past DECODE_LIMIT (DoS backstop)
+        xassert_eqq(SessionList::decode_ids("1-100000000"), null);
     }
 
     /** @return list<int> */

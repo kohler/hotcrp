@@ -22,6 +22,8 @@ class SessionList {
      * @readonly */
     public $digest;
 
+    const DECODE_LIMIT = 500000;
+
     /** @param string $listid
      * @param list<int> $ids
      * @param ?string $description */
@@ -63,10 +65,17 @@ class SessionList {
 
         $a = [];
         $l = strlen($s);
-        $next = null;
+        $i = 0;
+        $next = 0;
         $sign = 1;
         $include_after = false;
-        for ($i = 0; $i !== $l; ) {
+        while (true) {
+            if (!is_int($next) || count($a) > self::DECODE_LIMIT) {
+                return null;
+            } else if ($i === $l) {
+                return $a;
+            }
+
             $ch = ord($s[$i]);
             if ($ch >= 48 && $ch <= 57) {
                 $n1 = 0;
@@ -86,9 +95,14 @@ class SessionList {
                         $ch = $i !== $l ? ord($s[$i]) : 0;
                     }
                 }
+                if (!is_int($n1) || !is_int($n2)) {
+                    return null;
+                }
                 if ($n2 - $n1 > 10 && $allow_ranges) {
                     $a[] = [$n1, $n2];
                     $n1 = $n2 + 1;
+                } else if ($n2 - $n1 > self::DECODE_LIMIT) {
+                    return null;
                 } else {
                     while ($n1 <= $n2) {
                         $a[] = $n1;
@@ -147,6 +161,8 @@ class SessionList {
             if ($add0 > 10 && $allow_ranges) {
                 $a[] = [$next, $next + $sign * $add0 - $sign];
                 $next += $add0 * $sign;
+            } else if ($add0 > self::DECODE_LIMIT || !is_int($add0)) {
+                return null;
             } else {
                 while ($add0 !== 0) {
                     $a[] = $next;
@@ -160,7 +176,6 @@ class SessionList {
                 $next += $sign;
             }
         }
-        return $a;
     }
 
     /** @param list<string> $a

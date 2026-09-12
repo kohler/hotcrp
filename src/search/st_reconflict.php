@@ -6,15 +6,16 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $st = new PaperID_SearchTerm;
         $xword = $word;
-        while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $xword, $m)) {
+        $pos = 0;
+        while (preg_match('/\G\s*+\#?(\d++)(?:-\#?(\d++))?\s*+,?+\s*+/s', $xword, $m, 0, $pos)) {
             if (isset($m[2]) && $m[2]) {
                 $st->add_range((int) $m[1], (int) $m[2]);
             } else {
                 $st->add_range((int) $m[1], (int) $m[1]);
             }
-            $xword = $m[3];
+            $pos += strlen($m[0]);
         }
-        if ($xword !== "" || $st->is_empty()) {
+        if ($pos !== strlen($xword) || $st->is_empty()) {
             $srch->lwarning($sword, "<0>List of paper numbers expected");
             return new False_SearchTerm;
         }

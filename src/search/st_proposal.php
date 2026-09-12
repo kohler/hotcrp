@@ -68,22 +68,23 @@ class Proposal_SearchTerm extends SearchTerm {
 
         $qword = $sword->qword;
         $contacts = null;
-        $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
-        while ($qword !== "") {
-            if (preg_match('/\A:?((?:[=!<>]=?|≠|≤|≥|)\d+)' . $tailre, $qword, $m)
+        $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))/s';
+        $pos = 0;
+        while ($pos !== strlen($qword)) {
+            if (preg_match('/\G:?((?:[=!<>]=?|≠|≤|≥|)\d++)' . $tailre, $qword, $m, 0, $pos)
                 && $rqsm->apply_comparison($m[1])) {
-                $qword = $m[2];
-            } else if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
+                // ok
+            } else if (preg_match('/\G(.+?)' . $tailre, $qword, $m, 0, $pos)
                        && ($rqsm->apply_round($m[1], $srch->conf)
                            || $rqsm->apply_comparison($m[1]))) {
-                $qword = $m[2];
-            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
+                // ok
+            } else if (preg_match('/\G(..*?|"[^"]++(?:"|\z))' . $tailre, $qword, $m, 0, $pos)) {
                 $contacts = $m[1];
-                $qword = $m[2];
             } else {
                 $rqsm->set_comparison("<0");
                 break;
             }
+            $pos += strlen($m[0]);
         }
 
         if (($qr = SearchTerm::make_constant($rqsm->tautology()))) {
