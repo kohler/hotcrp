@@ -427,6 +427,30 @@ class AuthorCertification_Tester {
         xassert_le($prow1->timeSubmitted, 0);
     }
 
+    function test_duplicate_self_certification() {
+        // listing one's own certification twice must store it once, not make
+        // the multi-row INSERT fail after the DELETE and wipe the field
+        $u = $this->u_carole;
+        $ps = new PaperStatus($u);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", [
+            "title" => "Duplicate certification",
+            "has_authors" => "1",
+            "authors:1:email" => $u->email,
+            "authors:2:email" => $this->u_sally->email,
+            "has_submission" => 1,
+            "has_{$this->c1key}" => "1",
+            "{$this->c1key}:1:email" => $u->email,
+            "{$this->c1key}:1:value" => "1",
+            "{$this->c1key}:2:email" => $u->email,
+            "{$this->c1key}:2:value" => "1"
+        ])->set_file_content("submission:file", "%PDF-x", null, "application/pdf")
+          ->set_user($u), null));
+        xassert($ps->execute_save());
+        $ov = $this->conf->checked_paper_by_id($ps->paperId)->option($this->cert1);
+        xassert_in_eqq($u->contactId, $ov->value_list());
+        xassert_eqq($ov->value_count(), 1);
+    }
+
     function finalize() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,

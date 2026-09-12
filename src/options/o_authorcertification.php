@@ -539,7 +539,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         foreach ($entries as $ne) {
             if ($ne->user
                 && $ne->value
-                && !$base_entries->find_by_id($ne->uid)
+                && !$xentries->find_by_id($ne->uid)
                 && self::user_can_change($user, $prow, $ne->user->email)
                 && $this->resolve_max_submissions($ne->user, $entries, $msgs)) {
                 $xentries->append($ne);
