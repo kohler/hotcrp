@@ -428,6 +428,7 @@ src/listactions/la_revpref.php
 src/listactions/la_tag.php
 src/logentry.php
 src/logentryfilter.php
+src/logentrygenerator.php
 src/mailrecipients.php
 src/mailsender.php
 src/meetingtracker.php

@@ -79,7 +79,7 @@ class ActionLog_Batch {
 
     /** @return int */
     function run() {
-        $leg = new LogEntryGenerator($this->conf, $this->page_size);
+        $leg = new LogEntryGenerator($this->conf->root_user(), $this->page_size);
         if ($this->uids !== null) {
             $leg->set_user_ids($this->uids);
         }

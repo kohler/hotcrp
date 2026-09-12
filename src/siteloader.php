@@ -21,7 +21,6 @@ class SiteLoader {
         "FormatChecker" => "src/formatspec.php",
         "JsonSerializable" => "lib/json.php",
         "Limit_SearchTerm" => "src/searchterm.php",
-        "LogEntryGenerator" => "src/logentry.php",
         "LoginHelper" => "lib/login.php",
         "MessageItem" => "lib/messageset.php",
         "Numeric_ValueFormat" => "src/valueformat.php",

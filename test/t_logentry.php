@@ -85,7 +85,7 @@ class LogEntry_Tester {
 
     function test_basic_by_50() {
         $this->counted = 0;
-        $leg = new LogEntryGenerator($this->conf, 50);
+        $leg = new LogEntryGenerator($this->u_chair, 50);
         $this->check_log_page($leg, 1);
         $this->check_log_page($leg, 2);
         $this->check_log_page($leg, 3);
@@ -98,7 +98,7 @@ class LogEntry_Tester {
 
     function test_basic_by_49() {
         $this->counted = 0;
-        $leg = new LogEntryGenerator($this->conf, 49);
+        $leg = new LogEntryGenerator($this->u_chair, 49);
         $this->check_log_page($leg, 1);
         $this->check_log_page($leg, 2);
         $this->check_log_page($leg, 3);
@@ -112,7 +112,7 @@ class LogEntry_Tester {
     function test_basic_by_200() {
         $this->counted = 0;
         $this->idhash = hash_init("sha256");
-        $leg = new LogEntryGenerator($this->conf, 200);
+        $leg = new LogEntryGenerator($this->u_chair, 200);
         $this->check_log_page($leg, 1);
         $this->check_log_page($leg, 2);
         $this->check_log_page($leg, 3);
@@ -125,7 +125,7 @@ class LogEntry_Tester {
 
         $this->counted = 0;
         $this->idhash = hash_init("sha256");
-        $leg = (new LogEntryGenerator($this->conf, 200))
+        $leg = (new LogEntryGenerator($this->u_chair, 200))
             ->set_consolidate_mail(false);
         $this->check_log_page($leg, 1);
         $this->check_log_page($leg, 2);
@@ -139,7 +139,7 @@ class LogEntry_Tester {
 
         $this->counted = 0;
         $this->idhash = null;
-        $leg = (new LogEntryGenerator($this->conf, 50))
+        $leg = (new LogEntryGenerator($this->u_chair, 50))
             ->set_consolidate_mail(false);
         $this->check_log_page($leg, 10);
         $this->check_log_page($leg, 4);
@@ -148,7 +148,7 @@ class LogEntry_Tester {
 
     function test_basic_by_125_filtered() {
         $this->counted = 0;
-        $leg = (new LogEntryGenerator($this->conf, 125))
+        $leg = (new LogEntryGenerator($this->u_chair, 125))
             ->set_filter(new LogEntryFilter($this->u_chair, [4 => true], true, null));
         $this->check_log_page($leg, 1);
         $this->check_log_page($leg, 2);
@@ -162,13 +162,13 @@ class LogEntry_Tester {
         $counted = $this->counted;
 
         $this->counted = 0;
-        $leg = (new LogEntryGenerator($this->conf, 3000))
+        $leg = (new LogEntryGenerator($this->u_chair, 3000))
             ->set_filter(new LogEntryFilter($this->u_chair, [4 => true], true, null));
         $this->check_log_page($leg, 1);
         xassert_eqq($this->counted, $counted);
 
         $this->counted = 0;
-        $leg = (new LogEntryGenerator($this->conf, 3000))
+        $leg = (new LogEntryGenerator($this->u_chair, 3000))
             ->set_consolidate_mail(false)
             ->set_filter(new LogEntryFilter($this->u_chair, [4 => true], true, null));
         $this->check_log_page($leg, 1);
@@ -177,7 +177,7 @@ class LogEntry_Tester {
 
     function test_basic_by_125_first_page() {
         $this->counted = 0;
-        $leg = (new LogEntryGenerator($this->conf, 125))
+        $leg = (new LogEntryGenerator($this->u_chair, 125))
             ->set_filter(function ($x) { return $x->logId < self::N - 500; });
         $this->check_log_page($leg, 1);
         xassert_eqq($this->counted, 125);
@@ -202,11 +202,11 @@ class LogEntry_Tester {
         $conf->resume_log();
 
         // the viewer administers only paper 4
-        $leg = (new LogEntryGenerator($conf, 200))
+        $leg = (new LogEntryGenerator($viewer, 200))
             ->set_filter(new LogEntryFilter($viewer, [4 => true], true, null));
         $rows = $leg->page_rows(1);
         xassert_eqq(count($rows), 1);
-        $pids = $leg->paper_ids($rows[0]);
+        $pids = $rows[0]->paper_ids();
         $recips = array_map(function ($u) { return $u ? $u->email : "?"; },
             $leg->users_for($rows[0], "destContactId"));
         // paper 4 and its recipient are visible; paper 5 and estrin are not
@@ -254,12 +254,12 @@ class LogEntry_Tester {
         }
         $conf->qe("insert into ActionLog (ipaddr,contactId,destContactId,trueContactId,paperId,timestamp,action) values ?v", $qv);
 
-        $leg = new LogEntryGenerator($conf, 50);
+        $leg = new LogEntryGenerator($this->u_chair, 50);
         $leg->page_rows(42);      // far page: builds the signpost at ordinal 999
         // resuming just past the boundary must NOT re-show the send
         $mail21 = [];
         foreach ($leg->page_rows(21) as $r) {
-            if (str_starts_with($leg->cleaned_action($r), "Sent mail")) {
+            if (str_starts_with($r->cleaned_action(), "Sent mail")) {
                 $mail21[] = $r->ordinal;
             }
         }
@@ -267,7 +267,7 @@ class LogEntry_Tester {
         // it appears exactly once, at its real position, with all 5 recipients
         $mail20 = [];
         foreach ($leg->page_rows(20) as $r) {
-            if (str_starts_with($leg->cleaned_action($r), "Sent mail")) {
+            if (str_starts_with($r->cleaned_action(), "Sent mail")) {
                 $mail20[] = [$r->ordinal, count($leg->users_for($r, "destContactId"))];
             }
         }
@@ -289,7 +289,7 @@ class LogEntry_Tester {
         xassert_eqq($rows[0][1], "Tag +#zza +#zzb (papers 1, 3)");
 
         // an administrator of paper 3 alone sees the entry narrowed to #3
-        $leg = new LogEntryGenerator($conf, 50);
+        $leg = new LogEntryGenerator($this->u_floyd, 50);
         $leg->set_filter(new LogEntryFilter($this->u_floyd, [3 => true], true, null));
         $seen = [];
         foreach ($leg->page_rows(1) as $row) {
