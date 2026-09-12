@@ -239,7 +239,12 @@ class TagAssignmentPiece {
      * @param string $tag
      * @return bool */
     function parse_xuser($xuser, AssignmentState $state, $tag) {
-        if ($xuser === "" || ctype_digit(substr($xuser, 0, -1))) {
+        if ($xuser === ""
+            || strspn($xuser, "0123456789") === strlen($xuser) - 1) {
+            if (str_starts_with($xuser, "0")) {
+                $state->error("<0>‘{$tag}’: Invalid private tag");
+                return false;
+            }
             $this->xuser = $xuser;
             return true;
         }

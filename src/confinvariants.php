@@ -393,6 +393,15 @@ class ConfInvariants {
     }
 
     /** @return $this */
+    function check_tag_prefixes() {
+        $any = $this->invariantq("select tag from PaperTag where tag like '0%' limit 1");
+        if ($any) {
+            $this->invariant_error("noncanonical_tag", "PaperTag has malformed tag {0}");
+        }
+        return $this;
+    }
+
+    /** @return $this */
     function check_automatic_tags() {
         $dt = $this->conf->tags();
         $user = $this->conf->root_user();
