@@ -399,18 +399,24 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @param int $len
+     * @param int $len  maximum prefix length; > 65535 means ∞
      * @return string|false */
     static function utf8_prefix($str, $len) {
+        if ($len > 65535) {
+            return is_valid_utf8($str) ? $str : false;
+        }
         preg_match('/\A\pM*\X{0,' . $len . '}+/u', $str, $m);
         return isset($m[0]) ? $m[0] : false;
     }
 
     /** @param string $str
-     * @param int $len
+     * @param int $len  maximum length; > 65535 means ∞
      * @param int $suffix_len
      * @return string */
     static function utf8_char_abbreviate($str, $len, $suffix_len = 0) {
+        if ($len > 65535) {
+            return $str;
+        }
         preg_match('/\A(\pM*+\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
         if (!isset($m[0])) {
             return str_repeat(".", $len);
@@ -429,10 +435,10 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @param int $len
+     * @param int $len  maximum prefix length; > 65535 means ∞
      * @return string|false */
     static function utf8_word_prefix($str, $len) {
-        if (strlen($str) <= $len) {
+        if (strlen($str) <= $len || $len > 65535) {
             return is_valid_utf8($str) ? $str : false;
         }
         // possessive matches only: backtracking into `\X` is quadratic on
