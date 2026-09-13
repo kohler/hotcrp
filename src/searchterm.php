@@ -432,7 +432,7 @@ abstract class Op_SearchTerm extends SearchTerm {
                         $this->float[$k] = $v;
                     } else {
                         $this->float[$k] = $v2 = clone $this->float[$k];
-                        $v2->add_matches($v);
+                        $v2->merge_any($v);
                     }
                 }
             } else if ($k === "xlimit") {
@@ -1635,7 +1635,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         "au" => "authorInformation", "co" => "collaborators"
     ];
 
-    function __construct(Contact $user, $t, $text, $quoted) {
+    function __construct(Contact $user, $t, $text) {
         parent::__construct($t);
         $this->user = $user;
         $this->field = self::$map[$t];
@@ -1643,7 +1643,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         if (is_bool($text)) {
             $this->trivial = $text;
         } else {
-            $this->regex = Text::star_text_pregexes($text, $quoted);
+            $this->regex = Text::star_text_pregexes($text);
             $this->set_float("fhl:{$t}", $this->regex);
         }
     }
@@ -1655,7 +1655,7 @@ class TextMatch_SearchTerm extends SearchTerm {
                 $word = false;
             }
         }
-        return new TextMatch_SearchTerm($srch->user, $sword->kwdef->name, $word, $sword->quoted);
+        return new TextMatch_SearchTerm($srch->user, $sword->kwdef->name, $word);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1695,7 +1695,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         if ($this->trivial !== null) {
             return ["type" => $this->type, "any" => $this->trivial];
         }
-        return ["type" => $this->type, "match" => $this->regex->preg_utf8 ?? $this->regex->preg_raw];
+        return ["type" => $this->type, "match" => $this->regex->preg_utf8()];
     }
 }
 

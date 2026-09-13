@@ -16,27 +16,43 @@ class TextTruncation {
 
 class TextPregexes {
     /** @var ?string */
-    public $preg_raw;
+    private $preg_raw;
     /** @var string */
-    public $preg_utf8;
-    /** @var ?string */
+    private $preg_utf8;
+    /** @var ?string
+     * @deprecated */
     public $value;
+    /** @var bool */
+    private $_is_merge_and = false;
 
     /** @param ?string $raw
-     * @param string $utf8 */
-    function __construct($raw, $utf8) {
+     * @param string $utf8
+     * @param ?string $value */
+    function __construct($raw, $utf8, $value = null) {
         $this->preg_raw = $raw;
         $this->preg_utf8 = $utf8;
+        $this->value = $value;
     }
 
-    /** @return TextPregexes */
-    static function make_empty() {
-        return new TextPregexes(null, '(?!)');
+    /** @param ?string $value
+     * @return TextPregexes */
+    static function make_empty($value = null) {
+        return new TextPregexes(null, '(?!)', $value);
     }
 
     /** @return bool */
     function is_empty() {
         return $this->preg_utf8 === '(?!)';
+    }
+
+    /** @return ?string */
+    function preg_raw() {
+        return $this->preg_raw;
+    }
+
+    /** @return string */
+    function preg_utf8() {
+        return $this->preg_utf8;
     }
 
     /** @param string $text
@@ -83,7 +99,12 @@ class TextPregexes {
         return !!preg_match("{{$this->preg_raw}}i", $text);
     }
 
+    /** @deprecated */
     function add_matches(TextPregexes $r) {
+        return $this->merge_any($r);
+    }
+
+    function merge_any(TextPregexes $r) {
         if ($r->is_empty()) {
             // do nothing
         } else if ($this->is_empty()) {
@@ -96,6 +117,31 @@ class TextPregexes {
             } else if ($this->preg_raw !== null) {
                 $this->preg_raw .= "|{$r->preg_raw}";
             }
+            $this->_is_merge_and = false;
+        }
+    }
+
+    private function wrap_all($s) {
+        if ($this->_is_merge_and) {
+            return substr($s, 2);
+        }
+        return "(?=[\\s\\S]*{$s})";
+    }
+
+    function merge_all(TextPregexes $r) {
+        if ($r->is_empty()) {
+            // do nothing
+        } else if ($this->is_empty()) {
+            $this->preg_utf8 = $r->preg_utf8;
+            $this->preg_raw = $r->preg_raw;
+        } else {
+            $this->preg_utf8 = "\\A" . $this->wrap_all($this->preg_utf8) . $r->wrap_all($r->preg_utf8);
+            if ($r->preg_raw === null) {
+                $this->preg_raw = null;
+            } else if ($this->preg_raw !== null) {
+                $this->preg_raw = "\\A" . $this->wrap_all($this->preg_raw) . $r->wrap_all($r->preg_raw);
+            }
+            $this->_is_merge_and = true;
         }
     }
 }
@@ -345,74 +391,125 @@ class Text {
     }
 
 
-    /** @param string $word
-     * @param bool $literal
-     * @return string */
-    static function word_regex($word, $literal = false) {
-        if ($word === "") {
-            return "";
-        }
-        $aw = ctype_alnum($word[0]);
-        $zw = ctype_alnum($word[strlen($word) - 1]);
-        $sp = $literal ? '\s+' : '(?=\s).*\s';
-        return ($aw ? '\b' : '')
-            . str_replace(" ", $sp, preg_quote($word))
-            . ($zw ? '\b' : '');
-    }
-
     const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|(?!\pL|\pN)\X)';
     const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL)\X)';
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
-    // Highlight at most this many matches per string; the remainder is shown
-    // unhighlighted. Bounds output size and work regardless of match count.
-    const HIGHLIGHT_LIMIT = 200;
+    /** @param string $text
+     * @return TextPregexes */
+    static function star_text_pregexes($text) {
+        if (!is_valid_utf8($text)) {
+            $text = convert_to_utf8($text);
+        }
+        $words = preg_split('/(?:\s|\p{Zs})++/us', $text, -1, PREG_SPLIT_NO_EMPTY);
+        if (empty($words)) {
+            return TextPregexes::make_empty($text);
+        }
+        $nwords = count($words);
+        $letnum_first = preg_match('/\A(?:\pL|\pN)/u', $words[0]);
+        $letnum_last = preg_match('/(?:\pL|\pN)\z/u', $words[$nwords - 1]);
 
-    /** @param string $word
-     * @param bool $literal
-     * @return string */
-    static function utf8_word_regex($word, $literal = false) {
-        if ($word === "") {
-            return "";
+        $utf8s = [];
+        foreach ($words as $i => $word) {
+            $r = preg_quote($word);
+            if (strpos($word, "*") !== false) {
+                $tail = $i + 1 < $nwords
+                    ? '(?=\s|\p{Zs})'
+                    : ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
+                $r = self::one_star_text_regex($r, true, $tail);
+            }
+            $utf8s[] = $r;
         }
-        $aw = preg_match('/\A(?:\pL|\pN)/u', $word);
-        $zw = preg_match('/(?:\pL|\pN)\z/u', $word);
-        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
-        if ($aw || $zw || is_valid_utf8($word)) {
-            $sp = $literal ? '(?:\s|\p{Zs})+' : '(?=\s|\p{Zs}).*(?:\s|\p{Zs})';
-            return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
-                . str_replace(" ", $sp, preg_quote($word))
-                . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
+        $preg_utf8 = ($letnum_first ? self::UTF8_INITIAL_NONLETTERDIGIT : "")
+            . join("(?:\\s|\\p{Zs})++", $utf8s)
+            . ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
+
+        if (is_usascii($text)) {
+            $raws = [];
+            foreach ($words as $i => $word) {
+                $r = preg_quote($word);
+                if (strpos($word, "*") !== false) {
+                    $tail = $i + 1 < $nwords
+                        ? '(?=\s)'
+                        : ($letnum_last ? '(?![0-9A-Za-z])' : "");
+                    $r = self::one_star_text_regex($r, false, $tail);
+                }
+                $raws[] = $r;
+            }
+            $preg_raw = ($letnum_first ? '(?<![0-9A-Za-z])' : "")
+                . join("\\s++", $raws)
+                . ($letnum_last ? '(?![0-9A-Za-z])' : "");
+        } else {
+            $preg_raw = null;
         }
-        return self::utf8_word_regex(convert_to_utf8($word));
+
+        return new TextPregexes($preg_raw, $preg_utf8, $text);
     }
 
-    /** @param string $word
-     * @param bool $literal
-     * @return TextPregexes */
-    static function star_text_pregexes($word, $literal = false) {
-        if (is_object($word)) {
-            $reg = $word;
-        } else {
-            $reg = new TextPregexes(null, "");
-            $reg->value = $word;
-        }
-
-        $word = preg_replace('/\s+/', " ", $reg->value);
-        if (is_usascii($word)) {
-            $reg->preg_raw = Text::word_regex($word, $literal);
-        }
-        $reg->preg_utf8 = Text::utf8_word_regex($word, $literal);
-
-        if (!$literal && strpos($word, "*") !== false) {
-            if ($reg->preg_raw !== null) {
-                $reg->preg_raw = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_raw));
+    /** @param string $regex
+     * @param bool $utf8
+     * @param string $tail lookahead the final literal must satisfy (word boundary)
+     * @return string */
+    static private function one_star_text_regex($regex, $utf8, $tail) {
+        $cseg = "";
+        $pos0 = 0;
+        $pos = strcspn($regex, "\\");
+        $len = strlen($regex);
+        $litseg = []; // literal segments between *s
+        while ($len - $pos > 1) {
+            if ($regex[$pos + 1] === "*") {
+                if ($pos !== $pos0 || $cseg !== "" || empty($litseg)) {
+                    $litseg[] = $cseg . substr($regex, $pos0, $pos - $pos0);
+                }
+                $pos0 = $pos + 2;
+                $cseg = "";
+            } else if ($len - $pos > 3
+                       && substr_compare($regex, "\\\\\\*", $pos, 4) === 0) {
+                $cseg .= substr($regex, $pos0, $pos - $pos0);
+                $pos += 2;
+                $pos0 = $pos;
             }
-            $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
+            $pos += 2 + strcspn($regex, "\\", $pos + 2);
         }
+        $litseg[] = $cseg . substr($regex, $pos0);
+        $nlitseg = count($litseg);
 
-        return $reg;
+        // combine
+        $out = "";
+        foreach ($litseg as $i => $seg) {
+            $out .= $seg;
+            if ($i === 0 && $seg === "") {
+                // initial star: ensure it starts at a word boundary
+                $out .= $utf8 ? '(?<=\A|\s|\p{Zs})' : '(?<=\A|\s)';
+            }
+            if ($i === $nlitseg - 1) {
+                break;
+            }
+            $next = $litseg[$i + 1];
+            if ($next === "") {
+                // trailing star: no following literal to protect
+                $out .= $utf8 ? "[^\\s\\p{Zs}]*+" : "\\S*+";
+                break;
+            }
+            // unrolled `\S*` that stops before the next literal. The guard
+            // keeps the possessive scan from swallowing that literal; the
+            // final literal additionally requires the word-boundary $tail.
+            preg_match('/\A(?:[^\\\\\xC0-\xFF]|\\\\.|[\xC0-\xFF][\x80-\xBF]++)/', $next, $m);
+            $ch = $m[0];
+            $boundary = $i + 2 === $nlitseg ? $tail : "";
+            if ($ch === $next && $boundary === "") {
+                $out .= $utf8
+                    ? "[^{$ch}\\s\\p{Zs}]*+"
+                    : "[^{$ch}\\s]*+";
+            } else {
+                $neg = "(?!{$next}{$boundary})";
+                $out .= $utf8
+                    ? "[^{$ch}\\s\\p{Zs}]*+(?:{$neg}{$ch}[^{$ch}\\s\\p{Zs}]*+)*+"
+                    : "[^{$ch}\\s]*+(?:{$neg}{$ch}[^{$ch}\\s]*+)*+";
+            }
+        }
+        return $out;
     }
 
     /** @param ?TextPregexes $reg
@@ -424,6 +521,10 @@ class Text {
         return $reg && $reg->match_da($text, $deaccented_text);
     }
 
+
+    // Highlight at most this many matches per string; the remainder is shown
+    // unhighlighted. Bounds output size and work regardless of match count.
+    const HIGHLIGHT_LIMIT = 200;
 
     /** @param string $text
      * @param null|string|TextPregexes $match
@@ -439,15 +540,15 @@ class Text {
         $do = null;
         $flags = "";
         if (is_object($match)) {
-            if ($match->preg_raw === null) {
-                $match = $match->preg_utf8;
+            if ($match->preg_raw() === null) {
+                $match = $match->preg_utf8();
                 $flags = "u";
             } else if (is_usascii($text)) {
-                $match = $match->preg_raw;
+                $match = $match->preg_raw();
             } else {
                 $do = UnicodeHelper::deaccent_offsets($mtext);
                 $mtext = $do->out;
-                $match = $match->preg_utf8;
+                $match = $match->preg_utf8();
                 $flags = "u";
             }
         }

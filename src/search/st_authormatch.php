@@ -24,7 +24,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         $type = $sword->kwdef->name;
         if ($word === "any" && $sword->kwexplicit && !$sword->quoted) {
             $type = substr($type, 0, 2);
-            return new TextMatch_SearchTerm($srch->user, $type === "co" ? "co" : "au", true, false);
+            return new TextMatch_SearchTerm($srch->user, $type === "co" ? "co" : "au", true);
         } else if (($matcher = AuthorMatcher::make_string_guess($word))) {
             return new AuthorMatch_SearchTerm($srch->user, $type, $matcher);
         } else {

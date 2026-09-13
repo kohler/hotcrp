@@ -283,8 +283,9 @@ class ContactSearch {
 
         // filter results
         $nreg = $ereg = null;
-        if ($n !== "") {
-            $nreg = Text::star_text_pregexes($n);
+        foreach (preg_split('/\s++/', $n, -1, PREG_SPLIT_NO_EMPTY) as $nsplit) {
+            $nreg = $nreg ?? TextPregexes::make_empty();
+            $nreg->merge_all(Text::star_text_pregexes($nsplit));
         }
         if ($e !== "" && $estar) {
             $ereg = '{\A' . str_replace('\*', '.*', preg_quote($e)) . '\z}i';

@@ -1382,7 +1382,7 @@ class Unit_Tester {
         xassert_eqq($do->out, "A e i c o U .K");
         xassert_array_eqq($do->offsets, [0,0,1,2,3,5,5,8,7,11,9,14,14,21,PHP_INT_MAX]);
         xassert_eqq($do->reverse(4), 6);
-        $regex = new TextPregexes(Text::word_regex("foo"), Text::utf8_word_regex("foo"));
+        $regex = Text::star_text_pregexes("foo");
         xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö", $regex),
                     "Is <em class=\"match\">foo</em> bar <em class=\"match\">føo</em> bar <em class=\"match\">fóó</em> bar highlit right? <em class=\"match\">foö</em>");
         xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
@@ -1435,6 +1435,54 @@ class Unit_Tester {
         xassert($pregex->match_da("it's foo@butt.com and friends", null));
         xassert($pregex->match_da("it's foo@butt.com and friends", "it's foo@butt.com and friends"));
         xassert($pregex->match_da("it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
+
+        $pregex = Text::star_text_pregexes("a*a");
+        xassert($pregex->match("aa"));
+        xassert($pregex->match("aba"));
+        xassert(!$pregex->match("a a"));
+        xassert(!$pregex->match("ab ba"));
+        xassert($pregex->match("a*a"));
+        xassert(!$pregex->match("b*b *"));
+
+        $pregex = Text::star_text_pregexes("a\\*a");
+        xassert(!$pregex->match("aa"));
+        xassert(!$pregex->match("aba"));
+        xassert(!$pregex->match("a a"));
+        xassert(!$pregex->match("ab ba"));
+        xassert($pregex->match("a*a"));
+        xassert(!$pregex->match("b*b *"));
+
+        $pregex = Text::star_text_pregexes("*");
+        xassert($pregex->match("aa"));
+        xassert($pregex->match("aba"));
+        xassert($pregex->match("a a"));
+        xassert($pregex->match("ab ba"));
+        xassert($pregex->match("a*a"));
+        xassert($pregex->match("b*b *"));
+
+        $pregex = Text::star_text_pregexes("*ab");
+        xassert(!$pregex->match("aa"));
+        xassert($pregex->match("ab"));
+        xassert(!$pregex->match("aba"));
+        xassert($pregex->match("ab ba"));
+        xassert(!$pregex->match("aba ba"));
+        xassert($pregex->match("aba bab"));
+
+        $pregex = Text::star_text_pregexes("ab*");
+        xassert(!$pregex->match("aa"));
+        xassert($pregex->match("ab"));
+        xassert($pregex->match("aba"));
+        xassert($pregex->match("ab ba"));
+        xassert($pregex->match("aba ba"));
+        xassert(!$pregex->match("bab"));
+
+        $pregex = Text::star_text_pregexes("*ab*");
+        xassert(!$pregex->match("aa"));
+        xassert($pregex->match("ab"));
+        xassert($pregex->match("aba"));
+        xassert($pregex->match("ab ba"));
+        xassert($pregex->match("aba ba"));
+        xassert($pregex->match("aba bab"));
     }
 
     function test_simple_search() {

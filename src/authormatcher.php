@@ -324,7 +324,7 @@ class AuthorMatcher extends Author {
         foreach ($matchers as $matcher) {
             if (($preg1 = $matcher->highlight_pregexes())) {
                 $preg = $preg ?? TextPregexes::make_empty();
-                $preg->add_matches($preg1);
+                $preg->merge_any($preg1);
             }
         }
         $au = Text::highlight($au, $preg);

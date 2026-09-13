@@ -6373,7 +6373,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($this->_aucollab_general_pregexes === null) {
             $this->_aucollab_general_pregexes = TextPregexes::make_empty();
             foreach ($this->aucollab_matchers() as $matcher) {
-                $this->_aucollab_general_pregexes->add_matches($matcher->general_pregexes());
+                $this->_aucollab_general_pregexes->merge_any($matcher->general_pregexes());
             }
         }
         return $this->_aucollab_general_pregexes;

@@ -1499,8 +1499,8 @@ class Text_ReviewField extends ReviewField {
     }
 
     function parse_search(SearchWord $sword, ReviewSearchMatcher $rsm, PaperSearch $srch) {
-        list($word, $quoted) = SearchWord::maybe_unquote($sword->cword);
-        $preg = Text::star_text_pregexes($word, $quoted);
+        list($word, ) = SearchWord::maybe_unquote($sword->cword);
+        $preg = Text::star_text_pregexes($word);
         return new Text_ReviewFieldSearch($this, $rsm->rfop, $preg);
     }
 }
