@@ -411,7 +411,7 @@ class UnicodeHelper {
      * @param int $suffix_len
      * @return string */
     static function utf8_char_abbreviate($str, $len, $suffix_len = 0) {
-        preg_match('/\A(\pM*\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
+        preg_match('/\A(\pM*+\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
         if (!isset($m[0])) {
             return str_repeat(".", $len);
         } else if (strlen($m[0]) === strlen($str)) {
@@ -421,7 +421,7 @@ class UnicodeHelper {
         } else if ($suffix_len <= 0) {
             return $m[1] . "...";
         }
-        preg_match('/\A(\pM*\X{' . max($len - $suffix_len - 3, 0) . '}).*(\X{' . min($suffix_len, $len - 3) . '})\z/', $str, $m);
+        preg_match('/\A(\pM*+\X{' . max($len - $suffix_len - 3, 0) . '}).*(\X{' . min($suffix_len, $len - 3) . '})\z/', $str, $m);
         if (!isset($m[0])) {
             return str_repeat(".", $len);
         }
@@ -430,14 +430,18 @@ class UnicodeHelper {
 
     /** @param string $str
      * @param int $len
-     * @return string */
+     * @return string|false */
     static function utf8_word_prefix($str, $len) {
+        if (strlen($str) <= $len) {
+            return is_valid_utf8($str) ? $str : false;
+        }
         // possessive matches only: backtracking into `\X` is quadratic on
         // long clusters (e.g., thousands of combining marks)
         // `$m[1]` is the first `$len` clusters; `$m[0]` adds one character
-        if (strlen($str) <= $len
-            || !preg_match('/\A(\pM*+\X{1,' . max($len, 1) . '}+).?/su', $str, $m)
-            || strlen($m[1]) === strlen($str)) {
+        $mok = preg_match('/\A(\pM*+\X{1,' . max($len, 1) . '}+).?/su', $str, $m);
+        if ($mok === false) { // input string was not UTF-8 -- should not happen!
+            return false;
+        } else if ($mok === 0 || strlen($m[1]) === strlen($str)) {
             return $str;
         }
         // If `$m[1]` contains a word break, return through the last one,
@@ -458,18 +462,14 @@ class UnicodeHelper {
      * @return string */
     static function utf8_word_abbreviate($str, $len) {
         $pfx = self::utf8_word_prefix($str, $len);
+        if ($pfx === false) { // input string was not UTF-8 -- should not happen!
+            $str = convert_to_utf8($str);
+            $pfx = self::utf8_word_prefix($str, $len);
+        }
         if (strlen($pfx) === strlen($str)) {
             return $str;
         }
         return "{$pfx}...";
-    }
-
-    /** @param string $str
-     * @param int $len
-     * @return string
-     * @deprecated */
-    static function utf8_abbreviate($str, $len) {
-        return self::utf8_word_abbreviate($str, $len);
     }
 
     /** @param string &$str
@@ -481,6 +481,10 @@ class UnicodeHelper {
             return false;
         }
         $line = self::utf8_word_prefix($str, $len);
+        if ($line === false) { // input string was not UTF-8 -- should not happen!
+            $str = convert_to_utf8($str);
+            $line = self::utf8_word_prefix($str, $len);
+        }
         if (($nl = strpos($line, "\n")) !== false) {
             $line = substr($line, 0, $nl);
         }
@@ -516,6 +520,10 @@ class UnicodeHelper {
             return false;
         }
         $line = self::utf8_prefix($str, $len);
+        if ($line === false) {
+            $str = convert_to_utf8($str);
+            $line = self::utf8_prefix($str, $len);
+        }
         if (($nl = strpos($line, "\n")) !== false) {
             $line = substr($line, 0, $nl);
         } else if (strlen($line) !== strlen($str)) {

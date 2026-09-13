@@ -96,11 +96,11 @@ class Paper_Page {
             return;
         }
 
-        $reason = (string) $this->qreq->reason;
+        $reason = $this->qreq->reason ?? "";
         if ($reason === ""
             && $this->user->can_manage($this->prow)
             && $this->qreq["status:notify"] > 0) {
-            $reason = (string) $this->qreq["status:notify_reason"];
+            $reason = $this->qreq["status:notify_reason"] ?? "";
         }
 
         $aset = new AssignmentSet($this->user);
@@ -141,7 +141,7 @@ class Paper_Page {
             // mail first, before contact info goes away
             if ($this->qreq["status:notify"]) {
                 HotCRPMailer::send_contacts("@deletepaper", $this->prow, [
-                    "reason" => (string) $this->qreq["status:notify_reason"],
+                    "reason" => $this->qreq["status:notify_reason"],
                     "confirm_message_for" => $this->user
                 ]);
             }
@@ -428,9 +428,13 @@ class Paper_Page {
         $pp->useRequest = isset($qreq->title) && $qreq->has_annex("after_login");
         if ($qreq["status:notify_reason"] === "Optional explanation") {
             unset($qreq["status:notify_reason"]);
+        } else if ($qreq["status:notify_reason"]) {
+            $qreq["status:notify_reason"] = convert_to_utf8($qreq["status:notify_reason"]);
         }
         if ($qreq->reason === "Optional explanation") {
             unset($qreq->reason);
+        } else if ($qreq->reason) {
+            $qreq->reason = convert_to_utf8($qreq->reason);
         }
         if ($qreq->post && $qreq->post_empty()) {
             $pp->conf->post_missing_msg();

@@ -17,12 +17,12 @@ class Mail_API {
         $mailinfo = [
             "prow" => $prow,
             "requester_contact" => $user,
-            "width" => $qreq->width ?? 10000,
+            "width" => stoi($qreq->width) ?? 10000,
             "censor" => Mailer::CENSOR_PREVIEW,
             "preview" => true
         ];
         if (isset($qreq->reason)) {
-            $mailinfo["reason"] = $qreq->reason;
+            $mailinfo["reason"] = convert_to_utf8($qreq->reason);
         }
         $rid = $qreq->r;
         if ($prow) {
@@ -41,7 +41,7 @@ class Mail_API {
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
             $j = ["ok" => true];
             foreach (["text", "subject", "body"] as $k) {
-                $j[$k] = $mailer->expand($qreq[$k], $k);
+                $j[$k] = $mailer->expand(convert_to_utf8($qreq[$k]), $k);
             }
             return $j;
         } else if (!$qreq->template) {

@@ -441,22 +441,23 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @return Contact
      * @suppress PhanAccessReadOnlyProperty */
     static function make_keyed(Conf $conf, $args) {
-        // email, firstName, lastName, affiliation, disablement, contactId, first, last:
+        // email, firstName, lastName, affiliation, disablement, contactId:
         // the importable properties
         $u = new Contact($conf);
         $u->contactId = $args["contactId"] ?? 0;
         $u->contactXid = $u->contactId > 0 ? $u->contactId : self::$next_xid--;
-        $u->email = trim($args["email"] ?? "");
-        $u->firstName = $args["given_name"] ?? $args["firstName"] ?? $args["first"] ?? "";
-        $u->lastName = $args["family_name"] ?? $args["lastName"] ?? $args["last"] ?? "";
+        $u->email = convert_to_utf8(trim($args["email"] ?? ""));
+        $u->firstName = convert_to_utf8($args["given_name"] ?? $args["firstName"] ?? $args["first"] ?? "");
+        $u->lastName = convert_to_utf8($args["family_name"] ?? $args["lastName"] ?? $args["last"] ?? "");
         if (isset($args["name"])
             && $u->firstName === ""
             && $u->lastName === "") {
-            list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
+            [$u->firstName, $u->lastName, $unused] = Text::split_name(convert_to_utf8($args["name"]));
         }
-        $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
+        $u->affiliation = convert_to_utf8(simplify_whitespace($args["affiliation"] ?? ""));
         if (isset($args["orcid"])
-            && strlen($args["orcid"]) <= 25) {
+            && strlen($args["orcid"]) <= 25
+            && preg_match('/\A\s*+[-0-9X]*+\??\s*+\z/i', $args["orcid"])) {
             $u->orcid = trim($args["orcid"]);
         }
         if (isset($args["country"])

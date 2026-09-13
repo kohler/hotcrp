@@ -153,7 +153,7 @@ class RequestReview_API {
         } else {
             $requester = $user;
         }
-        $reason = trim($qreq->reason ?? "");
+        $reason = trim(convert_to_utf8($qreq->reason ?? ""));
 
         // load potential conflict
         $potconflist = $prow->potential_conflict_list($xreviewer);
@@ -318,7 +318,7 @@ class RequestReview_API {
         // member, who can see less.
         $requester = $user->conf->user_by_id($request->requestedBy);
         $reviewer = $user->conf->user_by_email($email);
-        $reason = trim((string) $qreq->reason);
+        $reason = trim(convert_to_utf8((string) $qreq->reason));
 
         $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
             $prow->paperId, $email);
@@ -448,7 +448,7 @@ class RequestReview_API {
         }
         $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
-        $reason = trim($qreq->reason ?? "");
+        $reason = trim(convert_to_utf8($qreq->reason ?? ""));
         if ($reason === "" || $reason === "Optional explanation") {
             $reason = null;
         }

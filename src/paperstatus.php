@@ -371,7 +371,7 @@ final class PaperStatus extends MessageSet {
         }
         list($sk, $v) = $this->_normalize_status_extract($istatusj, $ipj, "withdraw_reason");
         if (is_string($v)) {
-            $xstatus->withdraw_reason = $v;
+            $xstatus->withdraw_reason = convert_to_utf8($v);
         } else if ($v !== null) {
             $this->syntax_error_at($sk);
         }

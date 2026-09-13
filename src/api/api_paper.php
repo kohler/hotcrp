@@ -221,7 +221,7 @@ class Paper_API extends MessageSet {
         // honored is decided per paper (execute_save())
         $this->notify = friendly_boolean($qreq->notify) !== false;
         $this->notify_authors = friendly_boolean($qreq->notify_authors) !== false;
-        $this->notify_reason = $qreq->reason ?? "";
+        $this->notify_reason = convert_to_utf8($qreq->reason ?? "");
         // parse single-paper precondition
         if (isset($qreq->if_unmodified_since)) {
             $t = self::parse_if_unmodified_since($qreq->if_unmodified_since, $this->conf);
