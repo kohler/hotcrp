@@ -3,15 +3,15 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Preference_API {
-    static function pref_api(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $u = APIHelpers::parse_reviewer_for($qreq->u ?? $qreq->reviewer, $user, $prow);
-        $user->set_overrides($overrides);
+    static function pref_api(Contact $viewer, Qrequest $qreq, ?PaperInfo $prow) {
+        $overrides = $viewer->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $u = APIHelpers::parse_reviewer_for($qreq->u ?? $qreq->reviewer, $viewer, $prow);
+        $viewer->set_overrides($overrides);
         if (!$u->isPC) {
             return JsonResult::make_permission_error();
         }
-        $scope = $qreq->is_post() ? ($u !== $user ? TokenScope::S_PREF_ADMIN : TokenScope::S_PREF_WRITE) : TokenScope::S_PREF_READ;
-        if ($prow ? !$u->scope_allows_some($scope) : !$u->scope_allows($scope, $prow)) {
+        $scope = $qreq->is_post() ? ($u !== $viewer ? TokenScope::S_PREF_ADMIN : TokenScope::S_PREF_WRITE) : TokenScope::S_PREF_READ;
+        if ($prow ? !$viewer->scope_allows_some($scope) : !$viewer->scope_allows($scope, $prow)) {
             return JsonResult::make_scope_error($qreq, $scope);
         }
 
@@ -21,7 +21,7 @@ class Preference_API {
             if (!isset($qreq->pref)) {
                 return JsonResult::make_missing_error("pref")->set_response_code(200);
             }
-            $postpref = Preference_AssignmentParser::parse_check($qreq->pref, $user->conf);
+            $postpref = Preference_AssignmentParser::parse_check($qreq->pref, $viewer->conf);
             if (is_string($postpref)) {
                 return JsonResult::make_parameter_error("pref", $postpref)->set_response_code(200);
             }
@@ -39,8 +39,8 @@ class Preference_API {
             }
             if ($postpref
                 && $fr->prow
-                && $user->can_edit_preference_for($fr->prow, $u)) {
-                $postpref->save($fr->prow->paperId, $u->contactId, [$user->conf, "qe"]);
+                && $viewer->can_edit_preference_for($fr->prow, $u)) {
+                $postpref->save($fr->prow->paperId, $u->contactId, [$viewer->conf, "qe"]);
             }
             $jr = new JsonResult(["ok" => false]);
             if ($postpref) {
@@ -50,14 +50,14 @@ class Preference_API {
         }
 
         $jr = null;
-        if ($postpref && $user->can_edit_preference_for($prow, $u)) {
-            $postpref->save($prow->paperId, $u->contactId, [$user->conf, "qe"]);
+        if ($postpref && $viewer->can_edit_preference_for($prow, $u)) {
+            $postpref->save($prow->paperId, $u->contactId, [$viewer->conf, "qe"]);
             $prow->load_preferences();
         } else if ($postpref) {
-            $jr = JsonResult::make_error(200, Preference_AssignmentParser::cannot_edit_preference_message($user, $prow, $u));
+            $jr = JsonResult::make_error(200, Preference_AssignmentParser::cannot_edit_preference_message($viewer, $prow, $u));
         }
         $jr = $jr ?? JsonResult::make_ok();
-        if ($user->view_preference_state($prow) >= ($u === $user ? Contact::VIEWPREF_OWN : Contact::VIEWPREF_ALL)) {
+        if ($viewer->view_preference_state($prow) >= ($u === $viewer ? Contact::VIEWPREF_OWN : Contact::VIEWPREF_ALL)) {
             $pf = $prow->preference($u);
             $jr->set("value", $pf->exists() ? $pf->unparse() : "");
             $jr->set("pref", $pf->preference);
