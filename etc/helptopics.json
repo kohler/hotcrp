@@ -188,6 +188,51 @@
         "itemid": 5
     },
     {
+        "name": "chair/revisions", "order": 600,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": -1
+    },
+    {
+        "name": "chair/revisions/decisiontype", "order": 10,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 1
+    },
+    {
+        "name": "chair/revisions/automatictag", "order": 20,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 2
+    },
+    {
+        "name": "chair/revisions/submissionclass", "order": 30,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 3
+    },
+    {
+        "name": "chair/revisions/resubmissiondeadline", "order": 40,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 4
+    },
+    {
+        "name": "chair/revisions/submissionform", "order": 50,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 5
+    },
+    {
+        "name": "chair/revisions/submissionsiteopenorm", "order": 60,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 6
+    },
+     {
+        "name": "chair/revisions/revisionupload", "order": 70,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 7
+    },
+     {
+        "name": "chair/revisions/revisionreview", "order": 80,
+        "print_function": "ChairsGuide_HelpTopic::print_revisions",
+        "itemid": 8
+    },
+    {
         "name": "search", "title": "Search",
         "description": "<0>About paper searching.",
         "print_function": "Search_HelpTopic::print",
