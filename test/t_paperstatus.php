@@ -1023,6 +1023,44 @@ class PaperStatus_Tester {
         $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
+    function test_freeze_revive_as_draft_denied() {
+        // under sub_freeze, withdrawing a submitted paper and reviving it as
+        // a draft is an unsubmit, and is refused like a direct unsubmit
+        $prow = $this->make_author_paper("Frozen revive as draft");
+        $pid = $prow->paperId;
+        $submitted_at = $prow->timeSubmitted;
+        xassert_gt($submitted_at, 0);
+
+        $old_sub_freeze = $this->conf->setting("sub_freeze");
+        $this->conf->save_refresh_setting("sub_freeze", 1);
+        xassert($this->conf->unnamed_submission_round()->freeze);
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert(!$this->u_estrin->can_edit_paper($prow));
+        xassert(!$this->u_estrin->can_unsubmit_paper($prow));
+        xassert($this->u_estrin->can_withdraw_paper($prow));
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => true]]));
+        xassert_eqq($this->conf->checked_paper_by_id($pid)->timeSubmitted, -$submitted_at);
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false, "submitted" => false]]));
+        xassert($ps->has_error());
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_gt($p->timeWithdrawn, 0);
+        xassert_eqq($p->timeSubmitted, -$submitted_at);
+
+        // reviving as submitted restores the frozen submission unchanged
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["id" => $pid, "status" => (object) ["withdrawn" => false]]));
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert_eqq($p->timeWithdrawn, 0);
+        xassert_eqq($p->timeSubmitted, $submitted_at);
+        xassert(!$this->u_estrin->can_edit_paper($p));
+
+        $this->conf->save_refresh_setting("sub_freeze", $old_sub_freeze);
+    }
+
     function test_resubmission_deadline() {
         // a submitted paper and a draft, both created before any deadline passes
         $submitted = $this->make_author_paper("Resubmission window, submitted");

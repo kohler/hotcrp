@@ -726,7 +726,7 @@ final class PaperStatus extends MessageSet {
         }
 
         // check and change submitted status
-        $old_submitted = $this->prow->base_prop("timeSubmitted") > 0;
+        $old_submitted = $this->prow->timeSubmitted > 0;
         $pj_submitted = $pj->status->submitted
             && (!$this->has_error() || $old_submitted);
 
