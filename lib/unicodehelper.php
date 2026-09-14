@@ -538,7 +538,7 @@ class UnicodeHelper {
                 // the last break point in the line, dropping the partial word;
                 // with none (a single word wider than `$len`) the hard cut at
                 // `$len` stands.
-                $line = preg_replace('/(?:\pZ|\s)+(?:(?!\pZ|\s)\X)*\z/u', "", $line, 1);
+                $line = preg_replace('/(?:\pZ|\s)+(?:(?!\pZ|\s)\X)*+\z/u', "", $line, 1);
             } else {
                 // The cut falls at a word boundary; just drop trailing space.
                 $line = preg_replace('/(?:\pZ|\s)+\z/u', "", $line, 1);

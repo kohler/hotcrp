@@ -402,7 +402,7 @@ class Text {
         if (!is_valid_utf8($text)) {
             $text = convert_to_utf8($text);
         }
-        $words = preg_split('/(?:\s|\p{Zs})++/us', $text, -1, PREG_SPLIT_NO_EMPTY);
+        $words = preg_split('/(?:\s|\pZ)++/us', $text, -1, PREG_SPLIT_NO_EMPTY);
         if (empty($words)) {
             return TextPregexes::make_empty($text);
         }
@@ -415,14 +415,14 @@ class Text {
             $r = preg_quote($word);
             if (strpos($word, "*") !== false) {
                 $tail = $i + 1 < $nwords
-                    ? '(?=\s|\p{Zs})'
+                    ? '(?=\s|\pZ)'
                     : ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
                 $r = self::one_star_text_regex($r, true, $tail);
             }
             $utf8s[] = $r;
         }
         $preg_utf8 = ($letnum_first ? self::UTF8_INITIAL_NONLETTERDIGIT : "")
-            . join("(?:\\s|\\p{Zs})++", $utf8s)
+            . join("(?:\\s|\\pZ)++", $utf8s)
             . ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
 
         if (is_usascii($text)) {
@@ -483,7 +483,7 @@ class Text {
             $out .= $seg;
             if ($i === 0 && $seg === "") {
                 // initial star: ensure it starts at a word boundary
-                $out .= $utf8 ? '(?<=\A|\s|\p{Zs})' : '(?<=\A|\s)';
+                $out .= $utf8 ? '(?<=\A|\s|\pZ)' : '(?<=\A|\s)';
             }
             if ($i === $nlitseg - 1) {
                 break;
@@ -491,7 +491,7 @@ class Text {
             $next = $litseg[$i + 1];
             if ($next === "") {
                 // trailing star: no following literal to protect
-                $out .= $utf8 ? "[^\\s\\p{Zs}]*+" : "\\S*+";
+                $out .= $utf8 ? "[^\\s\\pZ]*+" : "\\S*+";
                 break;
             }
             // unrolled `\S*` that stops before the next literal. The guard
@@ -502,12 +502,12 @@ class Text {
             $boundary = $i + 2 === $nlitseg ? $tail : "";
             if ($ch === $next && $boundary === "") {
                 $out .= $utf8
-                    ? "[^{$ch}\\s\\p{Zs}]*+"
+                    ? "[^{$ch}\\s\\pZ]*+"
                     : "[^{$ch}\\s]*+";
             } else {
                 $neg = "(?!{$next}{$boundary})";
                 $out .= $utf8
-                    ? "[^{$ch}\\s\\p{Zs}]*+(?:{$neg}{$ch}[^{$ch}\\s\\p{Zs}]*+)*+"
+                    ? "[^{$ch}\\s\\pZ]*+(?:{$neg}{$ch}[^{$ch}\\s\\pZ]*+)*+"
                     : "[^{$ch}\\s]*+(?:{$neg}{$ch}[^{$ch}\\s]*+)*+";
             }
         }
