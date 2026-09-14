@@ -391,8 +391,8 @@ class Text {
     }
 
 
-    const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|(?!\pL|\pN)\X)';
-    const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL)\X)';
+    const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|[^\pL\pN\pM]\pM*+)';
+    const UTF8_INITIAL_NONLETTER = '(?:\A|[^\pL\pM]\pM*+)';
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
@@ -583,7 +583,7 @@ class Text {
         if ($clean_initial_nonletter) {
             for ($i = 1; $i < count($s); $i += 2) {
                 if ($s[$i] !== ""
-                    && preg_match('/\A((?!\pL|\pN)\X)(.*)\z/us', $s[$i], $m)) {
+                    && preg_match('/\A([^\pL\pN\pM]\pM*+)(.*)\z/us', $s[$i], $m)) {
                     $s[$i - 1] .= $m[1];
                     $s[$i] = $m[2];
                 }
