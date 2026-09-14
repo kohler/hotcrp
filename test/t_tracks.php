@@ -146,6 +146,26 @@ class Tracks_Tester {
         $this->conf->save_refresh_setting("tracks", null);
     }
 
+    function test_admin_search_chair_tag() {
+        // a track can be defined on a chair-only tag, which its
+        // administrators cannot view
+        xassert_assign($this->u_chair, "paper,tag\n1-3,~~sys\n", true);
+        $this->conf->save_refresh_setting("tracks", 1, '{"~~sys":{"admin":"+red"}}');
+
+        $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        xassert($u_jon->is_track_manager());
+        xassert(!$u_jon->can_view_tag_somewhere("~~sys"));
+
+        // ensure the search runs its SQL filter rather than the
+        // rate-limit fallback that filters only in PHP
+        $this->conf->qe("delete from ContactCounter where contactId=?", $u_jon->contactId);
+        $u_jon->invalidate_contact_counter();
+        xassert_search($u_jon, "admin:me", "1 2 3");
+
+        $this->conf->save_refresh_setting("tracks", null);
+        xassert_assign($this->u_chair, "paper,tag\n1-3,-~~sys\n", true);
+    }
+
     function test_admin_search() {
         $this->conf->save_refresh_setting("tracks", 1, '{"red":{"admin":"+red"}}');
 

@@ -74,7 +74,7 @@ class TagSearchMatcher {
     function add_check_tag($tag) {
         $xtag = $tag;
         $twiddle = strpos($xtag, "~");
-        $star = strpos($xtag, $twiddle ? : 0);
+        $star = strpos($xtag, "*", $twiddle ? : 0);
 
         $checktag = substr($xtag, (int) $twiddle);
         $tagger = new Tagger($this->user);

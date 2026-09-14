@@ -56,7 +56,7 @@ class Admin_SearchTerm extends SearchTerm {
         }
         $where = [];
         if ($this->flags & self::F_TRACKMGR) {
-            $tsm = new TagSearchMatcher($this->user);
+            $tsm = new TagSearchMatcher($this->user->conf->root_user());
             foreach ($this->match as $u) {
                 if (($mttl = $u->managed_track_tags()) === null) {
                     return "true";
