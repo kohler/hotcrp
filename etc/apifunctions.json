@@ -30,7 +30,7 @@
     {   "name": "job", "get": true, "auth": false, "session": false, "function": "Job_API::job"   },
     {   "name": "jserror", "post": true, "auth": false, "session": false, "function": "Error_API::jserror"   },
     {   "name": "lead", "get": true, "post": true, "paper": true, "function": "PaperPC_API::lead_api"   },
-    {   "name": "mailtext", "get": true, "function": "Mail_API::mailtext"   },
+    {   "name": "mailtext", "get": true, "function": "Mail_API::mailtext", "scope": "other:read"   },
     {   "name": "manager", "get": true, "post": true, "paper": true, "function": "PaperPC_API::manager_api"   },
     {   "name": "namedformula", "get": true, "function": "SearchConfig_API::namedformula", "scope": "other:read"   },
     {   "name": "namedformula", "post": true, "function": "SearchConfig_API::save_namedformula", "scope": "other:write"   },

@@ -1134,7 +1134,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "submeta:read"
+                            "submeta:admin"
                         ]
                     },
                     {
@@ -1209,7 +1209,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "submeta:write"
+                            "submeta:admin"
                         ]
                     },
                     {
@@ -1306,7 +1306,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "submeta:write"
+                            "submeta:admin"
                         ]
                     },
                     {
@@ -10280,7 +10280,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "settings:read"
+                            "other:read"
                         ]
                     },
                     {

@@ -136,7 +136,7 @@ optionally `given_name`, `family_name`, and `affiliation`), a submission with
 `p`, and one of its reviews with `r`; `reason` fills the `%REASON%` keyword and
 `width` sets the line-wrapping width.
 
-* scope settings:read
+* scope other:read
 * param ?template string: Name of the template to expand, or `all` to expand
   every available template.
 * param ?p pid: Submission supplying context for paper-specific keywords.

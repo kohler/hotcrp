@@ -413,7 +413,7 @@ Retrieve the share link for a submission. This link can be accessed by users not
 signed in to HotCRP; it grants view-only access to the submission and its
 documents. Only authors and submission administrators can fetch the share link.
 
-* scope submeta:read
+* scope submeta:admin
 * response ?url: The share link
 * response ?token author_view_token: Token for this share link
 * response ?token_type string: `"author_view"`
@@ -442,7 +442,7 @@ whether a link should be created; it must be one of:
 
 Only authors and submission administrators can modify a share link.
 
-* scope submeta:write
+* scope submeta:admin
 * param !share share_action
 * param ?expires_in integer
 * response !token ?author_view_token
@@ -457,5 +457,5 @@ Only authors and submission administrators can modify a share link.
 
 Delete the share link for a submission, if any has been created.
 
-* scope submeta:write
+* scope submeta:admin
 * response !token null
