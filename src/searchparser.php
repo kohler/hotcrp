@@ -360,7 +360,24 @@ class SearchParser {
                 $kwpos1 = $this->pos;
                 $kw = $this->shift_keyword();
                 $pos1 = $this->pos;
-                $text = $this->shift_balanced_parens(null, true);
+                if ($kw !== "" && $this->starts_with("(")) {
+                    // `kw:(...)`: parse the parenthesized expression in place.
+                    // The `(` expression carries the keyword until it completes;
+                    // see SearchExpr::complete_paren().
+                    if ($nops >= $max_ops) {
+                        return null;
+                    }
+                    $this->shift_past("(");
+                    $cura = SearchExpr::make_op_start($opset->lookup("("), $pos1, $this->last_pos, $cura);
+                    $cura->kword = $kw;
+                    $cura->kwpos1 = $kwpos1;
+                    ++$parens;
+                    ++$nops;
+                    continue;
+                }
+                // ensure we don't spin on `]}`
+                $allow_empty = $kw !== "" || (!$this->starts_with("]") && !$this->starts_with("}"));
+                $text = $this->shift_balanced_parens(null, $allow_empty);
                 $pos2 = $this->last_pos;
                 $cura = SearchExpr::make_keyword($kw, $text, $kwpos1, $pos1, $pos2, $cura);
                 continue;
@@ -370,7 +387,7 @@ class SearchParser {
                 if ($parens === 0) {
                     continue;
                 }
-                $cura = $cura->complete_paren($pos1, $pos2);
+                $cura = $cura->complete_paren($this->str, $pos1, $pos2);
                 --$parens;
                 continue;
             }
@@ -386,7 +403,7 @@ class SearchParser {
                     $cura = SearchExpr::make_simple("", $pos1, $cura);
                 }
                 while ($cura->parent && $cura->parent->op->precedence >= $op->precedence) {
-                    $cura = $cura->complete($pos1);
+                    $cura = $cura->complete($this->str, $pos1);
                 }
             }
 
@@ -401,7 +418,7 @@ class SearchParser {
             ++$nops;
         }
         if ($cura) {
-            while (($nexta = $cura->complete($this->last_pos)) !== $cura) {
+            while (($nexta = $cura->complete($this->str, $this->last_pos)) !== $cura) {
                 $cura = $nexta;
             }
         }

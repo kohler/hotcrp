@@ -15,7 +15,10 @@ class SearchExpr {
     public $pos2;
     /** @var ?SearchOperator */
     public $op;
-    /** @var ?list<SearchExpr> */
+    /** @var ?list<SearchExpr>
+     * For operator expressions, the operands. For a keyword expression whose
+     * text is a parenthesized expression, such as `ti:(a OR b)`, a
+     * single-element list holding the pre-parsed `(` expression. */
     public $child;
     /** @var ?SearchExpr */
     public $parent;
@@ -95,42 +98,68 @@ class SearchExpr {
         return $this->op && $this->op->type === "(" && empty($this->child);
     }
 
-    /** @param int $pos
+    /** @param string $str
      * @return SearchExpr */
-    function complete($pos) {
+    private function complete_keyword_paren($str) {
+        // `$this` is a complete `(` expression carrying a keyword, as parsed
+        // from `kw:(...)`. Return the corresponding keyword expression, with
+        // `$this` as its pre-parsed child.
+        $text = substr($str, $this->pos1, $this->pos2 - $this->pos1);
+        $sa = self::make_keyword($this->kword, $text, $this->kwpos1, $this->pos1, $this->pos2, $this->parent);
+        $sa->child = [$this];
+        $this->kword = null;
+        $this->kwpos1 = $this->pos1;
+        $this->parent = $sa;
+        return $sa;
+    }
+
+    /** @param string $str
+     * @param int $pos
+     * @return SearchExpr */
+    function complete($str, $pos) {
         if (!$this->is_complete()) {
             $this->pos2 = $pos;
             $this->child[] = self::make_simple("", $pos);
         }
-        if (($p = $this->parent)) {
-            $p->child[] = $this;
-            $p->pos2 = $this->pos2;
+        $a = $this;
+        if ($this->kword !== null && $this->op) {
+            $a = $this->complete_keyword_paren($str);
+        }
+        if (($p = $a->parent)) {
+            $p->child[] = $a;
+            $p->pos2 = $a->pos2;
             return $p;
         }
-        return $this;
+        return $a;
     }
 
-    /** @param int $pos1
+    /** @param string $str
+     * @param int $pos1
      * @param int $pos2
      * @return SearchExpr */
-    function complete_paren($pos1, $pos2) {
+    function complete_paren($str, $pos1, $pos2) {
         $a = $this;
         $first = $a->op && $a->op->type === "(" && !empty($a->child);
         while (!$a->op || $a->op->type !== "(" || $first) {
-            $a = $a->complete($pos1);
+            $a = $a->complete($str, $pos1);
             $first = false;
         }
         $a->pos2 = $pos2;
         if (empty($a->child)) {
             $a->child[] = self::make_simple("", $pos2);
         }
+        if ($a->kword !== null) {
+            $a = $a->complete_keyword_paren($str);
+        }
         return $a;
     }
 
     /** @return list<SearchExpr> */
     function flattened_children() {
-        if (!$this->op || $this->op->unary()) {
-            return $this->child ?? [];
+        if (!$this->op) {
+            return [];
+        } else if ($this->op->unary()) {
+            return $this->child;
         }
         $a = [];
         foreach ($this->child as $ch) {

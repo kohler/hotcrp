@@ -248,6 +248,9 @@ class SearchQueryInfo {
 }
 
 class PaperSearch extends MessageSet {
+    /** Maximum nesting of default-keyword groups like `ti:(...)` */
+    const MAX_KEYWORD_DEPTH = 40;
+
     /** @var Conf
      * @readonly */
     public $conf;
@@ -779,7 +782,7 @@ class PaperSearch extends MessageSet {
      * @param int $depth
      * @return ?SearchTerm */
     private function _parse_atom($sa, $str, $scope, $depth) {
-        if (!$sa) {
+        if (!$sa || $depth >= self::MAX_KEYWORD_DEPTH) {
             return null;
         } else if ($sa->op) {
             $child = [];
@@ -789,13 +792,16 @@ class PaperSearch extends MessageSet {
             $st = SearchTerm::combine_in($sa->op, $this->_string_context, ...$child);
         } else if ($sa->kword === null && $sa->text === "") {
             $st = new True_SearchTerm;
-        } else if ($sa->kword !== null
-                   && str_starts_with($sa->text, "(")
+        } else if ($sa->child !== null
                    && ($kwdef = $this->conf->search_keyword($sa->kword, $this->user))
                    && !($kwdef->allow_parens ?? false)) {
-            // Search like `ti:(foo OR bar)` adds a default keyword; must reparse.
-            $st = $this->_search_expression($str, new SearchScope($sa->pos1, $sa->pos2, $sa), $depth + 1);
+            // Search like `ti:(foo OR bar)` adds a default keyword
+            $this->_warn_keyword_group_tail($sa, $str);
+            $st = $this->_parse_atom($sa->child[0], $str, new SearchScope($sa->pos1, $sa->pos2, $sa), $depth + 1);
         } else {
+            if ($sa->child !== null) {
+                $this->_warn_keyword_group_tail($sa, $str);
+            }
             $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2, $this->_string_context);
             $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
         }
@@ -805,12 +811,29 @@ class PaperSearch extends MessageSet {
         return $st;
     }
 
+    /** @param SearchExpr $sa
+     * @param string $str */
+    private function _warn_keyword_group_tail($sa, $str) {
+        // `kw:(...)` ends at its close paren; warn if text follows directly,
+        // as in `f:(a)+2`
+        $pos2 = $sa->pos2;
+        $len = strlen($str);
+        if ($pos2 < $len
+            && SearchParser::space_len($str, $pos2, $len) === 0
+            && !in_array($str[$pos2], [")", "]", "}"], true)) {
+            $pos3 = SearchParser::span_balanced_parens($str, $pos2, null, true);
+            $tail = substr($str, $pos2, $pos3 - $pos2);
+            $sw = SearchWord::make_kwarg($tail, $pos2, $pos2, $pos3, $this->_string_context);
+            $this->lwarning($sw, "<0>Expected space after parentheses");
+        }
+    }
+
     /** @param string $str
      * @param ?SearchScope $scope
      * @param int $depth
      * @return ?SearchTerm */
     private function _search_expression($str, $scope = null, $depth = 0) {
-        if ($depth >= 40) {
+        if ($depth >= self::MAX_KEYWORD_DEPTH) {
             return null;
         }
         $scope = $scope ?? new SearchScope(0, strlen($str), null);
@@ -833,7 +856,7 @@ class PaperSearch extends MessageSet {
      * @param int $depth
      * @return string */
     static private function _canonicalize_atom($sa, $type, $qt, $conf, $depth) {
-        if (!$sa) {
+        if (!$sa || $depth >= self::MAX_KEYWORD_DEPTH) {
             return "";
         }
         if ($sa->op) {
@@ -874,12 +897,11 @@ class PaperSearch extends MessageSet {
         if ($sa->kword === null && $sa->text === "") {
             return "";
         }
-        if ($sa->kword !== null
-            && str_starts_with($sa->text, "(")
+        if ($sa->child !== null
             && ($kwdef = $conf->search_keyword($sa->kword))
             && !($kwdef->allow_parens ?? false)) {
-            // Search like `ti:(foo OR bar)` adds a default keyword; must recanonicalize.
-            $s = self::_canonical_expression($sa->text, $type, "n", $conf, $depth + 1);
+            // Search like `ti:(foo OR bar)` adds a default keyword; recanonicalize
+            $s = self::_canonicalize_atom($sa->child[0], $type, "n", $conf, $depth + 1);
             if (!str_starts_with($s, "(")) {
                 $s = "({$s})";
             }
@@ -896,16 +918,13 @@ class PaperSearch extends MessageSet {
         return "{$qt}:{$s}";
     }
 
-    static private function _canonical_expression($str, $type, $qt, Conf $conf, $depth = 0) {
-        if ($depth >= 40) {
-            return "";
-        }
+    static private function _canonical_expression($str, $type, $qt, Conf $conf) {
         $splitter = new SearchParser($str);
         $sa = $splitter->parse_expression(null, $type === "all" ? "SPACE" : "SPACEOR");
         if ($type === "none" && $sa) {
             $sa = SearchExpr::combine("not", $sa);
         }
-        return self::_canonicalize_atom($sa, $type, $qt, $conf, $depth);
+        return self::_canonicalize_atom($sa, $type, $qt, $conf, 0);
     }
 
     /** @param ?string $qa

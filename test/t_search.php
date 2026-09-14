@@ -53,6 +53,10 @@ class Search_Tester {
                     "ti:foo OR (#bar ti:(foo bar))");
         xassert_eqq(PaperSearch::canonical_query("ti:foo OR bar ti:(ab:foo)", "", "", "tag", $this->conf),
                     "ti:foo OR (#bar ti:(ab:foo))");
+        xassert_eqq(PaperSearch::canonical_query("", "", "ti:(a b)", "", $this->conf),
+                    "NOT ti:(a b)");
+        xassert_eqq(PaperSearch::canonical_query("ti:(a)b", "", "", "", $this->conf),
+                    "ti:(a) b");
     }
 
     function test_sort_etag() {
@@ -204,9 +208,8 @@ class Search_Tester {
         $splitter = new SearchParser($s);
         xassert_eqq($splitter->parse_expression(null, "SPACE", 1024), null);
 
-        // nested keyword groups are recanonicalized up to a depth limit;
-        // beyond it the query is refused rather than reparsed (which would be
-        // quadratic in depth x length)
+        // nested keyword groups are pre-parsed, but recanonicalized only up
+        // to a depth limit; beyond it the query is refused
         $s = "ti:x";
         for ($i = 0; $i < 39; ++$i) {
             $s = "ti:({$s})";
@@ -241,6 +244,84 @@ class Search_Tester {
         xassert_eqq(json_encode($a->child[0]->child[0]->child[0]->unparse_json()), '{"op":"(","child":[{"op":"space","child":["OveMer:>3","OveMer:<2"]}]}');
         xassert_eqq(json_encode($a->child[0]->child[0]->child[1]->unparse_json()), '{"op":"(","child":[{"op":"space","child":["OveMer:>4","OveMer:<3"]}]}');
         xassert_eqq(json_encode($a->child[1]->unparse_json()), '"#r2"');
+    }
+
+    /** @suppress PhanTypeArraySuspiciousNullable */
+    function test_search_splitter_keyword_parens() {
+        // `kw:(...)` is a keyword expression whose child is the pre-parsed group
+        $s = "x ti:(a OR b) y";
+        $a = (new SearchParser($s))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"space","child":[{"op":"space","child":["x","ti:(a OR b)"]},"y"]}');
+        $k = $a->child[0]->child[1];
+        xassert_eqq($k->kword, "ti");
+        xassert_eqq($k->text, "(a OR b)");
+        xassert_eqq([$k->kwpos1, $k->pos1, $k->pos2], [2, 5, 13]);
+        xassert_eqq(count($k->child), 1);
+        xassert_eqq(json_encode($k->child[0]->unparse_json($s)), '{"op":"(","child":[{"op":"or","child":["a","b"],"context":"a OR b"}],"context":"(a OR b)"}');
+        xassert_eqq($k->child[0]->parent, $k);
+        xassert_eqq($k->child[0]->kwpos1, 5);
+
+        // nested groups are pre-parsed all the way down
+        $a = (new SearchParser("ti:(ab:(au:(x)))"))->parse_expression();
+        xassert_eqq($a->text, "(ab:(au:(x)))");
+        $k = $a->child[0]->child[0];
+        xassert_eqq($k->kword, "ab");
+        $k = $k->child[0]->child[0];
+        xassert_eqq($k->kword, "au");
+        xassert_eqq(json_encode($k->child[0]->unparse_json()), '{"op":"(","child":["x"]}');
+
+        // the group ends at its close paren; following text is a new term
+        $a = (new SearchParser("ti:(a)b c"))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"space","child":[{"op":"space","child":["ti:(a)","b"]},"c"]}');
+        $k = $a->child[0]->child[0];
+        xassert_eqq($k->text, "(a)");
+        xassert_eqq($k->pos2, 6);
+        xassert_eqq(json_encode($k->child[0]->unparse_json()), '{"op":"(","child":["a"]}');
+
+        // unterminated group (text ends at the last token)
+        $s = "ti:(a b ";
+        $a = (new SearchParser($s))->parse_expression();
+        xassert_eqq($a->text, "(a b");
+        xassert_eqq($a->pos2, 7);
+        xassert_eqq(json_encode($a->child[0]->unparse_json($s)), '{"op":"(","child":[{"op":"space","child":["a","b"],"context":"a b"}],"context":"(a b"}');
+        $a = (new SearchParser("ti:("))->parse_expression();
+        xassert_eqq($a->text, "(");
+        xassert_eqq(json_encode($a->child[0]->unparse_json()), '{"op":"(","child":[""]}');
+
+        // plain keywords have no child
+        $a = (new SearchParser("ti:a"))->parse_expression();
+        xassert_eqq($a->child, null);
+    }
+
+    function test_keyword_group_tail_warning() {
+        $u = $this->u_root;
+        $re = '/Expected space/';
+        foreach (["ti:(a)b", "f:(OveMer)+2", "NOT f:(OveMer)-1", "ti:(ab:(c)d)"] as $q) {
+            $s = new PaperSearch($u, $q);
+            $s->paper_ids();
+            xassert_match($s->full_feedback_text(), $re);
+        }
+        foreach (["ti:(a) b", "(x OR ti:(a))", "[ti:(a)]", "f:((OveMer)+2)", "ti:(a", "ti:(a OR b)"] as $q) {
+            $s = new PaperSearch($u, $q);
+            $s->paper_ids();
+            xassert(!preg_match($re, $s->full_feedback_text()));
+        }
+    }
+
+    /** @suppress PhanTypeArraySuspiciousNullable */
+    function test_search_splitter_stray_brackets() {
+        // unmatched `]` and `}` are literal words, like `[a]` and `{a}`
+        $a = (new SearchParser("a]b"))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"space","child":["a","]b"]}');
+        $a = (new SearchParser("a } OR b"))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"or","child":[{"op":"space","child":["a","}"]},"b"]}');
+        $a = (new SearchParser("-]a"))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"not","child":["]a"]}');
+        $a = (new SearchParser("ti:(a] b)"))->parse_expression();
+        xassert_eqq($a->text, "(a] b)");
+        xassert_eqq(json_encode($a->child[0]->unparse_json()), '{"op":"(","child":[{"op":"space","child":[{"op":"space","child":["a","]"]},"b"]}]}');
+        $a = (new SearchParser("]]]"))->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '"]]]"');
     }
 
     function test_equal_quote() {
