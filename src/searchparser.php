@@ -116,7 +116,7 @@ class SearchParser {
 
     /** @return string */
     function shift_keyword() {
-        if (preg_match('/\G[_a-zA-Z0-9][-_.a-zA-Z0-9]*(?=:)/s', $this->str, $m, 0, $this->pos)
+        if (preg_match('/\G[_a-zA-Z0-9][-_.a-zA-Z0-9]*+(?=:)/s', $this->str, $m, 0, $this->pos)
             && $this->pos + strlen($m[0]) < $this->len) {
             $this->set_span_and_pos(strlen($m[0]) + 1);
             return $m[0];
@@ -190,16 +190,22 @@ class SearchParser {
      * @param bool $allow_empty
      * @return int */
     static function span_balanced_parens($str, $pos = 0, $endchars = null, $allow_empty = false) {
-        $pstack = "";
-        $plast = "";
+        $pstack = []; // expected close brackets, innermost last
         $quote = false;
         $startpos = $allow_empty ? -1 : $pos;
         $len = strlen($str);
         $endsp = $endchars === null || strpos($endchars, " ") !== false;
-        while ($pos < $len) {
+        // `$cspnch` lets us skip to the next character that can change parser state
+        $cspnch = ($endsp ? "\x09\x0A\x0B\x0C\x0D\x20\xC2\xE1\xE3" : "")
+            . "\xE2\"([{}])\\" . ($endchars ?? "");
+        while (true) {
+            $pos += strcspn($str, $cspnch, $pos);
+            if ($pos >= $len) {
+                break;
+            }
             $ch = $str[$pos];
             // stop when done
-            if ($plast === ""
+            if (empty($pstack)
                 && !$quote
                 && (($endsp && self::space_len($str, $pos, $len) > 0)
                     || ($endchars !== null && strpos($endchars, $ch) !== false))) {
@@ -220,22 +226,17 @@ class SearchParser {
                     $quote = false;
                 }
             } else if ($ch === "(") {
-                $pstack .= $plast;
-                $plast = ")";
+                $pstack[] = ")";
             } else if ($ch === "[") {
-                $pstack .= $plast;
-                $plast = "]";
+                $pstack[] = "]";
             } else if ($ch === "{") {
-                $pstack .= $plast;
-                $plast = "}";
+                $pstack[] = "}";
             } else if ($ch === ")" || $ch === "]" || $ch === "}") {
                 if ($pos === $startpos) {
                     ++$startpos;
                 } else {
                     do {
-                        $pcleared = $plast;
-                        $plast = (string) substr($pstack, -1);
-                        $pstack = (string) substr($pstack, 0, -1);
+                        $pcleared = array_pop($pstack) ?? "";
                     } while ($ch !== $pcleared && $pcleared !== "");
                     if ($pcleared === "") {
                         break;

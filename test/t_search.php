@@ -204,14 +204,17 @@ class Search_Tester {
         $splitter = new SearchParser($s);
         xassert_eqq($splitter->parse_expression(null, "SPACE", 1024), null);
 
+        // nested keyword groups are recanonicalized up to a depth limit;
+        // beyond it the query is refused rather than reparsed (which would be
+        // quadratic in depth x length)
         $s = "ti:x";
-        for ($i = 0; $i < 500; ++$i) {
+        for ($i = 0; $i < 39; ++$i) {
             $s = "ti:({$s})";
         }
         xassert_eqq(PaperSearch::canonical_query($s, "", "", "", $this->conf), $s);
 
         $s = "ti:x";
-        for ($i = 0; $i < 1025; ++$i) {
+        for ($i = 0; $i < 40; ++$i) {
             $s = "ti:({$s})";
         }
         xassert_neqq(PaperSearch::canonical_query($s, "", "", "", $this->conf), $s);

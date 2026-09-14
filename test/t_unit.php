@@ -1159,6 +1159,24 @@ class Unit_Tester {
         xassert_eqq($x, "(b(c(d(e) ) ) )");
     }
 
+    function test_span_balanced_parens_quotes() {
+        // a backslash escapes the next byte inside a quote, so an escaped `\"`
+        // must not be read as the closing quote
+        xassert_eqq(SearchParser::span_balanced_parens('"a\"b" c'), 6);
+        xassert_eqq(SearchParser::span_balanced_parens('"a\"b c'), 7);
+        // escaped backslash, then the quote really does close
+        xassert_eqq(SearchParser::span_balanced_parens('"a\\\\" b'), 5);
+        // brackets inside a quote are literal, not stack operations
+        xassert_eqq(SearchParser::span_balanced_parens('a("x)y")b c'), 9);
+        // a curly quote is translated to `"` and closes the quote
+        xassert_eqq(SearchParser::span_balanced_parens("\"a\u{201C}b\" c"), 9);
+        // a backslash outside a quote is an ordinary character
+        xassert_eqq(SearchParser::span_balanced_parens('a(b\)c) d'), 6);
+
+        xassert_array_eqq(SearchParser::split_balanced_parens('"a\"b" cd'), ['"a\"b"', "cd"]);
+        xassert_array_eqq(SearchParser::split_balanced_parens('a(b\)c) d'), ['a(b\)c', ")", "d"]);
+    }
+
     function test_safe_parenthesize() {
         xassert_eqq(SearchParser::safe_parenthesize(""), "(*)");
         xassert_eqq(SearchParser::safe_parenthesize("("), "(())");

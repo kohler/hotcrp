@@ -442,6 +442,13 @@ class Search_Page {
             $user->escape();
         }
 
+        // check search permission before canonicalizing: canonicalization can
+        // be expensive on hostile input, so refuse a user who cannot search at
+        // all first (it depends only on the raw request, not the canonical query)
+        if (!PaperSearch::viewable_limits($user, $qreq->t)) {
+            self::not_allowed($user, $qreq);
+        }
+
         // canonicalize request
         assert(!$qreq->ajax);
         if (isset($qreq->default) && $qreq->defaultfn) {
@@ -461,11 +468,6 @@ class Search_Page {
             if ($qreq->q === "(All)") {
                 $qreq->q = "";
             }
-        }
-
-        // paper group
-        if (!PaperSearch::viewable_limits($user, $qreq->t)) {
-            self::not_allowed($user, $qreq);
         }
 
         // paper selection

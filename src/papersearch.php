@@ -810,7 +810,7 @@ class PaperSearch extends MessageSet {
      * @param int $depth
      * @return ?SearchTerm */
     private function _search_expression($str, $scope = null, $depth = 0) {
-        if ($depth >= 512) {
+        if ($depth >= 40) {
             return null;
         }
         $scope = $scope ?? new SearchScope(0, strlen($str), null);
@@ -897,7 +897,7 @@ class PaperSearch extends MessageSet {
     }
 
     static private function _canonical_expression($str, $type, $qt, Conf $conf, $depth = 0) {
-        if ($depth >= 512) {
+        if ($depth >= 40) {
             return "";
         }
         $splitter = new SearchParser($str);
@@ -933,9 +933,8 @@ class PaperSearch extends MessageSet {
         }
         if (count($x) === 1) {
             return preg_replace('/\A\((.*)\)\z/', '$1', $x[0]);
-        } else {
-            return join(" AND ", $x);
         }
+        return join(" AND ", $x);
     }
 
 
