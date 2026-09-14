@@ -465,7 +465,9 @@ class Text {
                 $pos0 = $pos + 2;
                 $cseg = "";
             } else if ($len - $pos > 3
-                       && substr_compare($regex, "\\\\\\*", $pos, 4) === 0) {
+                       && $regex[$pos + 1] === "\\"
+                       && $regex[$pos + 2] === "\\"
+                       && ($regex[$pos + 3] === "\\" || $regex[$pos + 3] === "*")) {
                 $cseg .= substr($regex, $pos0, $pos - $pos0);
                 $pos += 2;
                 $pos0 = $pos;

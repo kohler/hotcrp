@@ -3754,7 +3754,7 @@ class Authorize_Tester {
         $jr = call_api_result("share", $this->bearer_token($this->u_chair, "read"),
             TestQreq::get(["p" => 1]), $prow);
         xassert_eqq($jr->status, 403);
-        $jr = call_api_result("=share", $this->bearer_token($this->u_chair, "submission:admin"),
+        $jr = call_api_result("=share", $this->bearer_token($this->u_chair, "submission:admin paper:read"),
             TestQreq::post(["p" => 1, "share" => 1]), $prow);
         xassert_eqq($jr->status ?? 200, 200);
         xassert_neqq($jr->content["token"] ?? null, null);
@@ -3762,7 +3762,7 @@ class Authorize_Tester {
         $jr = call_api_result("share", $this->bearer_token($this->u_chair, "read"),
             TestQreq::get(["p" => 1]), $prow);
         xassert_eqq($jr->status, 403);
-        $jr = call_api_result("share", $this->bearer_token($this->u_chair, "submission:admin"),
+        $jr = call_api_result("share", $this->bearer_token($this->u_chair, "submission:admin paper:read"),
             TestQreq::get(["p" => 1]), $prow);
         xassert_neqq($jr->content["token"] ?? null, null);
     }

@@ -393,9 +393,8 @@ class Scope_Tester {
         xassert(!isset($resp->content["token"]));
         $this->u_chair->set_scope();
 
-        // submeta:admin scope can fetch, create, rotate, and revoke it via
-        // either route
-        $u_estrin->set_scope("submission:admin");
+        // `submeta:admin paper:read` scope can fetch, create, rotate, revoke
+        $u_estrin->set_scope("submission:admin paper:read");
         $jr = call_api("share", $u_estrin, TestQreq::get(["p" => 1]));
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->token, $salt0);
@@ -413,7 +412,7 @@ class Scope_Tester {
         xassert_eqq($jr->ok, false);
         xassert_eqq($this->share_salt(1), $salt1);
 
-        $u_estrin->set_scope("submission:admin");
+        $u_estrin->set_scope("submission:admin paper:read");
         $jr = call_api("share", $u_estrin, TestQreq::delete(["p" => 1]));
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->token, null);
@@ -552,7 +551,7 @@ class Scope_Tester {
         xassert_eqq(TokenScope::unparse(TokenScope::intersect($s1, $s2)), "tag:read submission:read#p tag:write#p");
 
         xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_WRITE), ["comment:read", "tag:write"]);
-        xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_READ | TokenScope::S_SUB_READ | TokenScope::S_DOC_READ | TokenScope::S_REV_READ | TokenScope::S_PREF_READ), ["paper:read"]);
+        xassert_eqq(TokenScope::unparse_missing_bits(TokenScope::S_CMT_READ | TokenScope::S_TAG_READ | TokenScope::S_SUB_READ | TokenScope::S_DOC_READ | TokenScope::S_REV_READ | TokenScope::S_PREF_READ | TokenScope::S_REACT_READ), ["paper:read"]);
 
         xassert(TokenScope::scope_str_all_openid("openid"));
         xassert(!TokenScope::scope_str_all_openid("openid all"));

@@ -5542,8 +5542,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_pc()
-            && !$rights->is_reviewer()) {
+        if ((!$rights->allow_pc()
+             && !$rights->is_reviewer())
+            || !$rights->scope_allows(TS::S_REACT_READ)) {
             return false;
         }
         if (!$rrow

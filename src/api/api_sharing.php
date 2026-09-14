@@ -6,7 +6,7 @@ class Sharing_API extends MessageSet {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         // Obtaining or modifying the share link requires S_SUB_ADMIN scope,
         // which subsumes perm_allow_edit_paper.
-        if (($fr = $user->perm_scope_allows(TokenScope::S_SUB_ADMIN, $prow)
+        if (($fr = $user->perm_scope_allows(TokenScope::S_SUB_ADMIN | TokenScope::S_DOC_READ | TokenScope::S_REV_READ | TokenScope::S_CMT_READ, $prow)
                    ?? $user->perm_allow_edit_paper($prow))) {
             return Conf::paper_error_json_result($fr);
         }

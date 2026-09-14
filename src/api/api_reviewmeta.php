@@ -54,6 +54,14 @@ class ReviewMeta_API {
     }
 
     static function reviewrating(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        $scope_bits = TokenScope::S_REV_READ
+            | ($qreq->is_getlike() ? TokenScope::S_REACT_READ : TokenScope::S_REACT_WRITE);
+        if (!$qreq->is_getlike() && $qreq->user_rating === "clearall") {
+            $scope_bits |= TokenScope::S_REACT_ADMIN;
+        }
+        if (!$user->scope_allows($scope_bits, $prow)) {
+            return JsonResult::make_scope_error($qreq, $scope_bits);
+        }
         $rrow = self::lookup_review($user, $prow, $qreq->r);
         if ($rrow instanceof JsonResult) {
             return $rrow;
@@ -61,7 +69,7 @@ class ReviewMeta_API {
         $editable = $user->can_rate_review($prow, $rrow);
         if (!$qreq->is_getlike()) {
             if ($qreq->user_rating === "clearall") {
-                if (!$user->can_manage_reviews($prow)) {
+                if (!$user->is_admin($prow)) {
                     return JsonResult::make_permission_error();
                 }
                 $rating = -1;
