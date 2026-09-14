@@ -105,8 +105,7 @@ class TagSearchMatcher {
             if (empty($cids)) {
                 $this->_errors[] = $uid !== null ? "<0>PC member not found" : "<0>No PC member matches ‘{$c}’";
                 return;
-            } else if ((count($cids) > 1 && !$this->_allow_star)
-                       || ($star !== false && $cids !== [$this->user->contactId])) {
+            } else if (count($cids) > 1 && !$this->_allow_star) {
                 $this->_errors[] = "<0>Wildcard tags aren’t allowed here";
                 return;
             } else if ($star === false
