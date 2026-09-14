@@ -337,6 +337,9 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     private function perm_view_document() {
         $viewer = $this->viewer;
         if ($this->paperId < 0) {
+            if (($fr = $viewer->perm_scope_allows(TokenScope::S_DOC_READ))) {
+                return $fr;
+            }
             $vis = $this->opt->visibility();
             if (($vis === PaperOption::VIS_ADMIN && !$viewer->privChair)
                 || ($vis !== PaperOption::VIS_SUB && !$viewer->isPC)) {
