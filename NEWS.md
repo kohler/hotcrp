@@ -1,6 +1,100 @@
 HotCRP NEWS
 ===========
 
+## Version 3.5
+
+* Security updates: This release fixes a number of vulnerabilities, including
+  a large group reported by Milad Nasr with Claude, Anthropic – thanks!
+
+    * Fix a vulnerability, critical for deployments using a contact database,
+      that could misdeliver password reset mails to attacker-chosen mailboxes
+      (GitHub Security Advisory GHSA-8hpm-q65w-xpfv).
+    * Fix a high-severity issue with LDAP sign-in and medium-severity issues
+      with OAuth sign-in (GHSA-hqfx-q434-6rq2).
+    * Fix many medium-severity information exposure bugs (GHSA-ghw2-58rh-vw4w,
+      GHSA-v2fv-53cr-7w9v, GHSA-9cff-2f8h-5hj3).
+    * Fix a high-severity issue with the upload API that could allow
+      inappropriate replacement of previously-uploaded documents
+      (GHSA-6r22-552m-7pv5).
+    * Enforce API token scopes more consistently (medium severity;
+      GHSA-357p-6mjj-f8jr).
+    * Harden code previously vulnerable to denial-of-service attacks
+      (medium severity; GHSA-84xx-cv82-jqv8).
+    * Fix missing permission checks (GHSA-7xrm-6p9c-4wmj).
+    * Fix stored and reflected XSS issues (GHSA-xfq9-h3px-hv62 [high
+      severity], GHSA-h778-cp46-448g [low severity, reported by Mingi Jung]).
+    * Fix information exposure bugs associated with formula graphs.
+
+* Account types
+
+    * Introduce unlisted PC members, who can be assigned PC reviews but whose
+      names aren’t shared with authors or the public.
+    * Introduce bot accounts, which are associated with programmatic access.
+
+* Appearance
+
+    * Support dark mode. The site obeys the user’s dark-mode preference by
+      default; Settings > Preferences can override it.
+    * Introduce a popup dialog for offline reviewing.
+    * Make icons scalable.
+
+* Accessibility
+
+    * Audit many pages for WCAG compliance.
+
+* Submission form
+
+    * User-defined submission field names cannot consist only of lowercase
+      letters, digits, underscores, and colons. This rule is intended to
+      reliably prevent collisions with other JSON export fields.
+      (Non-compliant field names in existing installations are grandfathered
+      in.)
+    * Text fields gain word limit support.
+
+* Comments
+
+    * Improve comment editor: always display the comment thread; warn if
+      mentioning users who can’t see the current thread.
+    * Warn when reviewers look like they’re saving a comment intended for the
+      authors, but the authors can’t see it because of the comment’s
+      visibility.
+
+* Formulas and formula graphs
+
+    * Support `percentile(e, 90)` and `p90(e)` formulas.
+    * Support pan, zoom, and autoresize.
+
+* OAuth
+
+    * Support OAuth Client ID Metadata Documents.
+    * Fix usability of redirections through the `/authorize` endpoint.
+    * Harden OAuth for best practices (RFC 9700).
+
+* API
+
+    * JSON export of submissions uses a different naming convention for
+      user-specified submission fields. Rather than a generated
+      lower_snake_case identifier (which was not guaranteed unique),
+      submission JSON uses literal submission field names.
+    * Saving a submission through the API refuses to write if changes to
+      unwritable fields are attempted. Supply `ignore_unwritable_fields=1` to
+      ignore unwritable fields instead.
+    * The `POST /paper`, `/review`, and `/comment` endpoints learn
+      `dry_run=if_error` (and `dry_run=if_warning`), which say to attempt a
+      change, but to make that change a dry-run if there are errors (and/or
+      warnings).
+    * Rate-limited API requests now return a `Retry-After` header.
+    * Introduce `settings:{read/write/admin}` and
+      `preference:{read/write/admin}` scopes.
+    * Report scope errors more thoroughly.
+
+* Other changes
+
+    * The `batch/savepapers.php` script gains `--trust-document-metadata`,
+      which subsumes the old `--skip-document-verify`,
+      `--skip-document-content`, and `--ignore-content-file` flags.
+
+
 ## Version 3.4 – 5.Aug.2026
 
 * Security updates
