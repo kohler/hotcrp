@@ -270,13 +270,16 @@ class SearchParser {
     /** @param string $str
      * @return string */
     static function safe_parenthesize($str) {
-        $pstack = "";
-        $plast = "";
+        $pstack = []; // expected close brackets, innermost last
         $quote = false;
-        $pos = $startpos = 0;
+        $pos = $startpos = $ntopopen = 0;
         $len = strlen($str);
         $out = "";
-        while ($pos < $len) {
+        while (true) {
+            $pos += strcspn($str, "\xE2\\\"([{}])", $pos);
+            if ($pos >= $len) {
+                break;
+            }
             $ch = $str[$pos];
             // translate “” -> "
             if ($ch === "\xE2"
@@ -291,50 +294,50 @@ class SearchParser {
                     if ($pos + 1 < $len) {
                         ++$pos;
                     } else {
-                        $out .= substr($str, $startpos, $pos) . "\\";
+                        $out .= substr($str, $startpos, $pos - $startpos) . "\\";
                         $startpos = $pos;
                     }
                 } else if ($ch === "\"") {
                     $quote = false;
                 }
             } else if ($ch === "(") {
-                $pstack .= $plast;
-                $plast = ")";
-            } else if ($ch === "[") {
-                $pstack .= $plast;
-                $plast = "]";
-            } else if ($ch === "{") {
-                $pstack .= $plast;
-                $plast = "}";
-            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
-                while ($plast !== "" && $plast !== $ch) {
-                    $out .= substr($str, $startpos, $pos) . $plast;
-                    $startpos = $pos;
-                    $plast = (string) substr($pstack, -1);
-                    $pstack = (string) substr($pstack, 0, -1);
+                if (empty($pstack)) {
+                    ++$ntopopen;
                 }
-                if ($plast === $ch) {
-                    // include this character in output
-                } else {
-                    $out .= substr($str, $startpos, $pos);
+                $pstack[] = ")";
+            } else if ($ch === "[") {
+                $pstack[] = "]";
+            } else if ($ch === "{") {
+                $pstack[] = "}";
+            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                // close unmatched inner brackets, drop unmatched close brackets
+                while (!empty($pstack) && $pstack[count($pstack) - 1] !== $ch) {
+                    $out .= substr($str, $startpos, $pos - $startpos) . array_pop($pstack);
+                    $startpos = $pos;
+                }
+                if (empty($pstack)) {
+                    $out .= substr($str, $startpos, $pos - $startpos);
                     $startpos = $pos + 1;
+                } else {
+                    array_pop($pstack);
                 }
             } else if ($ch === "\"") {
                 $quote = true;
             }
             ++$pos;
         }
-        $out .= substr($str, $startpos, $pos);
+        $out .= substr($str, $startpos);
         if ($quote) {
             $out .= "\"";
         }
-        while ($plast !== "") {
-            $out .= $plast;
-            $plast = (string) substr($pstack, -1);
-            $pstack = (string) substr($pstack, 0, -1);
+        while (!empty($pstack)) {
+            $out .= array_pop($pstack);
         }
         if ($out === "") {
             $out = "*";
+        }
+        if ($ntopopen === 1 && str_starts_with($out, "(") && str_ends_with($out, ")")) {
+            return $out;
         }
         return "({$out})";
     }

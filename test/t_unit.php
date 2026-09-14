@@ -1179,11 +1179,22 @@ class Unit_Tester {
 
     function test_safe_parenthesize() {
         xassert_eqq(SearchParser::safe_parenthesize(""), "(*)");
-        xassert_eqq(SearchParser::safe_parenthesize("("), "(())");
-        xassert_eqq(SearchParser::safe_parenthesize("(hi"), "((hi))");
+        xassert_eqq(SearchParser::safe_parenthesize("("), "()");
+        xassert_eqq(SearchParser::safe_parenthesize("(hi"), "(hi)");
         xassert_eqq(SearchParser::safe_parenthesize("fart[barf"), "(fart[barf])");
         xassert_eqq(SearchParser::safe_parenthesize("“\\"), "(“\\\\\")");
         xassert_eqq(SearchParser::safe_parenthesize(") fooled you ("), "( fooled you ())");
+        xassert_eqq(SearchParser::safe_parenthesize("(a)"), "(a)");
+        xassert_eqq(SearchParser::safe_parenthesize("(a (b))"), "(a (b))");
+        xassert_eqq(SearchParser::safe_parenthesize(")(a)"), "(a)");
+        xassert_eqq(SearchParser::safe_parenthesize("(a)(b)"), "((a)(b))");
+        xassert_eqq(SearchParser::safe_parenthesize("(a) b)"), "((a) b)");
+        xassert_eqq(SearchParser::safe_parenthesize("[(a)]"), "([(a)])");
+        xassert_eqq(SearchParser::safe_parenthesize("[a] (b)"), "([a] (b))");
+        xassert_eqq(SearchParser::safe_parenthesize("(a))b)"), "((a)b)");
+        xassert_eqq(SearchParser::safe_parenthesize("ab)cd)ef)"), "(abcdef)");
+        xassert_eqq(SearchParser::safe_parenthesize("x(y]z)"), "(x(y)z)");
+        xassert_eqq(SearchParser::safe_parenthesize("x)\"y\\"), "(x\"y\\\\\")");
     }
 
     function test_unpack_comparison() {
