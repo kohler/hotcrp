@@ -46,9 +46,6 @@ class AdminHome_Page {
         if ($post_max_size >= $memory_limit) {
             $ml[] = MessageItem::urgent_note("<5>PHP’s <code>memory_limit</code> setting is smaller than its <code>post_max_size</code> setting. The <code>memory_limit</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file");
         }
-        if (defined("JSON_HOTCRP")) {
-            $ml[] = MessageItem::warning_note("<0>Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster");
-        }
         if ((int) ini_get("session.gc_maxlifetime") < ($conf->opt("sessionLifetime") ?? 86400)
             && !isset($conf->opt["sessionHandler"])
             && !isset($conf->opt["qsessionFunction"])) {

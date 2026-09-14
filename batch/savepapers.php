@@ -356,14 +356,8 @@ class SavePapers_Batch {
 
     /** @return 0|1|2 */
     function run($content) {
-        $j = $jparser = null;
-        if (!$this->json5) {
-            $j = json_decode($content);
-        }
-        if ($j === null) {
-            $jparser = (new JsonParser)->set_flags($this->json5 ? JsonParser::JSON5 : 0);
-            $j = $jparser->set_input($content)->decode();
-        }
+        $jparser = (new JsonParser($content))->set_flags($this->json5 ? JsonParser::JSON5 : 0);
+        $j = $jparser->decode();
         if ($j === null) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON: " . $jparser->last_error_msg() . "\n");
             ++$this->nerrors;
@@ -372,7 +366,7 @@ class SavePapers_Batch {
             ++$this->nerrors;
         } else {
             $jl = is_object($j) ? [$j] : $j;
-            $j = $content = null; // release references
+            $j = $content = $jparser = null; // release references
             $this->_run_main($jl); // consumes `$jl`
         }
         if ($this->nerrors) {

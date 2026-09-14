@@ -63,7 +63,7 @@ class SaveUsers_Batch {
     }
 
     function parse_json($str) {
-        $j = Json::try_decode($str);
+        $j = Json::decode($str);
         $ja = null;
         if (is_array($j)) {
             $ja = $j;

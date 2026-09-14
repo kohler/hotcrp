@@ -645,4 +645,16 @@ class UnicodeHelper {
     static function utf8_replace_invalid($str) {
         return self::to_utf8("UTF-8", $str);
     }
+
+    /** Return the offset of the first byte that is not part of a valid UTF-8
+     * sequence, or `false` if `$str` is valid UTF-8.
+     * @param string $str
+     * @return int|false */
+    static function utf8_invalid_offset($str) {
+        if (preg_match('//u', $str)) {
+            return false;
+        }
+        preg_match('/\A(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*+\K/', $str, $m, PREG_OFFSET_CAPTURE);
+        return $m[0][1];
+    }
 }

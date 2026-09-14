@@ -59,16 +59,13 @@ class Assign_API {
             if ($jsonstr === null || $jsonstr === false) {
                 return JsonResult::make_missing_error("assignments");
             }
-            $j = json_decode($jsonstr);
-            if (!$j) {
-                $jparser = (new JsonParser($jsonstr))->set_filename($jsonfn);
-                if (friendly_boolean($qreq->json5)) {
-                    $jparser->set_flags(JsonParser::JSON5);
-                }
-                $j = $jparser->decode();
-                if ($jparser->last_error()) {
-                    return JsonResult::make_message_list(MessageItem::error_at($errparam, "<0>Invalid JSON: " . $jparser->last_error_msg()));
-                }
+            $jparser = (new JsonParser($jsonstr))->set_filename($jsonfn);
+            if (friendly_boolean($qreq->json5)) {
+                $jparser->set_flags(JsonParser::JSON5);
+            }
+            $j = $jparser->decode();
+            if ($jparser->last_error()) {
+                return JsonResult::make_message_list(MessageItem::error_at($errparam, "<0>Invalid JSON: " . $jparser->last_error_msg()));
             }
             if (is_object($j)) {
                 $j = [$j];

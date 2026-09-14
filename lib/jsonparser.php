@@ -2,24 +2,15 @@
 // jsonparser.php -- HotCRP JSON parser with position tracking support
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-const JSON_ERROR_EMPTY_KEY = 100;
 const JSON_ERROR_TRAILING_COMMA = 101;
-if (!defined("JSON_OBJECT_AS_ARRAY")) {
-    define("JSON_OBJECT_AS_ARRAY", 1);
-}
-if (!defined("JSON_THROW_ON_ERROR")) {
-    define("JSON_THROW_ON_ERROR", 1<<22);
-}
-if (!defined("JSON_ERROR_UTF16")) {
-    define("JSON_ERROR_UTF16", 10);
-}
 
 class JsonParser {
     /** @var ?string */
     public $input;
     /** @var int */
     public $error_type = 0;
-    /** @var int */
+    /** @var ?int
+     * Null if the error was not located. */
     public $error_pos = 0;
     /** @var ?string */
     public $filename;
@@ -50,17 +41,20 @@ class JsonParser {
     static public $error_messages = [
         JSON_ERROR_NONE => null,
         JSON_ERROR_DEPTH => "Maximum stack depth exceeded",
-        JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
-        JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
-        JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
+        JSON_ERROR_STATE_MISMATCH => "State mismatch (invalid or malformed JSON)",
+        JSON_ERROR_CTRL_CHAR => "Control character error, possibly incorrectly encoded",
+        JSON_ERROR_SYNTAX => "Syntax error",
         JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
-        JSON_ERROR_EMPTY_KEY => "Empty keys are not supported",
+        JSON_ERROR_INVALID_PROPERTY_NAME => "The decoded property name is invalid",
         JSON_ERROR_UTF16 => "Single unpaired UTF-16 surrogate in unicode escape",
         JSON_ERROR_TRAILING_COMMA => "Trailing commas are not supported"
     ];
 
     const JSON_EXTENDED_WHITESPACE = 1 << 19;
     const JSON5 = 1 << 18;
+
+    /** Inputs larger than this are not reparsed to locate a JSON error */
+    const MAX_LOCATE_SIZE = 1 << 20;
 
     const CTX_TOP = 0;
     const CTX_OBJECT_KEY = 1;
@@ -133,7 +127,7 @@ class JsonParser {
     }
 
 
-    /** @param int $pos
+    /** @param ?int $pos
      * @param int $etype
      * @return null */
     private function set_error($pos, $etype) {
@@ -154,7 +148,7 @@ class JsonParser {
         if (($flags & self::JSON5) !== 0) {
             preg_match('/\G(?:[^\\\\' . $s[$pos] . '\n\r]|\\\\[^\r]|\\\\\r\n?+)*+/', $s, $m, 0, $pos + 1);
         } else {
-            preg_match('/\G(?:[^\\\\"\n\r]|\\\\[^\n\r])*+/', $s, $m, 0, $pos + 1);
+            preg_match('/\G(?:[^\\\\"\x00-\x1f]|\\\\[^\n\r])*+/', $s, $m, 0, $pos + 1);
         }
         $pos2 = $pos + 1 + strlen($m[0]);
         if ($pos2 !== strlen($s) && $s[$pos2] === $s[$pos]) {
@@ -242,11 +236,6 @@ class JsonParser {
      * @param int $pos1
      * @return string */
     static private function decode_potential_string($s, $flags = 0, $errorf = null, $pos1 = 0) {
-        if ($errorf
-            && ($flags & self::JSON5) === 0
-            && preg_match('/[\000-\037]/', $s, $m, PREG_OFFSET_CAPTURE)) {
-            $errorf($pos1 + $m[0][1], JSON_ERROR_SYNTAX);
-        }
         $x = "";
         $bs = 0;
         while (true) {
@@ -270,15 +259,12 @@ class JsonParser {
     private function skip_space($pos) {
         $s = $this->input;
         $len = strlen($s);
-        while ($pos !== $len) {
-            $ch = ord($s[$pos]);
-            if ($ch === 32       // ` `
-                || $ch === 10    // `\n`
-                || $ch === 13    // `\r`
-                || $ch === 9) {  // `\t`
-                ++$pos;
-                continue;
+        while (true) {
+            $pos += strspn($s, " \n\r\t", $pos);
+            if ($pos === $len) {
+                break;
             }
+            $ch = ord($s[$pos]);
             if (($this->flags & self::JSON5) !== 0
                 && $ch === 47   // `/`
                 && $pos + 1 < $len) {
@@ -317,6 +303,23 @@ class JsonParser {
             break;
         }
         return $pos;
+    }
+
+    /** @param string $text
+     * @param string $fraction
+     * @return int|float */
+    static private function number_value($text, $fraction) {
+        // `$fraction` is the fractional part and exponent of `$text`, if any.
+        // As in json_decode, integer literals decode to int when they fit
+        // and to float otherwise.
+        if ($fraction !== "") {
+            return (float) $text;
+        }
+        $x = (int) $text;
+        if ($text[0] === "+" || $text === "-0") {
+            $text = ltrim($text, "+-");
+        }
+        return (string) $x === $text ? $x : (float) $text;
     }
 
     /** @param int $depth
@@ -362,11 +365,15 @@ class JsonParser {
         } else if ($ch === 34      // `"`
                    || ($ch === 39 && ($this->flags & self::JSON5) !== 0)) {    // `'`
             list($str, $this->pos) = self::extract_potential_string($s, $pos, $this->flags);
-            $s = self::decode_potential_string($str, $this->flags, [$this, "set_error"], $pos + 1);
             if ($this->pos !== $pos + strlen($str) + 2) {   // no close quote
-                $this->set_error($this->pos, JSON_ERROR_SYNTAX);
+                $ctrl = $this->pos !== $len && ord($s[$this->pos]) < 32;
+                return $this->set_error($this->pos, $ctrl ? JSON_ERROR_CTRL_CHAR : JSON_ERROR_SYNTAX);
             }
-            return $this->error_type === 0 ? $s : null;
+            if (strpos($str, "\\") === false) {
+                return $str;
+            }
+            $str = self::decode_potential_string($str, $this->flags, [$this, "set_error"], $pos + 1);
+            return $this->error_type === 0 ? $str : null;
         } else if ($ch === 123) {    // `{`
             if ($depth > $this->maxdepth) {
                 return $this->set_error($pos, JSON_ERROR_DEPTH);
@@ -388,7 +395,15 @@ class JsonParser {
                 }
 
                 $keypos = $this->pos;
-                $key = $this->decode_part($depth + 1, self::CTX_OBJECT_KEY);
+                if ($keypos !== $len
+                    && $s[$keypos] === "\""
+                    && preg_match('/\G"([^\\\\"\x00-\x1f]*+)"/', $s, $m, 0, $keypos)) {
+                    // common case: key with no escapes
+                    $key = $m[1];
+                    $this->pos = $keypos + strlen($m[0]);
+                } else {
+                    $key = $this->decode_part($depth + 1, self::CTX_OBJECT_KEY);
+                }
                 if ($this->error_type !== 0) {
                     if ($this->error_type === JSON_ERROR_TRAILING_COMMA
                         && ($this->flags & self::JSON5) !== 0) {
@@ -399,9 +414,7 @@ class JsonParser {
                     return null;
                 } else if (!is_string($key)) {
                     return $this->set_error($keypos, JSON_ERROR_SYNTAX);
-                } else if (!$this->assoc && $key === "") {
-                    return $this->set_error($keypos, JSON_ERROR_EMPTY_KEY);
-                } else if (!$this->assoc && $key[0] === "\0") {
+                } else if (!$this->assoc && $key !== "" && $key[0] === "\0") {
                     return $this->set_error($keypos, JSON_ERROR_INVALID_PROPERTY_NAME);
                 }
 
@@ -452,48 +465,44 @@ class JsonParser {
             }
             return $arr;
         } else if (($this->flags & self::JSON5) !== 0
-                   && ($ch === 43 || $ch === 45 || ($ch >= 48 && $ch <= 57))    // `[-+0-9]`
-                   && preg_match('/\G[-+]?(?:0[Xx][0-9a-fA-F]++(?!\.)|0|[1-9]\d*+|(?=\.))((?:\.\d*+)?(?:[Ee][-+]?\d++)?)/', $s, $m, 0, $pos)) {
+                   && ($ch === 43 || $ch === 45 || $ch === 46 || ($ch >= 48 && $ch <= 57))    // `[-+.0-9]`
+                   && preg_match('/\G([-+]?+0[Xx][0-9a-fA-F]++)(?![-+.])|\G[-+]?+(?:0|[1-9]\d*+|(?=\.))((?:\.\d*+)?+(?:[Ee][-+]?+\d++)?+)/', $s, $m, 0, $pos)) {
             $this->pos = $pos + strlen($m[0]);
-            return $m[1] === "" ? intval($m[0], 0) : floatval($m[0]);
+            if ($m[1] !== "") {
+                return intval($m[1], 0);
+            }
+            return self::number_value($m[0], $m[2]);
         } else if (($this->flags & self::JSON5) !== 0
                    && ($ch === 43 || $ch === 45 || $ch === 73 || $ch === 78)    // `[-+IN]`
-                   && preg_match('/\G[-+]?(Infinity|NaN)/', $s, $m, 0, $pos)) {
+                   && preg_match('/\G[-+]?+(Infinity|NaN)/', $s, $m, 0, $pos)) {
             $this->pos = $pos + strlen($m[0]);
             if ($m[1] === "Infinity") {
                 return $m[0][0] === "-" ? -INF : INF;
-            } else {
-                return $m[0][0] === "-" ? -NAN : NAN;
             }
+            return $m[0][0] === "-" ? -NAN : NAN;
         } else if (($ch === 45 || ($ch >= 48 && $ch <= 57))    // `[-0-9]`
-                   && preg_match('/\G-?(?:0|[1-9]\d*+)((?:\.\d++)?(?:[Ee][-+]?\d++)?)/', $s, $m, 0, $pos)) {
+                   && preg_match('/\G-?+(?:0|[1-9]\d*+)((?:\.\d++)?+(?:[Ee][-+]?+\d++)?+)/', $s, $m, 0, $pos)) {
             $this->pos = $pos + strlen($m[0]);
-            $x = stonum($m[0]);
-            if ($m[1] === "" && ($ix = (int) $x) == $x) {
-                return $ix;
-            }
-            return $x;
+            return self::number_value($m[0], $m[1]);
         } else if ($ch === 93) {     // `]`
             if ($context === self::CTX_ARRAY_ELEMENT) {
                 return $this->set_error($pos, JSON_ERROR_TRAILING_COMMA);
-            } else {
-                return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
             }
+            return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
         } else if ($ch === 125) {    // `}`
             if ($context === self::CTX_OBJECT_KEY) {
                 return $this->set_error($pos, JSON_ERROR_TRAILING_COMMA);
-            } else {
-                return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
             }
+            return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
         } else if ($ch < 32) {
             return $this->set_error($pos, JSON_ERROR_CTRL_CHAR);
-        } else {
-            return $this->set_error($pos, JSON_ERROR_SYNTAX);
         }
+        return $this->set_error($pos, JSON_ERROR_SYNTAX);
     }
 
-    /** @return mixed */
-    function decode() {
+    /** Decode the input with this parser alone, locating any error.
+     * @return mixed */
+    function base_decode() {
         $assoc = $this->assoc;
         if ($assoc === null) {
             $this->assoc = ($this->flags & JSON_OBJECT_AS_ARRAY) !== 0;
@@ -501,6 +510,13 @@ class JsonParser {
         $this->error_type = 0;
         $this->error_pos = 0;
         $this->pos = 0;
+
+        // Reject invalid UTF-8 up front, as json_decode does. This is much
+        // cheaper than parsing and does not depend on the input's structure.
+        if (($upos = UnicodeHelper::utf8_invalid_offset($this->input)) !== false) {
+            $this->assoc = $assoc;
+            return $this->set_error($upos, JSON_ERROR_UTF8);
+        }
 
         $result = $this->decode_part(0, self::CTX_TOP);
 
@@ -511,9 +527,31 @@ class JsonParser {
         }
         if ($this->error_type === 0) {
             return $result;
-        } else {
+        }
+        return null;
+    }
+
+    /** Decode the input, preferring the native json_decode. If json_decode
+     * fails, reparse with base_decode() to locate the error, unless locating
+     * it would cost a lot and help little.
+     * @return mixed */
+    function decode() {
+        $x = json_decode($this->input, $this->assoc, $this->maxdepth, $this->flags);
+        $err = json_last_error();
+        if ($err === JSON_ERROR_NONE) {
+            $this->error_type = 0;
+            $this->error_pos = 0;
+            return $x;
+        }
+        // Don't locate errors in large JSONs
+        if ($err === JSON_ERROR_DEPTH
+            || ($err !== JSON_ERROR_UTF8
+                && strlen($this->input) > self::MAX_LOCATE_SIZE
+                && ($this->flags & (self::JSON5 | self::JSON_EXTENDED_WHITESPACE)) === 0)) {
+            $this->set_error(null, $err);
             return null;
         }
+        return $this->base_decode();
     }
 
 
@@ -640,9 +678,8 @@ class JsonParser {
     function position_line($pos) {
         if ($this->input !== null && $pos <= strlen($this->input)) {
             return 1 + preg_match_all('/\r\n?|\n/s', substr($this->input, 0, $pos));
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $pos
@@ -653,16 +690,16 @@ class JsonParser {
             return null;
         }
         $prefix = substr($this->input, 0, $pos);
-        $line = 1 + preg_match_all('/\r\n?|\n/s', $prefix);
+        $line = 1 + preg_match_all('/\r\n?+|\n/s', $prefix);
         $cr = strrpos($prefix, "\r");
         $nl = strrpos($prefix, "\n");
         $last_line = substr($prefix, max($cr === false ? 0 : $cr + 1, $nl === false ? 0 : $nl + 1));
-        $column = 1 + preg_match_all('/./u', $last_line);
+        // code points = bytes - UTF-8 continuation bytes
+        $column = 1 + strlen($last_line) - preg_match_all('/[\x80-\xBF]/', $last_line);
         if ($this->filename !== null) {
             return "{$this->filename}:{$line}" . ($include_column ? ":{$column}" : "");
-        } else {
-            return "line {$line}" . ($include_column ? ", column {$column}" : "");
         }
+        return "line {$line}" . ($include_column ? ", column {$column}" : "");
     }
 
     /** @param ?string $path
@@ -778,6 +815,9 @@ class JsonParser {
             return null;
         }
         $msg = self::$error_messages[$this->error_type] ?? "Unknown error #{$this->error_type}";
+        if ($this->error_pos === null) {
+            return $msg;
+        }
         $msg .= " at character {$this->error_pos}";
         if (($lm = $this->position_landmark($this->error_pos)) !== null) {
             $msg .= ", {$lm}";
