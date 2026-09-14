@@ -2402,6 +2402,53 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(Checkboxes_ReviewField::unpack_value(64), [7]);
     }
 
+    function test_checkboxes_parse() {
+        // pin Checkboxes_ReviewField::parse tokenizer results, and check
+        // that long inputs do not make it quadratic
+        $rfi = new ReviewFieldInfo("s97", true, null, "s97");
+        $rf = new Checkboxes_ReviewField($this->conf, $rfi, json_decode('{"name":"Flags","type":"checkboxes","values":["Novel","Sound","Clear"],"symbols":["A","B","C"]}'));
+        $rfc = new Checkboxes_ReviewField($this->conf, $rfi, json_decode('{"name":"Flags","type":"checkboxes","values":["Novel, new","Sound (mostly)","Clear"],"symbols":["A","B","C"]}'));
+        // [input, simple-values result, complex-values result]
+        foreach ([
+            ["", null, null],
+            ["A", 1, 1],
+            ["a, c", 5, 5],
+            ["A; B", 3, 3],
+            ["A,,;;B", 3, 3],
+            ["A, A", 1, 1],
+            ["None", 0, 0],
+            ["n/a", 0, 0],
+            ["A, None", false, false],
+            ["D", false, false],
+            ["C B A", false, false],
+            ["(foo)", null, null],
+            ["A,)", false, false],
+            ["A (", false, false],
+            ["A.B", false, false],
+            ["A..B", 3, 1],
+            ["A. x", false, 1],
+            ["B. Sound\n\nC. Clear", false, 6],
+            ["B. Sound, new\n\nC. Clear", false, 6],
+            ["A(see B)", 1, 1],
+            ["A" . str_repeat(",", 20000) . "B", 3, 3],
+            ["A" . str_repeat("()", 20000) . "B", 3, 3],
+            ["A(" . str_repeat("x", 1 << 20) . ") B", 3, 3]
+        ] as $t) {
+            xassert_eqq($rf->parse($t[0]), $t[1]);
+            xassert_eqq($rfc->parse($t[0]), $t[2]);
+        }
+
+        $times = [];
+        foreach ([30000, 300000] as $n) {
+            $t0 = microtime(true);
+            xassert_eqq($rf->parse(str_repeat("A,", $n)), 1);
+            xassert_eqq($rfc->parse(str_repeat("A, B; ", $n >> 1)), 3);
+            xassert_eqq($rfc->parse(str_repeat("A. Novel, new\n\n", $n >> 2)), 1);
+            $times[] = microtime(true) - $t0;
+        }
+        xassert_lt($times[1], max(5.0, 20 * $times[0]));
+    }
+
     function test_clean_name() {
         xassert_eqq(ReviewField::clean_name("Fudge (shown only to administrator)"), "Fudge");
         xassert_eqq(ReviewField::clean_name("Fudge (shown only to chair)"), "Fudge");

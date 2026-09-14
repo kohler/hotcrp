@@ -163,21 +163,25 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         if ($text === "") {
             return null;
         }
-        $text = simplify_whitespace(preg_replace('/(?:\r\n?|\n)\s*(?:\r\n?|\n)\s*/', ";;;;", $text));
+        $text = simplify_whitespace(preg_replace('/(?:\r\n?+|\n)\s*(?:\r\n?+|\n)\s*/', ";;;;", $text));
         $b = 0;
-        while ($text !== "") {
-            $sc = null;
-            if (preg_match('/\A([^.,;()](?:[^.,;()]|\.[^\s.,;()])*+)/s', $text, $m)) {
-                $word = $m[1];
-                $text = substr($text, strlen($word));
-                if (str_starts_with($text, ".") && $this->complex()) {
-                    $pos = strpos($text, ";;;;");
-                    $text = $pos === false ? "" : (string) substr($text, $pos + 4);
+        $pos = 0;
+        $len = strlen($text);
+        while ($pos !== $len) {
+            if (preg_match('/\G[^.,;()](?:[^.,;()]|\.[^\s.,;()])*+/s', $text, $m, 0, $pos)) {
+                $word = $m[0];
+                $pos += strlen($word);
+                if ($pos !== $len && $text[$pos] === "." && $this->complex()) {
+                    $semi = strpos($text, ";;;;", $pos);
+                    $pos = $semi === false ? $len : $semi + 4;
                 }
-                $text = preg_replace('/\A(?:[\s.,;]|\(.*?\))+/', "", $text);
+                // skip separators and parenthesized comments
+                if (preg_match('/\G(?:[\s.,;]++|\([^)]*+\))++/s', $text, $m, 0, $pos)) {
+                    $pos += strlen($m[0]);
+                }
             } else {
-                $word = $text;
-                $text = "";
+                $word = substr($text, $pos);
+                $pos = $len;
             }
             $sc = $this->find_symbol($word) ?? self::check_none($word);
             if ($sc > 0) {
