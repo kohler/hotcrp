@@ -503,17 +503,13 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
         // check for errors
         $key = $docid ? "docid" : $hashkey;
-        if (!$doc) {
+        if (!$doc || $doc->documentType !== $this->dtype) {
             $this->error_at($key, "<0>Document version not found");
             $this->cacheable = false; // version might appear later
             return;
         }
         if ($doc->filterType) {
             $this->error_at($key, "<0>Document version not found");
-            return;
-        }
-        if ($doc->documentType !== $this->dtype) {
-            $this->error_at("dt", "<0>Version conflict");
             return;
         }
         if ($docid && $docid !== $doc->paperStorageId) {

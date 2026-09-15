@@ -2625,7 +2625,8 @@ class PaperInfo {
 
         if ($this->_document_array !== null
             && array_key_exists($did, $this->_document_array)) {
-            return $this->_document_array[$did];
+            $doc = $this->_document_array[$did];
+            return $doc && $doc->documentType === $dtype ? $doc : null;
         }
 
         if ((($dtype === DTYPE_SUBMISSION
@@ -2652,7 +2653,8 @@ class PaperInfo {
             $this->_document_array[$did] = DocumentInfo::fetch($result, $this->conf, $this);
             Dbl::free($result);
         }
-        return $this->_document_array[$did];
+        $doc = $this->_document_array[$did];
+        return $doc && $doc->documentType === $dtype ? $doc : null;
     }
 
     function ensure_primary_documents() {
