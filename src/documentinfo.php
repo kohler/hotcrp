@@ -583,8 +583,8 @@ class DocumentInfo implements JsonSerializable {
         // Should use `!inactive`, but that (in 2025-10) is not known to be
         // reliable yet
         if ($this->documentType >= DTYPE_FINAL) {
-            $ov = $this->prow->force_option($this->documentType);
-            return in_array($this->paperStorageId, $ov->option->value_dids($ov));
+            $ov = $this->prow->option($this->documentType);
+            return $ov && in_array($this->paperStorageId, $ov->option->value_dids($ov));
         }
         return $this->prow->link_id_by_document_id($this->paperStorageId, $this->documentType) !== null;
     }

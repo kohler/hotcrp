@@ -2330,7 +2330,8 @@ class PaperTable {
             foreach ($this->prow->form_fields() as $o) {
                 if ($o->reset_on_withdraw()
                     && $o->test_exists($this->prow)
-                    && $this->prow->option($o))
+                    && ($ov = $this->prow->option($o))
+                    && $ov->value_count() > 0)
                     $clearf[] = $o->edit_title($this->prow);
             }
             if (!empty($clearf)) {

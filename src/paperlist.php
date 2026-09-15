@@ -1234,7 +1234,7 @@ final class PaperList extends MessageSet {
             return $this->user->can_view_some_option($opt)
                 && $this->unordered_rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt))
-                        && (!$opt->has_document() || $ov->value > 1)
+                        && $opt->value_present($ov)
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if ($key === "abstract") {

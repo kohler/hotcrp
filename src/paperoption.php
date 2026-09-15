@@ -1484,9 +1484,6 @@ class Document_PaperOption extends PaperOption {
             $ov->set_value_data([], []);
         }
     }
-    function is_value_present_trivial() {
-        return $this->id > 0;
-    }
     function value_present(PaperValue $ov) {
         return ($ov->value ?? 0) > 1 || $ov->value === PaperValue::NEWDOC_VALUE;
     }

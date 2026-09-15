@@ -539,10 +539,11 @@ class HotCRPMailer extends Mailer {
     }
 
     function kw_paperfield($args, $isbool, $uf) {
-        if (!($ov = $this->row->option($uf->option))) {
-            return $isbool ? false : "";
-        } else if (!$this->permuser->can_view_option($this->row, $uf->option)) {
+        if (!$this->permuser->can_view_option($this->row, $uf->option)) {
             return $isbool ? false : ($this->censor !== self::CENSOR_NONE ? "HIDDEN" : "");
+        } else if (!($ov = $this->row->option($uf->option))
+                   || !$uf->option->value_present($ov)) {
+            return $isbool ? false : "";
         }
         $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permreceiver);
         $uf->option->render($fr, $ov);

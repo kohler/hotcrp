@@ -2603,7 +2603,7 @@ class PaperInfo {
                 $did = $this->paperStorageId;
             } else if ($dtype === DTYPE_FINAL) {
                 $did = $this->finalPaperStorageId;
-            } else if (($oa = $this->force_option($dtype))
+            } else if (($oa = $this->option($dtype))
                        && $oa->option->is_document()) {
                 return $oa->document(0);
             }

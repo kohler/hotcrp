@@ -113,9 +113,10 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
+        $oldov = $prow->option($this);
         $ov = PaperValue::make($prow, $this, -1);
         $docs = self::parse_qreq_prefix($prow, $qreq, $this->formid, $this->id,
-                                        $this->value_dids($prow->force_option($this)),
+                                        $oldov ? $this->value_dids($oldov) : [],
                                         $ov->message_set());
         $ov->set_anno("documents", $docs);
         return $ov;

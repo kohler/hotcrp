@@ -373,7 +373,7 @@ class AuthorCertification_PaperOption extends PaperOption {
 
     /** @return AuthorCertification_EntryList */
     static private function author_option_entries(PaperInfo $prow) {
-        $auov = $prow->force_option(PaperOption::AUTHORSID);
+        $auov = $prow->option(PaperOption::AUTHORSID);
         $aulist = Authors_PaperOption::author_list($auov);
         return ACEntryList::make_author_list($prow->conf, $aulist);
     }
@@ -468,7 +468,7 @@ class AuthorCertification_PaperOption extends PaperOption {
         $want_complete = self::entries_complete($ov->prow, $entries);
         $have_complete = self::is_complete($ov);
         // check for illegal change to authors
-        $auov = $ov->prow->force_option(PaperOption::AUTHORSID);
+        $auov = $ov->prow->option(PaperOption::AUTHORSID);
         $base_auov = $ov->prow->base_option(PaperOption::AUTHORSID);
         if (!$auov->equals($base_auov)) {
             $prevent_add = !$have_complete
