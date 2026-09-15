@@ -263,7 +263,7 @@ class PaperRequest {
             $capu = $user->reviewer_capability_user($this->prow);
             return $capu ? $this->prow->review_by_user($capu) : null;
         }
-        // `new` reviewId will definitey not exist
+        // `new` reviewId will definitely not exist
         if (str_ends_with($qreq->reviewId, "new")) {
             return null;
         }

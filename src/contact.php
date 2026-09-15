@@ -4692,13 +4692,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @return 0|1|2 */
     function view_option_state(PaperInfo $prow, $opt, $override = 0) {
         if (!$this->can_view_paper($prow, $opt->has_document())
-            || !$opt->test_exists($prow, (($override | $this->_overrides) & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
-            || ($opt->is_final() && !$this->can_view_decision($prow))) {
+            || !$opt->test_exists($prow, (($override | $this->_overrides) & self::OVERRIDE_EDIT_CONDITIONS) !== 0)) {
             return 0;
         }
         $rights = $this->rights($prow);
         $oview = $opt->visibility();
-        if ($rights->allow_admin()) {
+        if ($opt->is_final() && !$rights->can_view_decision()) {
+            return 0;
+        } else if ($rights->allow_admin()) {
             if ($oview === PaperOption::VIS_AUTHOR) {
                 return $this->__view_authors_state($prow, $rights);
             }
@@ -4742,23 +4743,26 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $whyNot = $prow->failure_reason();
         $rights = $this->rights($prow);
         $oview = $opt->visibility();
-        if ($rights->allow_admin()
-            ? $oview === PaperOption::VIS_AUTHOR
-              && !$this->can_view_authors($prow)
-            : !$rights->act_author_view()
-              && ($oview === PaperOption::VIS_ADMIN
-                  || ($oview === PaperOption::VIS_AUTHOR
-                      && !$this->can_view_authors($prow))
-                  || ($oview === PaperOption::VIS_REVIEW
-                      && $rights->review_status < PCI::CIRS_PROXIED
-                      && !$this->__can_view_submitted_review($prow, $rights)))) {
+        if ($rights->act_author_view()) {
+            $visproblem = false;
+        } else if ($oview === PaperOption::VIS_AUTHOR
+                   && !$this->can_view_authors($prow)) {
+            $visproblem = true;
+        } else if ($rights->allow_admin()) {
+            $visproblem = false;
+        } else {
+            $visproblem = $oview === PaperOption::VIS_ADMIN
+                || ($oview === PaperOption::VIS_REVIEW
+                    && $rights->review_status < PCI::CIRS_PROXIED
+                    && !$this->__can_view_submitted_review($prow, $rights));
+        }
+        if ($visproblem
+            || ($opt->is_final() && !$rights->can_view_decision())
+            || $opt->test_exists($prow)) {
             $whyNot["permission"] = "field:view";
-            $whyNot["option"] = $opt;
-        } else if (!$opt->test_exists($prow)) {
-            $whyNot["optionNonexistent"] = true;
             $whyNot["option"] = $opt;
         } else {
-            $whyNot["permission"] = "field:view";
+            $whyNot["optionNonexistent"] = true;
             $whyNot["option"] = $opt;
         }
         return $whyNot;
