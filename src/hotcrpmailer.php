@@ -541,8 +541,7 @@ class HotCRPMailer extends Mailer {
     function kw_paperfield($args, $isbool, $uf) {
         if (!$this->permuser->can_view_option($this->row, $uf->option)) {
             return $isbool ? false : ($this->censor !== self::CENSOR_NONE ? "HIDDEN" : "");
-        } else if (!($ov = $this->row->option($uf->option))
-                   || !$uf->option->value_present($ov)) {
+        } else if (!($ov = $this->row->option_present($uf->option))) {
             return $isbool ? false : "";
         }
         $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permreceiver);

@@ -2536,6 +2536,13 @@ class PaperInfo {
     }
 
     /** @param int|PaperOption $o
+     * @return ?PaperValue */
+    function option_present($o) {
+        $ov = $this->option($o);
+        return $ov && $ov->present() ? $ov : null;
+    }
+
+    /** @param int|PaperOption $o
      * @return PaperValue */
     function force_option($o) {
         if (($ov = $this->option($o))) {

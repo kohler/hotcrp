@@ -157,6 +157,11 @@ final class PaperValue implements JsonSerializable {
         return $a[1] <=> $b[1];
     }
 
+    /** @return bool */
+    function present() {
+        return $this->option->value_present($this);
+    }
+
     /** @param PaperValue $x
      * @return bool */
     function equals($x) {

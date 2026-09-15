@@ -162,11 +162,11 @@ class AuthorCertification_Tester {
         $ov = $prow->option($this->cert1);
         xassert_eqq($ov->value_count(), 1);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
-        xassert(!$ov->option->value_present($ov));
+        xassert(!$ov->present());
         $ov = $prow->option($this->cert2);
         xassert_eqq($ov->value_count(), 1);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
-        xassert(!$ov->option->value_present($ov));
+        xassert(!$ov->present());
         xassert_le($prow->timeSubmitted, 0);
         xassert_le($prow->timeWithdrawn, 0);
     }
@@ -275,7 +275,7 @@ class AuthorCertification_Tester {
         $ov = $prow->option($this->cert1);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
         xassert_in_eqq($this->u_carole->contactId, $ov->value_list());
-        xassert($ov->option->value_present($ov));
+        xassert($ov->present());
         xassert_le($prow->timeSubmitted, 0);
         xassert_le($prow->timeWithdrawn, 0);
 
@@ -295,11 +295,11 @@ class AuthorCertification_Tester {
         $ov = $prow->option($this->cert1);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
         xassert_not_in_eqq($this->u_carole->contactId, $ov->value_list());
-        xassert(!$ov->option->value_present($ov));
+        xassert(!$ov->present());
         $ov = $prow->option($this->cert2);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
         xassert_in_eqq($this->u_carole->contactId, $ov->value_list());
-        xassert($ov->option->value_present($ov));
+        xassert($ov->present());
         xassert_gt($prow->timeSubmitted, 0); // submit finally succeeded
         xassert_le($prow->timeWithdrawn, 0);
     }
@@ -318,11 +318,11 @@ class AuthorCertification_Tester {
         $ov = $prow->option($this->cert1);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
         xassert_not_in_eqq($this->u_carole->contactId, $ov->value_list());
-        xassert(!$ov->option->value_present($ov));
+        xassert(!$ov->present());
         $ov = $prow->option($this->cert2);
         xassert_in_eqq($this->u_sally->contactId, $ov->value_list());
         xassert_in_eqq($this->u_carole->contactId, $ov->value_list());
-        xassert($ov->option->value_present($ov));
+        xassert($ov->present());
         xassert_gt($prow->timeSubmitted, 0); // submit finally succeeded
         xassert_le($prow->timeWithdrawn, 0);
     }

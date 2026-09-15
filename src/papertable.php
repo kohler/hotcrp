@@ -585,7 +585,7 @@ class PaperTable {
             if ($input) {
                 $ml = [MessageItem::marked_note("<0>Only administrators can edit this field.")];
             } else if ($opt->required <= 0
-                       || $opt->value_present($this->prow->force_option($opt))
+                       || $this->prow->option_present($opt)
                        || $this->prow->timeSubmitted > 0) {
                 $ml = [MessageItem::marked_note("<0>This field is not currently editable.")];
             } else {
@@ -827,7 +827,7 @@ class PaperTable {
             }
             $prc = $this->user->can_edit_option($this->prow, $o)
                 ? $o->present_script_expression()
-                : $o->value_present($this->prow->force_option($o));
+                : !!$this->prow->option_present($o);
             if ($prc === null) {
                 continue;
             }
@@ -2192,7 +2192,7 @@ class PaperTable {
         foreach ($prow->form_fields() as $o) {
             if ($o->test_exists($prow)
                 && $o->test_required($prow)
-                && !$o->value_present($prow->force_option($o)))
+                && !$prow->option_present($o))
                 $missing[] = $o;
         }
         return $missing;

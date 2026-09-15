@@ -18,8 +18,7 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->user->can_view_option($row, $this->option)
-            && ($ov = $row->option($this->option))
-            && $this->option->value_present($ov);
+            && $row->option_present($this->option);
     }
     function script_expression(PaperInfo $row, $about) {
         if (($about & self::ABOUT_PAPER) === 0) {
