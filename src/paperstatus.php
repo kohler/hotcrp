@@ -106,7 +106,6 @@ final class PaperStatus extends MessageSet {
         if ($user->privChair) {
             $this->doc_savef |= DocumentInfo::SAVEF_ALLOW_HASH_WITHOUT_CONTENT;
         }
-        $this->set_ignore_duplicates(true);
         $this->set_message_formatter($this->conf);
     }
 
@@ -240,6 +239,10 @@ final class PaperStatus extends MessageSet {
     /** @param PaperValue $ov */
     function append_messages_from($ov) {
         foreach ($ov->message_list() as $mi) {
+            if ($mi->status === MessageSet::SUCCESS && !$mi->message) {
+                // sentinel standing for "allow store"
+                continue;
+            }
             if ($this->json_fields && $mi->field) {
                 $fk = $ov->option->field_key();
                 if (str_starts_with($mi->field, $fk)
@@ -613,6 +616,9 @@ final class PaperStatus extends MessageSet {
             if ($ov->allow_store()) {
                 $opt->value_store($ov, $this);
                 $this->prow->override_option($ov);
+            } else if ($ov->has_error()) {
+                // errors have been reported for this option
+                $this->prow->force_option($opt)->error(null);
             }
         } else {
             $ov = $this->prow->force_option($opt);
@@ -685,11 +691,11 @@ final class PaperStatus extends MessageSet {
                 continue;
             }
             $ov = $this->prow->force_option($opt);
-            $had_error = $ov->has_error();
+            $error_reported = $ov->has_error();
             if ($opt->value_check_required($ov)) {
                 continue;
             }
-            if (!$had_error) {
+            if (!$error_reported) {
                 $this->append_messages_from($ov);
             }
             if ($this->prow->base_prop("timeSubmitted") <= 0) {

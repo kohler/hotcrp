@@ -1280,8 +1280,12 @@ class PaperInfo {
      * @return $this */
     function set_updating($want_submitted) {
         assert(($this->_flags & self::IS_UPDATING) === 0);
+        assert($this->_base_option_array === null);
         $this->_flags |= self::IS_UPDATING
             | ($want_submitted ? self::UPDATING_WANT_SUBMITTED : 0);
+        foreach ($this->_option_array as $ov) {
+            $ov && $ov->clear_messages();
+        }
         return $this;
     }
 
@@ -2545,12 +2549,11 @@ class PaperInfo {
     /** @param int|PaperOption $o
      * @return PaperValue */
     function force_option($o) {
-        if (($ov = $this->option($o))) {
-            return $ov;
-        } else if (($opt = is_int($o) ? $this->conf->option_by_id($o) : $o)) {
-            return PaperValue::make_force($this, $opt);
+        $ov = $this->option($o);
+        if (!$ov && ($opt = is_int($o) ? $this->conf->option_by_id($o) : $o)) {
+            $this->_option_array[$opt->id] = $ov = PaperValue::make_force($this, $opt);
         }
-        return null;
+        return $ov;
     }
 
     /** @param int|PaperOption $o

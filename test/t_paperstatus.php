@@ -2815,6 +2815,49 @@ Phil Porras.");
         xassert($sv->execute());
     }
 
+    function test_missing_required_field_reported_once() {
+        // add a required-for-submit field after paper 2 was submitted
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [
+                {"name": "Count", "id": "new", "order": 100, "type": "numeric", "required": "submit"}
+            ]
+        }');
+        xassert($sv->execute());
+        $o = $this->conf->options()->option_by_key("Count");
+        xassert(!!$o);
+
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $p2au = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert_gt($p2->timeSubmitted, 0);
+        xassert(!$p2->option($o));
+
+        // the web form sends the field present but empty; the empty value is
+        // refused and the missing old value is re-checked, and the field must
+        // be reported as required exactly once
+        $ps = new PaperStatus($p2au);
+        $x = $ps->save_paper_web(new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => $p2->title(),
+            "has_opt{$o->id}" => 1,
+            "opt{$o->id}" => ""
+        ]), $p2);
+        xassert_eqq($x, 2);
+        $n = 0;
+        foreach ($ps->message_list() as $mi) {
+            if (str_contains($mi->message, "Entry required to complete")) {
+                ++$n;
+            }
+        }
+        xassert_eqq($n, 1);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $o->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_implausible_email_no_contact() {
         $bad_email = "implausible@test.invalid";
         xassert(validate_email($bad_email));
