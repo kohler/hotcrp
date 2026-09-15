@@ -727,6 +727,97 @@ class PaperStatus_Tester {
         xassert_eqq($paper1->timeModified, $modtime);
     }
 
+    function test_save_final_phase_hidden_decision() {
+        // A user who cannot see the decision must get the same feedback
+        // from a final-phase form save whatever the decision is
+        xassert(!$this->conf->setting("au_seedec"));
+        xassert(!$this->conf->setting("seedec"));
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Camera-ready notes",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "text",
+            "sf/1/condition" => "phase:final"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Camera-ready notes");
+        xassert($opt && $opt->is_final());
+
+        $u_puneet = $this->conf->checked_user_by_email("puneet@catarina.usc.edu"); // author, not PC
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($paper1->has_author($u_puneet));
+        xassert($paper1->has_author($this->u_estrin)); // PC author
+        xassert_eqq($paper1->outcome, 0);
+
+        $reqs = [
+            ["status:phase" => "final", "has_final" => 1],
+            ["status:phase" => "final", "has_{$opt->formid}" => 1, $opt->formid => "Thanks"]
+        ];
+        foreach ([$u_puneet, $this->u_estrin] as $user) {
+            foreach ($reqs as $req) {
+                $feedback = $changes = [];
+                foreach (["accepted", "rejected", "unknown"] as $decision) {
+                    $ps = new PaperStatus($this->u_chair);
+                    xassert($ps->save_paper_json((object) ["pid" => 1, "decision" => $decision]));
+                    $paper1 = $user->checked_paper_by_id(1);
+                    xassert($user->allow_edit_paper($paper1));
+                    xassert(!$user->can_view_decision($paper1));
+                    $ps = new PaperStatus($user);
+                    $ps->prepare_save_paper_web(new Qrequest("POST", $req), $paper1);
+                    $feedback[$decision] = $ps->decorated_feedback_text();
+                    $changes[$decision] = $ps->change_list();
+                    xassert_not_str_contains($feedback[$decision], "unknown field");
+                    xassert(!$ps->has_change_at("final"));
+                    xassert(!$ps->has_change_at($opt));
+                    $ps->abort_save();
+                }
+                xassert_eqq($feedback["accepted"], $feedback["unknown"]);
+                xassert_eqq($feedback["rejected"], $feedback["unknown"]);
+                xassert_eqq($changes["accepted"], $changes["unknown"]);
+                xassert_eqq($changes["rejected"], $changes["unknown"]);
+            }
+        }
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->outcome, 0);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $opt->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$this->conf->options()->find("Camera-ready notes"));
+    }
+
+    function test_save_final_phase_visible_decision() {
+        // ...but an author who can see the decision can upload a final version
+        $old_final_open = $this->conf->setting("final_open");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $prow = $this->make_author_paper("Final-phase form save");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "accepted"]));
+        $this->conf->save_setting("final_open", 1);
+        $this->conf->save_refresh_setting("au_seedec", 1);
+
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        xassert($this->u_estrin->can_view_decision($prow));
+        xassert_eqq($prow->phase(), PaperInfo::PHASE_FINAL);
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", ["status:phase" => "final", "has_final" => 1]))->set_file_content("final:file", "%PDF-final\n", null, "application/pdf"), $prow));
+        xassert($ps->has_change_at("final"));
+        xassert_not_str_contains($ps->decorated_feedback_text(), "unknown field");
+        xassert($ps->execute_save());
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        xassert_gt($prow->finalPaperStorageId, 1);
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "unknown"]));
+        $this->conf->save_setting("final_open", $old_final_open);
+        $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+    }
+
     /** @return PaperInfo */
     private function make_author_paper($title) {
         $ps = new PaperStatus($this->u_estrin);

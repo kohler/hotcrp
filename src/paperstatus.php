@@ -1179,9 +1179,11 @@ final class PaperStatus extends MessageSet {
         }
 
         // Fields
+        $want_final = $phase === "final"
+            && $this->user->can_view_decision($this->prow);
         foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
-                && (!$o->is_final() || $phase === "final")
+                && (!$o->is_final() || $want_final)
                 && ($o->id === PaperOption::CONTACTSID || $phase !== "contacts")) {
                 // Do not test_editable yet; we test_editable in check_field.
                 // This is an arguable semantics decision -- one could say that
