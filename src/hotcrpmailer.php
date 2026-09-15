@@ -334,20 +334,23 @@ class HotCRPMailer extends Mailer {
     }
 
     function kw_deadline($args, $isbool, $uf) {
-        if ($uf->is_review && $args) {
-            $args .= "rev_soft";
-        } else if ($uf->is_review) {
-            $args = $this->guess_reviewdeadline();
-        }
-        if ($args) {
-            $t = $this->conf->setting($args);
-            if ($t === null && str_starts_with($args, "extrev_")) {
-                $t = $this->conf->setting("pcrev_" . substr($args, 7));
+        if ($uf->is_review) {
+            if ($args === "pc" || $args === "ext") {
+                $args .= "rev_soft";
+            } else {
+                $args = $this->guess_reviewdeadline();
             }
-            $t = $t ?? 0;
-        } else {
-            $t = 0;
+        } else if (!in_array($args, ["pcrev_soft", "extrev_soft", "pcrev_hard", "extrev_hard"], true)) {
+            $args = null;
         }
+        if (!$args) {
+            return $isbool ? false : null;
+        }
+        $t = $this->conf->setting($args);
+        if ($t === null && str_starts_with($args, "extrev_")) {
+            $t = $this->conf->setting("pcrev_" . substr($args, 7));
+        }
+        $t = $t ?? 0;
         if ($isbool) {
             return $t > 0;
         } else if ($args) {
