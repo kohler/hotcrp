@@ -434,6 +434,20 @@ class Comment_API extends MessageSet {
      * @param ?ResponseRound $rrd
      * @return ?CommentInfo the existing comment, or null if none matches */
     private function locate_target($cid, $rrd) {
+        // comment/response name (based on what was used to find it)
+        if ($rrd) {
+            if ($rrd->unnamed) {
+                $this->uccmttype = "Response";
+                $this->lccmttype = "response";
+            } else {
+                $this->uccmttype = $this->lccmttype = "{$rrd->name} response";
+            }
+        } else {
+            $this->uccmttype = "Comment";
+            $this->lccmttype = "comment";
+        }
+
+        // find comment
         $crow = null;
         if ($cid > 0) {
             $crow = self::find_comment($this->prow, "commentId={$cid}");
@@ -452,19 +466,6 @@ class Comment_API extends MessageSet {
                 || ($cid !== null && $cid !== $crow->commentId)) {
                 $this->stale = true;
             }
-        }
-
-        // comment/response name
-        if ($this->rrd) {
-            if ($this->rrd->unnamed) {
-                $this->uccmttype = "Response";
-                $this->lccmttype = "response";
-            } else {
-                $this->uccmttype = $this->lccmttype = "{$this->rrd->name} response";
-            }
-        } else {
-            $this->uccmttype = "Comment";
-            $this->lccmttype = "comment";
         }
         return $crow;
     }
