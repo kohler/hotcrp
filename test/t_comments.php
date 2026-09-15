@@ -492,6 +492,43 @@ class Comments_Tester {
         xassert(!$cmt->has_attachments());
     }
 
+    // A PC-only comment’s attachment must not be reachable by requesting it
+    // under a different document type. The /api/document existence oracle came
+    // from PaperInfo::document materialising the DTYPE_COMMENT row for a dt=0
+    // (submission) request, letting a viewer who can’t see the comment tell its
+    // docid from a nonexistent one.
+    function test_hidden_comment_attachment_docid_not_oracle() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // chair posts a PC-only comment with an attachment
+        $qreq = new Qrequest("POST", ["c" => "new", "text" => "PC eyes only", "visibility" => "pc", "attachment:1" => "new"]);
+        $qreq->approve_token();
+        $qreq->set_file_content("attachment:1:file", "secret", "s.txt", "text/plain");
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $attach_docid = (int) $j->comment->docs[0]->docid;
+        xassert_gt($attach_docid, 1);
+
+        // an author of paper 1 cannot see the PC-only comment
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($cid);
+        xassert(!!$cmt);
+        xassert(!$this->u_floyd->can_view_comment($paper1, $cmt));
+
+        // asking for the comment attachment as a submission document must find
+        // nothing, so a dt=0 probe cannot confirm the row exists…
+        $fresh = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($fresh->document(DTYPE_SUBMISSION, $attach_docid, true), null);
+        xassert_eqq($fresh->document(DTYPE_FINAL, $attach_docid, true), null);
+        // …while the legitimate comment-attachment lookup still resolves it
+        $cdoc = $fresh->document(DTYPE_COMMENT, $attach_docid, true);
+        xassert(!!$cdoc);
+        xassert_eqq($cdoc->paperStorageId, $attach_docid);
+
+        call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+    }
+
     // a comment attachment’s history lists only that comment’s attachments
     function test_attachment_history_per_comment() {
         $paper1 = $this->conf->checked_paper_by_id(1);
