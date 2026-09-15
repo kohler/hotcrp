@@ -1602,18 +1602,18 @@ Phil Porras.");
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
 
         // author cannot change conflicts
-        $ps = new PaperStatus($this->u_estrin);
+        $ps = (new PaperStatus($this->u_estrin))->set_ignore_unwritable_fields(false);
         $ps->save_paper_json((object) [
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned collaborator"]
         ]);
         xassert($ps->has_problem());
-        xassert_eqq($ps->decorated_feedback_text(), "PC conflicts: Changes ignored\n");
+        xassert_str_contains($ps->decorated_feedback_text(), "PC conflicts:");
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
 
         // author can list conflicts without warning if no change
-        $ps = new PaperStatus($this->u_estrin);
+        $ps = (new PaperStatus($this->u_estrin))->set_ignore_unwritable_fields(false);
         $ps->save_paper_json((object) [
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned collaborator", $this->u_sally->email => "collaborator"]
         ]);

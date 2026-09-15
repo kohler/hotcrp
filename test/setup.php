@@ -517,17 +517,17 @@ set_error_handler("xassert_error_handler");
  * @return string */
 function xassert_var_export($x) {
     if (is_scalar($x)) {
-        return json_encode($x);
+        return json_encode_db($x);
     } else if (is_object($x)) {
         $cn = get_class($x);
         $ch = spl_object_id($x);
         $xp = "[{$cn}#{$ch}]";
-        if (($s = json_encode($x))) {
+        if (($s = json_encode_db($x))) {
             $s = strlen($s) > 120 ? substr($s, 0, 120) . "...}" : $s;
             $xp .= $s;
         }
         return $xp;
-    } else if (($s = json_encode($x))) {
+    } else if (($s = json_encode_db($x))) {
         return strlen($s) > 121 ? substr($s, 0, 120) . "..." : $s;
     } else {
         return "[" . gettype($s) . "]";
@@ -780,11 +780,11 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
     } else {
         $ml = ["Array assertion failed, {$problem}\n"];
         if ($sort) {
-            $aj = json_encode(array_slice($actual, 0, 10));
+            $aj = json_encode_db(array_slice($actual, 0, 10));
             if (count($actual) > 10) {
                 $aj .= "...";
             }
-            $bj = json_encode(array_slice($expected, 0, 10));
+            $bj = json_encode_db(array_slice($expected, 0, 10));
             if (count($expected) > 10) {
                 $bj .= "...";
             }
