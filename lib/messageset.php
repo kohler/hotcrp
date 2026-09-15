@@ -332,8 +332,6 @@ class MessageSet {
 
     const IGNORE_MSGS = 1;
     const IGNORE_DUPS = 2;
-    const IGNORE_DUPS_FIELD = 6;
-    const IGNORE_DUPS_FIELD_FLAG = 4;
     const NEED_FMT = 8;
 
     // These numbers are stored in databases (e.g., PaperStorage.infoJson.cfmsg)
@@ -402,11 +400,10 @@ class MessageSet {
         return $oim;
     }
 
-    /** @param bool|0|2|6 $x
+    /** @param bool $x
      * @return $this */
     function set_ignore_duplicates($x) {
-        $f = is_bool($x) ? ($x ? self::IGNORE_DUPS : 0) : $x;
-        $this->change_ms_flags(self::IGNORE_DUPS | self::IGNORE_DUPS_FIELD_FLAG, $f);
+        $this->change_ms_flags(self::IGNORE_DUPS, $x ? self::IGNORE_DUPS : 0);
         return $this;
     }
 
@@ -429,8 +426,14 @@ class MessageSet {
     }
 
     /** @param MessageItem $mi
-     * @return int|false */
-    function message_index($mi) {
+     * @param bool $ignore_field
+     * @return int|false
+     *
+     * Return the index of an already-registered message compatible with `$mi`,
+     * if one exists and is easy to find. Used to suppress duplicates. Not
+     * precise: if there are more than 100 messages, this function can return
+     * `false` rather than the index of a duplicate. */
+    function message_index($mi, $ignore_field = false) {
         if ($mi->need_fmt()) {
             error_log("cannot call message_index on unformatted message " . debug_string_backtrace());
             return false;
@@ -438,18 +441,21 @@ class MessageSet {
         if ($this->problem_status < $mi->status) {
             return false;
         }
-        $ignore_field = ($this->_ms_flags & self::IGNORE_DUPS_FIELD_FLAG) !== 0;
         if ($mi->field !== null
             && !$ignore_field
             && ($this->errf[$mi->field] ?? -5) < $mi->status) {
             return false;
         }
         $this->apply_fmt();
-        foreach ($this->msgs as $i => $m) {
+        $nmsgs = count($this->msgs);
+        // do not scan long message lists: first 10 + last 90
+        for ($i = 0; $i !== $nmsgs; $i = ($i === 9 ? max($nmsgs - 90, 10) : $i + 1)) {
+            $m = $this->msgs[$i];
             if ($m->status === $mi->status
                 && ($ignore_field || $m->field === $mi->field)
-                && $m->message === $mi->message)
+                && $m->message === $mi->message) {
                 return $i;
+            }
         }
         return false;
     }

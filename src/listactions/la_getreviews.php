@@ -20,8 +20,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         $rf = $user->conf->review_form();
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $texts = $pids = [];
-        $ms = (new MessageSet)->set_ignore_duplicates(true)
-            ->set_message_formatter($user->conf);
+        $ms = (new MessageSet)->set_message_formatter($user->conf);
         foreach ($ssel->paper_set($user) as $prow) {
             $rctext = "";
             if ($this->include_paper) {

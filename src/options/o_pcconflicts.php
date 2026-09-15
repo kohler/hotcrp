@@ -176,10 +176,8 @@ class PCConflicts_PaperOption extends PaperOption {
                 || !(is_bool($v) || is_int($v) || is_string($v))) {
                 return PaperValue::make_estop($prow, $this, "<0>Validation error");
             }
-            $ct = $confset->parse_json($v);
-            if ($ct === false) {
-                $pv->warning("<0>Invalid conflict type ‘{$v}’");
-                $ct = Conflict::CT_DEFAULT;
+            if (($ct = $confset->parse_json($v)) === false) {
+                return PaperValue::make_estop($prow, $this, "<0>Invalid conflict type ‘{$v}’");
             }
             $emails[] = $email;
             $values[] = $ct;
@@ -203,6 +201,10 @@ class PCConflicts_PaperOption extends PaperOption {
                 $this->update_value_map($vm, $u->contactId, $values[$i]);
             } else {
                 $pv->warning("<0>Email address ‘{$emails[$i]}’ does not match a PC member");
+                if ($pv->message_count() > 49) {
+                    $pv->estop("<0>Too many issues, giving up");
+                    return $pv;
+                }
             }
         }
 

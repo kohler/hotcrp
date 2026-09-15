@@ -983,6 +983,8 @@ class UserStatus extends MessageSet {
     }
 
 
+    const NAME_MISSING_MESSAGE = "<0>Please enter your name";
+
     static function crosscheck_main(UserStatus $us) {
         if ($us->profile_topic() !== "main"
             || $us->is_new_user()) {
@@ -993,8 +995,8 @@ class UserStatus extends MessageSet {
         if ($user->firstName === ""
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
-            $us->warning_at("firstName", "<0>Please enter your name");
-            $us->warning_at("lastName", "<0>Please enter your name");
+            $us->warning_at("firstName", self::NAME_MISSING_MESSAGE);
+            $us->warning_at("lastName", self::NAME_MISSING_MESSAGE);
         }
         if ($user->affiliation === ""
             && ($user->contactId > 0 || !$cdbu || $cdbu->affiliation === "")) {

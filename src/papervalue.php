@@ -307,6 +307,10 @@ final class PaperValue implements JsonSerializable {
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
     }
+    /** @return int */
+    function message_count() {
+        return $this->_ms ? $this->_ms->message_count() : 0;
+    }
     /** @return void */
     function clear_messages() {
         $this->_ms = null;
