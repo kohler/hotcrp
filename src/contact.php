@@ -4732,43 +4732,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
-     * @return 0|1|2 */
-    function edit_option_state(PaperInfo $prow, $opt) {
-        if ($opt->id === PaperOption::CONTACTSID) {
-            return 2;
-        }
-        $override_ec = ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0;
-        if (!$opt->on_form()
-            || !$opt->test_exists($prow, $override_ec)
-            || (!$opt->test_editable($prow) && !$this->can_manage($prow))
-            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || !$this->scope_allows(TS::S_SUB_WRITE | ($opt->has_document() ? TS::S_DOC_WRITE : 0), $prow)) {
-            return 0;
-        }
-        if ($prow->outcome > 0
-            && $prow->viewable_phase($this) === PaperInfo::PHASE_FINAL) {
-            if ($this->edit_paper_state($prow) !== 2 || $opt->id === 0) {
-                return 0;
-            }
-        } else if ($opt->is_final()) {
-            return 0;
-        }
-        if ($override_ec
-            && !$opt->test_exists($prow)) {
-            return $opt->exists_script_expression($prow) ? 1 : 0;
-        }
-        return 2;
-    }
-
-    /** @param PaperOption $opt
-     * @return bool */
-    function can_edit_option(PaperInfo $prow, $opt) {
-        $eos = $this->edit_option_state($prow, $opt);
-        return $eos === 2
-            || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0);
-    }
-
-    /** @param PaperOption $opt
      * @return ?FailureReason */
     function perm_view_option(PaperInfo $prow, $opt) {
         if ($this->can_view_option($prow, $opt)) {
@@ -4816,6 +4779,43 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             || ($oview === PaperOption::VIS_AUTHOR && $this->can_view_some_authors())
             || ($oview === PaperOption::VIS_CONFLICT && $this->can_view_some_conflicts())
             || ($oview === PaperOption::VIS_REVIEW && $this->is_reviewer());
+    }
+
+    /** @param PaperOption $opt
+     * @return 0|1|2 */
+    function edit_option_state(PaperInfo $prow, $opt) {
+        if ($opt->id === PaperOption::CONTACTSID) {
+            return 2;
+        }
+        $override_ec = ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0;
+        if (!$opt->on_form()
+            || !$opt->test_exists($prow, $override_ec)
+            || (!$opt->test_editable($prow) && !$this->can_manage($prow))
+            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
+            || !$this->scope_allows(TS::S_SUB_WRITE | ($opt->has_document() ? TS::S_DOC_WRITE : 0), $prow)) {
+            return 0;
+        }
+        if ($prow->outcome > 0
+            && $prow->viewable_phase($this) === PaperInfo::PHASE_FINAL) {
+            if ($this->edit_paper_state($prow) !== 2 || $opt->id === 0) {
+                return 0;
+            }
+        } else if ($opt->is_final()) {
+            return 0;
+        }
+        if ($override_ec
+            && !$opt->test_exists($prow)) {
+            return $opt->exists_script_expression($prow) ? 1 : 0;
+        }
+        return 2;
+    }
+
+    /** @param PaperOption $opt
+     * @return bool */
+    function can_edit_option(PaperInfo $prow, $opt) {
+        $eos = $this->edit_option_state($prow, $opt);
+        return $eos === 2
+            || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0);
     }
 
 
