@@ -2077,6 +2077,59 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // Attachments with duplicate names get stable uniquified member names
+    // end to end (the naming rule and its cost are pinned by
+    // DocumentBasics::test_docset_unique_filenames).
+    function test_comment_duplicate_attachment_names() {
+        $orig_rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $paper6 = $this->u_mgbaker->checked_paper_by_id(6);
+
+        $qreq = TestQreq::post_json(["text" => "figs", "visibility" => "rev",
+            "docs" => [["filename" => "fig.txt", "content" => "F0"],
+                       ["filename" => "fig (2).txt", "content" => "F1"],
+                       ["filename" => "fig (2).txt", "content" => "F2"],
+                       ["filename" => "fig.txt", "content" => "F3"]]]);
+        $j = call_api("=comment", $this->u_mgbaker, $qreq, $paper6);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $ufns = [];
+        foreach ($j->comment->docs as $dj) {
+            $ufns[] = $dj->unique_filename ?? $dj->filename;
+        }
+        xassert_eqq($ufns, ["fig.txt", "fig (2).txt", "fig (3).txt", "fig (1).txt"]);
+        $paper6 = $this->u_mgbaker->checked_paper_by_id(6);
+        $dl = call_api_result("document", $this->u_mgbaker, ["p" => "6", "dt" => "comment-cx{$cid}", "attachment" => "fig (1).txt"], $paper6);
+        xassert_eqq($dl->response_code(), 200);
+        xassert_eqq($dl->header("ETag"), "\"" . $j->comment->docs[3]->hash . "\"");
+        $dl = call_api_result("document", $this->u_mgbaker, ["p" => "6", "dt" => "comment-cx{$cid}", "attachment" => "fig (4).txt"], $paper6);
+        xassert_eqq($dl->response_code(), 404);
+
+        $docs = array_fill(0, 50, ["filename" => "same.txt", "content" => "SAME"]);
+        $qreq = TestQreq::post_json(["text" => "many", "visibility" => "rev", "docs" => $docs], ["c" => (string) $cid]);
+        $j = call_api("=comment", $this->u_mgbaker, $qreq, $paper6);
+        xassert($j->ok);
+        $paper6 = $this->u_mgbaker->checked_paper_by_id(6);
+        $j = call_api("comments", $this->u_mgbaker, ["p" => "6"], $paper6);
+        xassert($j->ok);
+        $cj = null;
+        foreach ($j->comments as $x) {
+            if ((int) $x->cid === $cid) {
+                $cj = $x;
+            }
+        }
+        xassert($cj !== null);
+        $docs = $cj ? $cj->docs : [];
+        xassert_eqq(count($docs), 50);
+        xassert_eqq($docs[0]->unique_filename ?? $docs[0]->filename ?? null, "same.txt");
+        xassert_eqq($docs[49]->unique_filename ?? null, "same (49).txt");
+
+        $j = call_api("=comment", $this->u_mgbaker, ["c" => (string) $cid, "delete" => 1], $paper6);
+        xassert($j->ok);
+        $this->conf->save_refresh_setting("rev_open", $orig_rev_open);
+        MailChecker::clear();
+    }
+
     // The comment object can be supplied in a `json` form field; a `content_file`
     // in `docs` then references an uploaded file field.
     function test_comment_json_form_field() {

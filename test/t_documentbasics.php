@@ -273,6 +273,100 @@ class DocumentBasics_Tester {
         xassert_eqq($d->pattern(), "%%%02h%x");
     }
 
+    /** @param list<string> $fns
+     * @return list<string> */
+    private function docset_unique_filenames($fns) {
+        $ds = new DocumentInfoSet;
+        $doc = DocumentInfo::make_content($this->conf, "x", "text/plain");
+        foreach ($fns as $fn) {
+            xassert(!!$ds->add_as($doc, $fn));
+        }
+        $ufns = [];
+        for ($i = 0; $i !== $ds->count(); ++$i) {
+            $ufns[] = $ds->filename_by_index($i);
+        }
+        return $ufns;
+    }
+
+    /** @param list<string> $fns
+     * @return list<string> */
+    static private function reference_unique_filenames($fns) {
+        // straightforward statement of the member-naming rule
+        $ufns = [];
+        foreach ($fns as $fn) {
+            while ($fn !== "" && in_array($fn, $ufns, true)) {
+                if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
+                    $fn = $m[1] . ((int) $m[2] + 1) . $m[3];
+                } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
+                    $fn = $m[1] . " (1)" . $m[2];
+                } else {
+                    $fn .= " (1)";
+                }
+            }
+            $ufns[] = $fn;
+        }
+        return $ufns;
+    }
+
+    function test_docset_unique_filenames() {
+        // duplicate member names are uniquified minimally and stably
+        xassert_eqq($this->docset_unique_filenames(["a.txt", "a.txt", "a.txt"]),
+                    ["a.txt", "a (1).txt", "a (2).txt"]);
+        xassert_eqq($this->docset_unique_filenames(["fig.txt", "fig (2).txt", "fig (2).txt", "fig.txt", "fig.txt"]),
+                    ["fig.txt", "fig (2).txt", "fig (3).txt", "fig (1).txt", "fig (4).txt"]);
+        xassert_eqq($this->docset_unique_filenames(["README", "README", ".txt", ".txt", "x (1)", "x (1)", "x", "x"]),
+                    ["README", "README (1)", ".txt", ".txt (1)", "x (1)", "x (2)", "x", "x (3)"]);
+        xassert_eqq($this->docset_unique_filenames(["", "", "10", "10", "010"]),
+                    ["", "", "10", "10 (1)", "010"]);
+
+        // lookups by member name are exact
+        $ds = new DocumentInfoSet;
+        foreach (["", "", "10", "10", "010"] as $i => $fn) {
+            $ds->add_string_as("doc{$i}", $fn);
+        }
+        xassert_eqq($ds->document_by_filename("10")->content(), "doc2");
+        xassert_eqq($ds->document_by_filename("10 (1)")->content(), "doc3");
+        xassert_eqq($ds->document_by_filename("010")->content(), "doc4");
+        xassert_eqq($ds->document_by_filename("1e1"), null);
+        xassert_eqq($ds->document_by_filename(""), null);
+        xassert_eqq($ds->document_by_filename(null), null);
+        xassert(isset($ds["010"]));
+        xassert(!isset($ds["10.0"]));
+        xassert(!isset($ds[""]));
+        xassert_eqq($ds["010"]->content(), "doc4");
+        xassert_eqq($ds["0x0A"], null);
+        xassert_eqq($ds[1]->content(), "doc1");
+        xassert_eqq($ds[5], null);
+
+        // interleaved plain, numbered, and zero-padded duplicates
+        $fns = [];
+        for ($i = 0; $i !== 60; ++$i) {
+            array_push($fns, "a.txt", "a (1).txt", "a (03).txt", "a (2)", "a",
+                       "a (" . ($i % 7) . ").txt", "a (1) (1).txt", "b.tar.gz", "b.tar (1).gz");
+        }
+        $ufns = $this->docset_unique_filenames($fns);
+        xassert_eqq($ufns, self::reference_unique_filenames($fns));
+        xassert_eqq(count(array_unique($ufns)), count($fns));
+        $ds = new DocumentInfoSet;
+        foreach ($fns as $i => $fn) {
+            $ds->add_string_as("doc{$i}", $fn);
+        }
+        foreach ($ufns as $i => $ufn) {
+            xassert_eqq($ds->document_by_filename($ufn)->content(), "doc{$i}");
+        }
+
+        // many identical names must not take cubic time: this is a few
+        // milliseconds, but took about a minute when each probe rescanned
+        // all prior names from `(1)` (under test/run.php that surfaces as
+        // PHP's 30s maximum-execution-time fatal rather than this xassert)
+        $t0 = microtime(true);
+        $ufns = $this->docset_unique_filenames(array_fill(0, 5000, "same.pdf"));
+        xassert_lt(microtime(true) - $t0, 2.0);
+        xassert_eqq($ufns[0], "same.pdf");
+        xassert_eqq($ufns[4999], "same (4999).pdf");
+        xassert_eqq(count(array_unique($ufns)), 5000);
+    }
+
     function test_content_binary_hash() {
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
 

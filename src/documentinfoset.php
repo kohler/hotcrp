@@ -37,6 +37,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $conf;
     /** @var list<string> */
     private $ufn = [];
+    /** @var array<string,int> */
+    private $_ufnidx = [];
+    /** @var array<string,string> */
+    private $_ufnnext = [];
     /** @var list<DocumentInfo> */
     private $docs = [];
     /** @var ?MessageSet */
@@ -51,8 +55,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_have_tempdir = false;
     /** @var ?string */
     private $_tempdir;
-    /** @var ?list<string> */
-    private $_dirfn;
+    /** @var array<string,true> */
+    private $_dirfn = [];
     /** @var ?string */
     private $_filestore;
     /** @var list<DocumentInfoSet_ZipInfo> */
@@ -94,26 +98,38 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             }
             while ($slash !== false) {
                 $dir = substr($fn, 0, $slash);
-                if (in_array($dir, $this->ufn, true)) {
+                if (isset($this->_ufnidx[$dir])) {
                     return $this->_add_fail($doc, $fn);
                 }
-                if (!in_array($dir, $this->_dirfn ?? [], true)) {
-                    $this->_dirfn[] = $dir;
-                }
+                $this->_dirfn[$dir] = true;
                 $slash = strpos($fn, "/", $slash + 1);
             }
-            if ($this->_dirfn !== null && in_array($fn, $this->_dirfn, true)) {
+            if (isset($this->_dirfn[$fn])) {
                 return $this->_add_fail($doc, $fn);
             }
         }
-        while ($fn !== "" && in_array($fn, $this->ufn, true)) {
-            if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
+        // uniquify as `f.txt`, `f (1).txt`, `f (2).txt`, ...; `_ufnnext[$t]`
+        // is a later name on `$t`'s successor chain with every name between
+        // known taken, so jumping to it matches stepping (names are never
+        // released)
+        $tried = [];
+        while ($fn !== "" && isset($this->_ufnidx[$fn])) {
+            $tried[] = $fn;
+            if (isset($this->_ufnnext[$fn])) {
+                $fn = $this->_ufnnext[$fn];
+            } else if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
                 $fn = $m[1] . ((int) $m[2] + 1) . $m[3];
             } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
                 $fn = $m[1] . " (1)" . $m[2];
             } else {
                 $fn .= " (1)";
             }
+        }
+        foreach ($tried as $tfn) {
+            $this->_ufnnext[$tfn] = $fn;
+        }
+        if ($fn !== "") {
+            $this->_ufnidx[$fn] = count($this->ufn);
         }
         $this->ufn[] = $fn;
         $this->docs[] = $doc->with_member_filename($fn);
@@ -165,11 +181,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return $doc;
     }
-    /** @param string $fn
+    /** @param ?string $fn
      * @return ?DocumentInfo */
     function document_by_filename($fn) {
-        $i = array_search($fn, $this->ufn);
-        return $i !== false && $fn !== "" ? $this->docs[$i] : null;
+        $i = is_string($fn) ? $this->_ufnidx[$fn] ?? null : null;
+        return $i !== null ? $this->docs[$i] : null;
     }
     /** @param int $i
      * @return ?string */
@@ -187,14 +203,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function offsetExists($offset) {
         return is_int($offset)
             ? isset($this->docs[$offset])
-            : $offset !== "" && in_array($offset, $this->ufn, true);
+            : is_string($offset) && isset($this->_ufnidx[$offset]);
     }
     #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @return ?DocumentInfo */
     function offsetGet($offset) {
-        if (!is_int($offset) && $offset !== "") {
-            $offset = array_search($offset, $this->ufn);
+        if (is_string($offset)) {
+            $offset = $this->_ufnidx[$offset] ?? null;
         }
         return is_int($offset) ? $this->docs[$offset] ?? null : null;
     }
