@@ -100,6 +100,8 @@ class ReviewValues extends MessageSet {
     private $single_approval;
     /** @var ?list<string> */
     private $blank;
+    /** @var bool */
+    private $was_blank = false;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -738,6 +740,7 @@ class ReviewValues extends MessageSet {
         $this->reviewId = $this->review_ordinal_id = null;
         $this->_save_status = 0;
         $this->stage_rrow = $this->stage_user = null;
+        $this->was_blank = false;
 
         // look up paper
         if (!$prow) {
@@ -974,6 +977,14 @@ class ReviewValues extends MessageSet {
         return $cl;
     }
 
+    /** True if the last `prepare_save` refused an uploaded form because it
+     * contained no field values. `finish` reports these in aggregate; a caller
+     * that does not call `finish` should report this itself.
+     * @return bool */
+    function was_blank() {
+        return $this->was_blank;
+    }
+
     /** @param ReviewField $f
      * @param ReviewInfo $rrow
      * @return array{int|string,int|string} */
@@ -1155,6 +1166,7 @@ class ReviewValues extends MessageSet {
         // blank uploaded forms are ignored
         if (!$any_fval && $this->text !== null) {
             $this->blank[] = "#{$prow->paperId}";
+            $this->was_blank = true;
             return false;
         }
 

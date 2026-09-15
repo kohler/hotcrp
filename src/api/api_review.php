@@ -839,6 +839,10 @@ class Review_API extends MessageSet {
 
         $prow = $this->prow ?? $rv->saved_prow();
         $rid = null;
+        if (!$prepared && $rv->was_blank()) {
+            $this->warning_at(null, $this->conf->_("<5>Ignored blank reviews for {:list}", ["#{$prow->paperId}"]));
+            $this->inform_at(null, "<0>Fill out the form and upload it again.");
+        }
         if ($this->ivalid && !$this->dry_run_here && $rv->reviewId && $prow) {
             $rid = $rv->review_ordinal_id;
             $rrow2 = $prow->fresh_review_by_id($rv->reviewId);
@@ -878,6 +882,11 @@ class Review_API extends MessageSet {
         // generate result
         $ok = empty($this->status_list)
             || array_find($this->status_list, function ($x) { return !!$x->valid; });
+        // every failure must explain itself: the response drops an empty
+        // `message_list`, so a silent failure would arrive as `{ok: false}` alone
+        if (!$ok && !$this->has_message()) {
+            $this->error_at(null, "<0>Internal error");
+        }
         // 400 status only when nothing was valid
         $status = $this->single ? $this->status : 200;
         if ($this->single && $status === 200 && !$ok && $this->has_error()) {

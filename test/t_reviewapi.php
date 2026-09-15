@@ -476,6 +476,26 @@ class ReviewAPI_Tester {
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
 
+    function test_post_blank_text_upload() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        // estrin's assigned review on #18 is empty, so this downloads a blank form
+        $dl = call_api_result("review", $this->u_estrin,
+            TestQreq::get(["p" => 18, "format" => "form"]));
+        xassert($dl instanceof Downloader);
+        // uploading it unchanged saves nothing, but must still say why
+        $qreq = TestQreq::post(["p" => 18, "dry_run" => "if_error"])
+            ->set_file_content("file", $dl->content_string(), "review.txt", "text/plain");
+        $j = call_api("review", $this->u_estrin, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_eqq($j->valid, false);
+        xassert_eqq($j->change_list, []);
+        xassert(!empty($j->message_list ?? []));
+        xassert_str_contains(json_encode($j->message_list), "Ignored blank");
+        $prow->load_reviews(true);
+        xassert_eqq($prow->checked_review_by_user($this->u_estrin)->reviewStatus,
+                    ReviewInfo::RS_EMPTY);
+    }
+
     function test_post_text_body() {
         $prow = $this->conf->checked_paper_by_id(18);
         $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
