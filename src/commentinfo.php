@@ -50,8 +50,8 @@ class CommentInfo {
     public $message_list;
     /** @var ?Contact */
     private $_commenter;
-    /** @var ?bool */
-    private $_recently_censored;
+    /** @var int */
+    private $_recently_censored = 0;
     /** @var ?bool */
     private $_recently_censorable;
     /** @var ?array<string,mixed> */
@@ -367,6 +367,7 @@ class CommentInfo {
         }
         // skip mentions beyond boundary
         if ($mn[1] >= $censor_until) {
+            $this->_recently_censored |= 1;
             return false;
         }
         // do not censor visible shepherd
@@ -451,8 +452,12 @@ class CommentInfo {
                     $r = $this->_mention_pseudonym($viewer, $mn[0], $mn[3]);
                     $t = substr_replace($t, $r, $mn[1] + $delta, $mn[2] - $mn[1]);
                     $delta += strlen($r) - ($mn[2] - $mn[1]);
-                    $this->_recently_censored = true;
+                    $this->_recently_censored |= 2;
                 }
+            }
+            if (($this->_recently_censored & 1) !== 0) {
+                // truncate where we stopped censoring
+                $t = UnicodeHelper::utf8_truncate($t, $censor_until);
             }
         }
         $this->_recently_censorable = null;
@@ -1013,7 +1018,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br>"
-            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->content($viewer, 300), 300))
+            . htmlspecialchars(UnicodeHelper::utf8_word_abbreviate($this->content($viewer, 600), 300))
             . "</td></tr>";
     }
 
@@ -1317,13 +1322,13 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
                 }
                 continue;
             }
-            $this->_recently_censored = false;
+            $this->_recently_censored = 0;
             HotCRPMailer::send_to($mentionee, "@mentionnotify", [
                 "prow" => $this->prow,
                 "comment_row" => $this
             ]);
             $notification->flags |= NotificationInfo::SENT;
-            if ($this->_recently_censored) {
+            if ($this->_recently_censored !== 0) {
                 $notification->flags |= NotificationInfo::CENSORED;
             }
         }
@@ -1390,11 +1395,11 @@ set {$okey}=(t.maxOrdinal+1) where paperId={$this->paperId} and commentId={$this
             }
             $notification->flags |= NotificationInfo::ATTEMPTED;
             // prepare mail
-            $this->_recently_censored = false;
+            $this->_recently_censored = 0;
             if (($p = HotCRPMailer::prepare_to($minic, $tmpl, $info))) {
                 $preps[] = $p;
                 $notification->flags |= NotificationInfo::SENT;
-                if ($this->_recently_censored) {
+                if ($this->_recently_censored !== 0) {
                     $notification->flags |= NotificationInfo::CENSORED;
                 }
             }

@@ -410,7 +410,7 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @param int $len  maximum length; > 65535 means ∞
+     * @param int $len  maximum length in Unicode grapheme clusters; > 65535 means ∞
      * @param int $suffix_len
      * @return string */
     static function utf8_char_abbreviate($str, $len, $suffix_len = 0) {
@@ -435,7 +435,7 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @param int $len  maximum prefix length; > 65535 means ∞
+     * @param int $len  maximum prefix length in Unicode grapheme clusters; > 65535 means ∞
      * @return string|false */
     static function utf8_word_prefix($str, $len) {
         if (strlen($str) <= $len || $len > 65535) {
