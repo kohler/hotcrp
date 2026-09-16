@@ -4424,7 +4424,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @return FailureReason */
     function no_paper_whynot($pid) {
         $whynot = new FailureReason($this->conf, ["paperId" => $pid]);
-        if (!ctype_digit((string) $pid)) {
+        if ((stoi((string) $pid) ?? -1) < 0) {
             $whynot["invalidId"] = "paper";
         } else if ($this->can_view_missing_papers()) {
             $whynot["noPaper"] = true;
@@ -5343,7 +5343,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function can_edit_preference_for(?PaperInfo $prow, Contact $user) {
         if (!$user->isPC) {
             return false;
-        } else if (!$prow) {
+        }
+        if (!$prow) {
             return ($user->contactId === $this->contactId
                     && $this->conf->allow_pc_edit_preference()
                     && $this->scope_allows_some(TS::S_PREF_WRITE))
@@ -5351,11 +5352,27 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && $this->scope_allows_some(TS::S_PREF_ADMIN));
         }
         $rights = $this->rights($prow);
-        return ($user->contactId === $this->contactId
-                && $this->conf->allow_pc_edit_preference()
-                && $rights->scope_allows(TS::S_PREF_WRITE))
-            || ($rights->is_admin()
-                && $rights->scope_allows(TS::S_PREF_ADMIN));
+        if ($user->contactId === $this->contactId
+            && $this->conf->allow_pc_edit_preference()
+            && $rights->scope_allows(TS::S_PREF_WRITE)) {
+            // Allow editing if can view the paper OR (1) appears to have
+            // recently been visible and (2) no track restriction.
+            if ($rights->allow_pc_broad()) {
+                return true;
+            }
+            $pc_seeall = $this->conf->setting("pc_seeall") > 0;
+            if ((($prow->timeWithdrawn + 86400 >= Conf::$now
+                  && ($prow->timeSubmitted !== 0 || $pc_seeall))
+                 || ($prow->timeSubmitted === 0
+                     && $prow->timeWithdrawn === 0
+                     && $pc_seeall
+                     && $prow->submission_round()->submit + 86400 >= Conf::$now))
+                && $this->conf->check_tracks($prow, $this, Track::VIEW)) {
+                return true;
+            }
+        }
+        return $rights->is_admin()
+            && $rights->scope_allows(TS::S_PREF_ADMIN);
     }
 
     /** @return bool */

@@ -1834,7 +1834,7 @@ class AssignmentSet {
         foreach ($pids as $p) {
             $prow = $this->astate->prow($p);
             if (!$prow) {
-                $this->error("<5>" . $this->user->no_paper_whynot($p)->unparse_html());
+                $this->astate->paper_error($this->user->no_paper_whynot($p));
                 continue;
             }
             $ret = $this->apply_paper($prow, $contacts, $aparser, $req);

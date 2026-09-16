@@ -70,13 +70,20 @@ class Preference_AssignmentParser extends AssignmentParser {
         return $prow->conf->_("<0>User {$user->email} can’t enter a preference for {submission} #{}", $prow->paperId);
     }
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
-        if (!$state->user->can_edit_preference_for($prow, $user)) {
-            if (($m = self::cannot_edit_preference_message($state->user, $prow, $user, true))) {
-                $state->paper_error($m);
-            }
-            return false;
+        if ($state->user->can_edit_preference_for($prow, $user)) {
+            return $user->contactId > 0;
         }
-        return $user->contactId > 0;
+        // Cannot edit this preference. If the acting user cannot even view the
+        // submission, report its non-viewability with the same masked reason as
+        // a missing paper, so a hidden-track submission is indistinguishable
+        // from a nonexistent one (mirroring Preference_API); otherwise explain
+        // why the preference cannot be entered.
+        if (($whynot = $state->user->perm_view_paper($prow))) {
+            $state->paper_error($whynot);
+        } else if (($m = self::cannot_edit_preference_message($state->user, $prow, $user, true))) {
+            $state->paper_error($m);
+        }
+        return false;
     }
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;

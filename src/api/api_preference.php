@@ -34,19 +34,14 @@ class Preference_API {
         // non-viewable papers, we only return the entered preference for viewable papers.
         if (!$prow) {
             $fr = $qreq->annex("paper_whynot");
-            if (!$fr || isset($fr["invalidId"]) || isset($fr["noPaper"])) {
+            if (!$fr
+                || isset($fr["invalidId"])
+                || isset($fr["noPaper"])
+                || !$fr->prow
+                || !$viewer->can_edit_preference_for($fr->prow, $u)) {
                 return Conf::paper_error_json_result($fr);
             }
-            if ($postpref
-                && $fr->prow
-                && $viewer->can_edit_preference_for($fr->prow, $u)) {
-                $postpref->save($fr->prow->paperId, $u->contactId, [$viewer->conf, "qe"]);
-            }
-            $jr = new JsonResult(["ok" => false]);
-            if ($postpref) {
-                $fr->append_to($jr, "p", MessageSet::WARNING);
-            }
-            return $jr;
+            $prow = $fr->prow;
         }
 
         $jr = null;
