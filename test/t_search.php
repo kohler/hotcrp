@@ -570,6 +570,32 @@ class Search_Tester {
         $this->conf->load_settings();
     }
 
+    function test_restricted_option_sqlexpr() {
+        // A restricted-visibility submission field must not narrow the SQL
+        // prefilter for a searcher who cannot view it (row membership would
+        // otherwise leak the hidden value by timing); an administrator still
+        // gets the exact prefilter.
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1, "sf/1/id" => "new", "sf/1/name" => "Restricted SF",
+            "sf/1/order" => 100, "sf/1/type" => "text", "sf/1/visibility" => "admin"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Restricted SF");
+        xassert($opt && !$opt->always_visible());
+        try {
+            $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+            xassert(!$pc->is_track_manager());
+            $pcs = new PaperSearch($pc, "has:\"Restricted SF\"");
+            xassert_eqq($pcs->main_term()->sqlexpr(new SearchQueryInfo($pcs)), "true");
+            $chs = new PaperSearch($chair, "has:\"Restricted SF\"");
+            xassert_str_contains($chs->main_term()->sqlexpr(new SearchQueryInfo($chs)), "PaperOption");
+        } finally {
+            $sv = SettingValues::make_request($chair, ["has_sf" => 1, "sf/1/id" => $opt->id, "sf/1/delete" => 1]);
+            $sv->execute();
+        }
+    }
+
     function test_sensitive_search_rate_limit() {
         $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($u->contactId > 0);
