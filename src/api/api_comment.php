@@ -578,13 +578,6 @@ class Comment_API extends MessageSet {
         }
 
         if (!$this->has_error_since($this->item_message_count)) {
-            // optimistic-concurrency precondition (a fresh skeleton has
-            // timeModified 0, so a new comment never trips this)
-            if ($req["if_unmodified_since"] !== null
-                && $req["if_unmodified_since"] < $crow->timeModified) {
-                $this->stale = true;
-            }
-
             // process the request. A stale edit still runs so its attempted
             // `change_list` is computed, but `save_comment` aborts rather than
             // committing (leaving `$crow` at the server's current version).
@@ -739,6 +732,13 @@ class Comment_API extends MessageSet {
         if ($whynot) {
             $whynot->set("expand", true)->append_to($this, null, 2);
             return null;
+        }
+
+        // optimistic-concurrency precondition (a fresh skeleton has
+        // timeModified 0, so a new comment never trips this)
+        if ($req["if_unmodified_since"] !== null
+            && $req["if_unmodified_since"] < $xcrow->timeModified) {
+            $this->stale = true;
         }
 
         // import attachments
