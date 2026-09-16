@@ -46,13 +46,13 @@ class ReviewerMatch_Fexpr extends Fexpr {
         // NB the following case also catches attempts to view a non-viewable
         // user tag (the csearch will return nothing).
         if ($this->csearch->is_empty()) {
-            return "null";
+            return "false";
         }
         $t = $state->current_uid();
-        return "({$t} !== null ? array_search({$t}, [" . join(", ", $this->csearch->user_ids()) . "]) !== false : null)";
+        return "({$t} !== null ? array_search({$t}, [" . join(", ", $this->csearch->user_ids()) . "]) !== false : false)";
     }
-    function matches_at_most_once() {
-        return count($this->csearch->user_ids()) <= 1;
+    function allow_autoaggregate() {
+        return true;
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {

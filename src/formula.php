@@ -324,7 +324,7 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return bool */
-    function matches_at_most_once() {
+    function allow_autoaggregate() {
         return false;
     }
 
@@ -471,8 +471,8 @@ class Ternary_Fexpr extends Fexpr {
         $tf = $state->ltemp($this->args[2]->compile($state));
         return "({$t} ? {$tt} : {$tf})";
     }
-    function matches_at_most_once() {
-        return $this->args[0]->matches_at_most_once()
+    function allow_autoaggregate() {
+        return $this->args[0]->allow_autoaggregate()
             && $this->args[2]->format() === Fexpr::FNULL;
     }
 }
@@ -527,9 +527,9 @@ class And_Fexpr extends Fexpr {
         $t2 = $state->ltemp($this->args[1]->compile($state));
         return "({$t1} ? {$t2} : {$t1})";
     }
-    function matches_at_most_once() {
-        return $this->args[0]->matches_at_most_once()
-            || $this->args[1]->matches_at_most_once();
+    function allow_autoaggregate() {
+        return $this->args[0]->allow_autoaggregate()
+            || $this->args[1]->allow_autoaggregate();
     }
 }
 
@@ -2181,7 +2181,7 @@ final class Formula implements JsonSerializable {
         $inferred_index = $fe->inferred_index();
         if ($inferred_index !== Fexpr::IDX_NONE
             && ($this->_flags & self::ALLOW_INDEXED) === 0) {
-            if ($fe->matches_at_most_once()) {
+            if ($fe->allow_autoaggregate()) {
                 $some_fe = new Some_Fexpr($fe, $fe->some_inferred_index());
                 $some_fe->apply_strspan($fe->pos1, $fe->pos2, null);
                 return $this->_adjust_fexpr($some_fe);
