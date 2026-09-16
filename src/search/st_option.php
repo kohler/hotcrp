@@ -33,6 +33,10 @@ abstract class Option_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
+        if (!$this->option->always_visible()
+            && !$this->user->is_track_manager()) {
+            return "true";
+        }
         if ($this->option->id > 0) {
             $sqi->add_options_columns();
             if (!$this->option->include_empty) {
