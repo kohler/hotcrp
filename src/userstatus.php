@@ -1273,6 +1273,16 @@ class UserStatus extends MessageSet {
             $this->diffs["create"] = true;
         }
 
+        // Removing someone from the PC also removes them as manager
+        // (but for now keep them as lead/shepherd)
+        if (($old_roles & Contact::ROLE_PCLIKE) !== 0
+            && ($roles & Contact::ROLE_PCLIKE) === 0
+            && $this->conf->has_any_manager()) {
+            $aset = new AssignmentSet($this->conf->root_user());
+            $aset->parse("paper,action\nadmin:{$user->email}:explicit,clearadministrator\n");
+            $aset->execute();
+        }
+
         // Notify of new accounts or new PC-ness
         if ($this->notify && $user->disabled_flags() === 0) {
             $eff_old_roles = $old_disablement !== 0 ? 0 : $old_roles;

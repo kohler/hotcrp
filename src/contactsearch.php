@@ -7,9 +7,11 @@ class ContactSearch {
     const F_PC = 2;
     const F_USER = 4;
     const F_TAG = 8;
-    const F_ALLOW_DELETED = 16;
-    const F_USERID = 32;
-    const F_REQUIRED = 64;
+    const F_ALLOW_DELETED = 0x10;
+    const F_USERID = 0x20;
+    const F_REQUIRED = 0x40;
+    const F_EXPLICIT_NONPC = 0x80;
+    const FM_PC = 0x82;
 
     /** @var Conf */
     public $conf;
@@ -42,6 +44,9 @@ class ContactSearch {
     function __construct($type, $text, Contact $viewer, $cset = null) {
         $this->conf = $viewer->conf;
         $this->type = $type;
+        if (!$viewer->privChair) {
+            $this->type &= ~self::F_EXPLICIT_NONPC;
+        }
         $this->text = $text;
         $this->viewer = $viewer;
         $this->viewable_roles = $viewer->viewable_roles_mask();
@@ -99,9 +104,11 @@ class ContactSearch {
 
     /** @return ?list<int> */
     private function check_simple() {
-        if (strcasecmp($this->text, "me") == 0
-            && (($this->type & self::F_PC) === 0
-                || ($this->viewer->roles & Contact::ROLE_PCLIKE) !== 0)) {
+        if (strcasecmp($this->text, "me") === 0) {
+            if (($this->type & self::FM_PC) === self::F_PC
+                && ($this->viewer->roles & Contact::ROLE_PCLIKE) === 0) {
+                return [];
+            }
             return [$this->viewer->contactId];
         }
         if (($this->type & (self::F_USERID | self::F_QUOTED)) === self::F_USERID // NB always !QUOTED here
@@ -120,7 +127,7 @@ class ContactSearch {
                     $u = $this->cset[$uid] ?? null;
                 } else if (($u = $this->conf->user_by_id($uid))
                            && ($this->viewer->privChair
-                               ? ($this->type & self::F_PC) !== 0
+                               ? ($this->type & self::FM_PC) === self::F_PC
                                  && ($u->roles & Contact::ROLE_PCLIKE) === 0
                                : ($u->roles & $this->viewable_roles) === 0)) {
                     $u = null;
@@ -244,6 +251,7 @@ class ContactSearch {
 
         // generalize email
         $estar = $e && strpos($e, "*") !== false;
+        $efull = $e && strpos($e, "@") !== false && !$estar ? $e : null;
         if ($e && !$estar) {
             if (preg_match('/\A(.*)@(.*?)((?:[.](?:com|net|edu|org|us|uk|fr|be|jp|cn))?)\z/', $e, $m)) {
                 $e = ($m[1] === "" ? "*" : $m[1]) . "@*" . $m[2] . ($m[3] ? : "*");
@@ -257,6 +265,11 @@ class ContactSearch {
             $cs = $this->cset;
         } else if (($this->type & self::F_PC) !== 0) {
             $cs = $this->conf->viewable_pc_members($this->viewer);
+            if (($this->type & self::F_EXPLICIT_NONPC) !== 0
+                && $efull !== null
+                && ($eu = $this->conf->user_by_email($efull))) {
+                $cs[$eu->contactId] = $eu;
+            }
         } else {
             $where = [];
             if ($n !== "") {

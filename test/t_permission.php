@@ -1322,6 +1322,81 @@ class Permission_Tester {
         xassert_search($this->u_chair, "admin:marina", "");
     }
 
+    function test_remove_pc_clears_manager() {
+        // Removing a paper administrator from the PC (UserActions::remove_pc)
+        // must also drop their manager assignments, not just the PC role.
+        $us = new UserStatus($this->conf->root_user());
+        $u = $us->save_user((object) ["email" => "pcmgr@_.com", "name" => "PC Manager", "roles" => ["pc"]]);
+        xassert(!!$u, $us->full_feedback_text());
+        $this->conf->invalidate_caches("users", "pc");
+        $cid = $u->contactId;
+
+        xassert_assign($this->u_chair, "action,paper,user\nadministrator,3,pcmgr@_.com\n");
+        xassert_eqq((int) $this->conf->fetch_ivalue("select managerContactId from Paper where paperId=3"), $cid);
+
+        (new UserActions($this->u_chair))->remove_pc([$cid]);
+        $this->conf->invalidate_caches("users", "pc");
+
+        // PC role removed...
+        xassert_eqq((int) $this->conf->fetch_ivalue("select roles from ContactInfo where contactId=?", $cid) & Contact::ROLE_PCLIKE, 0);
+        // ...and no longer paper 3's manager
+        xassert_eqq((int) $this->conf->fetch_ivalue("select managerContactId from Paper where paperId=3"), 0);
+
+        $this->conf->qe("delete from PaperConflict where contactId=?", $cid);
+        $this->conf->qe("delete from ContactInfo where contactId=?", $cid);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
+    function test_userstatus_remove_pc_clears_manager() {
+        // Same as above, but via a normal profile save (UserStatus), not the
+        // bulk remove-from-PC action.
+        $us = new UserStatus($this->conf->root_user());
+        $u = $us->save_user((object) ["email" => "pcmgr2@_.com", "name" => "PC Manager 2", "roles" => ["pc"]]);
+        xassert(!!$u, $us->full_feedback_text());
+        $this->conf->invalidate_caches("users", "pc");
+        $cid = $u->contactId;
+
+        xassert_assign($this->u_chair, "action,paper,user\nadministrator,3,pcmgr2@_.com\n");
+        xassert_eqq((int) $this->conf->fetch_ivalue("select managerContactId from Paper where paperId=3"), $cid);
+
+        $us2 = new UserStatus($this->conf->root_user());
+        xassert($us2->save_user((object) ["email" => "pcmgr2@_.com", "roles" => (object) []]), $us2->full_feedback_text());
+        $this->conf->invalidate_caches("users", "pc");
+
+        xassert_eqq((int) $this->conf->fetch_ivalue("select roles from ContactInfo where contactId=?", $cid) & Contact::ROLE_PCLIKE, 0);
+        xassert_eqq((int) $this->conf->fetch_ivalue("select managerContactId from Paper where paperId=3"), 0);
+
+        $this->conf->qe("delete from PaperConflict where contactId=?", $cid);
+        $this->conf->qe("delete from ContactInfo where contactId=?", $cid);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
+    function test_admin_explicit_excludes_track_manager() {
+        // `admin:USER:explicit` matches only papers where USER is the literal
+        // managerContactId, never papers USER can administer via a track.
+        $old_tracks = $this->conf->setting("tracks");
+        $old_tracks_data = $this->conf->setting_data("tracks");
+        $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red"}}');
+        Contact::update_rights();
+        try {
+            $jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // carries the "red" user tag
+            xassert($jon->is_track_manager());
+            xassert_assign($this->u_chair, "action,paper,tag\ntag,3,green\n");
+            $paper3 = $this->conf->checked_paper_by_id(3);
+            xassert_eqq($paper3->managerContactId, 0);   // no explicit manager
+            xassert($jon->allow_admin($paper3));         // jon administers #3 via the track
+            // non-explicit admin/canadmin match #3 via the track fallback...
+            xassert_in_eqq(3, (new PaperSearch($this->u_chair, "admin:jon@cs.ucl.ac.uk"))->paper_ids());
+            xassert_in_eqq(3, (new PaperSearch($this->u_chair, "canadmin:jon@cs.ucl.ac.uk"))->paper_ids());
+            // ...but `:explicit` matches only the literal managerContactId, never a track manager
+            xassert_not_in_eqq(3, (new PaperSearch($this->u_chair, "admin:jon@cs.ucl.ac.uk:explicit"))->paper_ids());
+        } finally {
+            xassert_assign($this->u_chair, "action,paper,tag\ncleartag,3,green\n");
+            $this->conf->save_refresh_setting("tracks", $old_tracks, $old_tracks_data);
+            Contact::update_rights();
+        }
+    }
+
     function test_assign_conflicts() {
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ALL), "mgbaker@cs.stanford.edu nickm@ee.stanford.edu sclin@leland.stanford.edu");

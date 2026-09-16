@@ -129,6 +129,7 @@ class UserActions extends MessageSet {
      * @param int $rremove
      * @param string $key */
     private function change_roles($users, $radd, $rremove, $key) {
+        $pc_removals = [];
         $this->conf->pause_log();
         foreach ($users as $u) {
             $old_roles = $u->roles;
@@ -139,8 +140,18 @@ class UserActions extends MessageSet {
             $this->conf->log_for($this->viewer, $u, "Account edited: roles [{$d}]");
             $this->unames[$key][] = $u->name(NAME_E);
             $u->update_cdb_roles();
+            if (($old_roles & Contact::ROLE_PCLIKE) !== 0
+                && ($u->roles & Contact::ROLE_PCLIKE) === 0) {
+                $pc_removals[] = $u->email;
+            }
         }
         $this->conf->resume_log();
+        if (!empty($pc_removals) && $this->conf->has_any_manager()) {
+            $q = join(" OR ", array_map(function ($e) { return "admin:{$e}:explicit"; }, $pc_removals));
+            $aset = new AssignmentSet($this->conf->root_user());
+            $aset->parse("paper,action\n{$q},clearadministrator\n");
+            $aset->execute();
+        }
     }
 
     /** @param list<int> $ids */

@@ -193,4 +193,21 @@ class SearchWord {
         }
         return [$nw, $op, $v];
     }
+
+    /** @param string $suffix
+     * @param bool $case_insensitive
+     * @return array{SearchWord,bool} */
+    function try_pop_suffix($suffix, $case_insensitive = false) {
+        $s = $this->qword;
+        $r = strlen($s) - strlen($suffix);
+        if ($r <= 0
+            || substr_compare($s, $suffix, $r, strlen($suffix), $case_insensitive) !== 0) {
+            return [$this, false];
+        }
+        $nw = SearchWord::make_kwarg(
+            substr($s, 0, $r), $this->kwpos1, $this->pos1,
+            $this->pos1 + $r, $this->string_context
+        );
+        return [$nw, true];
+    }
 }

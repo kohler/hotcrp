@@ -570,6 +570,33 @@ class Search_Tester {
         $this->conf->load_settings();
     }
 
+    function test_try_pop_suffix() {
+        $mk = function ($s) {
+            return SearchWord::make_kwarg($s, 0, 0, strlen($s), null);
+        };
+        // suffix present: popped, and the returned word drops it
+        [$w, $ok] = $mk("estrin@usc.edu:explicit")->try_pop_suffix(":explicit");
+        xassert($ok);
+        xassert_eqq($w->qword, "estrin@usc.edu");
+        xassert_eqq($w->word, "estrin@usc.edu");
+        // suffix absent: unchanged, not popped
+        [$w, $ok] = $mk("estrin@usc.edu")->try_pop_suffix(":explicit");
+        xassert(!$ok);
+        xassert_eqq($w->qword, "estrin@usc.edu");
+        // contains but does not end with the suffix: not popped
+        [, $ok] = $mk("foo:explicitx")->try_pop_suffix(":explicit");
+        xassert(!$ok);
+        // case sensitivity honored by default, waived by the flag
+        [, $ok] = $mk("foo:EXPLICIT")->try_pop_suffix(":explicit");
+        xassert(!$ok);
+        [$w, $ok] = $mk("foo:EXPLICIT")->try_pop_suffix(":explicit", true);
+        xassert($ok);
+        xassert_eqq($w->qword, "foo");
+        // suffix is the whole word (nothing would remain): not popped
+        [, $ok] = $mk(":explicit")->try_pop_suffix(":explicit");
+        xassert(!$ok);
+    }
+
     function test_restricted_option_sqlexpr() {
         // A restricted-visibility submission field must not narrow the SQL
         // prefilter for a searcher who cannot view it (row membership would
