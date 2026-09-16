@@ -1,6 +1,6 @@
 <?php
 // search/st_pdf.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class PaperPDF_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -68,7 +68,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         if (!$this->present
             && ($this->dtype === null
                 || !$this->user->conf->option_by_id($this->dtype)->always_visible()
-                || !$this->user->allow_admin_all())) {
+                || !$this->user->can_view_all(true))) {
             return "true";
         }
         $f = [];

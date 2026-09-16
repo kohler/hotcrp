@@ -4396,11 +4396,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $whyNot;
     }
 
-    /** @return bool */
-    function can_view_all() {
-        // see also Limit_SeachTerm
+    /** @param bool $pdf
+     * @return bool
+     *
+     * Does `can_view_paper($prow, $pdf)` hold for every `$prow`? */
+    function can_view_all($pdf = false) {
+        // see also Limit_SearchTerm, can_view_paper
+        $f = $pdf ? Track::FM_VIEWPDF : Track::FM_VIEW;
         return $this->privChair
-            && ($this->dangerous_track_mask() & Track::FM_VIEW) === 0;
+            && ($this->dangerous_track_mask() & $f) === 0;
     }
 
     /** @return bool */

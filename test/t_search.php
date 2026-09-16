@@ -1,6 +1,6 @@
 <?php
 // t_search.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Search_Tester {
     /** @var Conf
@@ -1123,6 +1123,99 @@ class Search_Tester {
         $conf->save_refresh_setting("sub_sub", $old_sub);
         $conf->save_refresh_setting("pc_seeallpdf", $old_seeallpdf);
         $conf->save_refresh_setting("pc_seeall", $old_seeall);
+    }
+
+    function test_has_attachment_none_hides_unviewable_document() {
+        // Regression: `has:<document field>` claimed a precise SQL prefilter
+        // whenever the field was `always_visible()`, so `NOT has:FIELD`
+        // became a subtractive `not exists (PaperOption ...)` on raw rows.
+        // But document fields are additionally gated on document visibility
+        // (`can_view_paper($prow, true)`): under
+        // `submission_visibility_conflict=no-pdf` a conflicted PC member sees
+        // the paper but none of its documents, so `test()` treats the field
+        // as absent. The precise prefilter dropped the paper from
+        // `NOT has:FIELD` exactly when the hidden attachment existed.
+        $conf = $this->conf;
+        $old_options = $conf->setting_data("options");
+        $old_confpdf = $conf->setting("pc_confpdf");
+        $oid = 50;
+        xassert(!$conf->option_by_id($oid));
+        $options = json_decode($old_options ?? "[]");
+        $options[] = (object) ["id" => $oid, "name" => "Supplementary Material", "abbr" => "supmat", "type" => "attachments", "order" => 8];
+        $conf->save_setting("options", 1, json_encode($options));
+        $conf->invalidate_caches("options");
+        $opt = $conf->checked_option_by_id($oid);
+        xassert($opt->has_document());
+        xassert($opt->always_visible());
+
+        $ps = new PaperStatus($conf->root_user());
+        $ps->save_paper_json(json_decode("{\"id\":1,\"supmat\":[{\"content\":\"%PDF-supp\", \"type\":\"application/pdf\"}]}"));
+        xassert_paper_status($ps);
+        $p1 = $conf->checked_paper_by_id(1);
+
+        // The chair can view every document, so the precise path is kept.
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        xassert($chair->can_view_all(true));
+        xassert($chair->can_view_option($p1, $opt));
+        xassert((new PaperSearch($chair, "has:supmat"))->main_term()->is_sqlexpr_precise());
+        xassert_not_in_eqq(1, (new PaperSearch($chair, "NOT has:supmat"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($chair, "has:supmat"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($chair, "submission:none"))->paper_ids());
+
+        // A chair whose token scope omits documents cannot see the
+        // attachment (or the submission PDF): `NOT has:FIELD`, `FIELD:none`
+        // and `submission:none` must agree with `test()` and keep paper 1.
+        $chair->set_scope("submeta:read");
+        xassert(!$chair->can_view_all(true));
+        xassert($chair->can_view_paper($p1));
+        xassert(!$chair->can_view_pdf($p1));
+        xassert(!$chair->can_view_option($p1, $opt));
+        xassert(!(new PaperSearch($chair, "has:supmat"))->main_term()->is_sqlexpr_precise());
+        xassert_in_eqq(1, (new PaperSearch($chair, "NOT has:supmat"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($chair, "supmat:none"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($chair, "has:supmat"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($chair, "NOT has:submission"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($chair, "submission:none"))->paper_ids());
+        xassert_eqq((new PaperSearch($chair, "submission:none"))->paper_ids(),
+                    (new PaperSearch($chair, "NOT has:submission"))->paper_ids());
+        $chair->set_scope();
+
+        // mjh is a PC member conflicted with paper 1; mgbaker is unconflicted PC.
+        $conf->save_refresh_setting("pc_confpdf", 1); // conflicted PC: metadata, no documents
+        $mjh = $conf->checked_user_by_email("mjh@isi.edu");
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($p1->has_conflict($mjh));
+        xassert($mjh->can_view_paper($p1));
+        xassert(!$mjh->can_view_pdf($p1));
+        xassert(!$mjh->can_view_option($p1, $opt));
+        xassert(!$mjh->can_view_all(true));
+        xassert($mgbaker->can_view_option($p1, $opt));
+        xassert(!$mgbaker->can_view_all(true));
+
+        // The attachment is invisible to mjh, so paper 1 looks attachment-less
+        // and must stay in `NOT has:supmat`; it must never surface via `has:`.
+        xassert(!(new PaperSearch($mjh, "has:supmat"))->main_term()->is_sqlexpr_precise());
+        xassert_in_eqq(1, (new PaperSearch($mjh, "NOT has:supmat"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($mjh, "supmat:none"))->paper_ids());
+        xassert_not_in_eqq(1, (new PaperSearch($mjh, "has:supmat"))->paper_ids());
+
+        // An unconflicted PC member sees the attachment: results are exact.
+        xassert_not_in_eqq(1, (new PaperSearch($mgbaker, "NOT has:supmat"))->paper_ids());
+        xassert_in_eqq(1, (new PaperSearch($mgbaker, "has:supmat"))->paper_ids());
+
+        // clean up
+        $ps->save_paper_json(json_decode("{\"id\":1,\"supmat\":false}"));
+        xassert_paper_status($ps);
+        if ($old_options === null) {
+            $conf->save_setting("options", null);
+        } else {
+            $conf->save_setting("options", 1, $old_options);
+        }
+        $conf->invalidate_caches("options");
+        $conf->qe("delete from PaperOption where optionId=?", $oid);
+        $conf->qe("delete from PaperStorage where documentType=?", $oid);
+        $conf->save_refresh_setting("pc_confpdf", $old_confpdf);
+        xassert(!$conf->option_by_id($oid));
     }
 
     function test_token_none_hides_invisible_token_review() {
