@@ -4,8 +4,17 @@
 
 class Mail_API {
     static function mailtext(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if (!$user->isPC
-            || ($prow && !$user->can_view_paper($prow))) {
+        if (!$user->isPC) {
+            return JsonResult::make_permission_error();
+        }
+        if ($prow) {
+            $fr = $user->perm_view_paper($prow);
+        } else {
+            $fr = $qreq->p ? $qreq->annex("paper_whynot") : null;
+        }
+        if ($fr) {
+            return Conf::paper_error_json_result($fr);
+        } else if ($prow && $user->act_author_view($prow)) {
             return JsonResult::make_permission_error();
         }
 

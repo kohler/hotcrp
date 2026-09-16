@@ -291,6 +291,9 @@ class HotCRPMailer extends Mailer {
 
     private function guess_reviewdeadline() {
         if ($this->rrow) {
+            if (!$this->permuser->can_view_review_meta($this->row, $this->rrow)) {
+                return null;
+            }
             return $this->rrow->deadline_name();
         }
         if (!$this->recipient) {
