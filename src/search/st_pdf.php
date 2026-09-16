@@ -80,6 +80,12 @@ class PaperPDF_SearchTerm extends SearchTerm {
         }
         return "(" . join($this->present ? " or " : " and ", $f) . ")";
     }
+    function need_pretest() {
+        return $this->format_problem !== null;
+    }
+    function pretest(PaperInfo $row, $xinfo) {
+        return null;
+    }
     function test(PaperInfo $row, $xinfo) {
         // XXX presence condition
         if ($this->dtype === null) {

@@ -583,15 +583,20 @@ class Search_Tester {
         // per-request counter) and `->ensure()` afterward (to reload the
         // persisted counts before asserting on them).
 
-        // `ti:the` is imprecise (SQL superset filtered in PHP); the budget
-        // permits 2 such searches, then degrades to leak-free precise SQL.
+        // `re:NAME` is imprecise: its SQL prefilter matches every paper NAME
+        // reviews, a superset of what a PC member limited by review-identity
+        // visibility may see, so the raw SQL differs from the conservative
+        // SQL. (`ti:the` is *not* sensitive: its raw and conservative SQL
+        // coincide, so it leaks nothing.) The budget permits 2 such searches,
+        // then degrades to leak-free precise SQL. (The visible result depends
+        // on review-visibility settings other tests may have changed, so this
+        // test asserts only the accounting and that the fallback is faithful.)
         $u->invalidate_contact_counter();
-        $s1 = new PaperSearch($u, "ti:the");
+        $s1 = new PaperSearch($u, "re:varghese@ccrc.wustl.edu");
         $base = $s1->paper_ids();
         $cc = $u->contact_counter()->ensure();
         xassert_eqq($cc->sensitiveSearchCount, 1);   // accounted
         xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
-        xassert(count($base) > 0);
 
         // Precise searches never consume the budget or degrade.
         for ($i = 0; $i < 5; ++$i) {
@@ -603,16 +608,16 @@ class Search_Tester {
         xassert_eqq($cc->sensitiveSearchCount, 1);   // unchanged by precise searches
         xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
 
-        // Go back to `ti:the`
+        // Go back to `re:NAME`
         $u->invalidate_contact_counter();
-        $s2 = new PaperSearch($u, "ti:the");
+        $s2 = new PaperSearch($u, "re:varghese@ccrc.wustl.edu");
         $s2->paper_ids();
         $cc = $u->contact_counter()->ensure();
         xassert_eqq($cc->sensitiveSearchCount, 2);
         xassert_eqq($cc->sensitiveSearchFallbackCount, 0);
 
         $u->invalidate_contact_counter();
-        $s3 = new PaperSearch($u, "ti:the");
+        $s3 = new PaperSearch($u, "re:varghese@ccrc.wustl.edu");
         $ids3 = $s3->paper_ids();
         $cc = $u->contact_counter()->ensure();
         xassert_eqq($cc->sensitiveSearchCount, 2);    // overbudget => fallback
@@ -626,7 +631,7 @@ class Search_Tester {
         $this->conf->qe("delete from ContactCounter where contactId=?", $chair->contactId);
         for ($i = 0; $i < 5; ++$i) {
             $chair->invalidate_contact_counter();
-            $sc = new PaperSearch($chair, "ti:the");
+            $sc = new PaperSearch($chair, "re:varghese@ccrc.wustl.edu");
             $sc->paper_ids();
         }
         $cc = $chair->contact_counter()->ensure();
@@ -720,8 +725,8 @@ class Search_Tester {
         xassert(!$ss_cc->is_cdb);
         xassert_eqq($ss_cc->contactId, $u->contactId);
 
-        $s1 = new PaperSearch($muser, "ti:the");
-        xassert(count($s1->paper_ids()) > 0);
+        $s1 = new PaperSearch($muser, "re:varghese@ccrc.wustl.edu");
+        $s1->paper_ids();
         $row = Dbl::fetch_first_object($this->conf->qe("select * from ContactCounter where contactId=?", $u->contactId));
         xassert_eqq((int) ($row->sensitiveSearchCount ?? -1), 1);
         $crow = Dbl::fetch_first_object(Dbl::qe($this->conf->contactdb(), "select * from ContactCounter where contactId=?", $cdbu->contactDbId));
@@ -786,7 +791,7 @@ class Search_Tester {
         xassert_eqq($ss_cc->contactId, 0);
         xassert(!$ss_cc->sensitive_search_account());
 
-        $s1 = new PaperSearch($muser, "ti:the");
+        $s1 = new PaperSearch($muser, "re:varghese@ccrc.wustl.edu");
         $s1->paper_ids();
         $nlocal = $this->conf->fetch_ivalue("select count(*) from ContactCounter where contactId<=0");
         xassert_eqq($nlocal, 0);

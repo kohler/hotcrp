@@ -277,6 +277,8 @@ class PaperSearch extends MessageSet {
     private $_limit_override;
     /** @var bool */
     private $_has_qe = false;
+    /** @var bool */
+    private $_need_pretest = false;
 
     /** @var int
      * @readonly */
@@ -1118,8 +1120,13 @@ class PaperSearch extends MessageSet {
         // too many imprecise searches, fall back to filtering only in PHP.
         // Chairs are exempt, even when acting as others; they can view the
         // hidden data, so their searches leak nothing.
-        $allow_imprecise = $this->user->base_user()->privChair
-            || $qe->is_sqlexpr_precise()
+        $sqlexpr = $qe->sqlexpr($sqi);
+        if ($sqlexpr !== "true" && !$this->user->base_user()->privChair) {
+            $precise_sqlexpr = $qe->precise_sqlexpr($sqi);
+        } else {
+            $precise_sqlexpr = $sqlexpr;
+        }
+        $allow_imprecise = $sqlexpr === $precise_sqlexpr
             || $this->user->contact_counter()->sensitive_search_account();
         if (!$allow_imprecise
             && $this->conf->opt("sensitiveSearchLog")) {
@@ -1128,12 +1135,15 @@ class PaperSearch extends MessageSet {
         if ($allow_imprecise
             || $this->conf->opt("sensitiveSearchAccountOnly")) {
             $filter = SearchTerm::andjoin_sqlexpr([
-                $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
+                $this->_limit_qe->sqlexpr($sqi), $sqlexpr
             ]);
+            $this->_need_pretest = $sqlexpr !== $precise_sqlexpr
+                && $qe->need_pretest();
         } else {
             $filter = SearchTerm::andjoin_sqlexpr([
-                $this->_limit_qe->sqlexpr($sqi), $qe->precise_sqlexpr($sqi)
+                $this->_limit_qe->sqlexpr($sqi), $precise_sqlexpr
             ]);
+            $this->_need_pretest = false;
         }
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
@@ -1230,6 +1240,7 @@ class PaperSearch extends MessageSet {
         foreach ($rowset as $row) {
             if ($this->user->can_view_paper($row)
                 && $this->_limit_qe->test($row, null)
+                && (!$this->_need_pretest || $qe->pretest($row, null) !== false)
                 && $qe->test($row, null)) {
                 $this->_matches[] = $row->paperId;
                 $this->_then_map[$row->paperId] = $thqe ? $thqe->_last_group() : 0;

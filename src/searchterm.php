@@ -254,7 +254,18 @@ abstract class SearchTerm {
     }
 
 
-    /** @param ?ReviewInfo|?CommentInfo $xinfo
+    /** @return bool */
+    function need_pretest() {
+        return false;
+    }
+
+    /** @param null|ReviewInfo|CommentInfo $xinfo
+     * @return ?bool */
+    function pretest(PaperInfo $row, $xinfo) {
+        return $this->test($row, $xinfo);
+    }
+
+    /** @param null|ReviewInfo|CommentInfo $xinfo
      * @return bool */
     abstract function test(PaperInfo $row, $xinfo);
 
@@ -501,6 +512,13 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         return true;
     }
+    function need_pretest() {
+        foreach ($this->child as $ch) {
+            if ($ch->need_pretest())
+                return true;
+        }
+        return false;
+    }
     function visit($visitor) {
         $x = [];
         foreach ($this->child as $ch) {
@@ -605,6 +623,10 @@ class Not_SearchTerm extends Op_SearchTerm {
         return "not coalesce({$ff},0)";
     }
     // parent::precise_sqlexpr is correct
+    function pretest(PaperInfo $row, $xinfo) {
+        $x = $this->child[0]->pretest($row, $xinfo);
+        return $x === null ? null : !$x;
+    }
     function test(PaperInfo $row, $xinfo) {
         return !$this->child[0]->test($row, $xinfo);
     }
@@ -653,6 +675,18 @@ class And_SearchTerm extends Op_SearchTerm {
             $ff[] = $subt->precise_sqlexpr($sqi);
         }
         return self::andjoin_sqlexpr($ff);
+    }
+    function pretest(PaperInfo $row, $xinfo) {
+        $a = true;
+        foreach ($this->child as $subt) {
+            $x = $subt->pretest($row, $xinfo);
+            if ($x === false) {
+                return false;
+            } else if ($x === null) {
+                $a = null;
+            }
+        }
+        return $a;
     }
     function test(PaperInfo $row, $xinfo) {
         foreach ($this->child as $subt) {
@@ -762,6 +796,18 @@ class Or_SearchTerm extends Op_SearchTerm {
         return self::orjoin_sqlexpr(self::or_sqlexprs($this->child, $sqi), "false");
     }
     // parent::precise_sqlexpr is correct
+    function pretest(PaperInfo $row, $xinfo) {
+        $a = false;
+        foreach ($this->child as $subt) {
+            $x = $subt->pretest($row, $xinfo);
+            if ($x === true) {
+                return true;
+            } else if ($x === null) {
+                $a = null;
+            }
+        }
+        return $a;
+    }
     function test(PaperInfo $row, $xinfo) {
         foreach ($this->child as $subt) {
             if ($subt->test($row, $xinfo))
@@ -812,6 +858,18 @@ class Xor_SearchTerm extends Op_SearchTerm {
         return self::orjoin_sqlexpr($ff, "false");
     }
     // parent::precise_sqlexpr is correct
+    function pretest(PaperInfo $row, $xinfo) {
+        $a = false;
+        foreach ($this->child as $subt) {
+            $x = $subt->pretest($row, $xinfo);
+            if ($x === true) {
+                $a = $a === false ? true : null;
+            } else if ($x === null) {
+                $a = null;
+            }
+        }
+        return $a;
+    }
     function test(PaperInfo $row, $xinfo) {
         $x = false;
         foreach ($this->child as $subt) {
@@ -949,6 +1007,18 @@ class Then_SearchTerm extends Op_SearchTerm {
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
     // parent::precise_sqlexpr is correct
+    function pretest(PaperInfo $row, $xinfo) {
+        $a = false;
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            $x = $this->child[$i]->pretest($row, $xinfo);
+            if ($x === true) {
+                return true;
+            } else if ($x === null) {
+                $a = null;
+            }
+        }
+        return $a;
+    }
     function test(PaperInfo $row, $xinfo) {
         for ($i = 0; $i !== $this->nthen; ++$i) {
             if ($this->child[$i]->test($row, $xinfo)) {

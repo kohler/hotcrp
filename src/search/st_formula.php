@@ -53,6 +53,12 @@ class Formula_SearchTerm extends SearchTerm {
         $this->formula->add_query_options($sqi->query_options);
         return "true";
     }
+    function need_pretest() {
+        return true;
+    }
+    function pretest(PaperInfo $row, $xinfo) {
+        return null;
+    }
     function test(PaperInfo $row, $xinfo) {
         if ($xinfo && $xinfo instanceof ReviewInfo) {
             return !!$this->formula->eval($row, $xinfo->contactId);
