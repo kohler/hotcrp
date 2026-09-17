@@ -1662,6 +1662,14 @@ class FormulaCompiler {
         if ($this->ensure_gvar('$decision')) {
             $prow = $this->_prow();
             $this->gstmt[] = "\$decision = \$user->can_view_decision({$prow}) ? {$prow}->outcome : 0;";
+            if ($this->formula->use_viewer_permissions()) {
+                $this->gstmt[] = "if (\$decision !== 0 && !\$user->conf->is_updating_automatic_tags()) {";
+                $this->gstmt[] = "  \$conf_viewer = \$user->conf->viewer() ?? \$user;";
+                $this->gstmt[] = "  if (\$conf_viewer !== \$user && !\$conf_viewer->can_view_decision({$prow})) {";
+                $this->gstmt[] = "    \$decision = 0;";
+                $this->gstmt[] = "  }";
+                $this->gstmt[] = "}";
+            }
         }
         return '$decision';
     }
@@ -2079,6 +2087,7 @@ final class Formula implements JsonSerializable {
 
     const ALLOW_INDEXED = 1;
     const DEFERRED = 2;
+    const USE_VIEWER_PERMISSIONS = 4;
 
     /** @param string $expr
      * @param int|FormulaConfig $config
@@ -2121,6 +2130,11 @@ final class Formula implements JsonSerializable {
         return self::make($user, $expr, self::ALLOW_INDEXED);
     }
 
+
+    /** @return bool */
+    function use_viewer_permissions() {
+        return ($this->_flags & self::USE_VIEWER_PERMISSIONS) !== 0;
+    }
 
     /** @return list<string> */
     function param_names() {

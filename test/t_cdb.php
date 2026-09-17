@@ -138,7 +138,6 @@ class Cdb_Tester {
     }
 
     function test_chair_update_no_cdb() {
-        $old_viewer = $this->conf->swap_viewer(user("marina@poema.ru"));
         $te2 = user("te2@tl.edu");
         $te2_cdb_first = $te2->cdb_user()->firstName;
         $te2_cdb_last = $te2->cdb_user()->lastName;

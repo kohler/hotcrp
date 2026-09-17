@@ -346,7 +346,11 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     /** @param ?string $key
-     * @return list<PaperOption> */
+     * @return list<PaperOption>
+     *
+     * Return an unsorted list of PaperOptions that might be present on
+     * `$prow`. Does not fully check existence conditions, but does
+     * elide final-version options on a non-accepted paper. */
     private function unsorted_field_list(?PaperInfo $prow, $key) {
         $nonfinal = $prow && $prow->outcome_sign <= 0;
         $olist = [];
@@ -364,7 +368,13 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     /** @param bool $all
-     * @return array<int,PaperOption> */
+     * @return array<int,PaperOption>
+     *
+     * Return a list of form fields that might be present on `$prow`.
+     * Does not fully check existence conditions, but does elide
+     * final-version options on a non-accepted paper. Drop fields that
+     * are not on the form unless `$all` is true (which is used only in
+     * settings). */
     function form_fields(?PaperInfo $prow = null, $all = false) {
         $omap = [];
         foreach ($this->unsorted_field_list($prow, "form_order") as $o) {

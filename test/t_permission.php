@@ -1630,6 +1630,206 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
     }
 
+    function test_decision_condition_field() {
+        // A submission field whose presence condition names the decision
+        // (`dec:yes`) must not disclose the decision: field presence tracks
+        // the decision only through each viewer's own decision-visibility.
+        // Field conditions are compiled and evaluated as the root user, so
+        // this works only because Decision_SearchTerm consults Conf::viewer(),
+        // which is null in tests unless swapped in.
+        $chair = $this->u_chair;
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu"); // contact of #1
+        $reviewer = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // PC reviewer of #1
+
+        $view_opt = function ($u, $prow, $opt) {
+            $old = $this->conf->swap_viewer($u);
+            try {
+                return $u->can_view_option($prow, $opt);
+            } finally {
+                $this->conf->swap_viewer($old);
+            }
+        };
+        // explicit limits ("s" for the PC reviewer, "a" for the author) so the
+        // assertion turns only on field presence, not on the viewer's default
+        // paper list (e.g. which papers they happen to review)
+        $search = function ($u, $q, $t) {
+            $old = $this->conf->swap_viewer($u);
+            try {
+                return (new PaperSearch($u, ["q" => $q, "t" => $t]))->paper_ids();
+            } finally {
+                $this->conf->swap_viewer($old);
+            }
+        };
+
+        $old_seedec = $this->conf->setting("seedec");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1, "sf/1/id" => "new", "sf/1/name" => "Camera",
+            "sf/1/order" => 100, "sf/1/type" => "text", "sf/1/visibility" => "all",
+            "sf/1/presence" => "custom", "sf/1/condition" => "dec:yes"
+        ]);
+        xassert($sv->execute(), $sv->full_feedback_text());
+        $opt = $this->conf->options()->find("Camera");
+        xassert(!!$opt);
+
+        try {
+            // decisions hidden from authors and reviewers; accept #1 and store a value
+            $this->conf->save_refresh_setting("seedec", 0);
+            $this->conf->save_refresh_setting("au_seedec", null);
+            xassert_assign($chair, "paper,action,decision\n1,decision,yes\n");
+            $ps = new PaperStatus($this->conf->root_user());
+            xassert($ps->save_paper_json(json_decode('{"id":1,"Camera":"Snapshot"}')), $ps->full_feedback_text());
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($paper1->outcome > 0);
+            xassert($paper1->option_present($opt));
+
+            // chair sees the decision, so the field is present
+            xassert($view_opt($chair, $paper1, $opt));
+
+            // author and reviewer cannot see the decision, so the field is absent for them
+            xassert(!$author->can_view_decision($paper1));
+            xassert(!$view_opt($author, $paper1, $opt));
+            xassert_not_in_eqq(1, $search($author, "has:Camera", "a"));
+            xassert(!$reviewer->can_view_decision($paper1));
+            xassert(!$view_opt($reviewer, $paper1, $opt));
+            xassert_not_in_eqq(1, $search($reviewer, "has:Camera", "s"));
+
+            // let reviewers see decisions: field appears for the reviewer, still hidden from the author
+            $this->conf->save_refresh_setting("seedec", Conf::SEEDEC_REV);
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($reviewer->can_view_decision($paper1));
+            xassert($view_opt($reviewer, $paper1, $opt));
+            xassert_in_eqq(1, $search($reviewer, "has:Camera", "s"));
+            xassert(!$author->can_view_decision($paper1));
+            xassert(!$view_opt($author, $paper1, $opt));
+            xassert_not_in_eqq(1, $search($author, "has:Camera", "a"));
+
+            // let authors see decisions too: field now appears for the author
+            $this->conf->save_refresh_setting("au_seedec", 2);
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($author->can_view_decision($paper1));
+            xassert($view_opt($author, $paper1, $opt));
+            xassert_in_eqq(1, $search($author, "has:Camera", "a"));
+        } finally {
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,yes\n");
+            $sv = SettingValues::make_request($chair, ["has_sf" => 1, "sf/1/id" => $opt->id, "sf/1/delete" => 1]);
+            $sv->execute();
+            $this->conf->save_refresh_setting("seedec", $old_seedec);
+            $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        }
+    }
+
+    function test_decision_condition_field_mail() {
+        // Mail expansion must describe a decision-conditioned field from the
+        // recipient's perspective: Mailer::_expand swaps in the permuser, so a
+        // `{{Camera}}` keyword expands only when the recipient may view the
+        // decision the field is conditioned on.
+        $chair = $this->u_chair;
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+
+        $old_seedec = $this->conf->setting("seedec");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1, "sf/1/id" => "new", "sf/1/name" => "Camera",
+            "sf/1/order" => 100, "sf/1/type" => "text", "sf/1/visibility" => "all",
+            "sf/1/presence" => "custom", "sf/1/condition" => "dec:yes"
+        ]);
+        xassert($sv->execute(), $sv->full_feedback_text());
+        $opt = $this->conf->options()->find("Camera");
+        xassert(!!$opt);
+
+        try {
+            $this->conf->save_refresh_setting("seedec", 0);
+            $this->conf->save_refresh_setting("au_seedec", null);
+            xassert_assign($chair, "paper,action,decision\n1,decision,yes\n");
+            $ps = new PaperStatus($this->conf->root_user());
+            xassert($ps->save_paper_json(json_decode('{"id":1,"Camera":"Snapshot"}')), $ps->full_feedback_text());
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($paper1->option_present($opt));
+
+            // recipient (author) cannot see the decision: the field is not expanded
+            $mailer = new HotCRPMailer($chair, $author, ["prow" => $paper1]);
+            xassert_not_str_contains($mailer->expand("[{{Camera}}]", "body"), "Snapshot");
+
+            // once authors may see decisions, the same mail expands the field
+            $this->conf->save_refresh_setting("au_seedec", 2);
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            $mailer = new HotCRPMailer($chair, $author, ["prow" => $paper1]);
+            xassert_str_contains($mailer->expand("[{{Camera}}]", "body"), "Snapshot");
+        } finally {
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,yes\n");
+            $sv = SettingValues::make_request($chair, ["has_sf" => 1, "sf/1/id" => $opt->id, "sf/1/delete" => 1]);
+            $sv->execute();
+            $this->conf->save_refresh_setting("seedec", $old_seedec);
+            $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        }
+    }
+
+    function test_decision_formula_condition_field() {
+        // Same decision-visibility guarantee as test_decision_condition_field,
+        // but the field's presence condition is a *formula* that reads the
+        // decision. Formula conditions compile as the root user, so this relies
+        // on FormulaCompiler::prow_decision honoring Conf::viewer() when the
+        // formula is realized with USE_VIEWER_PERMISSIONS (set for field
+        // conditions).
+        $chair = $this->u_chair;
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $reviewer = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+
+        $view_opt = function ($u, $prow, $opt) {
+            $old = $this->conf->swap_viewer($u);
+            try {
+                return $u->can_view_option($prow, $opt);
+            } finally {
+                $this->conf->swap_viewer($old);
+            }
+        };
+
+        $old_seedec = $this->conf->setting("seedec");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1, "sf/1/id" => "new", "sf/1/name" => "Gizmo",
+            "sf/1/order" => 100, "sf/1/type" => "text", "sf/1/visibility" => "all",
+            "sf/1/presence" => "custom", "sf/1/condition" => "f:(decision>0)"
+        ]);
+        xassert($sv->execute(), $sv->full_feedback_text());
+        $opt = $this->conf->options()->find("Gizmo");
+        xassert(!!$opt);
+        xassert($opt->has_complex_exists_condition());
+
+        try {
+            // decisions hidden from authors and reviewers; accept #1
+            $this->conf->save_refresh_setting("seedec", 0);
+            $this->conf->save_refresh_setting("au_seedec", null);
+            xassert_assign($chair, "paper,action,decision\n1,decision,yes\n");
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($paper1->outcome > 0);
+
+            // chair sees the decision, so the formula condition holds; author
+            // and reviewer cannot, so the field is absent for them
+            xassert($view_opt($chair, $paper1, $opt));
+            xassert(!$view_opt($author, $paper1, $opt));
+            xassert(!$view_opt($reviewer, $paper1, $opt));
+
+            // let reviewers see decisions: field appears for the reviewer, not the author
+            $this->conf->save_refresh_setting("seedec", Conf::SEEDEC_REV);
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($view_opt($reviewer, $paper1, $opt));
+            xassert(!$view_opt($author, $paper1, $opt));
+
+            // let authors see decisions: field now appears for the author too
+            $this->conf->save_refresh_setting("au_seedec", 2);
+            $paper1 = $this->conf->checked_paper_by_id(1);
+            xassert($view_opt($author, $paper1, $opt));
+        } finally {
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,yes\n");
+            $sv = SettingValues::make_request($chair, ["has_sf" => 1, "sf/1/id" => $opt->id, "sf/1/delete" => 1]);
+            $sv->execute();
+            $this->conf->save_refresh_setting("seedec", $old_seedec);
+            $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        }
+    }
+
     function test_tracker_permissionizer() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
 

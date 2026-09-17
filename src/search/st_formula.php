@@ -23,10 +23,14 @@ class Formula_SearchTerm extends SearchTerm {
         if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
             $nf = $srch->conf->find_named_formula($word);
         }
+        $flags = $srch->use_viewer_permissions() ? Formula::USE_VIEWER_PERMISSIONS : 0;
         if ($nf) {
-            $formula = $nf->realize($srch->user);
+            $formula = $nf->realize($srch->user, $flags);
         } else {
-            $formula = Formula::make($srch->user, $word, $is_graph ? Formula::ALLOW_INDEXED : 0);
+            if ($is_graph) {
+                $flags |= Formula::ALLOW_INDEXED;
+            }
+            $formula = Formula::make($srch->user, $word, $flags);
         }
         $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
             "top_context" => $srch->q,

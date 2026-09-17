@@ -3,35 +3,48 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Phase_SearchTerm extends SearchTerm {
+    /** @var Conf */
+    private $conf;
     /** @var Contact */
     private $user;
+    /** @var bool */
+    private $use_viewer;
     /** @var int */
     private $phase;
-    /** @param ?Contact $user
-     * @param 0|1 $phase */
-    function __construct($user, $phase) {
+
+    /** @param 0|1 $phase */
+    function __construct(PaperSearch $srch, $phase) {
         parent::__construct("phase");
-        $this->user = !$user || $user->is_root_user() ? null : $user;
+        $this->conf = $srch->conf;
+        $this->user = $srch->user;
+        $this->use_viewer = $srch->use_viewer_permissions();
         $this->phase = $phase;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (strcasecmp($word, "final") === 0) {
-            return new Phase_SearchTerm($srch->user, PaperInfo::PHASE_FINAL);
+            return new Phase_SearchTerm($srch, PaperInfo::PHASE_FINAL);
         } else if (strcasecmp($word, "review") === 0) {
-            return new Phase_SearchTerm($srch->user, PaperInfo::PHASE_REVIEW);
+            return new Phase_SearchTerm($srch, PaperInfo::PHASE_REVIEW);
         }
         $srch->lwarning($sword, "<0>Only “phase:review” and “phase:final” are allowed");
         return new False_SearchTerm;
     }
+    /** @return ContactPermissions */
+    function permuser() {
+        if ($this->use_viewer && !$this->conf->is_updating_automatic_tags()) {
+            return $this->conf->viewer() ?? $this->user;
+        }
+        return $this->user;
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (!$this->user->can_view_some_decision()
+        if (!$this->permuser()->can_view_some_decision()
             || $this->phase !== PaperInfo::PHASE_FINAL) {
             return "true";
         }
         return "(Paper.timeWithdrawn<=0 and Paper.outcome>0)";
     }
     function test(PaperInfo $row, $xinfo) {
-        return $row->viewable_phase($this->user) === $this->phase;
+        return $row->viewable_phase($this->permuser()) === $this->phase;
     }
     function about() {
         return self::ABOUT_SUB | self::ABOUT_DECISION;

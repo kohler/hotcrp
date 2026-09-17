@@ -77,10 +77,12 @@ class NamedFormula {
         return $this->_abbreviation;
     }
 
-    /** @return Formula */
-    function realize(Contact $user) {
+    /** @param int $flags
+     * @return Formula */
+    function realize(Contact $user, $flags = 0) {
         if (!$this->_fcache
             || $this->_fcache->user !== $user
+            || $this->_fcache->use_viewer_permissions() !== (($flags & Formula::USE_VIEWER_PERMISSIONS) !== 0)
             || $this->_fcache_rights_version !== Contact::$rights_version) {
             $this->_fcache = Formula::make($user, $this->expression);
             $this->_fcache_rights_version = Contact::$rights_version;

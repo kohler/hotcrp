@@ -1247,11 +1247,17 @@ final class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     private function _finish_prepare($pj) {
-        if ($this->_normalize_and_check($pj)) {
-            return true;
+        $old_viewer = $this->conf->swap_viewer($this->user);
+        try {
+            if ($this->_normalize_and_check($pj)) {
+                return true;
+            }
+            $this->abort_save();
+            return false;
+        } finally {
+            $this->prow->clear_updating();
+            $this->conf->swap_viewer($old_viewer);
         }
-        $this->abort_save();
-        return false;
     }
 
     /** @return bool */
@@ -1318,7 +1324,6 @@ final class PaperStatus extends MessageSet {
             $this->warning_at("options", $this->_("<0>Ignoring unknown fields {:list}", $this->_unknown_fields));
         }
         if ($this->problem_status() >= MessageSet::ESTOP) {
-            $this->prow->clear_updating();
             return false;
         }
 
@@ -1360,7 +1365,6 @@ final class PaperStatus extends MessageSet {
         $this->_prepare_status_change();
         $this->_prepare_decision($pj);
         $this->_prepare_final_status($pj);
-        $this->prow->clear_updating();
 
         // correct blindness setting
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
