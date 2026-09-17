@@ -80,6 +80,8 @@ abstract class ContactPermissions {
     /** @return bool */
     abstract function can_view_manager(?PaperInfo $prow = null);
     /** @return bool */
+    abstract function can_view_lead(?PaperInfo $prow);
+    /** @return bool */
     abstract function can_view_shepherd(?PaperInfo $prow);
     /** @return bool */
     abstract function can_view_decision(PaperInfo $prow);

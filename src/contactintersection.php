@@ -95,6 +95,10 @@ class ContactIntersection extends ContactPermissions {
         return $this->a->can_view_manager($prow)
             && $this->b->can_view_manager($prow);
     }
+    function can_view_lead(?PaperInfo $prow) {
+        return $this->a->can_view_lead($prow)
+            && $this->b->can_view_lead($prow);
+    }
     function can_view_shepherd(?PaperInfo $prow) {
         return $this->a->can_view_shepherd($prow)
             && $this->b->can_view_shepherd($prow);

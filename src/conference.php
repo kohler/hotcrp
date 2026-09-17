@@ -4610,14 +4610,6 @@ class Conf {
         if ($options["active"] ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
-        foreach ($options as $k => $v) {
-            if (str_starts_with($k, "dec:")) {
-                error_log(debug_string_backtrace());
-                if ($v) {
-                    $options["decision"][] = substr($k, 4);
-                }
-            }
-        }
         foreach ($options["decision"] ?? [] as $d) {
             $where[] = $this->decision_set()->sqlexpr($d);
         }
