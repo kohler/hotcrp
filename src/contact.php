@@ -565,10 +565,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
     }
 
-    /** @suppress PhanAccessReadOnlyProperty */
+    /** @suppress PhanAccessReadOnlyProperty
+     * @deprecated */
     static function set_main_user(?Contact $user) {
-        global $Me;
-        Contact::$main_user = $Me = $user;
+        Contact::$main_user = $user;
     }
 
 

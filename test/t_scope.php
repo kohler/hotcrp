@@ -740,8 +740,7 @@ class Scope_Tester {
      * does not carry `output`), or null if no job completed. Appends any
      * job created to `$jobs`. */
     private function autoassign_api(Contact $u, $args, &$jobs) {
-        $main_user = Contact::$main_user;
-        Contact::set_main_user($u);
+        $old_viewer = $this->conf->swap_viewer($u);
         try {
             $salts = $this->job_salts($u);
             $resp = call_api_result("=autoassign", $u, TestQreq::post($args));
@@ -756,7 +755,7 @@ class Scope_Tester {
             xassert_eqq($j->status, "done");
             return [$resp, $j->output ?? ""];
         } finally {
-            Contact::set_main_user($main_user);
+            $this->conf->swap_viewer($old_viewer);
         }
     }
 
@@ -844,8 +843,7 @@ class Scope_Tester {
             // ... and a job so recorded runs with that scope even when its
             // user carries none (as in a separate process)
             $this->u_chair->set_scope();
-            $main_user = Contact::$main_user;
-            Contact::set_main_user($this->u_chair);
+            $old_viewer = $this->conf->swap_viewer($this->u_chair);
             try {
                 $tok = Job_Token::make($this->u_chair, "Autoassign", ["-je", "-D"])
                     ->set_input("assign_argv", ["-q=1", "-t=s", "-a=review_adjust", "count=1", "max_load=1", "rtype=primary", "round=unnamed"])
@@ -854,7 +852,7 @@ class Scope_Tester {
                 $jobs[] = $tok->salt;
                 xassert_eqq($tok->run_live(), "done");
             } finally {
-                Contact::set_main_user($main_user);
+                $this->conf->swap_viewer($old_viewer);
                 $this->u_chair->set_scope();
             }
             $tok = Job_Token::find($tok->salt, $this->conf);

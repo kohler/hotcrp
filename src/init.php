@@ -339,7 +339,7 @@ function initialize_user($qreq, $kwarg = null) {
         }
         $token->update_use(86400)->update(); // mark use once a day
         $muser = $user->activate($qreq, true);
-        Contact::set_main_user($muser);
+        $conf->swap_viewer($muser);
         $qreq->set_user($muser);
         return $muser;
     }
@@ -442,7 +442,7 @@ function initialize_user($qreq, $kwarg = null) {
     $muser = ($conf->fresh_user_by_email($uemail)
               ?? Contact::make_email_cflags($conf, $uemail, 0))
         ->activate($qreq, true, $uindex);
-    Contact::set_main_user($muser);
+    $conf->swap_viewer($muser);
     $qreq->set_user($muser);
 
     // author view capability pages should not be indexed

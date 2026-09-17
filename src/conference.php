@@ -158,6 +158,8 @@ class Conf {
     private $_root_user;
     /** @var ?Author */
     private $_site_contact;
+    /** @var ?ContactPermissions */
+    private $_viewer;
     /** @var ?ReviewForm */
     private $_review_form;
     /** @var ?AbbreviationMatcher<PaperOption|ReviewField|NamedFormula> */
@@ -800,12 +802,28 @@ class Conf {
         }
     }
 
+
     /** @return Conf */
     static function set_main_instance(Conf $conf) {
         global $Conf;
         $Conf = Conf::$main = $conf;
         $conf->refresh_globals();
         return $conf;
+    }
+
+    /** @return ContactPermissions */
+    function viewer() {
+        return $this->_viewer;
+    }
+
+    /** @return ?ContactPermissions */
+    function swap_viewer(?ContactPermissions $viewer) {
+        $old_viewer = $this->_viewer;
+        $this->_viewer = $viewer;
+        if ($this === Conf::$main && (!$viewer || $viewer instanceof Contact)) {
+            Contact::$main_user = $viewer;
+        }
+        return $old_viewer;
     }
 
 

@@ -756,13 +756,13 @@ class Search_Tester {
         xassert($tok->is_cdb);
         xassert(str_starts_with($tok->salt, "hcT_"));
 
-        $main_user = Contact::$main_user;
+        $main_user = $this->conf->viewer();
         $qreq = TestQreq::get([])->set_conf($this->conf)
             ->set_page("api")->set_path("/search")
             ->set_header("Authorization", "Bearer {$tok->salt}");
         Qrequest::set_main_request($qreq);
         $muser = initialize_user($qreq, ["bearer" => true]);
-        Contact::set_main_user($main_user);
+        $this->conf->swap_viewer($main_user);
         xassert_eqq($muser->email, "mgbaker@cs.stanford.edu");
         xassert($muser->is_bearer_authorized());
         xassert(!$muser->is_cdb_user());
@@ -820,13 +820,13 @@ class Search_Tester {
         $tok = Authorization_Token::prepare_bearer($cdbu, 3600)->insert();
         xassert($tok->is_cdb);
 
-        $main_user = Contact::$main_user;
+        $main_user = $this->conf->viewer();
         $qreq = TestQreq::get([])->set_conf($this->conf)
             ->set_page("api")->set_path("/search")
             ->set_header("Authorization", "Bearer {$tok->salt}");
         Qrequest::set_main_request($qreq);
         $muser = initialize_user($qreq, ["bearer" => true]);
-        Contact::set_main_user($main_user);
+        $this->conf->swap_viewer($main_user);
         xassert_eqq($muser->email, $email);
         xassert($muser->is_bearer_authorized());
         xassert(!$muser->is_cdb_user());
