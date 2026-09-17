@@ -6695,7 +6695,9 @@ function render_review_body_in(rrow, bodye) {
         h3.className = "s-rf-title";
         h3.appendChild(fte);
         let vis = f.visibility || "re";
-        if (vis === "audec" && hotcrp.status && hotcrp.status.myperm
+        if (vis === "audec"
+            && hotcrp.status
+            && hotcrp.status.myperm
             && hotcrp.status.myperm.some_author_can_view_decision) {
             vis = "au";
         }

@@ -6730,10 +6730,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $perm->response_rounds[$rrd->name] = $v;
             }
         }
-        if ($prow->can_author_view_submitted_review()) {
+        if ((($caddf & CommentInfo::CT_TOPIC_REVIEW) !== 0
+             || $this->can_view_review($prow, null))
+            && $prow->can_author_view_submitted_review()) {
             $perm->some_author_can_view_review = true;
         }
-        if ($prow->can_author_view_decision()) {
+        if ((($caddf & CommentInfo::CT_TOPIC_DECISION) !== 0
+             || $this->can_view_decision($prow))
+            && $prow->can_author_view_decision()) {
             $perm->some_author_can_view_decision = true;
         }
         if ($this->isPC
