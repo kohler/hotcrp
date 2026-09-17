@@ -85,7 +85,8 @@ class MentionLister {
                 $au->contactId = $rrow->contactId;
                 $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
                 $rlist[] = new MentionPhrase($au, MentionPhrase::TF_REVIEWER);
-            } else if ($rrow->reviewType === REVIEW_META) {
+            } else if ($rrow->reviewType === REVIEW_META
+                       && $user->can_view_review_assignment($prow, $rrow)) {
                 $au = Author::make_last("Metareviewer");
                 $au->contactId = $rrow->contactId;
                 $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
@@ -208,6 +209,9 @@ class MentionLister {
     /** @param Qrequest $qreq
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
+        if ($prow && $user->new_comment_flags($prow) === 0) {
+            $prow = null;
+        }
         $mlister = new MentionLister($user, $prow, CommentInfo::CTVIS_AUTHOR, self::FOR_COMPLETION);
         $comp = $aunames = [];
         foreach ($mlister->lists() as $key => $mlist) {
