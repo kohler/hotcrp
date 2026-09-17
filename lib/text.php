@@ -396,15 +396,15 @@ class Text {
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
-    /** @param string $text
+    /** @param string $pattern
      * @return TextPregexes */
-    static function star_text_pregexes($text) {
-        if (!is_valid_utf8($text)) {
-            $text = convert_to_utf8($text);
+    static function star_text_pregexes($pattern) {
+        if (!is_valid_utf8($pattern)) {
+            $pattern = convert_to_utf8($pattern);
         }
-        $words = preg_split('/(?:\s|\pZ)++/us', $text, -1, PREG_SPLIT_NO_EMPTY);
+        $words = preg_split('/(?:\s|\pZ)++/us', $pattern, -1, PREG_SPLIT_NO_EMPTY);
         if (empty($words)) {
-            return TextPregexes::make_empty($text);
+            return TextPregexes::make_empty($pattern);
         }
         $nwords = count($words);
         $letnum_first = preg_match('/\A(?:\pL|\pN)/u', $words[0]);
@@ -412,12 +412,13 @@ class Text {
 
         $utf8s = [];
         foreach ($words as $i => $word) {
-            $r = preg_quote($word);
             if (strpos($word, "*") !== false) {
                 $tail = $i + 1 < $nwords
                     ? '(?=\s|\pZ)'
                     : ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
-                $r = self::one_star_text_regex($r, true, $tail);
+                $r = self::one_wildcard_regex($word, '(?<=\A|\s|\pZ)', '\s\pZ', $tail);
+            } else {
+                $r = preg_quote($word);
             }
             $utf8s[] = $r;
         }
@@ -425,15 +426,16 @@ class Text {
             . join("(?:\\s|\\pZ)++", $utf8s)
             . ($letnum_last ? self::UTF8_FINAL_NONLETTERDIGIT : "");
 
-        if (is_usascii($text)) {
+        if (is_usascii($pattern)) {
             $raws = [];
             foreach ($words as $i => $word) {
-                $r = preg_quote($word);
                 if (strpos($word, "*") !== false) {
                     $tail = $i + 1 < $nwords
                         ? '(?=\s)'
                         : ($letnum_last ? '(?![0-9A-Za-z])' : "");
-                    $r = self::one_star_text_regex($r, false, $tail);
+                    $r = self::one_wildcard_regex($word, '(?<=\A|\s)', '\s', $tail);
+                } else {
+                    $r = preg_quote($word);
                 }
                 $raws[] = $r;
             }
@@ -444,16 +446,20 @@ class Text {
             $preg_raw = null;
         }
 
-        return new TextPregexes($preg_raw, $preg_utf8, $text);
+        return new TextPregexes($preg_raw, $preg_utf8, $pattern);
     }
 
-    /** @param string $regex
+    /** @param string $pattern
      * @param bool $utf8
+     * @param string $head lookbehind the first literal must satisfy
      * @param string $tail lookahead the final literal must satisfy (word boundary)
+     * @param string $reject character specification (interpolated into []) * must reject
+     * @param bool $capture if true, make capture groups for the wildcards
      * @return string */
-    static private function one_star_text_regex($regex, $utf8, $tail) {
+    static function one_wildcard_regex($pattern, $head, $reject, $tail, $capture = false) {
         $cseg = "";
         $pos0 = 0;
+        $regex = preg_quote($pattern);
         $pos = strcspn($regex, "\\");
         $len = strlen($regex);
         $litseg = []; // literal segments between *s
@@ -483,7 +489,7 @@ class Text {
             $out .= $seg;
             if ($i === 0 && $seg === "") {
                 // initial star: ensure it starts at a word boundary
-                $out .= $utf8 ? '(?<=\A|\s|\pZ)' : '(?<=\A|\s)';
+                $out .= $head;
             }
             if ($i === $nlitseg - 1) {
                 break;
@@ -491,27 +497,31 @@ class Text {
             $next = $litseg[$i + 1];
             if ($next === "") {
                 // trailing star: no following literal to protect
-                $out .= $utf8 ? "[^\\s\\pZ]*+" : "\\S*+";
-                break;
-            }
-            // unrolled `\S*` that stops before the next literal. The guard
-            // keeps the possessive scan from swallowing that literal; the
-            // final literal additionally requires the word-boundary $tail.
-            preg_match('/\A(?:[^\\\\\xC0-\xFF]|\\\\.|[\xC0-\xFF][\x80-\xBF]++)/', $next, $m);
-            $ch = $m[0];
-            $boundary = $i + 2 === $nlitseg ? $tail : "";
-            if ($ch === $next && $boundary === "") {
-                $out .= $utf8
-                    ? "[^{$ch}\\s\\pZ]*+"
-                    : "[^{$ch}\\s]*+";
+                $pat = $reject === "" ? "[\\s\\S]*+" : "[^{$reject}]*+";
             } else {
-                $neg = "(?!{$next}{$boundary})";
-                $out .= $utf8
-                    ? "[^{$ch}\\s\\pZ]*+(?:{$neg}{$ch}[^{$ch}\\s\\pZ]*+)*+"
-                    : "[^{$ch}\\s]*+(?:{$neg}{$ch}[^{$ch}\\s]*+)*+";
+                // unrolled `\S*` that stops before the next literal. The guard
+                // keeps the possessive scan from swallowing that literal; the
+                // final literal additionally requires the word-boundary $tail.
+                preg_match('/\A(?:[^\\\\\xC0-\xFF]|\\\\.|[\xC0-\xFF][\x80-\xBF]++)/', $next, $m);
+                $ch = $m[0];
+                $boundary = $i + 2 === $nlitseg ? $tail : "";
+                if ($ch === $next && $boundary === "") {
+                    $pat = "[^{$ch}{$reject}]*+";
+                } else {
+                    $neg = "(?!{$next}{$boundary})";
+                    $pat = "[^{$ch}{$reject}]*+(?:{$neg}{$ch}[^{$ch}{$reject}]*+)*+";
+                }
             }
+            $out .= $capture ? "({$pat})" : $pat;
         }
         return $out;
+    }
+
+    /** @param string $pattern
+     * @param bool $capture
+     * @return string */
+    static function wildcard_pregex($pattern, $capture = false) {
+        return self::one_wildcard_regex($pattern, '\A', '', '\z', $capture);
     }
 
     /** @param ?TextPregexes $reg

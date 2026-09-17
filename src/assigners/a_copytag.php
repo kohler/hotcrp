@@ -57,24 +57,21 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         if ($star !== false && strpos($this->tag, "*", $star + 1) !== false) {
             $state->error("<0>‘{$this->tag}’: At most one wildcard allowed");
             return false;
-        }
-        $new_star = strpos($this->new_tag, "*");
-        if ($new_star !== false && strpos($this->new_tag, "*", $new_star + 1) !== false) {
-            $state->error("<0>‘{$this->new_tag}’: At most one wildcard allowed");
+        } else if ($star !== false && strpos($this->tag, "~", $star + 1) !== false) {
+            $state->error("<0>‘{$this->tag}’: Wildcard must follow ‘~’");
             return false;
         }
-        if (($star === false) !== ($new_star === false)) {
+        $new_star = strpos($this->new_tag, "*");
+        if (($star === false) !== ($new_star === false)
+            || ($new_star !== false && strpos($this->new_tag, "*", $new_star + 1) !== false)
+            || ($new_star !== false && strpos($this->new_tag, "~", $new_star + 1) !== false)) {
             $state->error("<0>Wildcards in tag and new tag must match");
             return false;
         }
         if ($star === false) {
             $this->pattern = null;
-        } else if ($star === 0) {
-            $this->pattern = "{\\A((?![~\\d]).*)"
-                . preg_quote(substr($this->tag, 1)) . "\\z}i";
         } else {
-            $this->pattern = "{\\A" . preg_quote(substr($this->tag, 0, $star))
-                . "(.*)" . preg_quote(substr($this->tag, $star + 1)) . "\\z}i";
+            $this->pattern = '{\A' . Text::one_wildcard_regex($this->tag, '(?=[^~\d])', '', '\z', true) . '\z}i';
         }
         $this->new_star = $new_star;
 
@@ -127,14 +124,21 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         }
         $tagmap = $state->conf->tags();
         foreach ($res as $x) {
+            // skip if no match
+            if (!preg_match($this->pattern, $x->ltag, $m)) {
+                continue;
+            }
             // skip source tags you can't view
-            if (!preg_match($this->pattern, $x->ltag, $m)
-                || ($prow->paperId > 0
-                    && !$state->user->can_view_tag($prow, $x->ltag))) {
+            if ($prow->paperId > 0
+                ? !$state->user->can_view_tag($prow, $x->ltag)
+                : !$state->user->can_view_tag_somewhere($x->ltag)) {
                 continue;
             }
             $new_tag = substr_replace($this->new_tag, $m[1], $this->new_star, 1);
-            if ($tagmap->is_automatic($new_tag)) {
+            if ($tagmap->is_automatic($new_tag)
+                || ($prow->paperId > 0
+                    ? !$state->user->can_view_tag($prow, $new_tag)
+                    : !$state->user->can_view_tag_somewhere($new_tag))) {
                 continue;
             }
             if (!$this->tagger->check_syntax($new_tag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)) {

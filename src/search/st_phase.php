@@ -1,6 +1,6 @@
 <?php
 // search/st_phase.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Phase_SearchTerm extends SearchTerm {
     /** @var Conf */
