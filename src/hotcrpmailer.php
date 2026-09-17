@@ -363,6 +363,11 @@ class HotCRPMailer extends Mailer {
     }
 
     function kw_statistic($args, $isbool, $uf) {
+        if ($uf->statindex === 1
+            && !$this->permsender->privChair
+            && !$this->permsender->can_view_all_decision()) {
+            return null;
+        }
         if ($this->_statistics === null) {
             $this->_statistics = $this->conf->count_submitted_accepted();
         }
