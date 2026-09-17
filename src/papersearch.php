@@ -287,6 +287,8 @@ class PaperSearch extends MessageSet {
     private $_allow_deleted = false;
     /** @var 0|1|2 */
     private $_warn_missing = 0;
+    /** @var bool */
+    private $_use_viewer_permissions = false;
     /** @var ?string */
     private $_urlbase;
     /** @var ?array<string,string> */
@@ -451,6 +453,13 @@ class PaperSearch extends MessageSet {
         return $this;
     }
 
+    /** @param bool $x
+     * @return $this */
+    function set_use_viewer_permissions($x) {
+        $this->_use_viewer_permissions = $x;
+        return $this;
+    }
+
     /** @return Limit_SearchTerm */
     function limit_term() {
         return $this->_limit_qe;
@@ -479,6 +488,10 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function query_is_re_me() {
         return $this->q === "re:me" && $this->_reviewer_user === null;
+    }
+    /** @return bool */
+    function use_viewer_permissions() {
+        return $this->_use_viewer_permissions;
     }
 
 

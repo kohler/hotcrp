@@ -811,18 +811,22 @@ class Conf {
         return $conf;
     }
 
-    /** @return ContactPermissions */
+    /** @return ?ContactPermissions */
     function viewer() {
         return $this->_viewer;
+    }
+
+    function set_viewer(Contact $viewer) {
+        $this->_viewer = $viewer;
+        if ($this === Conf::$main) {
+            Contact::$main_user = $viewer;
+        }
     }
 
     /** @return ?ContactPermissions */
     function swap_viewer(?ContactPermissions $viewer) {
         $old_viewer = $this->_viewer;
         $this->_viewer = $viewer;
-        if ($this === Conf::$main && (!$viewer || $viewer instanceof Contact)) {
-            Contact::$main_user = $viewer;
-        }
         return $old_viewer;
     }
 

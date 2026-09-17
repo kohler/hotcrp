@@ -16,7 +16,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
             $fval[1][] = -10000000;
         }
         if ($fval[0] === "outcome") {
-            return new Decision_SearchTerm($srch->user, $fval[1]);
+            return new Decision_SearchTerm($srch, $fval[1]);
         } else {
             if ($srch->limit_term()->is_submitted()
                 && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0")) {

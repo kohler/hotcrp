@@ -2638,7 +2638,7 @@ class Authorize_Tester {
         Qrequest::set_main_request($qreq);
         $jr = null;
         try {
-            initialize_user($qreq, ["bearer" => true]);
+            initialize_user($qreq, ["bearer" => true, "viewer" => false]);
         } catch (JsonCompletion $jc) {
             $jr = $jc->result;
         }

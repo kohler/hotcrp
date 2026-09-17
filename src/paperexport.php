@@ -180,6 +180,7 @@ class PaperExport {
             return null;
         }
 
+        $old_viewer = $this->conf->swap_viewer($this->viewer);
         $pj = (object) [
             "object" => "paper",
             "pid" => (int) $prow->paperId
@@ -221,6 +222,7 @@ class PaperExport {
         if (!empty($truncated)) {
             $pj->truncated = $truncated;
         }
+        $this->conf->swap_viewer($old_viewer);
         return $pj;
     }
 
@@ -279,6 +281,7 @@ class PaperExport {
     function review_json(PaperInfo $prow, ReviewInfo $rrow) {
         ReviewForm::check_review_author_seen($prow, $rrow, $this->viewer);
         $my_review = $this->viewer->is_my_review($rrow);
+        $old_viewer = $this->conf->swap_viewer($this->viewer);
 
         $rj = [
             "object" => "review",
@@ -386,6 +389,7 @@ class PaperExport {
             $rj["format"] = $fmt;
         }
 
+        $this->conf->swap_viewer($old_viewer);
         return (object) $rj;
     }
 

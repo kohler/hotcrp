@@ -553,6 +553,7 @@ class PaperOption implements JsonSerializable {
         if ($this->_exists_state === 0) {
             $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
             $s->set_expand_automatic(true);
+            $s->set_use_viewer_permissions(true);
             $this->_exists_term = $s->full_term();
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->_phase = Phase_SearchTerm::term_phase($this->_exists_term);
@@ -639,6 +640,7 @@ class PaperOption implements JsonSerializable {
         }
         if ($this->_editable_term === null) {
             $s = new PaperSearch($this->conf->root_user(), $this->editable_if);
+            $s->set_use_viewer_permissions(true);
             $this->_editable_term = $s->full_term();
         }
         ++$this->_recursion;

@@ -46,6 +46,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         if ($this->_visible_term === null) {
             $s = new PaperSearch($this->conf->root_user(), $this->visible_if);
+            $s->set_use_viewer_permissions(true);
             $this->_visible_term = $s->full_term();
         }
         return $this->_visible_term->test($prow, null);

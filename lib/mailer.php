@@ -24,6 +24,8 @@ class Mailer {
     public $permsender;
     /** @var ?Contact */
     public $recipient;
+    /** @var ContactPermissions */
+    protected $permuser;
     /** @var string */
     protected $eol;
 
@@ -690,6 +692,7 @@ class Mailer {
             $this->width = 10000000;
         }
         $this->field = $field;
+        $old_viewer = $this->conf->swap_viewer($this->permuser);
 
         // expand out conditionals first to avoid confusion with wordwrapping
         $text = $this->_expand_conditionals(cleannl($text));
@@ -778,9 +781,10 @@ class Mailer {
 
         // lose newlines on header expansion
         if ($this->context !== self::CONTEXT_BODY) {
-            $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
+            $text = rtrim(preg_replace('/[\r\n\f\x0B]++/', ' ', $text));
         }
 
+        $this->conf->swap_viewer($old_viewer);
         $this->context = $old_context;
         $this->width = $old_width;
         $this->line_prefix = $old_line_prefix;
