@@ -5069,6 +5069,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
+        if (!$rights->scope_allows(TS::S_REV_READ)) {
+            $whyNot["scope"] = "review:read";
+        }
         if ($rights->allow_pc()
             ? !$this->conf->check_tracks($prow, $this, Track::VIEWREV)
             : !$rights->act_author_view() && $rights->review_status == 0) {
@@ -5100,6 +5103,32 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         if ($rights->allow_admin()) {
             $whyNot["forceShow"] = true;
+        }
+        return $whyNot;
+    }
+
+    /** @return bool */
+    function can_view_blank_review_form(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return $rights->scope_allows(TS::S_REV_READ)
+            && ($rights->is_admin() || $this->pc_assignable($prow));
+    }
+
+    /** @return ?FailureReason */
+    function perm_view_blank_review_form(PaperInfo $prow) {
+        if ($this->can_view_blank_review_form($prow)) {
+            return null;
+        }
+        $whyNot = $prow->failure_reason();
+        $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_REV_READ)) {
+            $whyNot["scope"] = "review:read";
+        }
+        if (!$rights->is_admin()) {
+            $whyNot["reviewNotAssigned"] = true;
+            if ($rights->allow_admin()) {
+                $whyNot["forceShow"] = true;
+            }
         }
         return $whyNot;
     }

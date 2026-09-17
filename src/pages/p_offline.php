@@ -91,9 +91,8 @@ class Offline_Page {
                    && $this->qreq->valid_post()
                    && $this->user->is_reviewer()) {
             return $this->handle_tag_indexes();
-        } else {
-            return false;
         }
+        return false;
     }
 
     function print() {

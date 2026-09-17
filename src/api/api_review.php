@@ -192,7 +192,7 @@ class Review_API extends MessageSet {
         if (!$rrow || $rrow->reviewId) {
             $fr = $user->perm_view_review($prow, $rrow);
         } else {
-            $fr = $user->perm_create_review($prow, $user);
+            $fr = $user->perm_view_blank_review_form($prow);
         }
         if ($fr || !$rrow) {
             $fr = $fr ?? $prow->failure_reason(["reviewNonexistent" => true]);
@@ -268,7 +268,7 @@ class Review_API extends MessageSet {
             if ($fmt === "form"
                 && $got === count($rrows)
                 && $u
-                && $user->can_create_review($xprow, $u)) {
+                && $user->can_view_blank_review_form($xprow)) {
                 $rrows[] = ReviewInfo::make_blank($xprow, $u);
             }
         }

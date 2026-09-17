@@ -62,7 +62,7 @@ class MentionParser {
                  && !ctype_space($s[$pos - 1])
                  /** @phan-suppress-next-line PhanParamSuspiciousOrder */
                  && strpos("([{-+,;/", $s[$pos - 1]) === false
-                 && (/* not en- or em-dash */ $pos < 4
+                 && ($pos < 4 /* not en- or em-dash */
                      || $s[$pos - 3] !== "\xe2"
                      || $s[$pos - 2] !== "\x80"
                      || ($s[$pos - 1] !== "\x93" && $s[$pos - 1] !== "\x94")))

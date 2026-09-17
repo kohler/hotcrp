@@ -25,27 +25,6 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
         $ms = (new MessageSet)->set_ignore_duplicates(true)
             ->set_message_formatter($user->conf);
         foreach ($ssel->paper_set($user) as $prow) {
-            $whyNot = $user->perm_edit_some_review($prow);
-            if ($whyNot) {
-                if (!$user->scope_allows(TokenScope::S_REV_READ, $prow)) {
-                    $whyNot = $prow->failure_reason();
-                    $whyNot["scope"] = "review:read";
-                } else {
-                    unset($whyNot["scope"]);
-                }
-                if (!isset($whyNot["deadline"])
-                    && !isset($whyNot["reviewNotAssigned"])) {
-                    $whyNot->append_to($ms, null, 2);
-                    continue;
-                }
-            }
-            $t = "";
-            if ($whyNot) {
-                $whyNot->append_to($ms, null, 1);
-                if (!isset($whyNot["deadline"])) {
-                    $t .= prefix_word_wrap("==-== ", strtoupper($whyNot->unparse_text()) . "\n\n", "==-== ");
-                }
-            }
             if (!$this->all || !$user->allow_admin($prow)) {
                 $rrows = $prow->full_reviews_by_user($user);
             } else {
@@ -53,14 +32,19 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                 $rrows = $prow->reviews_as_display();
             }
             $time = null;
-            if (empty($rrows)) {
-                $rrows[] = null;
-            }
+            $t = "";
             foreach ($rrows as $rrow) {
-                $t .= $rf->text_form($prow, $rrow, $user) . "\n";
-                if ($rrow) {
+                if ($user->can_view_review($prow, $rrow)) {
+                    $t .= $rf->text_form($prow, $rrow, $user) . "\n";
                     $time = max($time ?? 0, $rrow->mtime($user));
                 }
+            }
+            if ($t === "") {
+                if (($fr = $user->perm_view_blank_review_form($prow))) {
+                    $fr->append_to($ms, null, 2);
+                    continue;
+                }
+                $t .= $rf->text_form($prow, null, $user) . "\n";
             }
             $texts[] = [$prow->paperId, $t, $time];
         }

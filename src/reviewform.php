@@ -297,7 +297,7 @@ class ReviewForm {
                 $t[] = "==+== Reviewer: " . Text::nameo($contact, NAME_EB) . "\n";
             }
         }
-        list($time, $obscured) = $rrow->mtime_info($contact);
+        [$time, $obscured] = $rrow->mtime_info($contact);
         if ($time > 0) {
             $time_text = $obscured ? $this->conf->unparse_time_obscure($time) : $this->conf->unparse_time($time);
             $t[] = "==-== Updated {$time_text}\n";

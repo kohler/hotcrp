@@ -134,6 +134,10 @@ class Review_Page {
     }
 
     function handle_download_form() {
+        if ($this->rrow === null
+            && ($fr = $this->user->perm_view_blank_review_form($this->prow))) {
+            $this->error_exit($fr);
+        }
         $filename = "review-" . ($this->rrow ? $this->rrow->unparse_ordinal_id() : $this->prow->paperId);
         $rf = $this->conf->review_form();
         $this->conf->make_text_downloader($filename)
