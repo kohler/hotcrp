@@ -216,7 +216,7 @@ class Multiconference {
             if ($maintenance && $status === 503) {
                 $j["maintenance"] = true;
             }
-            echo json_encode_browser($j), "\n";
+            echo json_encode_db($j), "\n";
             Navigation::complete();
         }
 

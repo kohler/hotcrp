@@ -373,7 +373,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         if ($qreq && isset($qreq->pretty)) {
             $pprint = friendly_boolean($qreq->pretty) ?? $pprint;
         }
-        echo json_encode_browser($this->content, ($pprint ? JSON_PRETTY_PRINT : 0) | JSON_UNESCAPED_SLASHES), "\n";
+        // don’t need JSON_HEX_TAG
+        echo json_encode_db($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }
 
     /** @return never
