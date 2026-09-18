@@ -193,6 +193,12 @@ class Mention_Tester {
 
     function test_mentioncompletion_gates_shepherd_existence() {
         $conf = $this->conf;
+        // the author must be able to initiate a comment, else `mentioncompletion`
+        // returns nothing regardless of what they can see
+        $old_cmt_author = $conf->setting("cmt_author");
+        $old_cmt_always = $conf->setting("cmt_always");
+        $conf->save_refresh_setting("cmt_author", 2);
+        $conf->save_refresh_setting("cmt_always", 1);
         $chair = $conf->checked_user_by_email("chair@_.com");
         $shepherd = $conf->checked_user_by_email("estrin@usc.edu");
         xassert_assign($chair, "paper,action,user\n13,shepherd,{$shepherd->email}\n");
@@ -234,5 +240,7 @@ class Mention_Tester {
         $conf->save_refresh_setting("au_seedec", null);
         xassert_assign($chair, "paper,action,decision\n13,cleardecision,yes\n");
         xassert_assign($chair, "paper,action,user\n13,clearshepherd,{$shepherd->email}\n");
+        $conf->save_refresh_setting("cmt_author", $old_cmt_author);
+        $conf->save_refresh_setting("cmt_always", $old_cmt_always);
     }
 }
