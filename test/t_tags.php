@@ -1191,4 +1191,26 @@ class Tags_Tester {
         xassert_eqq($sorters($this->u_chair), ["#discuss"]);
         xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag,discuss\n");
     }
+
+    function test_remove_leading_wildcard_twiddle_tag() {
+        $conf = $this->conf;
+        $cid = $this->u_chair->contactId;
+        $conf->qe("delete from PaperTag where paperId=1 and (tag=? or tag=?)", "{$cid}~wildfoo", "{$cid}~wildbar");
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,~wildfoo\ntag,1,~wildbar\n");
+        $p1 = $conf->checked_paper_by_id(1);
+        $p1->load_tags();
+        xassert($p1->has_tag("{$cid}~wildfoo"));
+        xassert($p1->has_tag("{$cid}~wildbar"));
+
+        // regression: a leading-wildcard remove on a user-owned tag (`~*foo`)
+        // must match; a wildcard-regex refactor briefly injected an out-of-place
+        // `\A` after the `user~` prefix, so the remove matched nothing
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,~*foo#clear\n");
+        $p1->load_tags();
+        xassert(!$p1->has_tag("{$cid}~wildfoo"));
+        xassert($p1->has_tag("{$cid}~wildbar"));
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,~wildbar#clear\n");
+    }
 }

@@ -335,7 +335,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     /** @param CsvRow $req */
     private function add_piece($tag, $req, AssignmentState $state) {
         // parse tag into parts
-        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
+        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*+)(\z|#|#?+[=!<>]=?+|#?+≠|#?+≤|#?+≥)(.*)\z/', $tag, $m)
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;
@@ -571,21 +571,21 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                 $cid = $state->reviewer->contactId;
             }
             if ($xuser) {
-                $xtag = "[^~]*";
+                $xtag = "[^~]*+";
             } else if ($state->user->privChair && $state->reviewer->privChair) {
-                $xtag = "(?:~~|{$cid}~|)[^~]*";
+                $xtag = "(?:~~|{$cid}~|)[^~]*+";
             } else {
-                $xtag = "(?:{$cid}~|)[^~]*";
+                $xtag = "(?:{$cid}~|)[^~]*+";
             }
         } else if (strcasecmp($xtag, "~~any") === 0
                    || strcasecmp($xtag, "~~all") === 0) {
             assert($xuser === "");
-            $xtag = "~~[^~]*";
+            $xtag = "~~[^~]*+";
         } else {
             if (!preg_match('/[*(]/', $xuser . $xtag)) {
                 $search_ltag = strtolower($xuser . $xtag);
             }
-            $xtag = str_replace("\\*", "[^~]*", preg_quote($xtag));
+            $xtag = Text::one_wildcard_regex($xtag, '', '~', '\z');
         }
 
         // if you can't view the tag, you can't clear the tag
