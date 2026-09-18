@@ -4438,7 +4438,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return FailureReason */
     function no_paper_whynot($pid) {
-        $whynot = new FailureReason($this->conf, ["paperId" => $pid]);
+        $whynot = new FailureReason($this->conf, ["paperId" => $pid, "notFound" => true]);
         if ((stoi((string) $pid) ?? -1) < 0) {
             $whynot["invalidId"] = "paper";
         } else if ($this->can_view_missing_papers()) {
@@ -4478,19 +4478,21 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $whyNot["scope"] = TS::S_DOC_READ;
         } else if (!$rights->scope_allows(TS::S_SUB_READ)) {
             $whyNot["scope"] = TS::S_SUB_READ;
-        } else if (!$rights->allow_author_view()
-                   && $rights->review_status === 0
-                   && !$rights->allow_pc_broad()) {
+        } else if ($pdf
+                   && $this->can_view_paper($prow)) {
+            $whyNot["permission"] = "document:view";
+        } else if ((!$rights->allow_author_view()
+                    && $rights->review_status === 0
+                    && !$rights->allow_pc_broad())
+                   || !$this->can_view_missing_papers()
+                   || $prow->timeSubmitted > 0) {
+            if (!$this->can_view_missing_papers()) {
+                $whyNot["notFound"] = true;
+            }
             $whyNot["permission"] = "paper:view";
             if ($this->is_empty()) {
                 $whyNot["signin"] = "paper";
             }
-        } else if ($pdf
-                   && $this->can_view_paper($prow)) {
-            $whyNot["permission"] = "document:view";
-        } else if (!$this->can_view_missing_papers()
-                   || $prow->timeSubmitted > 0) {
-            $whyNot["permission"] = "paper:view";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else {
@@ -4902,6 +4904,25 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && $this->act_requester($prow)));
     }
 
+    /** @return FailureReason */
+    function no_review_whynot(PaperInfo $prow, $r = null) {
+        if (($fr = $this->perm_view_review($prow, null, null))) {
+            return $fr;
+        }
+        $fr = (new FailureReason($this->conf, ["notFound" => true]))->set_prow($prow);
+        if (is_string($r) && !$prow->parse_ordinal_id($r)) {
+            $fr["invalidId"] = "review";
+        } else if ($this->allow_admin($prow)) {
+            $fr["reviewNonexistent"] = true;
+        } else {
+            $fr["permission"] = "review:view";
+            if ($this->is_empty()) {
+                $fr["signin"] = "review";
+            }
+        }
+        return $fr;
+    }
+
     /** Returns true if this review's existence is visible by this user.
      * Implied by can_view_review and can_view_review_identity, but does NOT
      * imply them -- a co-reviewer can sometimes see that a review exists even
@@ -5017,7 +5038,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param ?ReviewInfo $rrow
      * @param ?int $viewscore
      * @param int $flags
-     * @return bool */
+     * @return bool
+     * 
+     * Can this user view review $rrow, possibly at a specific viewscore? If
+     * $rrow is null, then return true if this user would be able to view a
+     * submitted review, should one exist. */
     function can_view_review(PaperInfo $prow, $rrow, $viewscore = null,
                              $flags = 0) {
         // See also can_view_submitted_review
@@ -5072,10 +5097,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($this->can_view_review($prow, $rrow, $viewscore)) {
             return null;
         }
-        if (!$this->can_view_review_assignment($prow, $rrow)) {
-            // the caller may not even learn this review exists: report it as
-            // nonexistent rather than leaking its existence via a specific reason
-            return $prow->failure_reason(["reviewNonexistent" => true]);
+        if ($rrow && !$this->can_view_review_assignment($prow, $rrow)) {
+            // The caller may not even learn this review exists.
+            // If they can't view *any* reviews, return why; otherwise
+            // return a generic message.
+            return $this->no_review_whynot($prow);
         }
         $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
@@ -5087,6 +5113,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             ? !$this->conf->check_tracks($prow, $this, Track::VIEWREV)
             : !$rights->act_author_view() && $rights->review_status == 0) {
             $whyNot["permission"] = "review:view";
+            if ($this->is_empty()) {
+                $whyNot["signin"] = "review";
+            }
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {

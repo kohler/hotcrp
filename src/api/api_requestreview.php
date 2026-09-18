@@ -348,18 +348,41 @@ class RequestReview_API {
     }
 
     /** @param Contact $user
+     * @param Qrequest $qreq
      * @param PaperInfo $prow
-     * @param ReviewInfo|ReviewRefusalInfo $remrow
-     * @return bool */
-    static function allow_accept_decline($user, $prow, $remrow) {
-        if ($user->can_manage_reviews($prow)) {
-            return true;
-        } else if ($remrow instanceof ReviewInfo) {
-            return $user->is_my_review($remrow);
+     * @param ?ReviewInfo $rrow
+     * @param ?ReviewRefusalInfo $refrow
+     * @return ?JsonResult */
+    static function allow_accept_decline($user, $qreq, $prow, $rrow, $refrow) {
+        if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
         }
-        return $user->contactXid === $remrow->contactId
-            || ($remrow->email && strcasecmp($user->email, $remrow->email) === 0)
-            || $user->reviewer_capability($prow) === $remrow->contactId;
+        if ($user->can_manage_reviews($prow)) {
+            if (!$rrow && !$refrow) {
+                return JsonResult::make_not_found_error("r", "<0>Review does not exist");
+            }
+            return null;
+        }
+        if ($rrow) {
+            if ($user->is_my_review($rrow)
+                && !$rrow->is_ghost()) {
+                return null;
+            }
+            $viewable = $user->can_view_review_assignment($prow, $rrow);
+        } else if ($refrow) {
+            if ($user->contactXid === $refrow->contactId
+                || ($refrow->email && strcasecmp($user->email, $refrow->email) === 0)
+                || $user->reviewer_capability($prow) === $refrow->contactId) {
+                return null;
+            }
+            $viewable = $user->can_view_review_meta($prow, $refrow);
+        } else {
+            $viewable = false;
+        }
+        if (!$viewable) {
+            return JsonResult::make_not_found_error("r", "<0>Review does not exist, or you’re not allowed to view it");
+        }
+        return JsonResult::make_permission_error("r");
     }
 
     /** @param Contact $user
@@ -398,15 +421,8 @@ class RequestReview_API {
 
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
-        if (!$rrow && !$refrow) {
-            if ($user->can_view_submitted_review($prow)) {
-                return JsonResult::make_not_found_error("r", "<0>No such review");
-            }
-            return JsonResult::make_permission_error("r");
-        } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
-            return JsonResult::make_permission_error("r");
-        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
-            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
+        if (($jr = self::allow_accept_decline($user, $qreq, $prow, $rrow, $refrow))) {
+            return $jr;
         }
 
         if (!$rrow) {
@@ -455,15 +471,8 @@ class RequestReview_API {
 
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
-        if (!$rrow && !$refrow) {
-            if ($user->can_view_submitted_review($prow)) {
-                return JsonResult::make_not_found_error("r", "<0>Review not found");
-            }
-            return JsonResult::make_permission_error("r");
-        } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
-            return JsonResult::make_permission_error("r");
-        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
-            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
+        if (($jr = self::allow_accept_decline($user, $qreq, $prow, $rrow, $refrow))) {
+            return $jr;
         } else if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DELIVERED) {
             return JsonResult::make_permission_error("r", "<0>Review has already been submitted");
         } else if ($rrow && $rrow->reviewType >= REVIEW_SECONDARY) {
@@ -533,16 +542,8 @@ class RequestReview_API {
         $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $rrow = $prow->review_by_id($r);
-        if (!$rrow) {
-            if ($user->can_view_submitted_review($prow)) {
-                return JsonResult::make_not_found_error("r", "<0>Review not found");
-            } else {
-                return JsonResult::make_permission_error("r");
-            }
-        } else if (!self::allow_accept_decline($user, $prow, $rrow)) {
-            return JsonResult::make_permission_error("r");
-        } else if (!$user->scope_allows(TokenScope::S_REV_WRITE, $prow)) {
-            return JsonResult::make_scope_error($qreq, TokenScope::S_REV_WRITE);
+        if (($jr = self::allow_accept_decline($user, $qreq, $prow, $rrow, null))) {
+            return $jr;
         } else if ($rrow->reviewStatus > ReviewInfo::RS_DRAFTED) {
             return JsonResult::make_permission_error("r", "<0>Reviews cannot be reassigned after they are submitted");
         }

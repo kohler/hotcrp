@@ -726,6 +726,32 @@ class ReviewValues extends MessageSet {
         return true;
     }
 
+    /** @return bool */
+    private function _prepare_rid(PaperInfo $prow, ?ReviewInfo &$rrow) {
+        $rloc = $prow->parse_ordinal_id($this->req["rid"]);
+        if ($rloc === 0) {
+            return true;
+        }
+        if ($rloc < 0) {
+            $ridrow = $prow->review_by_ordinal(-$rloc);
+        } else if ($rloc > 0) {
+            $ridrow = $prow->review_by_id($rloc);
+        } else {
+            $ridrow = null;
+        }
+        $fr = $ridrow ? $this->user->perm_view_review($prow, $ridrow) : null;
+        if ($fr || !$ridrow) {
+            $fr = $fr ?? $this->user->no_review_whynot($prow, $this->req["rid"]);
+            $fr->append_to($this, "rid", self::ERROR);
+            return false;
+        } else if ($rrow && $rrow->reviewId !== $ridrow->reviewId) {
+            $this->rvmsg(self::ERROR, "rid", "<0>Review ID does not match");
+            return false;
+        }
+        $rrow = $rrow ?? $ridrow;
+        return true;
+    }
+
     /** Resolve the target review and stage the request onto it without
      * committing. A review that does not yet exist is staged onto an unsaved
      * assignable review (`assign_review_prop`) — no database row is created
@@ -766,29 +792,9 @@ class ReviewValues extends MessageSet {
         // selects the review (or confirms a passed one — a disagreement is a
         // mismatch), while `new`/empty leaves the reviewer's review to be found
         // or created below
-        if (isset($this->req["rid"])) {
-            $rloc = $prow->parse_ordinal_id($this->req["rid"]);
-            if ($rloc === false) {
-                $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
-                return false;
-            } else if ($rloc !== 0) {
-                $ridrow = $rloc < 0
-                    ? $prow->review_by_ordinal(-$rloc)
-                    : $prow->review_by_id($rloc);
-                if (!$ridrow) {
-                    $this->rvmsg(self::ERROR, "rid", "<0>Review not found");
-                    return false;
-                } else if ($rrow && $rrow->reviewId !== $ridrow->reviewId) {
-                    $this->rvmsg(self::ERROR, "rid", "<0>Review ID does not match");
-                    return false;
-                } else if (($fr = $user->perm_view_review($prow, $ridrow))) {
-                    // an unviewable review the caller may not know exists reads
-                    // as `reviewNonexistent` (mirrors the URL `r` path)
-                    $fr->append_to($this, "rid", self::ERROR);
-                    return false;
-                }
-                $rrow = $rrow ?? $ridrow;
-            }
+        if (isset($this->req["rid"])
+            && !$this->_prepare_rid($prow, $rrow)) {
+            return false;
         }
 
         // look up reviewer

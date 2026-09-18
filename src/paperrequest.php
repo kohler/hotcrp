@@ -271,8 +271,8 @@ class PaperRequest {
         $rloc = $this->prow->parse_ordinal_id($qreq->reviewId);
         $rrow = $this->prow->review_by_ordinal_id($rloc);
         if ($rrow) {
-            if (($whynot = $user->perm_view_review($this->prow, $rrow))) {
-                throw $user->perm_view_review($this->prow, null) ?? $whynot;
+            if (($fr = $user->perm_view_review($this->prow, $rrow))) {
+                throw $fr;
             }
             return $rrow;
         }
@@ -285,7 +285,6 @@ class PaperRequest {
             return null;
         }
         // error
-        throw $user->perm_view_review($this->prow, null)
-            ?? $this->prow->failure_reason(["reviewNonexistent" => true]);
+        throw $user->no_review_whynot($this->prow);
     }
 }

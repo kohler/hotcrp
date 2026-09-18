@@ -132,7 +132,7 @@ class ReviewAPI_Tester {
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->ok, true);
         xassert_eqq($j->dry_run, true);
-        xassert(str_contains(json_encode($j->message_list ?? []), "Invalid value"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "Invalid value");
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
@@ -146,7 +146,7 @@ class ReviewAPI_Tester {
         xassert_eqq($j->ok, true);
         xassert_eqq($j->dry_run ?? null, null);
         xassert_eqq($j->valid, true);
-        xassert(str_contains(json_encode($j->message_list ?? []), "unknown field"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "unknown field");
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
 
@@ -157,7 +157,7 @@ class ReviewAPI_Tester {
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->dry_run, true);
         xassert(!isset($j->review));
-        xassert(str_contains(json_encode($j->message_list ?? []), "Invalid value"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "Invalid value");
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
 
@@ -207,7 +207,7 @@ class ReviewAPI_Tester {
         foreach ($ml as $mi) {
             xassert_eqq($mi->status, MessageSet::WARNING);
         }
-        xassert(str_contains(json_encode($ml), "be submitted until entries"));
+        xassert_str_contains(json_encode($ml), "be submitted until entries");
         // and the review is still a draft
         $prow->load_reviews(true);
         xassert($prow->checked_review_by_user($u)->reviewStatus < ReviewInfo::RS_DELIVERED);
@@ -216,7 +216,7 @@ class ReviewAPI_Tester {
         $qreq = TestQreq::post(["p" => 18, "r" => $rid, "ready" => 1, "OveMer" => 2]);
         $j = call_api("=review", $this->u_chair, $qreq, $prow);
         xassert_eqq($j->ok, true);
-        xassert(str_contains(json_encode($j->message_list ?? []), "be submitted until entries"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "be submitted until entries");
         $status = 0;
         foreach ($j->message_list ?? [] as $mi) {
             $status = max($status, $mi->status);
@@ -291,7 +291,7 @@ class ReviewAPI_Tester {
         $qreq = TestQreq::post_json(["object" => "review", "pid" => 17, "OveMer" => 1]);
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->ok, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "does not match"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "does not match");
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);
     }
@@ -317,7 +317,7 @@ class ReviewAPI_Tester {
         $qreq = TestQreq::post_json(["object" => "review", "OveMer" => 1]);
         $j = call_api("review", $this->u_diot, $qreq, null);
         xassert_eqq($j->ok, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "Submission ID required"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "Submission ID required");
     }
 
     function test_post_rid_mismatch() {
@@ -328,7 +328,7 @@ class ReviewAPI_Tester {
         $qreq = TestQreq::post_json(["object" => "review", "rid" => $erow->reviewId, "OveMer" => 1], ["r" => "18A"]);
         $j = call_api("review", $this->u_chair, $qreq, $prow);
         xassert_eqq($j->ok, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "Review ID does not match"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "Review ID does not match");
     }
 
     function test_post_rid_confirms() {
@@ -382,13 +382,13 @@ class ReviewAPI_Tester {
         $j = call_api("=review", $this->u_diot, ["r" => (string) $erow->reviewId, "OveMer" => "1", "ready" => "1"], $prow);
         xassert_eqq($j->ok, false);
         xassert_eqq($j->valid, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "not yet ready"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "not yet ready");
         // ...or by `rid` in a JSON body (which prepare_save resolves)
         $qreq = TestQreq::post_json(["object" => "review", "rid" => $erow->reviewId, "OveMer" => 1]);
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->ok, false);
         xassert_eqq($j->valid, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "not yet ready"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "not yet ready");
         // estrin's review is untouched
         $prow->load_reviews(true);
         xassert_eqq($prow->review_by_user($this->u_estrin)->reviewTime, $etime);
@@ -402,19 +402,20 @@ class ReviewAPI_Tester {
         $author = $this->conf->checked_user_by_email("cheshire@cs.stanford.edu");
         xassert($author->can_view_paper($prow));
         xassert(!$author->can_view_review_assignment($prow, $rrow));
-        // so the review's existence is hidden as a 404 “not found”,
-        // indistinguishable from a nonexistent review id...
-        $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId]));
-        xassert_eqq($jr->status, 404);
-        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
-        $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => "99999"]));
-        xassert_eqq($jr->status, 404);
-        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        // so the response explains why the author can’t see reviews on this
+        // paper at all — a fact about the author, not about any review id —
+        // and is identical for a nonexistent review id...
+        $jr1 = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId]));
+        $jr2 = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => "99999"]));
+        xassert_eqq($jr1->status, 403);
+        xassert_eqq($jr2->status, 403);
+        xassert_eqq(json_encode($jr1->content["message_list"] ?? []), json_encode($jr2->content["message_list"] ?? []));
+        xassert_str_contains(json_encode($jr1->content["message_list"] ?? []), "currently view reviews for submission #18");
         // ...for every `format`, which cannot bypass the permission check
         foreach (["text", "form"] as $fmt) {
             $jr = call_api_result("review", $author, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId, "format" => $fmt]));
             xassert($jr instanceof JsonResult);
-            xassert_eqq($jr->status, 404);
+            xassert_eqq($jr->status, 403);
         }
         // a multiple-review download gives the author nothing
         foreach (["text", "textzip"] as $fmt) {
@@ -424,8 +425,8 @@ class ReviewAPI_Tester {
         }
         // ...on POST too (attempting to edit it by `r`)
         $jr = call_api_result("=review", $author, ["r" => (string) $rrow->reviewId, "OveMer" => "1", "ready" => "1"], $prow);
-        xassert_eqq($jr->status, 404);
-        xassert(str_contains(json_encode($jr->content["message_list"] ?? []), "not found"));
+        xassert_eqq($jr->status, 403);
+        xassert_str_contains(json_encode($jr->content["message_list"] ?? []), "currently view reviews for submission #18");
         // an administrator can still fetch the review
         $j = call_api("review", $this->u_chair, TestQreq::get(["p" => 18, "r" => (string) $rrow->reviewId]));
         xassert_eqq($j->ok, true);
@@ -446,12 +447,12 @@ class ReviewAPI_Tester {
         $j = call_api("=review", $this->u_chair, ["r" => (string) $orid, "OveMer" => "1"], $prow);
         xassert_eqq($j->ok, false);
         xassert_eqq($j->status_code, 404);
-        xassert(str_contains(json_encode($j->message_list ?? []), "not found"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "not found");
         // and likewise via a JSON body `rid`
         $qreq = TestQreq::post_json(["object" => "review", "rid" => $orid, "OveMer" => 1]);
         $j = call_api("review", $this->u_chair, $qreq, $prow);
         xassert_eqq($j->ok, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "not found"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "not found");
     }
 
     function test_post_text_upload() {
@@ -599,7 +600,7 @@ class ReviewAPI_Tester {
             ->set_file_content("file", $other, "review.txt", "text/plain");
         $j = call_api("review", $this->u_diot, $qreq, $prow);
         xassert_eqq($j->ok, false);
-        xassert(str_contains(json_encode($j->message_list ?? []), "not for this"));
+        xassert_str_contains(json_encode($j->message_list ?? []), "not for this");
         // diot's paper 18 review is untouched
         $prow->load_reviews(true);
         xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 2);

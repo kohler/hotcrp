@@ -407,7 +407,7 @@ class PaperAPI_Tester {
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->change_list, []);
-        xassert_eqq($jr->message_list[0]->message, "<0>You aren’t allowed to view submission #2");
+        xassert_eqq($jr->message_list[0]->message, "<0>Submission #2 does not exist, or you’re not allowed to view it");
 
         $qreq = TestQreq::post_json([
             "pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
@@ -415,7 +415,7 @@ class PaperAPI_Tester {
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->change_list, []);
-        xassert_eqq($jr->message_list[0]->message, "<0>You aren’t allowed to view submission #10000");
+        xassert_eqq($jr->message_list[0]->message, "<0>Submission #10000 does not exist, or you’re not allowed to view it");
     }
 
     function test_assigned_paper_id() {

@@ -378,7 +378,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             }
         }
         if (!$doc) {
-            return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
+            return $this->prow->failure_reason(["notFound" => true, "documentNotFound" => $this->req_filename]);
         }
         // documents on author comments are subject to “can read submitted
         // documents” track

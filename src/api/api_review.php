@@ -178,24 +178,25 @@ class Review_API extends MessageSet {
 
         if (isset($qreq->r)) {
             $rloc = $prow->parse_ordinal_id($qreq->r);
-            if ($rloc === false || $rloc === 0) {
-                return JsonResult::make_parameter_error("r");
-            } else if ($rloc < 0) {
+            if ($rloc < 0) {
                 $rrow = $prow->review_by_ordinal(-$rloc);
-            } else {
+            } else if ($rloc > 0) {
                 $rrow = $prow->review_by_id($rloc);
+            } else {
+                $rrow = null;
             }
         } else {
             $rrow = $prow->review_by_user($user)
                 ?? ReviewInfo::make_blank($prow, $user);
         }
-        if (!$rrow || $rrow->reviewId) {
+        if (!$rrow) {
+            $fr = $user->no_review_whynot($prow, $qreq->r);
+        } else if ($rrow->reviewId) {
             $fr = $user->perm_view_review($prow, $rrow);
         } else {
             $fr = $user->perm_view_blank_review_form($prow);
         }
-        if ($fr || !$rrow) {
-            $fr = $fr ?? $prow->failure_reason(["reviewNonexistent" => true]);
+        if ($fr) {
             return new JsonResult($fr->response_code(), [
                 "ok" => false, "message_list" => $fr->message_list(null, 2)
             ]);
@@ -769,27 +770,24 @@ class Review_API extends MessageSet {
             return [true, null];
         }
         if (!$this->prow) {
-            // a specific review can only be addressed with a URL paper
+            // a specific review can only be addressed when the paper is too
             $this->error_at("r", "<0>{Submission} required");
             return [false, null];
         }
         $rloc = $this->prow->parse_ordinal_id($r);
-        if ($rloc === false || $rloc === 0) {
-            $this->status = 404;
-            $this->error_at("r", "<0>Review not found");
-            return [false, null];
+        if ($rloc < 0) {
+            $rrow = $this->prow->review_by_ordinal(-$rloc);
+        } else if ($rloc > 0) {
+            $rrow = $this->prow->review_by_id($rloc);
+        } else {
+            $rrow = null;
         }
-        $rrow = $rloc < 0
-            ? $this->prow->review_by_ordinal(-$rloc)
-            : $this->prow->review_by_id($rloc);
-        if (!$rrow) {
-            $this->status = 404;
-            $this->error_at("r", "<0>Review not found");
-            return [false, null];
+        if ($rrow) {
+            $fr = $this->user->perm_view_review($this->prow, $rrow);
+        } else {
+            $fr = $this->user->no_review_whynot($this->prow, $r);
         }
-        // an unviewable review the caller may not know exists reads as
-        // `reviewNonexistent` (404), so this never leaks its existence
-        if (($fr = $this->user->perm_view_review($this->prow, $rrow))) {
+        if ($fr) {
             $this->status = $fr->response_code();
             $fr->append_to($this, "r", MessageSet::ERROR);
             return [false, null];

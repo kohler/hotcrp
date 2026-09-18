@@ -430,7 +430,7 @@ class Banners_Tester {
         $cb = new CustomBanners($this->conf, $this->u_chair, $qreq);
         $bs = $cb->active();
         xassert_eqq(count($bs), 1);
-        xassert(str_contains($bs["b1"], "8"));
+        xassert_str_contains($bs["b1"], "8");
     }
 
     function test_calc_param_depends_on_count() {

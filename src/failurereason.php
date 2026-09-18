@@ -82,19 +82,17 @@ class FailureReason extends Exception
 
     /** Return the HTTP status code appropriate for this failure.
      *
-     * Returns 404 when the failure means a named resource does not exist or
-     * the request did not name a valid resource. Otherwise returns 403, or
-     * 401 when $user is given and not signed in (the client should
-     * authenticate).
+     * Returns 404 when the resource definitely does not exist (e.g. invalid
+     * ID), or the failure deliberately declines to state whether it exists.
+     * Otherwise 403, or 401 when $user is given and not signed in (the client
+     * should authenticate).
      * @param ?Contact $user
      * @return int */
     function response_code(?Contact $user = null) {
         if (isset($this->_a["invalidId"])
             || isset($this->_a["conflictingId"])
             || isset($this->_a["invalidPath"])
-            || ($this->_a["noPaper"] ?? false)
-            || isset($this->_a["documentNotFound"])
-            || ($this->_a["reviewNonexistent"] ?? false)) {
+            || ($this->_a["notFound"] ?? false)) {
             return 404;
         } else if ($user && !$user->is_signed_in()) {
             return 401;
@@ -160,6 +158,11 @@ class FailureReason extends Exception
             return $this->submission_deadline_info();
         }
 
+        if ($dn === "au_seerev") {
+            // not a timed deadline; a dedicated message keys on the name
+            return [null, 1, "au_seerev", -1, []];
+        }
+
         if ($dn === "response") {
             $rrd = $this->conf->response_round_by_id($this->_a["commentRound"]);
             return ["response_open", $rrd->open, "response_done", $rrd->done, []];
@@ -219,6 +222,9 @@ class FailureReason extends Exception
         }
         if ($this->_a["expand"] ?? false) {
             $args[] = new FmtArg("expand", true);
+        }
+        if ($this->_a["notFound"] ?? false) {
+            $args[] = new FmtArg("not_found", $this->_a["notFound"]);
         }
 
         // collect primary messages

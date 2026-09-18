@@ -342,10 +342,13 @@ class RequestReviewAPI_Tester {
     }
 
     function test_acceptdecline_hide_review_existence_from_outsider() {
-        // a PC member with no assignment on #20 and no ability to view its
-        // reviews should likewise not be able to probe review ids
+        // a PC member conflicted with #20 cannot see its review assignments,
+        // so must not be able to probe review ids
+        xassert_assign($this->u_chair, "paper,action,email\n{$this->pid},conflict,marina@poema.ru\n");
         $prow = $this->conf->checked_paper_by_id($this->pid);
         $u_outsider = $this->conf->checked_user_by_email("marina@poema.ru");
+        $rrow = $prow->review_by_id($this->hidden_rid);
+        xassert(!$u_outsider->can_view_review_assignment($prow, $rrow));
         foreach (["=acceptreview", "=declinereview", "=claimreview"] as $fn) {
             $hit = $this->observable($fn, $u_outsider,
                 ["r" => (string) $this->hidden_rid], $prow);
@@ -353,6 +356,7 @@ class RequestReviewAPI_Tester {
                 ["r" => "99999"], $prow);
             xassert_eqq($hit, $miss);
         }
+        xassert_assign($this->u_chair, "paper,action,email\n{$this->pid},clearconflict,marina@poema.ru\n");
     }
 
     // When a review is actually created for a brand-new reviewer, the reviewer's

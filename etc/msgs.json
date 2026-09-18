@@ -174,9 +174,12 @@
     ["<0>“{}” in global profile", "<0>Differs in global profile", ["{field}=collaborators"]],
 
     ["permission_error", "<0>Permission error"],
+    ["permission_error", "<0>{Submission} does not exist, or you’re not allowed to view it", ["{action}=paper:view", "{not_found}"]],
+    ["permission_error", "<0>{Submission} #{pid} does not exist, or you’re not allowed to view it", ["{action}=paper:view", "{not_found}", "{pid}"]],
     ["permission_error", "<0>You aren’t allowed to view {submission} #{pid}", ["{action}=paper:view"]],
     ["permission_error", "<0>You aren’t allowed to view {submission} #{pid}’s documents", ["{action}=document:view"]],
     ["permission_error", "<0>You aren’t allowed to view reviews for {submission} #{pid}", ["{action}=review:view"]],
+    ["permission_error", "<0>Review does not exist, or you’re not allowed to view it", ["{action}=review:view", "{not_found}"]],
     ["permission_error", "<0>You aren’t allowed to withdraw {submission} #{pid}", ["{action}=paper:withdraw"]],
     ["permission_error", "<0>You aren’t allowed to request reviews for {submission} #{pid}", ["{action}=review:request"]],
     ["permission_error", "<0>You aren’t allowed to review {submission} #{pid}", ["{action}=review:edit"]],
