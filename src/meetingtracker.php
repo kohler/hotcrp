@@ -382,7 +382,7 @@ class MeetingTracker_Config implements JsonSerializable {
         } else {
             $ids = $this->ids;
         }
-        $ti->listinfo = json_encode_browser([
+        $ti->listinfo = json_encode_db([
             "listid" => $this->listid,
             "ids" => SessionList::encode_ids($ids),
             "description" => $this->description,

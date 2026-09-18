@@ -31,8 +31,12 @@ class SearchStringContext {
     public $ppos2;
     /** @var int */
     public $depth;
+    /** @var ?int */
+    public $cost;
     /** @var ?SearchStringContext */
     public $parent;
+    /** @var ?SearchStringContext */
+    public $root;
 
     /** @param string $q
      * @param int $ppos1
@@ -44,6 +48,7 @@ class SearchStringContext {
         $this->ppos2 = $ppos2;
         $this->depth = $parent ? $parent->depth + 1 : 1;
         $this->parent = $parent;
+        $this->root = $parent ? $parent->root ?? $parent : null;
     }
 
     /** @param MessageItem $mi
@@ -69,6 +74,22 @@ class SearchStringContext {
             $ssc = $ssc->parent;
         }
         return $mis;
+    }
+
+    /** @return ?int */
+    function cost() {
+        $ssc = $this->root ?? $this;
+        return $ssc->cost;
+    }
+
+    /** @param int $cost
+     * @return ?int */
+    function charge($cost = 1) {
+        $ssc = $this->root ?? $this;
+        if ($ssc->cost !== null) {
+            $ssc->cost += $cost;
+        }
+        return $ssc->cost;
     }
 }
 
@@ -366,6 +387,8 @@ class PaperSearch extends MessageSet {
 
         // the query itself
         $this->q = trim($options["q"] ?? "");
+        $this->_string_context = new SearchStringContext($this->q, 0, 0, null);
+        $this->_string_context->cost = 0;
         $this->_req_sort = $options["sort"] ?? null;
         $this->_req_scoresort = $options["scoresort"] ?? null;
 
@@ -634,11 +657,12 @@ class PaperSearch extends MessageSet {
      * @param SearchWord $sword
      * @return ?SearchTerm */
     function parse_named_search_body($body, $sword) {
-        if ($this->_string_context && $this->_string_context->depth >= 10) {
+        if ($this->_string_context->depth >= 10) {
             $this->lwarning($sword, "<0>Circular reference in named search definitions");
             return null;
         }
         $context = new SearchStringContext($body, $sword->kwpos1, $sword->pos2, $this->_string_context);
+        $context->charge();
         $this->_string_context = $context;
         $qe = $this->_search_expression($body);
         $this->_string_context = $context->parent;
@@ -797,7 +821,9 @@ class PaperSearch extends MessageSet {
      * @param int $depth
      * @return ?SearchTerm */
     private function _parse_atom($sa, $str, $scope, $depth) {
-        if (!$sa || $depth >= self::MAX_KEYWORD_DEPTH) {
+        if (!$sa
+            || $depth >= self::MAX_KEYWORD_DEPTH
+            || $this->_string_context->cost() > 500) {
             return null;
         } else if ($sa->op) {
             $child = [];
@@ -821,6 +847,7 @@ class PaperSearch extends MessageSet {
             $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
         }
         if ($st) {
+            $this->_string_context->charge();
             $st->apply_strspan($sa->kwpos1, $sa->pos2, $this->_string_context);
         }
         return $st;
@@ -1066,10 +1093,14 @@ class PaperSearch extends MessageSet {
             if ($this->query_is_re_me()) {
                 $this->_qe = new Limit_SearchTerm($this, "r");
                 $this->_qe->set_implicit();
-            } else if (($qe = $this->_search_expression($this->q))) {
-                $this->_qe = $qe;
             } else {
-                $this->_qe = new True_SearchTerm;
+                $qe = $this->_search_expression($this->q);
+                if ($this->_string_context->cost() > 500) {
+                    $this->warning_at("complexity", "<0>Search too complex");
+                    $this->_qe = new False_SearchTerm;
+                } else {
+                    $this->_qe = $qe ?? new True_SearchTerm;
+                }
             }
 
             // check for limit

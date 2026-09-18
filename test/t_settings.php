@@ -775,7 +775,7 @@ class Settings_Tester {
         // a full settings round-trip preserves it, with no error and no diff
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_db($x->settings)]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         $f = $this->conf->find_review_field("zomm_legacy");
@@ -1673,7 +1673,7 @@ class Settings_Tester {
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($x->settings->rf[5]->required, false);
 
-        $sa = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        $sa = json_encode_db($x->settings, JSON_PRETTY_PRINT);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => $sa]);
         xassert($x->ok);
@@ -1682,7 +1682,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->setting_data("ioptions"), null);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
-        $sb = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        $sb = json_encode_db($x->settings, JSON_PRETTY_PRINT);
         if ($sa !== $sb) {
             self::unexpected_unified_diff($sa, $sb);
         }
@@ -1693,18 +1693,18 @@ class Settings_Tester {
         xassert_eqq($x->change_list, []);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
-        $sc = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        $sc = json_encode_db($x->settings, JSON_PRETTY_PRINT);
         if ($sb !== $sc) {
             self::unexpected_unified_diff($sb, $sc);
         }
 
         $x->settings->reset = true;
-        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_db($x->settings)]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         xassert_eqq($x->change_list, []);
 
-        $sd = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        $sd = json_encode_db($x->settings, JSON_PRETTY_PRINT);
         if ($sc !== $sd) {
             self::unexpected_unified_diff($sc, $sd);
         }
@@ -2685,7 +2685,7 @@ class Settings_Tester {
         // a full settings round-trip preserves them, with no error and no diff
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_db($x->settings)]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         $olegacy = $this->conf->options()->find("zomm_legacy");

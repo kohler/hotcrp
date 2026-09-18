@@ -12,7 +12,7 @@ abstract class SearchTerm {
     public $pos1;
     /** @var ?int */
     public $pos2;
-    /** @var ?SearchStringContext */
+    /** @var SearchStringContext */
     public $string_context;
 
     /** @param string $type */
@@ -112,7 +112,7 @@ abstract class SearchTerm {
 
     /** @param int $pos1
      * @param int $pos2
-     * @param ?SearchStringContext $context */
+     * @param SearchStringContext $context */
     final function apply_strspan($pos1, $pos2, $context) {
         if ($this->pos1 === null) {
             $this->string_context = $context;

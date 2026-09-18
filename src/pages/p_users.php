@@ -352,21 +352,23 @@ class Users_Page {
 
     /** @return bool */
     private function handle_redisplay() {
-        $this->qreq->unset_csession("uldisplay");
-        $sv = [];
-        foreach (ContactList::$folds as $key) {
-            if (($x = friendly_boolean($this->qreq["show{$key}"])) !== null)
-                $sv[] = "uldisplay.{$key}=" . ($x ? 0 : 1);
+        if ($this->qreq->qsession()) {
+            $this->qreq->unset_csession("uldisplay");
+            $sv = [];
+            foreach (ContactList::$folds as $key) {
+                if (($x = friendly_boolean($this->qreq["show{$key}"])) !== null)
+                    $sv[] = "uldisplay.{$key}=" . ($x ? 0 : 1);
+            }
+            foreach ($this->conf->all_review_fields() as $f) {
+                if (($x = friendly_boolean($this->qreq["show{$f->short_id}"])) !== null)
+                    $sv[] = "uldisplay.{$f->short_id}=" . ($x ? 0 : 1);
+            }
+            if (isset($this->qreq->scoresort)) {
+                $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
+            }
+            Session_API::change_session($this->qreq, join(" ", $sv));
+            $this->qreq->redirect_self();
         }
-        foreach ($this->conf->all_review_fields() as $f) {
-            if (($x = friendly_boolean($this->qreq["show{$f->short_id}"])) !== null)
-                $sv[] = "uldisplay.{$f->short_id}=" . ($x ? 0 : 1);
-        }
-        if (isset($this->qreq->scoresort)) {
-            $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
-        }
-        Session_API::change_session($this->qreq, join(" ", $sv));
-        $this->qreq->redirect_self();
         return true;
     }
 

@@ -444,7 +444,7 @@ class SessionList {
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
         }
-        return json_encode_browser($j);
+        return json_encode_db($j);
     }
 
     /** @param 'p'|'u' $type

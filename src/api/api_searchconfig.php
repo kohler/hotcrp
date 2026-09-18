@@ -290,8 +290,8 @@ class SearchConfig_API {
             if (!$user->privChair) {
                 $ms->error_at($field, "<0>Search reserved for chairs");
             }
-        } else if ($twiddle === 0) {
-            $name = $user->contactId . $name;
+        } else if ($twiddle === 0 || str_starts_with($name, "me~")) {
+            $name = $user->contactId . substr($name, $twiddle);
         } else if (str_starts_with($name, $user->contactId . "~")) {
             /* ok */
         } else {
