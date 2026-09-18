@@ -1331,15 +1331,21 @@ class UserStatus extends MessageSet {
                   "state" => "address",
                   "zip" => "address",
                   "theme" => "theme"] as $prop => $diff) {
-            if (($v = $this->jval->$prop ?? null) !== null) {
-                $user->set_prop($prop, $v, $ifempty);
-                if ($user->prop_changed($prop)) {
-                    $this->diffs[$diff] = true;
-                }
+            if (($v = $this->jval->$prop ?? null) === null) {
+                continue;
+            }
+            if (isset(Contact::$prop_max_length[$prop])
+                && strlen($v) > Contact::$prop_max_length[$prop]) {
+                $this->error_at($prop, "<0>Entry truncated");
+            }
+            $user->set_prop($prop, $v, $ifempty);
+            if ($user->prop_changed($prop)) {
+                $this->diffs[$diff] = true;
             }
         }
         if ($user->conf->allow_preferred_email()
-            && ($v = $this->jval->preferred_email ?? null) !== null) {
+            && ($v = $this->jval->preferred_email ?? null) !== null
+            && strlen($v) <= 120) {
             $user->set_prop("preferredEmail", $v, $ifempty);
             if ($user->prop_changed("preferredEmail")) {
                 $this->diffs["preferred_email"] = true;

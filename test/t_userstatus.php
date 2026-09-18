@@ -1825,4 +1825,61 @@ class UserStatus_Tester {
             Dbl::qe($cdb, "delete from ContactPrimary where contactId in (select contactDbId from ContactInfo where email?a)", $emails);
         }
     }
+
+    /** @param string $email */
+    private function delete_account($email) {
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        if (($cdb = $this->conf->contactdb())) {
+            Dbl::qe($cdb, "delete from ContactInfo where email=?", $email);
+        }
+        $this->conf->invalidate_caches("users");
+    }
+
+    function test_long_names_truncated() {
+        $conf = $this->conf;
+        $email = "longname-us@_.com";
+        $this->delete_account($email);
+
+        // over-long fields are truncated to their column widths on save, and
+        // the truncation is reported rather than overflowing the column
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) [
+            "email" => $email,
+            "firstName" => str_repeat("A", 300),
+            "lastName" => str_repeat("B", 300),
+            "affiliation" => str_repeat("C", 3000)
+        ]);
+        xassert(!!$acct);
+        xassert($us->has_problem_at("firstName"));
+        xassert($us->has_problem_at("affiliation"));
+        $u = $conf->fresh_user_by_email($email);
+        xassert_eqq(strlen($u->firstName), 120);
+        xassert_eqq(strlen($u->lastName), 120);
+        xassert_eqq(strlen($u->affiliation), 2048);
+
+        $this->delete_account($email);
+    }
+
+    function test_long_names_truncated_on_create() {
+        $conf = $this->conf;
+        $email = "longname-create@_.com";
+        $this->delete_account($email);
+
+        // creation via make_keyed()->store() assigns names directly, bypassing
+        // set_prop; save_prop must still truncate rather than overflow the column
+        $u = Contact::make_keyed($conf, [
+            "email" => $email,
+            "firstName" => str_repeat("A", 300),
+            "lastName" => str_repeat("B", 300),
+            "affiliation" => str_repeat("C", 3000)
+        ]);
+        xassert(!!$u->store(Contact::SAVE_ANY_EMAIL));
+        $c = $conf->fresh_user_by_email($email);
+        xassert(!!$c);
+        xassert_eqq(strlen($c->firstName), 120);
+        xassert_eqq(strlen($c->lastName), 120);
+        xassert_eqq(strlen($c->affiliation), 2048);
+
+        $this->delete_account($email);
+    }
 }

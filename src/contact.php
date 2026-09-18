@@ -382,6 +382,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         "theme" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT
     ];
 
+    static public $prop_max_length = [
+        "firstName" => 120, "lastName" => 120, "affiliation" => 2048,
+        "email" => 120, "preferredEmail" => 120, "orcid" => 64, "phone" => 64,
+        "country" => 256
+    ];
 
     /** @param Conf $conf */
     private function __construct($conf) {
@@ -2438,6 +2443,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $value = (int) $value;
             } else if ($value === null && ($shape & self::PROP_NULL) === 0) {
                 $value = 0;
+            } else if ($value !== null
+                       && ($max_length = self::$prop_max_length[$prop] ?? null) !== null
+                       && strlen($value) > $max_length) {
+                $value = $this->$prop = UnicodeHelper::utf8_truncate($value, $max_length);
             }
             if (($shape & self::PROP_OVERFLOWABLE) !== 0) {
                 $overflow = $this->prop_value_overflows($prop, $value);
