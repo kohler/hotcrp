@@ -210,7 +210,10 @@ class SearchConfig_API {
     static function namedsearch(Contact $user, Qrequest $qreq) {
         $fjs = [];
         $ms = new MessageSet;
-        foreach ($user->viewable_named_searches(false) as $sj) {
+        foreach ($user->conf->named_searches() as $sj) {
+            if (!$user->can_view_named_search($sj, false)) {
+                continue;
+            }
             $q = $sj->q;
             if ($q !== "" && ($sj->t ?? "") !== "" && $sj->t !== "s") {
                 $q = "({$sj->q}) in:{$sj->t}";
@@ -290,8 +293,8 @@ class SearchConfig_API {
             if (!$user->privChair) {
                 $ms->error_at($field, "<0>Search reserved for chairs");
             }
-        } else if ($twiddle === 0) {
-            $name = $user->contactId . $name;
+        } else if ($twiddle === 0 || str_starts_with($name, "me~")) {
+            $name = $user->contactId . substr($name, $twiddle);
         } else if (str_starts_with($name, $user->contactId . "~")) {
             /* ok */
         } else {
@@ -307,10 +310,12 @@ class SearchConfig_API {
         }
 
         // capture current named searches set
-        $ssjs = $user->conf->named_searches();
-        foreach ($ssjs as $sj) {
+        $ssjs = [];
+        foreach ($user->conf->named_searches() as $sj) {
+            $sj = clone $sj;
             $sj->id = $sj->name;
             $sj->ctr = null;
+            $ssjs[] = $sj;
         }
         $tagger = new Tagger($user);
 
@@ -462,6 +467,7 @@ class SearchConfig_API {
         } else {
             $user->conf->save_setting("named_searches", null);
         }
+        $user->conf->invalidate_caches("named_searches");
         return self::namedsearch($user, $qreq);
     }
 }

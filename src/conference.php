@@ -172,6 +172,8 @@ class Conf {
     private $_formatspec_cache = [];
     /** @var false|null|Docstore */
     private $_docstore = false;
+    /** @var array<string,object> */
+    private $_named_searches;
     /** @var array<int,NamedFormula> */
     private $_defined_formulas;
     private $_emoji_codes;
@@ -475,6 +477,7 @@ class Conf {
         $this->_abbrev_matcher = null;
         $this->_tag_map = null;
         $this->_search_keyword_base = null;
+        $this->_named_searches = null;
         $this->_formula_function_base = null;
         $this->_assignment_parsers = null;
         $this->_decision_set = null;
@@ -2084,10 +2087,17 @@ class Conf {
     }
 
 
-    /** @return list<object> */
+    /** @return array<string,object> */
     function named_searches() {
-        $j = $this->setting_json("named_searches");
-        return is_array($j) ? $j : [];
+        if ($this->_named_searches === null) {
+            $this->_named_searches = [];
+            $j = $this->setting_json("named_searches");
+            foreach (is_array($j) ? $j : [] as $nsj) {
+                if (is_string($nsj->name ?? null))
+                    $this->_named_searches[strtolower($nsj->name)] = $nsj;
+            }
+        }
+        return $this->_named_searches;
     }
 
     /** @param NamedSearch_Setting|object $a
@@ -3285,7 +3295,7 @@ class Conf {
         return false;
     }
 
-    /** @param 'all'|'autosearch'|'rf'|'tags'|'cdb'|'users'|'cdb_users'|'pc'|'options'|'linked_users' ...$caches */
+    /** @param 'all'|'autosearch'|'rf'|'tags'|'cdb'|'users'|'cdb_users'|'pc'|'options'|'linked_users'|'named_searches' ...$caches */
     function invalidate_caches(...$caches) {
         if (self::$no_invalidate_caches) {
             return;
@@ -3326,6 +3336,9 @@ class Conf {
         }
         if ($all || in_array("tags", $caches, true)) {
             $this->_tag_map = null;
+        }
+        if ($all || in_array("named_searches", $caches, true)) {
+            $this->_named_searches = null;
         }
         if ($all) {
             $this->_search_keyword_base = null;
@@ -5922,7 +5935,7 @@ class Conf {
     }
 
     private function make_search_keyword_map() {
-        list($this->_search_keyword_base, $this->_search_keyword_factories) =
+        [$this->_search_keyword_base, $this->_search_keyword_factories] =
             $this->_xtbuild(["etc/searchkeywords.json"], "searchKeywords");
     }
     /** @return ?object */
@@ -5943,7 +5956,7 @@ class Conf {
     function assignment_parser_map() {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
-            list($this->_assignment_parsers, $unused) =
+            [$this->_assignment_parsers, $unused] =
                 $this->_xtbuild(["etc/assignmentparsers.json"], "assignmentParsers");
         }
         return $this->_assignment_parsers;
@@ -5984,7 +5997,7 @@ class Conf {
     /** @return ?object */
     function formula_function($fname, Contact $user) {
         if ($this->_formula_function_base === null) {
-            list($this->_formula_function_base, $this->_formula_function_factories) =
+            [$this->_formula_function_base, $this->_formula_function_factories] =
                 $this->_xtbuild(["etc/formulafunctions.json"], "formulaFunctions");
         }
         $xtp = new XtParams($this, $user);
@@ -6037,7 +6050,7 @@ class Conf {
     /** @return array<string,list<object>> */
     function api_map() {
         if ($this->_api_map === null) {
-            list($this->_api_map, $unused) =
+            [$this->_api_map, $unused] =
                 $this->_xtbuild(["etc/apifunctions.json"], "apiFunctions");
         }
         return $this->_api_map;
@@ -6059,7 +6072,7 @@ class Conf {
      * @return ?object */
     function api_expansion($fn, $method = null) {
         if ($this->_api_x_map === null) {
-            list($this->_api_x_map, $unused) =
+            [$this->_api_x_map, $unused] =
                 $this->_xtbuild(["etc/apiexpansions.json"], "apiExpansions");
         }
         $xtp = (new XtParams($this, null))->set_require_key_for_method($method);
@@ -6150,7 +6163,7 @@ class Conf {
     function paper_column_map() {
         if ($this->_paper_column_map === null) {
             require_once("papercolumn.php");
-            list($this->_paper_column_map, $this->_paper_column_factories) =
+            [$this->_paper_column_map, $this->_paper_column_factories] =
                 $this->_xtbuild(["etc/papercolumns.json"], "paperColumns");
         }
         return $this->_paper_column_map;
@@ -6311,7 +6324,7 @@ class Conf {
     /** @return array<string,list<object>> */
     private function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
-            list($this->_mail_keyword_map, $this->_mail_keyword_factories) =
+            [$this->_mail_keyword_map, $this->_mail_keyword_factories] =
                 $this->_xtbuild(["etc/mailkeywords.json"], "mailKeywords");
         }
         return $this->_mail_keyword_map;

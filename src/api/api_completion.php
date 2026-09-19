@@ -186,7 +186,10 @@ class Completion_API {
         }
 
         if (!$category || $category === "ss") {
-            foreach ($user->viewable_named_searches(false) as $sj) {
+            foreach ($user->conf->named_searches() as $sj) {
+                if (!$user->can_view_named_search($sj, false)) {
+                    continue;
+                }
                 $twiddle = strpos($sj->name, "~");
                 $comp[] = "ss:" . ($twiddle > 0 ? substr($sj->name, $twiddle) : $sj->name);
             }

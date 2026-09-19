@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SearchParser {
+    /** Maximum number of operators (including implicit spaces) in one
+     * expression; sized to match PaperSearch::MAX_COST */
+    const MAX_OPS = 20000;
     /** @var string */
     private $str;
     /** @var int */
@@ -11,6 +14,9 @@ class SearchParser {
     private $len;
     /** @var int */
     public $last_pos = 0;
+    /** @var bool
+     * @readonly */
+    public $overflow = false;
 
     /** @param string $str
      * @param int $pos1
@@ -346,7 +352,7 @@ class SearchParser {
      * @param 'SPACE'|'SPACEOR' $spaceop
      * @param int $max_ops
      * @return ?SearchExpr */
-    function parse_expression($opset = null, $spaceop = "SPACE", $max_ops = 2048) {
+    function parse_expression($opset = null, $spaceop = "SPACE", $max_ops = self::MAX_OPS) {
         $opset = $opset ?? SearchOperatorSet::paper_search_operators();
         $cura = null;
         '@phan-var-force ?SearchExpr $cura';
@@ -365,6 +371,7 @@ class SearchParser {
                     // The `(` expression carries the keyword until it completes;
                     // see SearchExpr::complete_paren().
                     if ($nops >= $max_ops) {
+                        $this->overflow = true;
                         return null;
                     }
                     $this->shift_past("(");
@@ -402,12 +409,11 @@ class SearchParser {
                 if (!$cura || $cura->is_incomplete_paren()) {
                     $cura = SearchExpr::make_simple("", $pos1, $cura);
                 }
-                while ($cura->parent && $cura->parent->op->precedence >= $op->precedence) {
-                    $cura = $cura->complete($this->str, $pos1);
-                }
+                $cura = $cura->complete_by_precedence($this->str, $pos1, $op);
             }
 
             if ($nops >= $max_ops) {
+                $this->overflow = true;
                 return null;
             }
 

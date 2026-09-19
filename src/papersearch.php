@@ -3,22 +3,53 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class SearchScope {
-    /** @var int */
-    public $pos1;
-    /** @var int */
-    public $pos2;
     /** @var ?SearchExpr */
     public $defkw;
     /** @var bool */
     public $defkw_error = false;
+    /** @var int */
+    public $depth;
+    /** @var list<null|SearchExpr|SearchCompilerOperator> */
+    public $stack = [];
+    /** @var ?SearchCompilerOperator */
+    public $opstack;
+    /** @var list<SearchTerm> */
+    public $out = [];
 
-    /** @param int $pos1
-     * @param int $pos2
-     * @param ?SearchExpr $defkw */
-    function __construct($pos1, $pos2, $defkw) {
-        $this->pos1 = $pos1;
-        $this->pos2 = $pos2;
+    /** @param ?SearchExpr $defkw
+     * @param int $depth */
+    function __construct($defkw, $depth) {
         $this->defkw = $defkw;
+        $this->depth = $depth;
+    }
+}
+
+class SearchCompilerOperator {
+    /** @var int */
+    public $kwpos1;
+    /** @var int */
+    public $pos2;
+    /** @var ?SearchTerm */
+    public $st;
+    /** @var int */
+    public $pos;
+    /** @var ?SearchCompilerOperator */
+    public $parent;
+    /** @var ?SearchCompilerOperator */
+    public $real_parent;
+
+    /** @param SearchExpr $sa
+     * @param int $pos
+     * @param ?SearchCompilerOperator */
+    function __construct($sa, $pos, $parent) {
+        $this->kwpos1 = $sa->kwpos1;
+        $this->pos2 = $sa->pos2;
+        $this->st = SearchTerm::make_op($sa->op);
+        $this->pos = $pos;
+        $this->parent = $parent;
+        if ($parent) {
+            $this->real_parent = $parent->st ? $parent : $parent->real_parent;
+        }
     }
 }
 
@@ -31,8 +62,12 @@ class SearchStringContext {
     public $ppos2;
     /** @var int */
     public $depth;
+    /** @var ?int */
+    public $cost;
     /** @var ?SearchStringContext */
     public $parent;
+    /** @var ?SearchStringContext */
+    public $root;
 
     /** @param string $q
      * @param int $ppos1
@@ -44,6 +79,7 @@ class SearchStringContext {
         $this->ppos2 = $ppos2;
         $this->depth = $parent ? $parent->depth + 1 : 1;
         $this->parent = $parent;
+        $this->root = $parent ? $parent->root ?? $parent : null;
     }
 
     /** @param MessageItem $mi
@@ -69,6 +105,62 @@ class SearchStringContext {
             $ssc = $ssc->parent;
         }
         return $mis;
+    }
+
+    /** @param MessageItem $mi
+     * @param int $pos1
+     * @param int $pos2
+     * @return list<MessageItem> */
+    function add_context($mi, $pos1, $pos2) {
+        $mis = [$mi];
+        $ssc = $this;
+        $skip = $this->depth > 5 ? $this->depth - 2 : -1;
+        while (true) {
+            if ($ssc->depth > $skip || $ssc->depth < 3) {
+                $mi->pos1 = $pos1;
+                $mi->pos2 = $pos2;
+                $mi->context = $ssc->q ? : "<empty>";
+            }
+            if (!$ssc->parent) {
+                break;
+            }
+            $mi->nested_context = true;
+            $mi = MessageItem::inform_at($mi->field, "");
+            $pos1 = $ssc->ppos1;
+            $pos2 = $ssc->ppos2;
+            $ssc = $ssc->parent;
+            if ($ssc->depth > $skip || $ssc->depth < 3) {
+                $mi->landmark = "→ expanded from";
+                $mis[] = $mi;
+            } else if ($ssc->depth === $skip) {
+                $mi->landmark = "→ (…". ($this->depth - 4) . " more expansions…)";
+                $mi->pos1 = -1;
+                $mi->context = "";
+                $mis[] = $mi;
+            }
+        }
+        return $mis;
+    }
+
+    /** @return ?int */
+    function cost() {
+        $ssc = $this->root ?? $this;
+        return $ssc->cost;
+    }
+
+    /** @param int $cost
+     * @return ?int */
+    function charge($cost = 1) {
+        $ssc = $this->root ?? $this;
+        if ($ssc->cost !== null) {
+            $ssc->cost += min(PHP_INT_MAX - $ssc->cost, $cost);
+        }
+        return $ssc->cost;
+    }
+
+    function charge_abort() {
+        $ssc = $this->root ?? $this;
+        $ssc->cost = PHP_INT_MAX;
     }
 }
 
@@ -250,6 +342,8 @@ class SearchQueryInfo {
 class PaperSearch extends MessageSet {
     /** Maximum nesting of default-keyword groups like `ti:(...)` */
     const MAX_KEYWORD_DEPTH = 40;
+    /** Maximum cost allowed for a search string */
+    const MAX_COST = 20000;
 
     /** @var Conf
      * @readonly */
@@ -366,6 +460,8 @@ class PaperSearch extends MessageSet {
 
         // the query itself
         $this->q = trim($options["q"] ?? "");
+        $this->_string_context = new SearchStringContext($this->q, 0, 0, null);
+        $this->_string_context->cost = 0;
         $this->_req_sort = $options["sort"] ?? null;
         $this->_req_scoresort = $options["scoresort"] ?? null;
 
@@ -524,12 +620,13 @@ class PaperSearch extends MessageSet {
      * @param ?SearchStringContext $context
      * @return list<MessageItem> */
     function expand_message_context($message, $pos1, $pos2, $context) {
+        $context = $context ?? $this->_string_context;
         if (is_string($message)) {
             $mi = MessageItem::warning($message);
         } else {
             $mi = $message;
         }
-        return SearchStringContext::expand($mi, $pos1, $pos2, $context, $this->q);
+        return $context->add_context($mi, $pos1, $pos2);
     }
 
     /** @param SearchWord|SearchTerm $sw
@@ -555,6 +652,7 @@ class PaperSearch extends MessageSet {
                 return $cs;
         }
         $this->_contact_searches[] = $cs = new ContactSearch($ustype, $word, $this->user);
+        $this->_string_context->charge(5);
         return $cs;
     }
     /** @param int $ustype
@@ -634,11 +732,8 @@ class PaperSearch extends MessageSet {
      * @param SearchWord $sword
      * @return ?SearchTerm */
     function parse_named_search_body($body, $sword) {
-        if ($this->_string_context && $this->_string_context->depth >= 10) {
-            $this->lwarning($sword, "<0>Circular reference in named search definitions");
-            return null;
-        }
         $context = new SearchStringContext($body, $sword->kwpos1, $sword->pos2, $this->_string_context);
+        $context->charge();
         $this->_string_context = $context;
         $qe = $this->_search_expression($body);
         $this->_string_context = $context->parent;
@@ -794,36 +889,91 @@ class PaperSearch extends MessageSet {
     /** @param ?SearchExpr $sa
      * @param string $str
      * @param SearchScope $scope
-     * @param int $depth
-     * @return ?SearchTerm */
-    private function _parse_atom($sa, $str, $scope, $depth) {
-        if (!$sa || $depth >= self::MAX_KEYWORD_DEPTH) {
+     * @return ?SearchTerm
+     *
+     * Compiles `$sa` into SearchTerms. Written iteratively rather than
+     * recursively so that we don’t construct temporary SearchTerms that are
+     * later consumed (e.g., in a string of ANDs or spaces). Destructively
+     * consumes its `$sa` argument. */
+    private function _compile_expression($sa, $str, $scope) {
+        if (!$sa) {
             return null;
-        } else if ($sa->op) {
-            $child = [];
-            foreach ($sa->child as $sac) {
-                $child[] = $this->_parse_atom($sac, $str, $scope, $depth);
+        }
+        if ($scope->depth >= self::MAX_KEYWORD_DEPTH) {
+            $this->_string_context->charge_abort();
+            return null;
+        }
+        $scope->stack[] = $sa;
+        while (!empty($scope->stack)) {
+            if ($this->_string_context->cost() > self::MAX_COST) {
+                return null;
             }
-            $st = SearchTerm::combine_in($sa->op, $this->_string_context, ...$child);
-        } else if ($sa->kword === null && $sa->text === "") {
-            $st = new True_SearchTerm;
-        } else if ($sa->child !== null
-                   && ($kwdef = $this->conf->search_keyword($sa->kword, $this->user))
-                   && !($kwdef->allow_parens ?? false)) {
-            // Search like `ti:(foo OR bar)` adds a default keyword
-            $this->_warn_keyword_group_tail($sa, $str);
-            $st = $this->_parse_atom($sa->child[0], $str, new SearchScope($sa->pos1, $sa->pos2, $sa), $depth + 1);
-        } else {
-            if ($sa->child !== null) {
+            $sa = array_pop($scope->stack);
+            if ($sa === null) {
+                $scope->out[] = null;
+                continue;
+            } else if ($sa instanceof SearchCompilerOperator) {
+                assert($scope->opstack === $sa);
+                $scope->opstack = $sa->parent;
+                // all children of this operator compiled: they occupy
+                // $scope->out[$sa->pos:]. Check whether the enclosing
+                // operator can adopt them, or finish this operator.
+                if ($sa->st
+                    && $sa->real_parent
+                    && $sa->real_parent->st->op_try_adopt($sa->st, $scope->out, $sa->real_parent->pos, $sa->pos)) {
+                    continue;
+                }
+                if (!$sa->st && count($scope->out) - $sa->pos !== 1) {
+                    // parentheses whose children were adopted by the
+                    // enclosing operator: nothing to do
+                    continue;
+                }
+                // NB do not array_splice, which introduces O(|out|) work
+                if (count($scope->out) - $sa->pos === 1
+                    && (!$sa->st || $sa->st->type !== "not")) {
+                    $st = $scope->out[$sa->pos];
+                } else {
+                    for ($i = $sa->pos; $i < count($scope->out); ++$i) {
+                        $sa->st->op_append($scope->out[$i], $this->_string_context);
+                    }
+                    $st = $sa->st->op_finish();
+                }
+                while ($sa->pos < count($scope->out)) {
+                    array_pop($scope->out);
+                }
+            } else if ($sa->op) {
+                // push the operator, then its children in reverse order
+                $scope->opstack = new SearchCompilerOperator($sa, count($scope->out), $scope->opstack);
+                $scope->stack[] = $scope->opstack;
+                for ($i = count($sa->child) - 1; $i >= 0; --$i) {
+                    $scope->stack[] = $sa->child[$i];
+                }
+                $sa->child = null;  // enable GC of the SearchExpr children
+                continue;
+            } else if ($sa->kword === null && $sa->text === "") {
+                $st = new True_SearchTerm;
+            } else if ($sa->child !== null
+                       && ($kwdef = $this->conf->search_keyword($sa->kword, $this->user))
+                       && !($kwdef->allow_parens ?? false)) {
+                // Search like `ti:(foo OR bar)` adds a default keyword
                 $this->_warn_keyword_group_tail($sa, $str);
+                $st = $this->_compile_expression($sa->child[0], $str, new SearchScope($sa, $scope->depth + 1));
+            } else {
+                if ($sa->child !== null) {
+                    $this->_warn_keyword_group_tail($sa, $str);
+                }
+                $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2, $this->_string_context);
+                $this->_string_context->charge();
+                $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
             }
-            $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2, $this->_string_context);
-            $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
+            if ($st) {
+                $st->apply_strspan($sa->kwpos1, $sa->pos2, $this->_string_context);
+            }
+            $scope->out[] = $st;
         }
-        if ($st) {
-            $st->apply_strspan($sa->kwpos1, $sa->pos2, $this->_string_context);
-        }
-        return $st;
+
+        assert(count($scope->out) === 1 && empty($scope->opstack));
+        return $scope->out[0];
     }
 
     /** @param SearchExpr $sa
@@ -844,16 +994,15 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param string $str
-     * @param ?SearchScope $scope
-     * @param int $depth
      * @return ?SearchTerm */
-    private function _search_expression($str, $scope = null, $depth = 0) {
-        if ($depth >= self::MAX_KEYWORD_DEPTH) {
+    private function _search_expression($str) {
+        $splitter = new SearchParser($str, 0, strlen($str));
+        $sa = $splitter->parse_expression();
+        if ($splitter->overflow) {
+            $this->_string_context->charge_abort();
             return null;
         }
-        $scope = $scope ?? new SearchScope(0, strlen($str), null);
-        $splitter = new SearchParser($str, $scope->pos1, $scope->pos2);
-        return $this->_parse_atom($splitter->parse_expression(), $str, $scope, $depth);
+        return $this->_compile_expression($sa, $str, new SearchScope(null, 0));
     }
 
 
@@ -1066,10 +1215,14 @@ class PaperSearch extends MessageSet {
             if ($this->query_is_re_me()) {
                 $this->_qe = new Limit_SearchTerm($this, "r");
                 $this->_qe->set_implicit();
-            } else if (($qe = $this->_search_expression($this->q))) {
-                $this->_qe = $qe;
             } else {
-                $this->_qe = new True_SearchTerm;
+                $qe = $this->_search_expression($this->q);
+                if ($this->_string_context->cost() > self::MAX_COST) {
+                    $this->error_at("complexity", "<0>Search too complex to evaluate, giving up");
+                    $this->_qe = new False_SearchTerm;
+                } else {
+                    $this->_qe = $qe ?? new True_SearchTerm;
+                }
             }
 
             // check for limit
@@ -1220,6 +1373,10 @@ class PaperSearch extends MessageSet {
 
         // actually perform query
         $result = $this->conf->qe_raw($q);
+        if ($result instanceof Dbl_Result && $result->is_error()) {
+            // qe_raw returns a bare mysqli_result on success
+            $this->error_at("database", "<0>Search failed because of a database error");
+        }
 
         // only allowed to call PaperInfo::make_my() if the conflictType column exists
         if (!$sqi->has_column("conflictType")) {

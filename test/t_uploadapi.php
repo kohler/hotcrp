@@ -660,10 +660,13 @@ In thee!
     }
 
     function test_big_upload() {
-        $s = self::TEXT;
-        while (strlen($s) < 20971520) {
-            $s = $s . $s;
+        // same content as doubling TEXT until it reaches 20MiB, built in one
+        // allocation so the transient peak is the string, not twice it
+        $n = 1;
+        while (strlen(self::TEXT) * $n < 20971520) {
+            $n *= 2;
         }
+        $s = str_repeat(self::TEXT, $n);
 
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [

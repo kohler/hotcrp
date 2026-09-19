@@ -88,6 +88,20 @@ class Search_Tester {
         xassert(!array_key_exists(11, $h ?? []));
     }
 
+    function test_highlight_then_does_not_define_groups() {
+        // A THEN inside a highlight search is not a group expression:
+        // `1 HIGHLIGHT 1 THEN 2` parses as `1 HIGHLIGHT (1 THEN 2)` and has
+        // one group.
+        $srch = new PaperSearch($this->u_root, "1 HIGHLIGHT 1 THEN 2");
+        xassert_eqq($srch->ngroups(), 1);
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0]);
+        xassert_eqq($srch->highlights_by_paper_id(), [1 => [""]]);
+
+        $srch = new PaperSearch($this->u_root, "1 THEN 2 HIGHLIGHT 3");
+        xassert_eqq($srch->ngroups(), 2);
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0, 2 => 1]);
+    }
+
     function test_nested_highlight() {
         $srch = new PaperSearch($this->u_root, "(1-10 AND Scalable HIGHLIGHT:pink) OR (2 4 6 8 10 HIGHLIGHT:blue)");
         $h = $srch->highlights_by_paper_id();
@@ -199,6 +213,136 @@ class Search_Tester {
         xassert_neqq($ids, $base_ids);
     }
 
+    /** @param PaperSearch $srch
+     * @return string */
+    static private function messages_text($srch) {
+        return join(" | ", array_map(function ($mi) { return $mi->message; }, $srch->message_list()));
+    }
+
+    function test_large_flat_search_ok() {
+        // Work linear in the query size is never "too complex": a pasted
+        // list of thousands of paper IDs, thousands of OR'd terms, or a THEN
+        // with thousands of groups must all evaluate.
+        $u = $this->u_root;
+        $srch = new PaperSearch($u, join(" ", range(1, 5000)));
+        xassert(!$srch->has_problem());
+        xassert_eqq($srch->paper_ids(), (new PaperSearch($u, "1-5000"))->paper_ids());
+        $srch = new PaperSearch($u, join(" OR ", array_map(function ($i) { return "ti:w{$i}"; }, range(1, 3000))));
+        xassert(!$srch->has_problem());
+        $srch = new PaperSearch($u, join(" THEN ", range(1, 3000)));
+        xassert(!$srch->has_problem());
+        xassert_eqq($srch->ngroups(), 3000);
+        xassert_eqq(($srch->groups_by_paper_id())[7] ?? null, 6);
+        $srch = null;
+        gc_mem_caches(); // large transient parses; don't hold allocator chunks for the rest of the run
+    }
+
+    function test_search_too_complex_fails_closed() {
+        // Exceeding the cost budget, the operator cap, or the keyword-group
+        // depth reports an error and matches nothing, never everything, even
+        // when the offending subterm sits under NOT.
+        $u = $this->u_root;
+        $nops = SearchParser::MAX_OPS + 100;
+        $kwd = PaperSearch::MAX_KEYWORD_DEPTH + 1;
+        $group = str_repeat("ti:(", $kwd) . "x" . str_repeat(")", $kwd);
+        foreach ([
+            join(" ", range(1, PaperSearch::MAX_COST + 100)),
+            str_repeat("NOT ", $nops) . "1",
+            str_repeat("(", $nops) . "1" . str_repeat(")", $nops),
+            $group,
+            "NOT {$group}",
+            "1 AND {$group}"
+        ] as $q) {
+            $srch = new PaperSearch($u, $q);
+            xassert_eqq($srch->paper_ids(), []);
+            xassert($srch->has_error());
+            xassert_str_contains(self::messages_text($srch), "too complex");
+        }
+        $srch = null;
+        gc_mem_caches(); // large transient parses; don't hold allocator chunks for the rest of the run
+    }
+
+    function test_deep_nesting_evaluates() {
+        // Nesting past SQLEXPR_HEIGHT is evaluated in PHP rather than sent
+        // to the database, which cannot parse very deep SQL.
+        $n = Op_SearchTerm::SQLEXPR_HEIGHT + 60;
+        $srch = new PaperSearch($this->u_root, str_repeat("(1 OR (1 AND ", $n) . "1" . str_repeat("))", $n));
+        xassert(!$srch->has_problem());
+        xassert_eqq($srch->paper_ids(), [1]);
+    }
+
+    function test_namedsearch_expansion_limits() {
+        // A saved-search chain whose expansions exceed the budget is an
+        // error, not a hang; a circular definition is detected at the first
+        // repeat; a modest chain still works.
+        $before = $this->conf->setting_data("named_searches");
+        $ns = [];
+        for ($i = 0; $i < 6; ++$i) {
+            $q = $i === 5 ? "1" : join(" ", array_fill(0, 8, "ss:xbudget" . ($i + 1)));
+            $ns[] = (object) ["name" => "xbudget{$i}", "q" => $q, "owner" => "chair"];
+        }
+        $ns[] = (object) ["name" => "xcyc0", "q" => "1 OR ss:xcyc1", "owner" => "chair"];
+        $ns[] = (object) ["name" => "xcyc1", "q" => "2 OR ss:xcyc0", "owner" => "chair"];
+        $this->conf->save_setting("named_searches", 1, json_encode($ns));
+        $this->conf->load_settings();
+
+        $srch = new PaperSearch($this->u_root, "ss:xbudget3"); // 8^2 expansions
+        xassert(!$srch->has_problem());
+        xassert_eqq($srch->paper_ids(), [1]);
+
+        $srch = new PaperSearch($this->u_root, "ss:xbudget0"); // 8^5 expansions
+        xassert_eqq($srch->paper_ids(), []);
+        xassert($srch->has_error());
+        xassert_str_contains(self::messages_text($srch), "too complex");
+
+        $srch = new PaperSearch($this->u_root, "ss:xcyc0");
+        xassert_eqq($srch->paper_ids(), []);
+        xassert($srch->has_error());
+        xassert_str_contains(self::messages_text($srch), "circularly defined");
+
+        if ($before === null) {
+            $this->conf->save_setting("named_searches", null);
+        } else {
+            $this->conf->save_setting("named_searches", 1, $before);
+        }
+        $this->conf->load_settings();
+    }
+
+    function test_then_highlight_structure() {
+        $u = $this->u_root;
+        // same-operator nesting flattens
+        $srch = new PaperSearch($u, "(1 AND (2 AND 3)) OR (4 OR 5)");
+        xassert_eqq(json_encode($srch->main_term()->debug_json()),
+                    '{"type":"or","child":[{"type":"and","child":["pn","pn","pn"]},"pn"]}');
+        // nested THEN flattens; groups number left to right, and a THEN
+        // nested inside an AND still contributes its groups
+        $srch = new PaperSearch($u, "1 THEN (2 THEN 3)");
+        xassert_eqq($srch->ngroups(), 3);
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0, 2 => 1, 3 => 2]);
+        $srch = new PaperSearch($u, "(1 THEN 2) AND 1-5 THEN 3");
+        xassert_eqq($srch->ngroups(), 3);
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0, 2 => 1, 3 => 2]);
+        // legends keep a parenthesized group intact
+        $tas = (new PaperSearch($u, "(1 OR 2) THEN (3 THEN 4)"))->group_anno_list();
+        xassert_eqq(array_map(function ($ta) { return $ta->heading; }, $tas), ["1 OR 2", "3", "4"]);
+        // a highlight search is only tested for matches: its own highlights
+        // and its dead terms' field highlighters are ignored
+        $h = (new PaperSearch($u, "1-4 HIGHLIGHT 2"))->highlights_by_paper_id();
+        xassert_eqq($h, [2 => [""]]);
+        xassert_eqq((new PaperSearch($u, "1-4 HIGHLIGHT (2 HIGHLIGHT (3 HIGHLIGHT 4))"))->highlights_by_paper_id(), $h);
+        xassert_eqq((new PaperSearch($u, "1-4 HIGHLIGHT:red (2 HIGHLIGHT:blue 3)"))->highlights_by_paper_id(), [2 => ["red"]]);
+        xassert(!(new PaperSearch($u, "1-4 HIGHLIGHT (2 HIGHLIGHT ti:scalable)"))->has_field_highlighter("ti"));
+        // highlights keep their own colors across a THEN, and apply only to
+        // the groups they follow
+        $srch = new PaperSearch($u, "1 2 THEN 3 4 HIGHLIGHT:pink 2 4 THEN 5");
+        xassert_eqq($srch->ngroups(), 2);
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0, 2 => 0, 3 => 1, 4 => 1]);
+        xassert_eqq($srch->highlights_by_paper_id(), [2 => ["pink"], 4 => ["pink"]]);
+        $srch = new PaperSearch($u, "1 THEN 2 HIGHLIGHT:red 3 HIGHLIGHT:blue 2");
+        xassert_eqq($srch->groups_by_paper_id(), [1 => 0, 2 => 1]);
+        xassert_eqq($srch->highlights_by_paper_id(), [2 => ["blue"]]);
+    }
+
     function test_search_overflow() {
         $s = join(" AND ", array_fill(0, 1024, "a"));
         $splitter = new SearchParser($s);
@@ -258,7 +402,6 @@ class Search_Tester {
         xassert_eqq([$k->kwpos1, $k->pos1, $k->pos2], [2, 5, 13]);
         xassert_eqq(count($k->child), 1);
         xassert_eqq(json_encode($k->child[0]->unparse_json($s)), '{"op":"(","child":[{"op":"or","child":["a","b"],"context":"a OR b"}],"context":"(a OR b)"}');
-        xassert_eqq($k->child[0]->parent, $k);
         xassert_eqq($k->child[0]->kwpos1, 5);
 
         // nested groups are pre-parsed all the way down

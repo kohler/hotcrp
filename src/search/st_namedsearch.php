@@ -39,13 +39,7 @@ class NamedSearch_SearchTerm {
         }
 
         // find search
-        $sj = null;
-        foreach ($srch->conf->named_searches() as $xsj) {
-            if (strcasecmp($xsj->name, $name) === 0) {
-                $sj = $xsj;
-                break;
-            }
-        }
+        $sj = ($srch->conf->named_searches())[strtolower($name)] ?? null;
         if (!$sj) {
             $srch->lwarning($sword, "<0>Search not found");
             return null;
@@ -61,7 +55,21 @@ class NamedSearch_SearchTerm {
             return null;
         }
 
+        // check for recursion
+        if ($sj->__recursion ?? false) {
+            $mi = MessageItem::error("<0>Saved searches are circularly defined");
+            $mis = $srch->expand_message_context($mi, $sword->kwpos1, $sword->pos2, $sword->string_context);
+            $srch->append_list($mis);
+            $sword->string_context->charge_abort();
+            return null;
+        }
+
         // recurse
-        return $srch->parse_named_search_body($q, $sword);
+        try {
+            $sj->__recursion = true;
+            return $srch->parse_named_search_body($q, $sword);
+        } finally {
+            $sj->__recursion = false;
+        }
     }
 }

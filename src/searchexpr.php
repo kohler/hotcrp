@@ -20,8 +20,9 @@ class SearchExpr {
      * text is a parenthesized expression, such as `ti:(a OR b)`, a
      * single-element list holding the pre-parsed `(` expression. */
     public $child;
-    /** @var ?SearchExpr */
-    public $parent;
+    /** @var ?SearchExpr
+     * Used only during parsing; null afterward. */
+    private $parent;
     /** @var mixed */
     public $user_data; // reserved for callers
 
@@ -74,6 +75,7 @@ class SearchExpr {
             $sa->pos2 = $pos2;
             $sa->child = [$reference];
             $sa->parent = $reference->parent;
+            $reference->parent = null;
         }
         return $sa;
     }
@@ -109,7 +111,7 @@ class SearchExpr {
         $sa->child = [$this];
         $this->kword = null;
         $this->kwpos1 = $this->pos1;
-        $this->parent = $sa;
+        $this->parent = null;
         return $sa;
     }
 
@@ -128,6 +130,7 @@ class SearchExpr {
         if (($p = $a->parent)) {
             $p->child[] = $a;
             $p->pos2 = $a->pos2;
+            $a->parent = null;
             return $p;
         }
         return $a;
@@ -150,6 +153,18 @@ class SearchExpr {
         }
         if ($a->kword !== null) {
             $a = $a->complete_keyword_paren($str);
+        }
+        return $a;
+    }
+
+    /** @param string $str
+     * @param int $pos
+     * @param SearchOperator $op
+     * @return SearchExpr */
+    function complete_by_precedence($str, $pos, $op) {
+        $a = $this;
+        while ($a->parent && $a->parent->op->precedence >= $op->precedence) {
+            $a = $a->complete($str, $pos);
         }
         return $a;
     }

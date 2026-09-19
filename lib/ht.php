@@ -711,7 +711,9 @@ class Ht {
      * @param int $pos2
      * @return array{string,int,int} */
     static function make_mark_substring($s, $pos1, $pos2) {
-        if ($pos1 > strlen($s) || $pos2 > strlen($s)) {
+        if ($pos1 < 0) {
+            return [$s, -1, 0];
+        } else if ($pos1 > strlen($s) || $pos2 > strlen($s)) {
             error_log("bad arguments [{$pos1}, {$pos2}, " . strlen($s) . "]: " . debug_string_backtrace());
             return [$s, 0, 0];
         }
@@ -771,16 +773,18 @@ class Ht {
      * @param ?int $status
      * @return string */
     static function mark_substring($s, $pos1, $pos2, $status = 2) {
-        list($s, $pos1, $pos2) = self::make_mark_substring($s, $pos1, $pos2);
+        [$s, $pos1, $pos2] = self::make_mark_substring($s, $pos1, $pos2);
+        if ($pos1 < 0) {
+            return self::escape_text($s);
+        }
         $h0 = self::escape_text(substr($s, 0, $pos1));
         $h1 = self::escape_text(substr($s, $pos1, $pos2 - $pos1));
         $h2 = self::escape_text(substr($s, $pos2));
         $k = $status > 1 ? "is-error" : "is-warning";
         if ($pos2 > $pos1 + 2) {
             return "{$h0}<span class=\"context-mark {$k}\">{$h1}</span>{$h2}";
-        } else {
-            return "{$h0}<span class=\"context-caret-mark {$k}\">{$h1}</span>{$h2}";
         }
+        return "{$h0}<span class=\"context-caret-mark {$k}\">{$h1}</span>{$h2}";
     }
 
     /** @param string $s
@@ -789,7 +793,10 @@ class Ht {
      * @param string $indent
      * @return string */
     static function mark_substring_text($s, $pos1, $pos2, $indent = "") {
-        list($s, $pos1, $pos2) = self::make_mark_substring($s, $pos1, $pos2);
+        [$s, $pos1, $pos2] = self::make_mark_substring($s, $pos1, $pos2);
+        if ($pos1 < 0) {
+            return $s . "\n";
+        }
         $i0 = str_repeat(" ", UnicodeHelper::utf8_glyphlen(substr($s, 0, $pos1)));
         $gl1 = UnicodeHelper::utf8_glyphlen(substr($s, $pos1, $pos2 - $pos1));
         $x = strtr($s, "\n", " ");

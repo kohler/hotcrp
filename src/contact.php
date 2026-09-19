@@ -6088,26 +6088,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $twiddle = strpos($sj->name, "~");
         return $twiddle === false
-            || str_starts_with($sj->name, "{$this->contactId}~")
+            || intval($sj->name) === $this->contactId
             || ($this->privChair && $twiddle === 0);
-    }
-
-    /** @param bool $allow_other_user
-     * @return list<object> */
-    function viewable_named_searches($allow_other_user) {
-        if (!$this->isPC) {
-            return [];
-        }
-        $ns = $this->conf->named_searches();
-        if (!$this->privChair || !$allow_other_user) {
-            for ($i = 0; $i !== count($ns); ++$i) {
-                if (!$this->can_view_named_search($ns[$i], $allow_other_user)) {
-                    array_splice($ns, $i, 1);
-                    --$i;
-                }
-            }
-        }
-        return $ns;
     }
 
     /** @return bool */

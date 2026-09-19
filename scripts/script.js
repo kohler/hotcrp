@@ -1848,21 +1848,26 @@ function append_item(ul, mi, options) {
             ul.removeAttribute("data-last-mi");
         }
     }
-    if (mi.context) {
-        const s = mi.context[0],
-            p1 = string_utf8_index(s, mi.context[1]),
-            p2 = string_utf8_index(s, mi.context[2]);
-        let sklass = p2 > p1 + 2 ? "context-mark" : "context-caret-mark";
-        if (mi.status > 0)
-            sklass += mi.status > 1 ? " is-error" : " is-warning";
-        ul.lastChild || ul.appendChild(document.createElement("li"));
-        const ctxe = $e("div", "msg-context",
-            s.substring(0, p1), $e("span", sklass, s.substring(p1, p2)), s.substring(p2));
-        if (want_landmark && mi.landmark && (mi.message == null || mi.message === "")) {
-            prepend_landmark(ul, ctxe, mi);
-        }
-        ul.lastChild.appendChild(ctxe);
+    if (!mi.context) {
+        return;
     }
+    const s = mi.context[0];
+    let p1 = mi.context[1], p2 = mi.context[2], ctxe;
+    if (p1 < 0) {
+        ctxe = $e("div", "msg-context", s);
+    } else {
+        p1 = string_utf8_index(s, p1);
+        p2 = string_utf8_index(s, p2);
+        let sklass = (p2 > p1 + 2 ? "context-mark" : "context-caret-mark")
+            + (mi.status > 1 ? " is-error" : " is-warning");
+        ctxe = $e("div", "msg-context",
+            s.substring(0, p1), $e("span", sklass, s.substring(p1, p2)), s.substring(p2));
+    }
+    ul.lastChild || ul.appendChild(document.createElement("li"));
+    if (want_landmark && mi.landmark && (mi.message == null || mi.message === "")) {
+        prepend_landmark(ul, ctxe, mi);
+    }
+    ul.lastChild.appendChild(ctxe);
 }
 
 function append_item_near(elt, mi, options) {
@@ -1875,7 +1880,8 @@ function append_item_near(elt, mi, options) {
         removeClass(elt, "has-warning");
         addClass(elt, "has-error");
     }
-    if (mi.message == null || mi.message === "") {
+    if ((mi.message == null || mi.message === "")
+        && !mi.context) {
         return true;
     }
     let owner = elt && elt.closest(".f-i, .entry, .entryi, fieldset");
@@ -14936,7 +14942,7 @@ handle_ui.on("js-named-search", function (evt) {
             $pu.close();
             render_named_searches(data);
         } else {
-            $pu.show_errors(data);
+            $pu.show_errors(data, {landmarks: true});
         }
     }
     function create1(ctr, data) {
@@ -15010,7 +15016,7 @@ handle_ui.on("js-named-search", function (evt) {
         }
         $pu.show().on("click", "button", click).on("submit", submit);
         if (si.id !== "new") {
-            feedback.render_list_within($pu.form(), data.message_list, {summary: "fieldless"});
+            feedback.render_list_within($pu.form(), data.message_list, {summary: "fieldless", landmarks: true});
         }
     }
     function create_new() {

@@ -235,7 +235,7 @@ class Search_Page {
         }
         if ($this->pl->has_message()) {
             echo '<div class="msgs-wide">',
-                Ht::msg($this->pl->full_feedback_html(), min($this->pl->problem_status(), MessageSet::WARNING), "mx-auto"),
+                Ht::msg($this->pl->full_feedback_html(), $this->pl->problem_status(), "mx-auto"),
                 '</div>';
         }
         echo "\n";
