@@ -894,6 +894,22 @@ function assert_query($q, $b) {
     return xassert_eqq(join("\n", Dbl::fetch_first_columns($q)), $b);
 }
 
+/** Return how many table rows the database has read for this connection so
+ * far: a sum of MySQL/MariaDB `Handler_read%` session status counters -- a
+ * measure of work, not of time, but one that depends on the storage engine
+ * and query plans, so only good for order-of-magnitude checks that an
+ * operation’s cost does not blow up.
+ * @return int */
+function db_rows_read(Conf $conf) {
+    $n = 0;
+    $result = $conf->qe_raw("show session status like 'Handler_read%'");
+    while (($row = $result->fetch_row())) {
+        $n += (int) $row[1];
+    }
+    Dbl::free($result);
+    return $n;
+}
+
 /** @return int */
 function tag_normalize_compare($a, $b) {
     $a_twiddle = strpos($a, "~");

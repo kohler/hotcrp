@@ -3,6 +3,9 @@
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 final class DocumentImporter {
+    // bound on stored documents indexed by hash (see `_load_hash_index`)
+    const HASH_INDEX_LIMIT = 4000;
+
     /** @var Conf
      * @readonly */
     public $conf;
@@ -22,6 +25,10 @@ final class DocumentImporter {
     private $ms;
     /** @var ?string */
     private $field;
+    /** @var array<string,list<array{int,?string,?string}>> */
+    private $_hash_index = [];
+    /** @var bool */
+    private $_hash_index_loaded = false;
 
     /** @param int $dt
      * @param int $doc_savef */
@@ -110,19 +117,114 @@ final class DocumentImporter {
             return null;
         }
 
-        // save
+        // save (or reuse a stored copy)
         if ($doc->paperStorageId === 0
-            && ($doc->has_error() || !$doc->save($this->doc_savef))) {
-            foreach ($doc->message_list() as $mi) {
-                $mi = $this->append_item($mi->with_field($this->field));
-                $mi->landmark = $doc->error_filename();
-            }
+            && !($doc = $this->_save_document($doc))) {
             return null;
         }
 
         assert($doc->paperId === $this->prow->paperId || $doc->paperId === 0 || $doc->paperId === -1);
         $doc->release_redundant_content();
         return $doc;
+    }
+
+    /** Store `$doc`, or else return a stored copy of it -- perhaps one stored
+     * earlier in this request, in which case the caller gets a distinct
+     * DocumentInfo for the same row.
+     * @return ?DocumentInfo */
+    private function _save_document(DocumentInfo $doc) {
+        if (!$doc->has_error()) {
+            // prefer a stored copy (now that the content has been analyzed),
+            // found through the index rather than by `save`
+            $hash = $doc->binary_hash();
+            if ($hash !== false
+                && ($edoc = $this->_find_document(-1, $hash, $doc->mimetype, $doc->filename))) {
+                if ($doc->prefer_inactive()) {
+                    $edoc->set_prefer_inactive();
+                }
+                return $edoc;
+            }
+            if ($doc->save($this->doc_savef | DocumentInfo::SAVEF_SKIP_EXISTING)) {
+                // a later duplicate in this request can share the row
+                if ($hash !== false && $this->_hash_index_loaded) {
+                    $this->_hash_index[$hash][] = [$doc->paperStorageId, $doc->mimetype, $doc->filename];
+                }
+                return $doc;
+            }
+        }
+        foreach ($doc->message_list() as $mi) {
+            $mi = $this->append_item($mi->with_field($this->field));
+            $mi->landmark = $doc->error_filename();
+        }
+        return null;
+    }
+
+    /** Index this field’s stored documents as lists of [ID, MIME type,
+     * filename] by binary hash. The stored documents are fetched once per
+     * importer, not once per document, so that importing N documents does
+     * not scan them N times; `_save_document` adds the documents it stores.
+     * Whole rows are not kept, so a match costs one more fetch by ID; and
+     * since a submission may have accumulated any number of replaced
+     * documents, at most HASH_INDEX_LIMIT are indexed -- active ones first,
+     * then the newest -- so older ones are simply not found by hash. */
+    private function _load_hash_index() {
+        if ($this->_hash_index_loaded) {
+            return;
+        }
+        $this->_hash_index_loaded = true;
+        // (a new submission has no stored documents yet)
+        if (!$this->prow->is_new()) {
+            $result = $this->conf->qe("select paperStorageId, sha1, mimetype, filename from PaperStorage where paperId=? and documentType=? and filterType is null order by inactive, paperStorageId desc limit " . self::HASH_INDEX_LIMIT, $this->prow->paperId, $this->dt);
+            while (($row = $result->fetch_row())) {
+                $this->_hash_index[$row[1]][] = [(int) $row[0], $row[2], $row[3]];
+            }
+            Dbl::free($result);
+        }
+    }
+
+    /** Return a stored, unfiltered document of this field given its ID
+     * `$docid` (if positive) or else its binary hash `$hash`; the document
+     * must also have `$hash`, MIME type `$mimetype`, and sanitized filename
+     * `$filename` where those are non-null.
+     * @param int $docid
+     * @param ?string $hash
+     * @param ?string $mimetype
+     * @param ?string $filename
+     * @return ?DocumentInfo */
+    private function _find_document($docid, $hash, $mimetype, $filename) {
+        if ($docid <= 0) {
+            if ($hash === null) {
+                return null;
+            }
+            // find the ID of the first (oldest) matching stored copy
+            $this->_load_hash_index();
+            foreach ($this->_hash_index[$hash] ?? [] as $idmf) {
+                if (($docid <= 0 || $idmf[0] < $docid)
+                    && ($mimetype === null || $idmf[1] === $mimetype)
+                    && ($filename === null || $idmf[2] === $filename)) {
+                    $docid = $idmf[0];
+                }
+            }
+            if ($docid <= 0) {
+                return null;
+            }
+        } else if ($this->prow->is_new()) {
+            // (a new submission has no stored documents to refer to by ID)
+            return null;
+        }
+        $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and paperStorageId=?", $this->prow->paperId, $docid);
+        $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
+        Dbl::free($result);
+        // (an ID found in the index will match, but a caller’s ID might not)
+        if ($edoc
+            && $edoc->documentType === $this->dt
+            && $edoc->filterType === null
+            && ($hash === null || $edoc->sha1 === $hash)
+            && ($mimetype === null || $edoc->mimetype === $mimetype)
+            && ($filename === null || $edoc->filename === $filename)) {
+            return $edoc;
+        }
+        return null;
     }
 
     /** @param object $docj
@@ -272,35 +374,11 @@ final class DocumentImporter {
                 || in_array($docj->docid, $this->allowed_docids, true))) {
             $docid = $docj->docid;
         }
-        if (!$this->prow->is_new()
-            && ($docid > 0 || $hash !== null)) {
-            $qf = ["paperId=?", "documentType=?", "filterType is null"];
-            $qv = [$this->prow->paperId, $this->dt];
-            if ($docid > 0) {
-                $qf[] = "paperStorageId=?";
-                $qv[] = $docj->docid;
+        if (($edoc = $this->_find_document($docid, $hash, $mimetype, $safe_filename))) {
+            if (($docj->inactive ?? null) === true) {
+                $edoc->set_prefer_inactive();
             }
-            if ($hash !== null) {
-                $qf[] = "sha1=?";
-                $qv[] = $hash;
-            }
-            if ($mimetype !== null) {
-                $qf[] = "mimetype=?";
-                $qv[] = $mimetype;
-            }
-            if ($safe_filename !== null) {
-                $qf[] = "filename=?";
-                $qv[] = $safe_filename;
-            }
-            $result = $this->conf->qe_apply("select " . $this->conf->document_query_fields() . " from PaperStorage where " . join(" and ", $qf), $qv);
-            $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
-            Dbl::free($result);
-            if ($edoc) {
-                if (($docj->inactive ?? null) === true) {
-                    $edoc->set_prefer_inactive();
-                }
-                return $edoc;
-            }
+            return $edoc;
         }
 
         // content required from here on; fail if it's not available

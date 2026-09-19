@@ -1049,6 +1049,200 @@ class PaperAPI_Tester {
         xassert_eqq($dl->response_code(), 200);
     }
 
+    /** @param int $pid
+     * @return int */
+    private function storage_count($pid) {
+        return (int) $this->conf->fetch_ivalue("select count(*) from PaperStorage where paperId=?", $pid);
+    }
+
+    // Each document listed for an attachments field is looked up and
+    // stored separately: that should cost a bounded amount of work per
+    // document, and one request should list only so many.
+    function test_many_attachments() {
+        $saved_options = $this->conf->setting_data("options");
+        $options = json_decode($saved_options ?? "[]");
+        // (a lowercase name so the field's JSON key is `attachments`)
+        $options[] = (object) ["id" => 2, "name" => "attachments", "type" => "attachments", "order" => 3];
+        $this->conf->save_refresh_setting("options", 1, json_encode_db($options));
+        $this->allow_submission();
+        $pid = null;
+        try {
+            $this->_test_many_attachments($pid);
+        } finally {
+            // (leave no field-2 values or documents behind for later tests)
+            MailChecker::clear();
+            $this->prevent_submission();
+            if ($pid !== null) {
+                $this->conf->qe("delete from PaperOption where paperId=? and optionId=2", $pid);
+                $this->conf->qe("delete from PaperStorage where paperId=? and documentType=2", $pid);
+            }
+            if ($saved_options === null) {
+                $this->conf->save_refresh_setting("options", null);
+            } else {
+                $this->conf->save_refresh_setting("options", 1, $saved_options);
+            }
+        }
+    }
+
+    /** @param ?int &$pid */
+    private function _test_many_attachments(&$pid) {
+        xassert_eqq($this->u_micke->roles, 0);
+        $doc0 = ["content" => "data", "filename" => "a.txt"];
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json([
+            "pid" => "new", "title" => "Many Small Attachments",
+            "abstract" => "Each cheap alone",
+            "authors" => [["name" => "Mikael Degermark", "email" => $this->u_micke->email]],
+            "status" => "draft", "attachments" => [$doc0, $doc0]
+        ], ["p" => "new"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), 2);
+        $pid = $jr->paper->pid;
+        $nps = $this->storage_count($pid);
+        xassert_eqq($nps, 1); // one row for two copies
+        $max = Attachments_PaperOption::MAX_PARSE_COUNT;
+        $msg = "Too many attachments (at most {$max})";
+
+        // replace the attachments several times; the old rows stay behind
+        // (inactive), but looking for stored copies of the listed documents
+        // should read those rows once per save, not once per document
+        // (`db_rows_read` counts rows the database reads, not time)
+        $perround = intdiv($max * 3, 5);
+        $rounds = 4;
+        $nreads = [];
+        for ($r = 0; $r < $rounds; ++$r) {
+            $docs = [];
+            for ($i = 0; $i < $perround; ++$i) {
+                $docs[] = ["content" => "data-{$r}-{$i}", "filename" => "a{$i}.txt"];
+            }
+            $nr = db_rows_read($this->conf);
+            $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+            xassert_eqq($jr->ok, true);
+            xassert_eqq(count($jr->paper->attachments), $perround);
+            $nreads[] = db_rows_read($this->conf) - $nr;
+        }
+        xassert_eqq($this->storage_count($pid), $nps + $rounds * $perround);
+        // - the last save started with `$grown` more stored rows than the
+        //   first; a save passes over the submission’s rows a fixed few
+        //   times (to index them, to reload its document list: about 4),
+        //   so allow it several more passes’ worth of reads -- where it
+        //   used to pass over them once or twice per listed document
+        $grown = ($rounds - 1) * $perround;
+        $passes = 25;
+        xassert_lt($passes, $perround);
+        xassert_lt($nreads[$rounds - 1] - $nreads[0], $grown * $passes);
+
+        // stored copies are still found -- by ID, by hash, by content (also
+        // among inactive rows), and for duplicates within one request --
+        // but not under another name
+        $attopt = $this->conf->checked_option_by_id(2);
+        $odids = $attopt->value_dids($this->conf->checked_paper_by_id($pid)->force_option($attopt));
+        xassert_eqq(count($odids), $perround);
+        $docs = [];
+        $r = $rounds - 1;
+        foreach ($jr->paper->attachments as $i => $dj) {
+            if ($i % 3 === 0) {
+                $docs[] = ["docid" => $odids[$i]];
+            } else if ($i % 3 === 1) {
+                $docs[] = ["hash" => $dj->hash];
+            } else {
+                $docs[] = ["content" => "data-{$r}-{$i}", "filename" => "a{$i}.txt"];
+            }
+        }
+        $d = ["content" => "data-0-7", "filename" => "a7.txt"];
+        array_push($docs, $d, $d);
+        $d = ["content" => "data-new", "filename" => "anew.txt"];
+        array_push($docs, $d, $d);
+        $docs[] = ["content" => "data-new", "filename" => "bnew.txt"];
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), $perround + 5);
+        $ndids = $attopt->value_dids($this->conf->checked_paper_by_id($pid)->force_option($attopt));
+        xassert_eqq(array_slice($ndids, 0, $perround), $odids);
+        $ndids = array_slice($ndids, $perround);
+        xassert_eqq($ndids[0], $ndids[1]);
+        xassert_lt($ndids[0], $odids[0]);
+        xassert_eqq($ndids[2], $ndids[3]);
+        xassert_lt($ndids[3], $ndids[4]);
+        $nps += $rounds * $perround + 2;
+        xassert_eqq($this->storage_count($pid), $nps);
+
+        // however many replaced rows pile up, only so many are searched by
+        // hash -- the field’s current documents first, then the newest:
+        // here, past a pile of newer junk, the current documents are all
+        // found again by hash alone, and so is the newest junk row, but
+        // not the oldest
+        $njunk = DocumentImporter::HASH_INDEX_LIMIT + 10;
+        $junk = [];
+        for ($i = 0; $i < $njunk; ++$i) {
+            $junk[] = [$pid, Conf::$now, "text/plain", sha1("junk-{$i}", true), 2, "junk{$i}.txt", 6, 1];
+        }
+        $this->conf->qe("insert into PaperStorage (paperId, timestamp, mimetype, sha1, documentType, filename, size, inactive) values ?v", $junk);
+        $nps += $njunk;
+        $docs = [];
+        foreach ($jr->paper->attachments as $dj) {
+            $docs[] = ["hash" => $dj->hash];
+        }
+        $docs[] = ["hash" => sha1("junk-" . ($njunk - 1))];
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), $perround + 6);
+        $docs[] = ["hash" => sha1("junk-0")];
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_str_contains(json_encode_db($jr->message_list), "without any content");
+        xassert_eqq(count($jr->paper->attachments), $perround + 6);
+        xassert_eqq($this->storage_count($pid), $nps);
+
+        // too many, as JSON and as form: nothing stored
+        $docs = [];
+        $qreq = TestQreq::post(["p" => $pid, "has_opt2" => 1]);
+        for ($i = 1; $i <= $max + 1; ++$i) {
+            $docs[] = ["content" => "data-a{$i}", "filename" => "a{$i}.txt"];
+            $qreq["opt2:{$i}"] = "new";
+            $qreq->set_file_content("opt2:{$i}:file", "data-f{$i}", "f{$i}.txt", "text/plain");
+        }
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(json_encode_db($jr->message_list), $msg);
+        xassert_eqq($this->storage_count($pid), $nps);
+        $jr = call_api("=paper", $this->u_micke, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(json_encode_db($jr->message_list), $msg);
+        xassert_eqq($this->storage_count($pid), $nps);
+
+        // the limit itself is accepted
+        array_pop($docs);
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), $max);
+        xassert_eqq($this->storage_count($pid), $nps + $max);
+
+        // a site administrator’s JSON is exempt (say for a bulk import)...
+        $docs[] = ["content" => "data-extra", "filename" => "extra.txt"];
+        xassert_eqq(count($docs), $max + 1);
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), $max + 1);
+        $nps += $max + 1;
+        xassert_eqq($this->storage_count($pid), $nps);
+
+        // ...and then the submission can be saved with that many by anyone,
+        // however they are listed, but can’t grow
+        $dids = $attopt->value_dids($this->conf->checked_paper_by_id($pid)->force_option($attopt));
+        xassert_eqq(count($dids), $max + 1);
+        foreach ([0, 10, 20] as $i) {
+            $docs[$i] = ["docid" => $dids[$i]];
+        }
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->paper->attachments), $max + 1);
+        $docs[] = ["content" => "data-grow", "filename" => "grow.txt"];
+        $jr = call_api("=paper", $this->u_micke, TestQreq::post_json(["pid" => $pid, "attachments" => $docs], ["p" => $pid]));
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains(json_encode_db($jr->message_list), "Too many attachments (at most " . ($max + 1) . ")");
+        xassert_eqq($attopt->value_dids($this->conf->checked_paper_by_id($pid)->force_option($attopt)), $dids);
+        xassert_eqq($this->storage_count($pid), $nps);
+    }
+
     function test_api_scope() {
         $qreq = TestQreq::get(["p" => 1]);
         $resp = call_api_result("paper", $this->u_estrin, $qreq);

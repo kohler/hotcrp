@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Attachments_PaperOption extends PaperOption {
+    // bound on attachments one request may list for a field
+    const MAX_PARSE_COUNT = 100;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args, "prefer-row");
     }
@@ -72,13 +75,25 @@ class Attachments_PaperOption extends PaperOption {
         }
     }
 
-    /** @param string $prefix
+    /** Return the documents a form lists under `{$prefix}:N` given existing
+     * documents `$dlist`, or null if they come to more than `$max` (or
+     * clearly would, in which case no listed document is even looked up).
+     * @param string $prefix
      * @param int $documentType
      * @param list<int|object> $dlist
+     * @param int $max
      * @param MessageSet $ms
-     * @return list<int|object> */
+     * @return ?list<int|object> */
     static function parse_qreq_prefix(PaperInfo $prow, Qrequest $qreq,
-                                      $prefix, $documentType, $dlist, $ms) {
+                                      $prefix, $documentType, $dlist, $max, $ms) {
+        // give up before any per-key work if the form has more keys than it
+        // could need: it need only name each existing document once
+        // (perhaps to delete it) besides new ones
+        for ($ctr = 1; isset($qreq["{$prefix}:{$ctr}"]); ++$ctr) {
+            if ($ctr > $max + count($dlist)) {
+                return null;
+            }
+        }
         $dxlist = [];
         for ($ctr = 1; isset($qreq["{$prefix}:{$ctr}"]); ++$ctr) {
             $name = "{$prefix}:{$ctr}";
@@ -109,15 +124,28 @@ class Attachments_PaperOption extends PaperOption {
                 $dxlist[] = $thisdoc;
             }
         }
-        return array_merge($dlist, $dxlist);
+        $dlist = array_merge($dlist, $dxlist);
+        return count($dlist) <= $max ? $dlist : null;
+    }
+
+    /** @param int $max
+     * @return PaperValue */
+    private function make_too_many_estop(PaperInfo $prow, $max) {
+        return PaperValue::make_estop($prow, $this, $this->conf->_("<0>Too many attachments (at most {max})", new FmtArg("max", $max)));
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $oldov = $prow->option($this);
         $ov = PaperValue::make($prow, $this, -1);
+        // reject overlong lists before the listed documents are stored
+        // (but let a submission that somehow has more keep that many)
+        $dids = $oldov ? $this->value_dids($oldov) : [];
+        $max = max(self::MAX_PARSE_COUNT, count($dids));
         $docs = self::parse_qreq_prefix($prow, $qreq, $this->formid, $this->id,
-                                        $oldov ? $this->value_dids($oldov) : [],
-                                        $ov->message_set());
+                                        $dids, $max, $ov->message_set());
+        if ($docs === null) {
+            return $this->make_too_many_estop($prow, $max);
+        }
         $ov->set_anno("documents", $docs);
         return $ov;
     }
@@ -128,6 +156,15 @@ class Attachments_PaperOption extends PaperOption {
             return null;
         }
         $ja = is_array($j) ? $j : [$j];
+        // reject overlong lists as `parse_qreq` does -- but, as with upload
+        // size limits, exempt a site administrator (say for a bulk import)
+        if (!$user->privChair) {
+            $oldov = $prow->option($this);
+            $max = max(self::MAX_PARSE_COUNT, $oldov ? count($this->value_dids($oldov)) : 0);
+            if (count($ja) > $max) {
+                return $this->make_too_many_estop($prow, $max);
+            }
+        }
         $ov = PaperValue::make($prow, $this, -1);
         $ov->set_anno("documents", $ja);
         foreach ($ja as $docj) {

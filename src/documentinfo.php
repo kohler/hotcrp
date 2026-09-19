@@ -1154,11 +1154,17 @@ class DocumentInfo implements JsonSerializable {
     const SAVEF_TRUST_METADATA = 2;       // dangerous: assume content exists,
                                           // require sufficient metadata
     const SAVEF_DELAY_PROP = 4;           // do not save skeleton
+    const SAVEF_SKIP_EXISTING = 64;       // do not look for a stored copy
     // These properties are defined for convenience in caller code:
     const SAVEF_ANY_CONTENT_FILE = 8;     // allow any content_file
     const SAVEF_ALLOW_HASH_WITHOUT_CONTENT = 32; // allow finding document by hash
 
-    /** @param int $savef
+    /** Store this new document -- by adopting a stored copy of it on the same
+     * submission if there is one, unless `$savef` has SAVEF_SKIP_EXISTING.
+     * That lookup scans the submission’s stored documents, so a caller
+     * storing many documents should find stored copies itself and pass
+     * SAVEF_SKIP_EXISTING, as DocumentImporter does.
+     * @param int $savef
      * @return bool */
     function save($savef = 0) {
         assert($this->paperStorageId <= 0);
@@ -1167,7 +1173,8 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // deduplicate to an existing document with same sha1
-        if ($this->binary_hash() !== false
+        if (($savef & self::SAVEF_SKIP_EXISTING) === 0
+            && $this->binary_hash() !== false
             && $this->_save_check_existing($savef)) {
             return true;
         }

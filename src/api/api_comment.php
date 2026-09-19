@@ -56,6 +56,10 @@ class Comment_API_Status implements JsonSerializable {
 }
 
 class Comment_API extends MessageSet {
+    // bound on attachments one request may list for a comment, and on new
+    // attachments one request may upload among all the comments it saves
+    const MAX_ATTACHMENTS = Attachments_PaperOption::MAX_PARSE_COUNT;
+
     /** @var Conf */
     private $conf;
     /** @var Contact */
@@ -98,6 +102,13 @@ class Comment_API extends MessageSet {
     private $comments = [];
     /** @var int */
     private $ncomments = 0;
+
+    // request-wide attachment import state: the importer for the paper in
+    // hand, and how many more new attachments the request may upload
+    /** @var ?DocumentImporter */
+    private $docimporter;
+    /** @var int */
+    private $cost = 0;    // new attachments uploaded so far; bounded by MAX_ATTACHMENTS
 
     // current-item working state (reset per item)
     /** @var PaperInfo */
@@ -670,19 +681,44 @@ class Comment_API extends MessageSet {
         return $req;
     }
 
+    /** Return true if attachment descriptor `$dj` just names one of a
+     * comment’s current attachments (with IDs `$docids`), without content,
+     * so that importing it cannot store a new document.
+     * @param mixed $dj
+     * @param list<int> $docids
+     * @return bool */
+    static private function is_attachment_reference($dj, $docids) {
+        if ($dj instanceof DocumentInfo) {
+            return $dj->paperStorageId > 0;
+        }
+        return is_object($dj)
+            && is_int($dj->docid ?? null)
+            && in_array($dj->docid, $docids, true)
+            && !isset($dj->content)
+            && !isset($dj->content_base64)
+            && !isset($dj->content_file);
+    }
+
     /** Import the request's attachments now that the target comment is known.
      * A form request's descriptors come from `parse_qreq_prefix`; a JSON
      * request's from its `docs` value (missing/null retains the existing
-     * attachments, `false` clears them, a list is authoritative).
+     * attachments, `false` clears them, a list is authoritative). A list
+     * longer than MAX_ATTACHMENTS fails, and so does one whose new uploads
+     * would take the request past MAX_ATTACHMENTS of those.
      * @param array<string,mixed> $req
      * @param CommentInfo $xcrow
      * @return ?list<DocumentInfo> */
     private function import_docs($req, $xcrow) {
         $existing = $xcrow->commentId ? $xcrow->attachments()->as_list() : [];
+        // bound the list -- though a comment that somehow has more may keep
+        // that many, and, as with upload size limits, a site administrator’s
+        // JSON is exempt
+        $max = max(self::MAX_ATTACHMENTS, count($existing));
         $src = $req["docs_src"];
+        $exempt = $this->user->privChair && !($src instanceof Qrequest);
         if ($src instanceof Qrequest) {
             $descriptors = Attachments_PaperOption::parse_qreq_prefix(
-                $this->prow, $src, "attachment", DTYPE_COMMENT, $existing, $this
+                $this->prow, $src, "attachment", DTYPE_COMMENT, $existing, $max, $this
             );
         } else if (!isset($src->docs)) {
             return $existing;
@@ -690,14 +726,49 @@ class Comment_API extends MessageSet {
             return [];
         } else {
             $descriptors = is_array($src->docs) ? $src->docs : [$src->docs];
+            if (count($descriptors) > $max && !$exempt) {
+                $descriptors = null;
+            }
+        }
+        if ($descriptors === null) {
+            $this->error_at("docs", $this->conf->_("<0>Too many attachments (at most {max})", new FmtArg("max", $max)));
+            $this->status = 400;
+            return null;
         }
 
-        // a comment may retain only its own attachments by `docid`
-        $di = (new DocumentImporter($this->prow, DTYPE_COMMENT, 0, $this, "docs"))
-            ->set_allowed_docids($xcrow->attachment_ids())
-            ->on_import([$this->docloc, "on_document_import"]);
+        // the request is charged (below, per attempt) for each descriptor
+        // that might store a document -- that does not just name one of this
+        // comment’s attachments, as an edit that keeps them does -- so that
+        // a request saving many comments uploads at most MAX_ATTACHMENTS
+        // between them: first check that this comment’s would fit
+        $docids = $xcrow->attachment_ids();
+        if (!$exempt) {
+            $nupload = 0;
+            foreach ($descriptors as $dj) {
+                if (!self::is_attachment_reference($dj, $docids)) {
+                    ++$nupload;
+                }
+            }
+            if ($this->cost + $nupload > self::MAX_ATTACHMENTS) {
+                $this->error_at("docs", $this->conf->_("<0>Too many attachments (at most {max} new per request)", new FmtArg("max", self::MAX_ATTACHMENTS)));
+                $this->status = 400;
+                return null;
+            }
+        }
+
+        // comments on the paper in hand share an importer, and thus its
+        // index of the paper’s stored documents; a comment may retain only
+        // its own attachments by `docid`
+        if (!$this->docimporter || $this->docimporter->prow !== $this->prow) {
+            $this->docimporter = (new DocumentImporter($this->prow, DTYPE_COMMENT, 0, $this, "docs"))
+                ->on_import([$this->docloc, "on_document_import"]);
+        }
+        $di = $this->docimporter->set_allowed_docids($docids);
         $docs = [];
         foreach ($descriptors as $dj) {
+            if (!$exempt && !self::is_attachment_reference($dj, $docids)) {
+                ++$this->cost;
+            }
             if (($doc = $di->upload_document($dj))) {
                 $docs[] = $doc;
             } else {

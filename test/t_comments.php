@@ -2077,6 +2077,227 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    // A comment may list only so many attachments (like an attachments
+    // field), and one request upload only so many new ones among all the
+    // comments it saves; within those bounds each costs bounded work.
+    function test_comment_many_attachments() {
+        $orig_rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $psid0 = (int) $this->conf->fetch_ivalue("select coalesce(max(paperStorageId),0) from PaperStorage");
+        $cids = []; // comments to delete
+        try {
+            $this->_test_comment_many_attachments($cids);
+        } finally {
+            $paper6 = $this->u_chair->checked_paper_by_id(6);
+            foreach ($cids as $cid) {
+                $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper6);
+                xassert($j->ok);
+            }
+            // (nor leave their documents behind)
+            $this->conf->qe("delete from PaperStorage where paperId=6 and documentType=? and paperStorageId>?", DTYPE_COMMENT, $psid0);
+            $this->conf->save_refresh_setting("rev_open", $orig_rev_open);
+            MailChecker::clear();
+        }
+    }
+
+    /** @param list<int> &$cids */
+    private function _test_comment_many_attachments(&$cids) {
+        $paper6 = $this->u_mgbaker->checked_paper_by_id(6);
+        $storage_count = function () {
+            return (int) $this->conf->fetch_ivalue("select count(*) from PaperStorage where paperId=6");
+        };
+        $nps = $storage_count();
+        $max = Attachments_PaperOption::MAX_PARSE_COUNT;
+        $msg = "Too many attachments (at most {$max})";
+        $reqmsg = "Too many attachments (at most {$max} new per request)";
+        $make_docs = function ($pfx, $n) {
+            $docs = [];
+            for ($i = 0; $i !== $n; ++$i) {
+                $docs[] = ["filename" => "{$pfx}{$i}.txt", "content" => "{$pfx}-{$i}"];
+            }
+            return $docs;
+        };
+
+        // one comment listing MAX+1, as JSON and as form: rejected, nothing
+        // stored...
+        $qreq = TestQreq::post_json(["text" => "too many", "visibility" => "rev", "docs" => $make_docs("d", $max + 1)]);
+        $j = call_api("=comment", $this->u_mgbaker, $qreq, $paper6);
+        xassert(!$j->ok);
+        xassert_eqq($j->status_code, 400);
+        xassert_str_contains(json_encode_db($j->message_list), $msg);
+        $qreq = TestQreq::post(["text" => "too many", "visibility" => "rev"]);
+        for ($i = 1; $i <= $max + 1; ++$i) {
+            $qreq["attachment:{$i}"] = "new";
+            $qreq->set_file_content("attachment:{$i}:file", "f-{$i}", "f{$i}.txt", "text/plain");
+        }
+        $j = call_api("=comment", $this->u_mgbaker, $qreq, $paper6);
+        xassert(!$j->ok);
+        xassert_eqq($j->status_code, 400);
+        xassert_str_contains(json_encode_db($j->message_list), $msg);
+        xassert_eqq($storage_count(), $nps);
+        xassert(!$paper6->fetch_comments("comment='too many'"));
+
+        // ...except from a site administrator as JSON (say for an import)
+        xassert(!$this->u_mgbaker->privChair);
+        xassert($this->u_chair->privChair);
+        $qreq = TestQreq::post_json(["text" => "so many", "visibility" => "rev", "docs" => $make_docs("d", $max + 1)]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $this->u_chair->checked_paper_by_id(6));
+        xassert($j->ok);
+        xassert_eqq(count($j->comment->docs), $max + 1);
+        $cids[] = $j->comment->cid;
+        $nps += $max + 1;
+        xassert_eqq($storage_count(), $nps);
+
+        // two comments with $n attachments each, 2*$n > MAX, saved by two
+        // requests can be fetched and posted back together: naming one’s
+        // own attachments by `docid`, as that does, uploads nothing
+        $n = intdiv($max * 3, 5);
+        xassert($max < 2 * $n && $n + 1 <= $max);
+        foreach ([1, 2] as $i) {
+            $j = call_api("=comment", $this->u_mgbaker, TestQreq::post_json(["text" => "enn {$i}", "visibility" => "rev", "docs" => $make_docs("e{$i}x", $n)]), $paper6);
+            xassert($j->ok);
+            xassert_eqq(count($j->comment->docs), $n);
+            $cids[] = $j->comment->cid;
+        }
+        $nps += 2 * $n;
+        xassert_eqq($storage_count(), $nps);
+        $j = call_api("comments", $this->u_mgbaker, ["p" => "6"], $this->u_mgbaker->checked_paper_by_id(6));
+        xassert($j->ok);
+        $cjs = [];
+        foreach ($j->comments as $cj) {
+            if (str_starts_with($cj->text ?? "", "enn ")) {
+                xassert_eqq(count($cj->docs), $n);
+                xassert(is_int($cj->docs[0]->docid));
+                $cj->text .= "*";
+                $cjs[] = $cj;
+            }
+        }
+        xassert_eqq(count($cjs), 2);
+        $j = call_api("=comments", $this->u_mgbaker, TestQreq::post_json($cjs));
+        xassert($j->ok);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq($j->comments[0]->text, "enn 1*");
+        xassert_eqq(count($j->comments[0]->docs), $n);
+        xassert_eqq($j->comments[1]->text, "enn 2*");
+        xassert_eqq(count($j->comments[1]->docs), $n);
+        xassert_eqq($storage_count(), $nps);
+
+        // but one non-administrator request may upload at most MAX new
+        // attachments among the comments it saves: here the second item
+        // would pass that, so it fails (using up none of the allowance),
+        // while the third, which keeps its $n by `docid` and adds one,
+        // still fits
+        $docs1 = [];
+        foreach ($cjs[0]->docs as $dj) {
+            $docs1[] = ["docid" => $dj->docid];
+        }
+        $docs1[] = ["filename" => "straw.txt", "content" => "straw"];
+        $qreq = TestQreq::post_json([
+            ["pid" => 6, "text" => "enn 3", "visibility" => "rev", "docs" => $make_docs("e3x", $n)],
+            ["pid" => 6, "text" => "enn 4", "visibility" => "rev", "docs" => $make_docs("e4x", $n)],
+            ["pid" => 6, "cid" => $cjs[0]->cid, "text" => "enn 1**", "docs" => $docs1]
+        ]);
+        $j = call_api("=comments", $this->u_mgbaker, $qreq);
+        xassert($j->ok);
+        xassert_eqq(count($j->status_list), 3);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, false);
+        xassert_eqq($j->status_list[2]->valid, true);
+        xassert_eqq(count($j->comments[0]->docs), $n);
+        $cids[] = $j->comments[0]->cid;
+        xassert_eqq($j->comments[1], null);
+        xassert_eqq($j->comments[2]->text, "enn 1**");
+        xassert_eqq(count($j->comments[2]->docs), $n + 1);
+        xassert_eqq($j->comments[2]->docs[0]->docid, $cjs[0]->docs[0]->docid);
+        $nerrors = 0;
+        foreach ($j->message_list as $mi) {
+            if ($mi->status >= 2) {
+                ++$nerrors;
+                xassert_eqq($mi->landmark, 1);
+                xassert_eqq($mi->field, "docs");
+                xassert_str_contains($mi->message, $reqmsg);
+            }
+        }
+        xassert_eqq($nerrors, 1);
+        $nps += $n + 1;
+        xassert_eqq($storage_count(), $nps);
+        $paper6->load_comments();
+        xassert(!$paper6->fetch_comments("comment='enn 4'"));
+
+        // - a comment that fails part way has used up only the uploads it
+        //   attempted: here just the first, which has no content
+        $docs5 = $make_docs("e5x", $n);
+        array_unshift($docs5, ["filename" => "empty.txt"]);
+        $qreq = TestQreq::post_json([
+            ["pid" => 6, "text" => "enn 5", "visibility" => "rev", "docs" => $docs5],
+            ["pid" => 6, "text" => "enn 6", "visibility" => "rev", "docs" => $make_docs("e6x", $n)]
+        ]);
+        $j = call_api("=comments", $this->u_mgbaker, $qreq);
+        xassert($j->ok);
+        xassert_eqq($j->status_list[0]->valid, false);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_str_contains(json_encode_db($j->message_list), "without any content");
+        xassert_eqq(count($j->comments[1]->docs), $n);
+        $cids[] = $j->comments[1]->cid;
+        $nps += $n;
+        xassert_eqq($storage_count(), $nps);
+
+        // (a site administrator’s request may upload any number)
+        $qreq = TestQreq::post_json([
+            ["pid" => 6, "text" => "chair 1", "visibility" => "rev", "docs" => $make_docs("c1x", $n)],
+            ["pid" => 6, "text" => "chair 2", "visibility" => "rev", "docs" => $make_docs("c2x", $n)]
+        ]);
+        $j = call_api("=comments", $this->u_chair, $qreq);
+        xassert($j->ok);
+        xassert_eqq($j->status_list[0]->valid, true);
+        xassert_eqq($j->status_list[1]->valid, true);
+        xassert_eqq(count($j->comments[0]->docs), $n);
+        xassert_eqq(count($j->comments[1]->docs), $n);
+        $cids[] = $j->comments[0]->cid;
+        $cids[] = $j->comments[1]->cid;
+        $nps += 2 * $n;
+        xassert_eqq($storage_count(), $nps);
+
+        // within the bounds, each listed attachment should cost a bounded
+        // amount of work however many comment documents the submission has
+        // stored (a few hundred on paper 6 by now, and each batch here adds
+        // $n more): they are read to look for stored copies once per batch, not
+        // once or twice per attachment (`db_rows_read` counts rows the
+        // database reads, not time)
+        $half = intdiv($n, 2);
+        $rounds = 3;
+        $nreads = [];
+        for ($r = 0; $r < $rounds; ++$r) {
+            $items = [];
+            foreach ([0, 1] as $i) {
+                $items[] = ["pid" => 6, "text" => "batch {$r}.{$i}", "visibility" => "rev", "docs" => $make_docs("r{$r}{$i}x", $half)];
+            }
+            $nr = db_rows_read($this->conf);
+            $j = call_api("=comments", $this->u_mgbaker, TestQreq::post_json($items));
+            $nreads[] = db_rows_read($this->conf) - $nr;
+            xassert($j->ok);
+            xassert_eqq(count($j->comments), 2);
+            foreach ($j->comments as $i => $cj) {
+                xassert_eqq($j->status_list[$i]->valid, true);
+                xassert_eqq(count($cj->docs), $half);
+                $cids[] = $cj->cid;
+            }
+        }
+        $nps += $rounds * 2 * $half;
+        xassert_eqq($storage_count(), $nps);
+        // - the last batch started with `$grown` more stored rows, and
+        //   document links, than the first; a batch passes over them a
+        //   fixed few times (to index them, to reload the submission’s
+        //   document list...), so allow it several more passes’ worth of
+        //   reads -- where it used to pass over the stored rows once or
+        //   twice per listed attachment
+        $grown = ($rounds - 1) * 2 * $half;
+        $passes = 10;
+        xassert_lt($passes, $half);
+        xassert_lt($nreads[$rounds - 1] - $nreads[0], $grown * $passes);
+    }
+
     // Attachments with duplicate names get stable uniquified member names
     // end to end (the naming rule and its cost are pinned by
     // DocumentBasics::test_docset_unique_filenames).

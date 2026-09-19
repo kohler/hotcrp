@@ -40,9 +40,8 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
 
         if (!empty($cids)) {
             return new Conflict_SearchTerm($srch->user, new ContactCountMatcher(">0", array_keys($cids)), false);
-        } else {
-            $srch->lwarning($sword, "<0>No visible reviewers");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>No visible reviewers");
+        return new False_SearchTerm;
     }
 }

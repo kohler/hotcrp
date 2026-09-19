@@ -83,6 +83,8 @@ final class PaperStatus extends MessageSet {
     private $_noncontacts_changed;
     /** @var list<DocumentInfo> */
     private $_docs;
+    /** @var ?DocumentImporter */
+    private $_importer;
     /** @var list<array{string,float|false}> */
     private $_tags_changed;
     /** @var int */
@@ -289,9 +291,15 @@ final class PaperStatus extends MessageSet {
         if ($dt instanceof PaperOption) {
             $dt = $dt->id;
         }
-        $di = new DocumentImporter($this->prow, $dt, $this->doc_savef, $this, $this->option_key($dt));
-        $di->set_on_import($this->_on_document_import);
-        if (($doc = $di->upload_document($docj))) {
+        // one importer per field (whose documents are uploaded together),
+        // so that a field’s stored documents are indexed once per save
+        // rather than once per uploaded document, one field at a time
+        // (`doc_savef` and the import callbacks are fixed before a save)
+        if (!$this->_importer || $this->_importer->dt !== $dt) {
+            $this->_importer = new DocumentImporter($this->prow, $dt, $this->doc_savef, $this, $this->option_key($dt));
+            $this->_importer->set_on_import($this->_on_document_import);
+        }
+        if (($doc = $this->_importer->upload_document($docj))) {
             $this->_docs[] = $doc;
         }
         return $doc;
@@ -1116,6 +1124,7 @@ final class PaperStatus extends MessageSet {
         $this->_documents_changed = false;
         $this->_noncontacts_changed = $prow->is_new();
         $this->_docs = $this->_tags_changed = [];
+        $this->_importer = null;
         $this->_save_status = 0;
         if ($this->user->can_manage($this->prow)) {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;
@@ -1784,7 +1793,7 @@ final class PaperStatus extends MessageSet {
         // save new title and clear out memory
         $this->title = $this->prow->title();
         $this->prow = null;
-        $this->_docs = null;
+        $this->_docs = $this->_importer = null;
         return true;
     }
 
