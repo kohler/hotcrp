@@ -4618,10 +4618,10 @@ function fold_map(e, type) {
     } else if (s) {
         s = [s];
     }
-    const m = {};
+    const m = {}, pfx = type === "session" ? e.getAttribute("data-fold-session-prefix") : "";
     for (const k in s || {}) {
         const v = s[k];
-        m[k] = v.charAt(0) === "-" ? [v.substring(1), true] : [v, false];
+        m[k] = v.charAt(0) === "-" ? [pfx + v.substring(1), true] : [pfx + v, false];
     }
     return m;
 }

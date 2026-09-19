@@ -6027,6 +6027,13 @@ class Conf {
         return "WWW-Authenticate: Bearer realm=\"{$issuer}\"{$rest}";
     }
 
+    /** @param ?Qrequest $qreq
+     * @return JsonResult */
+    function invalid_token_error($qreq) {
+        return JsonResult::make_error(401, "<0>Missing credentials")
+            ->set_header($this->www_authenticate_header("invalid_token", $qreq));
+    }
+
     /** @return array<string,list<object>> */
     function api_map() {
         if ($this->_api_map === null) {
@@ -6070,8 +6077,7 @@ class Conf {
             && ((!$getlike && !$qreq->valid_token())
                 || $user->is_empty()
                 || $user->is_disabled())) {
-            return JsonResult::make_error(401, "<0>Missing credentials")
-                ->set_header($this->www_authenticate_header("invalid_token", $qreq));
+            return $this->invalid_token_error($qreq);
         }
         if (($scope = $user->scope())
             && $uf

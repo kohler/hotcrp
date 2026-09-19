@@ -55,6 +55,8 @@ class ContactList {
     private $_user_filter;
     public $have_folds = [];
     private $qopt = [];
+    /** @var string */
+    private $_uldisplay;
     /** @var array<int,Column> */
     private $_columns = [];
     /** @var array<int,string> */
@@ -144,6 +146,7 @@ class ContactList {
         if ($this->qreq->selectall) {
             $this->_select_all = true;
         }
+        $this->_uldisplay = self::uldisplay($qreq);
     }
 
     /** @param ?list<int> $uids
@@ -152,6 +155,20 @@ class ContactList {
         assert($this->limit === null);
         $this->_user_filter = $uids;
         return $this;
+    }
+
+    /** @param string $key
+     * @return null|true|string */
+    function display_value($key) {
+        $xkey = $key === "scoresort" ? " {$key}=" : " {$key} ";
+        if (($pos = strpos($this->_uldisplay, $xkey)) === false) {
+            return null;
+        } else if ($key === "scoresort") {
+            $pos += strlen($xkey);
+            $sp = strpos($this->_uldisplay, " ", $pos);
+            return substr($this->_uldisplay, $pos, $sp - $pos);
+        }
+        return true;
     }
 
     /** @param string $name
@@ -314,15 +331,14 @@ class ContactList {
     }
 
     /** @param Column $col
-     * @param string $uldisplay
      * @return bool */
-    private function column_unfolded($col, $uldisplay) {
+    private function column_unfolded($col) {
         if (!$col->fold) {
             return true;
         }
         $foldname = $this->_fold_names[$col->order] ?? $col->name;
         $this->have_folds[$foldname] = true;
-        return strpos($uldisplay, " {$foldname} ") !== false;
+        return $this->display_value($foldname) === true;
     }
 
     /** @param Column $col */
@@ -545,10 +561,7 @@ class ContactList {
             break;
         default:
             $f = $this->_rfields[$this->sortField - self::FIELD_SCORE] ?? null;
-            $scoresort = $this->qreq->csession("ulscoresort") ?? "average";
-            if (!in_array($scoresort, ["average", "variance", "maxmin"], true)) {
-                $scoresort = "average";
-            }
+            $scoresort = Session_API::clean_ulscoresort($this->display_value("scoresort")) ?? "average";
             foreach ($rows as $row) {
                 $scoreinfo = new ScoreInfo($this->_extract_scores($row->contactId, $f));
                 $this->_sort_data[$row->contactId] =
@@ -1045,19 +1058,26 @@ class ContactList {
 
     /** @return string */
     static function uldisplay(Qrequest $qreq, $no_session = false) {
-        if ($no_session || ($uldisplay = $qreq->csession("uldisplay")) === null) {
-            $uldisplay = " tags ";
+        if ($no_session) {
+            $d = " tags ";
             foreach ($qreq->conf()->review_form()->highlighted_main_scores() as $rf) {
-                $uldisplay .= "{$rf->short_id} ";
+                $d .= "{$rf->short_id} ";
+            }
+            return $d;
+        }
+        $d = $qreq->csession("uldisplay");
+        if ($d === null && !$qreq->qsid() && $qreq->has_a("show")) {
+            $d = " " . join(" ", $qreq->get_a("show")) . " ";
+            if (($ss = Session_API::clean_ulscoresort($qreq->scoresort))) {
+                $d .= "scoresort={$ss} ";
             }
         }
-        return $uldisplay;
+        return $d ?? self::uldisplay($qreq, true);
     }
 
     /** @param string $columnlist
      * @return list<Column> */
     function _resolve_columns($columnlist) {
-        $uldisplay = self::uldisplay($this->qreq);
         $cols = [];
         foreach (explode(" ", $columnlist) as $colname) {
             if ($colname === "") {
@@ -1066,7 +1086,7 @@ class ContactList {
                 $cols[] = $col;
             } else if ($colname === "scores" && $this->user->isPC) {
                 foreach ($this->_rfields as $i => $f) {
-                    if (strpos($uldisplay, " {$f->short_id} ") !== false)
+                    if ($this->display_value($f->short_id))
                         $cols[] = $this->_column(self::FIELD_SCORE + $i);
                 }
             }
@@ -1321,12 +1341,11 @@ class ContactList {
         // get field array
         $fieldDef = [];
         $acceptable_fields = [];
-        $uldisplay = self::uldisplay($this->qreq);
         $this->has_flags = 0;
         $ncol = 0;
         foreach ($columns as $col) {
             if ($this->column_visible($col)
-                && $this->column_unfolded($col, $uldisplay)) {
+                && $this->column_unfolded($col)) {
                 $this->column_query_options($col);
                 $acceptable_fields[$col->order] = true;
                 $fieldDef[$col->order] = $col;
@@ -1450,11 +1469,10 @@ class ContactList {
             $bodyrows[] = $t . $tt;
         }
 
-        $uldisplay = self::uldisplay($this->qreq);
         $foldclasses = [];
         foreach (self::$folds as $k => $fold) {
             if (($this->have_folds[$fold] ?? null) !== null) {
-                $this->have_folds[$fold] = strpos($uldisplay, " {$fold} ") !== false;
+                $this->have_folds[$fold] = $this->display_value($fold) === true;
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
         }

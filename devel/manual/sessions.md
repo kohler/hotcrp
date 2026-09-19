@@ -119,8 +119,6 @@ another associative array.
 
 * `uldisplay`
 
-* `ulscoresort`
-
 * `foldpaper`
 
 * `foldpscollab`

@@ -42,4 +42,14 @@ class Session_Tester {
         xassert_eqq(Session_API::change_session($qreq, "scoresort.bogus=1 foldhomeactivity=0"), true);
         xassert_eqq($qreq->csession("foldhomeactivity"), 0);
     }
+
+    function test_change_session_ulscoresort() {
+        $qreq = $this->make_qreq();
+        Session_API::change_session($qreq, "ulscoresort=variance");
+        xassert_str_contains($qreq->csession("uldisplay"), " scoresort=variance ");
+        Session_API::change_session($qreq, "uldisplay.scoresort=maxmin");
+        xassert_str_contains($qreq->csession("uldisplay"), " scoresort=maxmin ");
+        Session_API::change_session($qreq, "ulscoresort=average");
+        xassert_eqq($qreq->csession("uldisplay"), null);
+    }
 }

@@ -74,17 +74,14 @@ class Session_API {
                 }
             } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
                 $want = ScoreInfo::parse_score_sort(substr($m[3], 1));
-                if ($want === "variance" || $want === "maxmin") {
-                    $qreq->set_csession("ulscoresort", $want);
-                } else if ($want === "average") {
-                    $qreq->unset_csession("ulscoresort");
-                }
+                self::change_uldisplay($qreq, ["scoresort" => $want]);
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
                 $view[substr($m[1], 0, 2)][] = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
-                self::change_uldisplay($qreq, [substr($m[2], 1) => $unfold]);
+                $v = $m[2] === ".scoresort" ? substr($m[3], 1) : $unfold;
+                self::change_uldisplay($qreq, [substr($m[2], 1) => $v]);
             } else if (substr($m[1], 0, 4) === "fold" && $m[2] === "") {
                 if ($unfold) {
                     $qreq->set_csession($m[1], 0);
@@ -102,7 +99,11 @@ class Session_API {
     /** @param Qrequest $qreq
      * @return array{ok:bool,sessioninfo:array} */
     static function setsession(Contact $user, $qreq) {
-        // NB This is for POSTs and requires authentication.
+        // NB This is for POSTs; CSRF token required. Since empty users are
+        // allowed, the endpoint is auth: false: we check the token explicitly.
+        if (!$qreq->valid_token()) {
+            return $user->conf->invalid_token_error($qreq);
+        }
         assert($user === $qreq->user());
         $qreq->open_session();
         self::change_session($qreq, $qreq->v);
@@ -129,27 +130,53 @@ class Session_API {
         }
     }
 
-    /** @param array<string,bool> $settings */
+    /** @param mixed $str
+     * @return ?string */
+    static function clean_ulscoresort($str) {
+        return $str === "variance" || $str === "maxmin" ? $str : null;
+    }
+
+    /** @param string $key
+     * @param list<string> $curl
+     * @param int $pos
+     * @return int|false */
+    static function uldisplay_search($key, $curl, $pos = 0) {
+        $len = strlen($key);
+        $n = count($curl);
+        while ($pos !== $n) {
+            $x = $curl[$pos];
+            if (str_starts_with($x, $key)
+                && (strlen($x) === $len || $x[$len] === "=")) {
+                return $pos;
+            }
+            ++$pos;
+        }
+        return false;
+    }
+
+    /** @param array<string,null|bool|string> $settings */
     static private function change_uldisplay(Qrequest $qreq, $settings) {
-        $curl = explode(" ", trim(ContactList::uldisplay($qreq)));
+        $curl = preg_split('/\s++/', ContactList::uldisplay($qreq), -1, PREG_SPLIT_NO_EMPTY);
         foreach ($settings as $name => $setting) {
             if (($f = $qreq->conf()->review_field($name))) {
-                $terms = [$f->short_id];
+                $keys = [$f->short_id];
                 if ($f->main_storage !== null && $f->main_storage !== $f->short_id) {
-                    $terms[] = $f->main_storage;
+                    $keys[] = $f->main_storage;
                 }
             } else {
-                $terms = [$name];
+                $keys = [$name];
             }
-            foreach ($terms as $i => $term) {
-                $p = array_search($term, $curl, true);
-                if ($i === 0 && $setting && $p === false) {
-                    $curl[] = $term;
-                }
-                while (($i !== 0 || !$setting) && $p !== false) {
+            if ($name === "scoresort") {
+                $setting = self::clean_ulscoresort($setting);
+            }
+            foreach ($keys as $i => $key) {
+                $p = 0;
+                while (($p = self::uldisplay_search($key, $curl, $p)) !== false) {
                     array_splice($curl, $p, 1);
-                    $p = array_search($term, $curl, true);
                 }
+            }
+            if ($setting) {
+                $curl[] = $keys[0] . (is_string($setting) ? "={$setting}" : "");
             }
         }
 

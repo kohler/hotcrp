@@ -352,18 +352,16 @@ class Users_Page {
 
     /** @return bool */
     private function handle_redisplay() {
-        $this->qreq->unset_csession("uldisplay");
-        $sv = [];
-        foreach (ContactList::$folds as $key) {
-            if (($x = friendly_boolean($this->qreq["show{$key}"])) !== null)
-                $sv[] = "uldisplay.{$key}=" . ($x ? 0 : 1);
+        if (!$this->qreq->qsid()) {
+            return false;
         }
-        foreach ($this->conf->all_review_fields() as $f) {
-            if (($x = friendly_boolean($this->qreq["show{$f->short_id}"])) !== null)
-                $sv[] = "uldisplay.{$f->short_id}=" . ($x ? 0 : 1);
+        $this->qreq->set_csession("uldisplay", "");
+        $sv = [];
+        foreach ($this->qreq->get_a("show") ?? [] as $key) {
+            $sv[] = "uldisplay.{$key}=0";
         }
         if (isset($this->qreq->scoresort)) {
-            $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
+            $sv[] = "uldisplay.scoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
         }
         Session_API::change_session($this->qreq, join(" ", $sv));
         $this->qreq->redirect_self();
@@ -400,6 +398,7 @@ class Users_Page {
         if ($qreq->redisplay) {
             return $this->handle_redisplay();
         }
+        return false;
     }
 
     private function print_query_form(ContactList $pl) {
@@ -432,9 +431,12 @@ class Users_Page {
                   "country" => "Country"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {
                 $k = array_search($fold, ContactList::$folds) + 1;
-                echo Ht::checkbox("show{$fold}", 1, $pl->have_folds[$fold],
-                                  ["data-fold-target" => "foldul#{$k}", "class" => "uich js-foldup"]),
-                    "&nbsp;", Ht::label($text), "<br />\n";
+                echo '<label class="checki"><span class="checkc">',
+                    Ht::checkbox("show[]", $fold, !!$pl->display_value($fold), [
+                        "id" => "show{$fold}",
+                        "data-fold-target" => "foldul#{$k}",
+                        "class" => "uich js-foldup"
+                    ]), '</span>', $text, '</label>';
             }
         }
         echo "</td>";
@@ -449,17 +451,16 @@ class Users_Page {
         }
         if (!empty($viewable_fields)) {
             echo '<td class="pad">';
-            $uldisplay = ContactList::uldisplay($this->qreq);
             foreach ($viewable_fields as $f) {
-                $checked = strpos($uldisplay, " {$f->short_id} ") !== false;
+                $checked = !!$pl->display_value($f->short_id);
                 echo '<label class="checki"><span class="checkc">',
-                    Ht::checkbox("show{$f->short_id}", 1, $checked),
+                    Ht::checkbox("show[]", $f->short_id, $checked, ["id" => "show{$f->short_id}"]),
                     '</span>', $f->name_html, '</label>';
             }
             echo "</td>";
         }
 
-        echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
+        echo "<td>", Ht::submit($this->qreq->qsid() ? "redisplay" : null, "Redisplay"), "</td></tr>\n";
 
         if (!empty($viewable_fields)) {
             $ss = [];
@@ -468,7 +469,7 @@ class Users_Page {
                     $ss[$k] = $v;
             }
             echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
-                Ht::select("scoresort", $ss, ScoreInfo::parse_score_sort($this->qreq->csession("ulscoresort") ?? "average")),
+                Ht::select("scoresort", $ss, ScoreInfo::parse_score_sort($pl->display_value("scoresort") ?? "average")),
                 "</td></tr>";
         }
         echo "</table></form></div>";
@@ -511,7 +512,8 @@ class Users_Page {
         $pl = new ContactList($this->viewer, true, $this->qreq);
         $pl_text = $pl->table_html($this->qreq->t,
             $this->conf->hoturl("users", ["t" => $this->qreq->t]),
-            $limit_title, 'uldisplay.');
+            $limit_title,
+            $this->qreq->qsid() ? "uldisplay." : null);
 
         echo '<hr class="g">';
         if (count($this->limits) > 1) {

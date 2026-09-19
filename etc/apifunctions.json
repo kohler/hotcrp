@@ -64,7 +64,7 @@
     {   "name": "searchactions", "get": true, "session": false, "function": "Search_API::searchactions", "scope": "other:read"   },
     {   "name": "searchcompletion", "get": true, "session": false, "function": "Completion_API::searchcompletion_api"   },
     {   "name": "session", "get": true, "auth": false, "function": "Session_API::getsession"   },
-    {   "name": "session", "post": true, "function": "Session_API::setsession"   },
+    {   "name": "session", "post": true, "auth": false, "function": "Session_API::setsession"   },
     {   "name": "settingdescriptions", "get": true, "function": "Settings_API::descriptions", "scope": "settings:read"   },
     {   "name": "settings", "get": true, "session": false, "function": "Settings_API::run", "scope": "settings:read"   },
     {   "name": "settings", "post": true, "session": false, "function": "Settings_API::run", "scope": "settings:admin"   },
