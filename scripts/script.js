@@ -14914,7 +14914,7 @@ function render_named_searches(data) {
     } else {
         sstab.replaceChildren();
     }
-    sstab.append($e("button", {type: "button", class: "ui js-named-search mt-3 small", "data-search-name": "new"}, "Add named search"));
+    sstab.append($e("button", {type: "button", class: "ui js-named-search mt-3 small", "data-search-name": "new"}, "Add saved search"));
     $(sstab).awaken();
 }
 
@@ -14956,8 +14956,8 @@ handle_ui.on("js-named-search", function (evt) {
                 size: 30, value: visible_name(si), placeholder: "Name of search"
             });
             if (si.id === "new") {
-                $pu.append($e("h2", null, "New named search"),
-                    $e("p", "w-text", "Save a search for later, then refer to it with a query such as “ss:NAME”. You can combine named searches with other search queries (e.g., “ss:NAME OR #tag”) and highlight named searches on the home page. Named searches are visible to the whole PC."),
+                $pu.append($e("h2", null, "New saved search"),
+                    $e("p", "w-text", "Save a search for later, then refer to it with a query such as “ss:NAME”. You can combine saved searches with other search queries (e.g., “ss:NAME OR #tag”) and highlight saved searches on the home page. Saved searches are visible to the whole PC."),
                     $e("div", "f-i",
                         $e("label", {for: "k-named_search/" + ctr + "/name"}, "Name"),
                         "ss:", namee,
@@ -15046,7 +15046,7 @@ handle_ui.on("js-named-search", function (evt) {
                 return create1(i, data);
             }
         }
-        $pu = $popup({near: evt.target, "aria-label": "Named search error"});
+        $pu = $popup({near: evt.target, "aria-label": "Saved search error"});
         $pu.append($e("p", null, "That search has been deleted."))
             .append_actions($e("button", {type: "button", class: "btn-primary"}, "OK"))
             .on("click", "button", $pu.close)
