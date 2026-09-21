@@ -441,16 +441,18 @@ class ManageEmail_API extends MessageSet {
                   $this->user->contactId,
                 // update: keep dst’s author/contact
                 CONFLICT_PCMASK,
-                // add src’s contact, unless author already
+                // if src is author, and dst is not author, make dst contact
                 CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR,
                 // for pc, dst wins if pinned or if src has none; otherwise src wins
                 CONFLICT_PCMASK, CONFLICT_PCMASK, CONFLICT_PCMASK);
-        $result2 = $this->conf->qe("update PaperConflict set conflictType=conflictType|?
-                where contactId=?
-                and paperId in (select paperId from PaperConflict where contactId=? and (conflictType&?)!=0)",
+        // transfer explicit contact authorship separately
+        $result2 = $this->conf->qe("update PaperConflict dst
+                join PaperConflict src on (src.paperId=dst.paperId and src.contactId=? and (src.conflictType&?)!=0)
+                set dst.conflictType=dst.conflictType|?
+                where dst.contactId=?",
+                $this->user->contactId, CONFLICT_CONTACTAUTHOR,
                 CONFLICT_CONTACTAUTHOR,
-                $this->dstuser->contactId,
-                $this->user->contactId, CONFLICT_CONTACTAUTHOR);
+                $this->dstuser->contactId);
         if ($result1->affected_rows > 0 || $result2->affected_rows > 0) {
             $this->change_list[] = "conflicts";
         }
