@@ -25,6 +25,8 @@ class ManageEmail_API extends MessageSet {
     private $all_sites = false;
     /** @var ?list<string> */
     private $change_list;
+    /** @var ?list<string> */
+    private $locks;
 
 
     function __construct(Contact $viewer, Qrequest $session_qreq) {
@@ -244,6 +246,7 @@ class ManageEmail_API extends MessageSet {
         return $this->realize_ec($this->user_ec($this->user, "u")
             ?? $this->user_ec($this->dstuser, "email")
             ?? $this->confirm_ec($this->viewer->privChair)
+            ?? $this->lock_ec()
             ?? $this->ecrun_transferreview());
     }
 
@@ -323,10 +326,10 @@ class ManageEmail_API extends MessageSet {
         $this->import_account();
         $this->conf->log_for($this->viewer, $this->dstuser, "Reviews transferred from {$this->user->email}");
         $this->conf->log_for($this->viewer, $this->user, "Reviews transferred to {$this->dstuser->email}");
+        $this->transfer_conflicts_first();
         $this->transfer_pc_roles();
         $this->transfer_paperpc();
         $this->transfer_user_tags();
-        $this->transfer_conflicts();
         $this->transfer_watch_pref_rating_interest();
         $this->transfer_reviews();
         $this->transfer_review_requests();
@@ -334,6 +337,7 @@ class ManageEmail_API extends MessageSet {
         $this->transfer_tags();
         $this->complete();
         $this->conf->resume_log();
+        $this->transfer_conflicts_last();
         return null;
     }
 
@@ -416,55 +420,48 @@ class ManageEmail_API extends MessageSet {
         $this->change_list[] = "user tags";
     }
 
-    private function transfer_conflicts() {
-        $result = $this->conf->qe("select paperId, contactId, conflictType from PaperConflict where contactId=? or contactId=?", $this->user->contactId, $this->dstuser->contactId);
-        $conf = [];
-        while (($row = $result->fetch_row())) {
-            $pid = (int) $row[0];
-            $conf[$pid] = $conf[$pid] ?? [0, 0];
-            $cid = (int) $row[1];
-            $conf[$pid][$cid === $this->user->contactId ? 0 : 1] = (int) $row[2];
-        }
-        $result->close();
-
-        $cfltf = Dbl::make_multi_qe_stager($this->conf->dblink);
-        $deletep = $insertv = [];
-        $changed = false;
-        foreach ($conf as $pid => $sd) {
-            if ($sd[0] === 0) {
-                continue;
-            }
-            $wsc = $sd[0] & ~Conflict::FM_PC;
-            if ($wsc === 0) {
-                $deletep[] = $pid;
-            } else if ($wsc !== $sd[0]) {
-                $cfltf("update PaperConflict set conflictType=? where paperId=? and contactId=?",
-                    $wsc, $pid, $this->user->contactId);
-                $changed = true;
-            }
-            $wdc = Conflict::merge($sd[1], $sd[0]);
-            if ($sd[1] === 0) {
-                $insertv[] = [$pid, $this->dstuser->contactId, $wdc];
-            } else if ($wdc !== $sd[1]) {
-                $cfltf("update PaperConflict set conflictType=? where paperId=? and contactId=?",
-                    $wdc, $pid, $this->dstuser->contactId);
-                $changed = true;
-            }
-        }
-        if (!empty($deletep)) {
-            $cfltf("delete from PaperConflict where paperId?a and contactId=?",
-                $deletep, $this->user->contactId);
-            $changed = true;
-        }
-        if (!empty($insertv)) {
-            $cfltf("insert into PaperConflict (paperId, contactId, conflictType) values ?v",
-                $insertv);
-            $changed = true;
-        }
-        $cfltf(null);
-        if ($changed) {
+    private function transfer_conflicts_first() {
+        // * Add src contact-authorship to dst
+        // * Transfer src conflicts to dst; dst wins if pinned or src has none
+        $result1 = $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+            select * from
+                (select src.paperId as srcPaperId,
+                    ? as srcContactId,
+                    (src.conflictType&~?) | if((src.conflictType&?)!=0, ?, 0) as srcConflictType
+                 from PaperConflict src where src.contactId=?) as tmpConflicts
+            on duplicate key update
+            conflictType=(conflictType&~?)
+                | if((conflictType&?)=0, ?U(conflictType,srcConflictType)&?, 0)
+                | if(conflictType&1 OR (?U(conflictType,srcConflictType)&?)=0, conflictType&?, ?U(conflictType,srcConflictType)&?)",
+                // insert: dst uid
+                $this->dstuser->contactId,
+                  // src conflictType, but author → contact author (author means email on author list)
+                  CONFLICT_AUTHOR, CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR,
+                  // search db for src uid
+                  $this->user->contactId,
+                // update: keep dst’s author/contact
+                CONFLICT_PCMASK,
+                // add src’s contact, unless author already
+                CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR,
+                // for pc, dst wins if pinned or if src has none; otherwise src wins
+                CONFLICT_PCMASK, CONFLICT_PCMASK, CONFLICT_PCMASK);
+        $result2 = $this->conf->qe("update PaperConflict set conflictType=conflictType|?
+                where contactId=?
+                and paperId in (select paperId from PaperConflict where contactId=? and (conflictType&?)!=0)",
+                CONFLICT_CONTACTAUTHOR,
+                $this->dstuser->contactId,
+                $this->user->contactId, CONFLICT_CONTACTAUTHOR);
+        if ($result1->affected_rows > 0 || $result2->affected_rows > 0) {
             $this->change_list[] = "conflicts";
         }
+    }
+
+    private function transfer_conflicts_last() {
+        // Remove unpinned conflicts from src
+        $this->conf->qe("delete from PaperConflict where contactId=? and (conflictType&?)=0",
+                $this->user->contactId, ~CONFLICT_PCMASK | 1);
+        $this->conf->qe("update PaperConflict set conflictType=conflictType&~? where contactId=? and (conflictType&1)=0",
+                CONFLICT_PCMASK, $this->user->contactId);
     }
 
     /** @suppress PhanTypeArraySuspiciousNullable */
@@ -575,6 +572,7 @@ class ManageEmail_API extends MessageSet {
         return $this->realize_ec($this->user_ec($this->user, "u")
             ?? $this->user_ec($this->dstuser, "email")
             ?? $this->confirm_ec(false)
+            ?? $this->lock_ec()
             ?? $this->ecrun_link());
     }
 
@@ -625,6 +623,7 @@ class ManageEmail_API extends MessageSet {
     function unlink() {
         return $this->realize_ec($this->user_ec($this->user, "u")
             ?? $this->confirm_ec(false)
+            ?? $this->lock_ec()
             ?? $this->ecrun_unlink());
     }
 
@@ -656,6 +655,30 @@ class ManageEmail_API extends MessageSet {
         return null;
     }
 
+    /** @return ?string */
+    private function lock_ec() {
+        // take out MariaDB locks on the user to prevent concurrent manageemail calls
+        $locks = ["hcue_" . md5($this->conf->dbname . ":" . strtolower($this->user->email))];
+        if ($this->dstuser) {
+            $locks[] = "hcue_" . md5($this->conf->dbname . ":" . strtolower($this->dstuser->email));
+        }
+        sort($locks);
+        foreach ($locks as $l) {
+            if (!$this->conf->fetch_ivalue("select get_lock(?,4) from dual", $l)) {
+                return "conflict";
+            }
+            $this->locks[] = $l;
+        }
+        if ((!$this->user->is_cdb_user()
+             && ($this->user->roles & Contact::ROLE_DBMASK) !== $this->conf->fetch_ivalue("select roles from ContactInfo where contactId=?", $this->user->contactId))
+            || ($this->dstuser
+                && !$this->dstuser->is_cdb_user()
+                && ($this->dstuser->roles & Contact::ROLE_DBMASK) !== $this->conf->fetch_ivalue("select roles from ContactInfo where contactId=?", $this->dstuser->contactId))) {
+            return "conflict";
+        }
+        Contact::update_rights(); // ensure reload if any conflicts are in memory (they aren’t)
+        return null;
+    }
 
     /** @param ?string $ec
      * @return JsonResult */
@@ -677,8 +700,15 @@ class ManageEmail_API extends MessageSet {
         if ($ec) {
             $jr->set("error_code", $ec);
             if (!$this->has_message()) {
-                $this->append_item(MessageItem::error(null));
+                if ($ec === "conflict") {
+                    $this->append_item(MessageItem::error("<0>Concurrent update conflict"));
+                } else {
+                    $this->append_item(MessageItem::error(null));
+                }
             }
+        }
+        foreach ($this->locks ?? [] as $l) {
+            $this->conf->qe("select release_lock(?) from dual", $l);
         }
         return $jr;
     }

@@ -83,22 +83,6 @@ class Conflict {
         return $admin ? $new : $new & ~1;
     }
 
-    /** @param int $ct1
-     * @param int $ct2
-     * @return int */
-    static function merge($ct1, $ct2) {
-        if (($ct2 & CONFLICT_CONTACTAUTHOR) !== 0
-            || ($ct2 >= CONFLICT_AUTHOR && $ct1 < CONFLICT_AUTHOR)) {
-            $ct1 |= CONFLICT_CONTACTAUTHOR;
-        }
-        if (($ct2 & self::FM_PC) !== 0
-            && (($ct1 & self::FM_PC) === 0
-                || (($ct1 & 1) === 0 && ($ct2 & 1) !== 0))) {
-            $ct1 = ($ct1 & ~self::FM_PC) | ($ct2 & self::FM_PC);
-        }
-        return $ct1;
-    }
-
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
