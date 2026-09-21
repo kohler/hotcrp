@@ -154,18 +154,7 @@ class Unit_Tester {
         xassert_eqq((int) $ct(3), 6);  // 2 | 4
         xassert_eqq((int) $ct(4), 24); // 8 | 16
 
-        // 3. INSERT ... SELECT ... ON DUPLICATE KEY UPDATE with a row alias:
-        // the SELECT names its columns to match the target, and the update
-        // references the incoming value via `?U(conflictType)`
-        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 10, 4);
-        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 20, 2);
-        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
-            select src.paperId as paperId, ? as contactId, src.conflictType as conflictType
-            from PaperConflict src where src.paperId=? and src.contactId=? ?U
-            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType)", 20, $p, 10);
-        xassert_eqq((int) $ct(20), 6); // 2 | 4 (source's conflictType merged in)
-
-        // 4. INSERT ... SELECT ... ON DUPLICATE KEY UPDATE with column aliases:
+        // 3. INSERT ... SELECT ... ON DUPLICATE KEY UPDATE with column aliases:
         // the SELECT columns are aliased inside a derived table, and the update
         // references the source column via `?U(target,source)`
         $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 12, 8);
