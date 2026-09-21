@@ -399,53 +399,58 @@ class Dbl {
      * @param list $argv
      * @return string */
     static private function format_query_args($dblink, $qstr, $argv) {
-        $original_qstr = $qstr;
-        $strpos = $argpos = 0;
+        $qpos = $argpos = 0;
         $usedargs = [];
         $simpleargs = true;
         $U_mysql8 = null;
-        while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
-            $prefix = substr($qstr, 0, $strpos);
-            $nextpos = $strpos + 1;
-            $nextch = substr($qstr, $nextpos, 1);
+        $out = "";
+        while (($nextpos = strpos($qstr, "?", $qpos)) !== false) {
+            $out .= substr($qstr, $qpos, $nextpos - $qpos);
+            $qpos = $nextpos + 1;
+            $nextch = substr($qstr, $qpos, 1);
 
             // non-argument expansions
             if ($nextch === "?") {
-                $qstr = $prefix . substr($qstr, $nextpos);
-                $strpos = $nextpos;
+                $out .= "?";
+                ++$qpos;
                 continue;
             } else if ($nextch === "U") {
                 $U_mysql8 = $U_mysql8 ?? (strpos($dblink->server_info, "Maria") === false
                                           && $dblink->server_version >= 80020);
-                if (substr($qstr, $nextpos + 1, 1) === "(") {
-                    $rparen = strpos($qstr, ")", $nextpos + 2);
-                    $name = substr($qstr, $nextpos + 2, $rparen - $nextpos - 2);
-                    $suffix = substr($qstr, $rparen + 1);
-                    if ($U_mysql8) {
-                        $qstr = "{$prefix}__values.{$name}{$suffix}";
+                if (substr($qstr, $qpos + 1, 1) === "(") {
+                    $comma = $qpos + 2 + strcspn($qstr, ",)", $qpos + 2);
+                    $rparen = strpos($qstr, ")", $comma);
+                    $name = substr($qstr, $qpos + 2, $comma - $qpos - 2);
+                    if ($U_mysql8 && $comma !== $rparen) {
+                        // column alias
+                        $out .= substr($qstr, $comma + 1, $rparen - $comma - 1);
+                    } else if ($U_mysql8) {
+                        // row alias
+                        $out .= "__values.{$name}";
                     } else {
-                        $qstr = "{$prefix}values({$name}){$suffix}";
+                        // MariaDB: `values` function
+                        $out .= "values({$name})";
                     }
+                    $qpos = $rparen + 1;
                 } else {
-                    $suffix = substr($qstr, $nextpos + 1);
                     if ($U_mysql8) {
-                        $qstr = "{$prefix} as __values {$suffix}";
-                    } else {
-                        $qstr = "{$prefix}{$suffix}";
+                        // apply row alias
+                        $out .= " as __values ";
                     }
+                    ++$qpos;
                 }
-                $nextpos = strlen($qstr) - strlen($suffix);
                 continue;
             }
 
             // find argument
             if ($nextch === "{"
-                && ($rbracepos = strpos($qstr, "}", $nextpos + 1)) !== false) {
-                $thisarg = substr($qstr, $nextpos + 1, $rbracepos - $nextpos - 1);
-                if ($thisarg === (string) (int) $thisarg)
+                && ($rbracepos = strpos($qstr, "}", $qpos + 1)) !== false) {
+                $thisarg = substr($qstr, $qpos + 1, $rbracepos - $qpos - 1);
+                if ($thisarg === (string) (int) $thisarg) {
                     --$thisarg;
-                $nextpos = $rbracepos + 1;
-                $nextch = substr($qstr, $nextpos, 1);
+                }
+                $qpos = $rbracepos + 1;
+                $nextch = substr($qstr, $qpos, 1);
                 $simpleargs = false;
             } else {
                 for (++$argpos; isset($usedargs[$argpos - 1]); ++$argpos) {
@@ -453,7 +458,7 @@ class Dbl {
                 $thisarg = $argpos - 1;
             }
             if (!array_key_exists($thisarg, $argv)) {
-                trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
+                trigger_error(self::landmark() . ": query '{$qstr}' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
             }
             $usedargs[$thisarg] = true;
 
@@ -467,7 +472,7 @@ class Dbl {
                 } else {
                     $arg = ($nextch === "e" ? "='" : "!='") . $dblink->real_escape_string($arg) . "'";
                 }
-                ++$nextpos;
+                ++$qpos;
             } else if ($nextch === "a" || $nextch === "A") {
                 if ($arg === null) {
                     $arg = [];
@@ -497,22 +502,22 @@ class Dbl {
                 } else {
                     $arg = ($nextch === "a" ? " IN (" : " NOT IN (") . join(", ", $arg) . ")";
                 }
-                ++$nextpos;
+                ++$qpos;
             } else if ($nextch === "s") {
                 $arg = $dblink->real_escape_string((string) $arg);
-                ++$nextpos;
+                ++$qpos;
             } else if ($nextch === "l") {
                 $arg = $dblink->real_escape_string(self::escape_like((string) $arg));
-                ++$nextpos;
-                if (substr($qstr, $nextpos, 1) === "s") {
-                    ++$nextpos;
+                ++$qpos;
+                if (substr($qstr, $qpos, 1) === "s") {
+                    ++$qpos;
                 } else {
                     $arg = "'{$arg}'";
                 }
             } else if ($nextch === "v") {
-                ++$nextpos;
+                ++$qpos;
                 if (!is_array($arg) || empty($arg)) {
-                    trigger_error(self::landmark() . ": query `{$original_qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
+                    trigger_error(self::landmark() . ": query `{$qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
                     $arg = "NULL";
                 } else {
                     $alln = -1;
@@ -526,7 +531,7 @@ class Dbl {
                             $alln = $n;
                         }
                         if ($alln !== $n && $alln !== -2) {
-                            trigger_error(self::landmark() . ": query `{$original_qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
+                            trigger_error(self::landmark() . ": query `{$qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
                             $alln = -2;
                         }
                         foreach ($x as &$y) {
@@ -549,14 +554,13 @@ class Dbl {
                 }
             }
             // combine
-            $suffix = substr($qstr, $nextpos);
-            $qstr = "{$prefix}{$arg}{$suffix}";
-            $strpos = strlen($qstr) - strlen($suffix);
+            $out .= $arg;
         }
+        $out .= substr($qstr, $qpos);
         if ($simpleargs && $argpos !== count($argv)) {
-            trigger_error(self::landmark() . ": query `{$original_qstr}` unused arguments");
+            trigger_error(self::landmark() . ": query `{$qstr}` unused arguments");
         }
-        return $qstr;
+        return $out;
     }
 
     /** @return string */

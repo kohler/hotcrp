@@ -100,6 +100,9 @@ class Unit_Tester {
         xassert_eqq(Dbl::format_query("Hello????"), "Hello??");
         xassert_eqq(Dbl::format_query("Hello????? What the heck", 1), "Hello??1 What the heck");
         xassert_in_eqq(Dbl::format_query("Hello ?U? ?U(a)?", 1, 2), ["Hello 1 values(a)2", "Hello  as __values 1 __values.a2"]);
+        // `?U(target,source)` references the source column: MySQL8 uses the
+        // source alias directly, MariaDB the `values()` of the target column
+        xassert_in_eqq(Dbl::format_query("x ?U(a,b) y"), ["x values(a) y", "x b y"]);
         xassert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
                                       1, "a", null, 2, "b", null, 3),
                     "select 1, 'a', NULL, 2, b, , 3");
@@ -120,6 +123,68 @@ class Unit_Tester {
                     "insert (1), (2), (3)");
         xassert_eqq(Dbl::format_query("insert ?v", [[1, null], [2, "A"], ["b", 0.1]]),
                     "insert (1,NULL), (2,'A'), ('b',0.1)");
+    }
+
+    // Execute `INSERT ... ON DUPLICATE KEY UPDATE` through Dbl's `?U` handling
+    // against a real table, in each of its four shapes. PaperConflict has PK
+    // (paperId, contactId); we use an out-of-range paperId so no real row is
+    // touched, and clean up afterward. On MariaDB the `?U` row alias vanishes
+    // and `?U(...)` becomes `values(...)`; on MySQL 8 they become the row/column
+    // aliases -- both are checked formulaically in test_dbl_format_query above.
+    function test_dbl_insert_on_duplicate() {
+        $p = 90000123; // out-of-range paperId, no real conflicts
+        $ct = function ($cid) use ($p) {
+            return $this->conf->fetch_ivalue("select conflictType from PaperConflict where paperId=? and contactId=?", $p, $cid);
+        };
+        $this->conf->qe("delete from PaperConflict where paperId=?", $p);
+
+        // 1. INSERT ... SET ... ON DUPLICATE KEY UPDATE
+        $this->conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?", $p, 1, 2);
+        $this->conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=? ?U
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType)", $p, 1, 4);
+        xassert_eqq((int) $ct(1), 6); // 2 | 4, the ON DUPLICATE path
+        $this->conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=? ?U
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType)", $p, 2, 8);
+        xassert_eqq((int) $ct(2), 8); // fresh insert path
+
+        // 2. INSERT ... VALUES ... ON DUPLICATE KEY UPDATE (multi-row)
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v", [[$p, 3, 2], [$p, 4, 8]]);
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v ?U
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType)", [[$p, 3, 4], [$p, 4, 16]]);
+        xassert_eqq((int) $ct(3), 6);  // 2 | 4
+        xassert_eqq((int) $ct(4), 24); // 8 | 16
+
+        // 3. INSERT ... SELECT ... ON DUPLICATE KEY UPDATE with a row alias:
+        // the SELECT names its columns to match the target, and the update
+        // references the incoming value via `?U(conflictType)`
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 10, 4);
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 20, 2);
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+            select src.paperId as paperId, ? as contactId, src.conflictType as conflictType
+            from PaperConflict src where src.paperId=? and src.contactId=? ?U
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType)", 20, $p, 10);
+        xassert_eqq((int) $ct(20), 6); // 2 | 4 (source's conflictType merged in)
+
+        // 4. INSERT ... SELECT ... ON DUPLICATE KEY UPDATE with column aliases:
+        // the SELECT columns are aliased inside a derived table, and the update
+        // references the source column via `?U(target,source)`
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 12, 8);
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values (?,?,?)", $p, 22, 2);
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+            select * from
+                (select src.paperId as srcPaperId, ? as srcContactId, src.conflictType as srcConflictType
+                 from PaperConflict src where src.paperId=? and src.contactId=?) as tmp
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType,srcConflictType)", 22, $p, 12);
+        xassert_eqq((int) $ct(22), 10); // 2 | 8
+        // fresh insert path for the derived-table form
+        $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+            select * from
+                (select src.paperId as srcPaperId, ? as srcContactId, src.conflictType as srcConflictType
+                 from PaperConflict src where src.paperId=? and src.contactId=?) as tmp
+            on duplicate key update conflictType=PaperConflict.conflictType|?U(conflictType,srcConflictType)", 23, $p, 12);
+        xassert_eqq((int) $ct(23), 8); // fresh insert = source's conflictType
+
+        $this->conf->qe("delete from PaperConflict where paperId=?", $p);
     }
 
     function test_validate_email() {
