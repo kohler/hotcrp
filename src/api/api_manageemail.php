@@ -350,11 +350,11 @@ class ManageEmail_API extends MessageSet {
             $this->change_list[] = "user tags";
         }
         $row = $this->conf->fetch_first_row("select
-            (exists (select * from Paper where leadContactId=? or shepherdContactId=? or managerContactId=?)) lead,
-            (select count(*) from PaperReview where contactId=?) reviews,
-            (select count(*) from ReviewRequest where email=?) requests,
-            (select count(*) from PaperComment where contactId=? and (commentType&?)=0) comments,
-            (select count(*) from PaperTag where tag like '{$this->user->contactId}~%') tags
+            (exists (select * from Paper where leadContactId=? or shepherdContactId=? or managerContactId=?)) as lead,
+            (select count(*) from PaperReview where contactId=?) as reviews,
+            (select count(*) from ReviewRequest where email=?) as requests,
+            (select count(*) from PaperComment where contactId=? and (commentType&?)=0) as comments,
+            (select count(*) from PaperTag where tag like '{$this->user->contactId}~%') as tags
             from dual",
             $this->user->contactId, $this->user->contactId, $this->user->contactId,
             $this->user->contactId,
