@@ -22,6 +22,22 @@ final class FormulaRangeAnno implements JsonSerializable {
     }
 }
 
+final class FormulaTypechecker {
+    /** @var Formula */
+    public $formula;
+    /** @var list<Aggregate_Fexpr> */
+    public $nest = [];
+    /** @var int */
+    public $nloops = 0;
+
+    function __construct(Formula $formula) {
+        $this->formula = $formula;
+    }
+    function fexpr_lerror(Fexpr $expr, ...$args) {
+        $this->formula->fexpr_lerror($expr, ...$args);
+    }
+}
+
 abstract class Fexpr implements JsonSerializable {
     /** @var string */
     public $op = "";
@@ -169,31 +185,32 @@ abstract class Fexpr implements JsonSerializable {
         $this->_format_detail = null;
     }
 
+
     /** @return string */
     function disallowed_use_error() {
         return "<0>Expression of type " . $this->format_description() . " can’t be used here";
     }
 
-    function typecheck_resolve_neighbors(Formula $formula) {
+    function typecheck_resolve_neighbors(FormulaTypechecker $ftch) {
         foreach ($this->args as $i => $a) {
             if (!$a->has_format()
                 && ($b = $this->args[$i ? $i - 1 : $i + 1] ?? null)) {
-                $a->resolve_neighbor($formula, $b);
+                $a->resolve_neighbor($ftch, $b);
             }
         }
     }
 
     /** @param Fexpr $e */
-    function resolve_neighbor(Formula $formula, $e) {
+    function resolve_neighbor(FormulaTypechecker $ftch, $e) {
     }
 
     /** @param bool $ismath
      * @return bool */
-    function typecheck_arguments(Formula $formula, $ismath = false) {
+    function typecheck_arguments(FormulaTypechecker $ftch, $ismath = false) {
         $ok = true;
         foreach ($this->args as $a) {
-            $ok = $a->typecheck($formula)
-                && (!$ismath || $a->typecheck_math_format($formula))
+            $ok = $a->typecheck($ftch)
+                && (!$ismath || $a->typecheck_math_format($ftch))
                 && $ok;
         }
         if ($ok
@@ -231,8 +248,8 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return bool */
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch);
     }
 
     /** @return ?list<Fexpr> */
@@ -250,11 +267,11 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return bool */
-    function typecheck_math_format(Formula $formula) {
+    function typecheck_math_format(FormulaTypechecker $ftch) {
         if ($this->math_format()) {
             return true;
         }
-        $formula->fexpr_lerror($this, $this->disallowed_use_error());
+        $ftch->fexpr_lerror($this, $this->disallowed_use_error());
         return false;
     }
 
@@ -422,15 +439,15 @@ class Constant_Fexpr extends Fexpr {
         }
         return false;
     }
-    function typecheck(Formula $formula) {
+    function typecheck(FormulaTypechecker $ftch) {
         if ($this->format() === Fexpr::FREVTYPE
             && is_string($this->x)
             && !$this->_check_revtype()) {
-            $formula->fexpr_lerror($this, "<0>Review type ‘{$this->x}’ not found");
+            $ftch->fexpr_lerror($this, "<0>Review type ‘{$this->x}’ not found");
             return false;
         } else if (!$this->has_format()) {
             $this->set_format(Fexpr::FERROR);
-            $formula->fexpr_lerror($this, "<0>Term ‘{$this->x}’ not found");
+            $ftch->fexpr_lerror($this, "<0>Term ‘{$this->x}’ not found");
             return false;
         }
         return true;
@@ -456,8 +473,8 @@ class Ternary_Fexpr extends Fexpr {
     function __construct($e0, $e1, $e2) {
         parent::__construct("?:", [$e0, $e1, $e2]);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch);
     }
     function inferred_format() {
         return [$this->args[1], $this->args[2]];
@@ -483,9 +500,9 @@ class Equality_Fexpr extends Fexpr {
         parent::__construct($op, [$e0, $e1]);
         $this->set_format(Fexpr::FBOOL);
     }
-    function typecheck(Formula $formula) {
-        $this->typecheck_resolve_neighbors($formula);
-        return $this->typecheck_arguments($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        $this->typecheck_resolve_neighbors($ftch);
+        return $this->typecheck_arguments($ftch);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -500,9 +517,9 @@ class Inequality_Fexpr extends Fexpr {
         parent::__construct($op, [$e0, $e1]);
         $this->set_format(Fexpr::FBOOL);
     }
-    function typecheck(Formula $formula) {
-        $this->typecheck_resolve_neighbors($formula);
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        $this->typecheck_resolve_neighbors($ftch);
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -587,8 +604,8 @@ class Unary_Fexpr extends Fexpr {
         parent::__construct($op, [$e]);
         $this->set_format(Fexpr::FNUMERIC, true);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function null_controllers() {
         return [];
@@ -604,8 +621,8 @@ class Additive_Fexpr extends Fexpr {
         assert($op === "+" || $op === "-");
         parent::__construct($op, [$e1, $e2]);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function inferred_format() {
         $f0 = $this->args[0]->format();
@@ -646,8 +663,8 @@ class Multiplicative_Fexpr extends Fexpr {
         assert($op === "*" || $op === "/" || $op === "%");
         parent::__construct($op, [$e1, $e2]);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function inferred_format() {
         return $this->args;
@@ -669,8 +686,8 @@ class Shift_Fexpr extends Fexpr {
         assert($op === "<<" || $op === ">>");
         parent::__construct($op, [$e1, $e2]);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -684,8 +701,8 @@ class Bitwise_Fexpr extends Fexpr {
         assert($op === "&" || $op === "|" || $op === "^");
         parent::__construct($op, [$e1, $e2]);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -698,8 +715,8 @@ class Pow_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
         parent::__construct("**", $ff->args);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -735,9 +752,9 @@ class LeastGreatest_Fexpr extends Fexpr {
         }
         parent::__construct($op, $ff->args);
     }
-    function typecheck(Formula $formula) {
-        $this->typecheck_resolve_neighbors($formula);
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        $this->typecheck_resolve_neighbors($ftch);
+        return $this->typecheck_arguments($ftch, true);
     }
     function inferred_format() {
         return $this->args;
@@ -760,9 +777,9 @@ class Coalesce_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
         parent::__construct("coalesce", $ff->args);
     }
-    function typecheck(Formula $formula) {
-        $this->typecheck_resolve_neighbors($formula);
-        return $this->typecheck_arguments($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        $this->typecheck_resolve_neighbors($ftch);
+        return $this->typecheck_arguments($ftch);
     }
     function inferred_format() {
         return $this->args;
@@ -786,8 +803,8 @@ class Math_Fexpr extends Fexpr {
     function __construct($ff) {
         parent::__construct($ff);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->ltemp($this->args[0]->compile($state));
@@ -827,8 +844,8 @@ class Round_Fexpr extends Fexpr {
     function __construct($ff) {
         parent::__construct($ff);
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $op = $this->op === "trunc" ? "itrunc" : $this->op;
@@ -885,7 +902,21 @@ abstract class Aggregate_Fexpr extends Fexpr {
         $ff->index_type = $it;
         return true;
     }
-    function typecheck_index(Formula $formula) {
+    protected function typecheck_aggregate(FormulaTypechecker $ftch, $math = false) {
+        if (count($ftch->nest) > 1) {
+            $ftch->fexpr_lerror($this, "<0>Formula too complex: aggregates nest too deeply");
+            return false;
+        } else if (++$ftch->nloops > 5) {
+            $ftch->fexpr_lerror($this, "<0>Formula too complex: too many aggregates");
+            return false;
+        }
+        $ftch->nest[] = $this;
+        $ok = $this->typecheck_arguments($ftch, $math)
+            && $this->typecheck_index($ftch);
+        array_pop($ftch->nest);
+        return $ok;
+    }
+    function typecheck_index(FormulaTypechecker $ftch) {
         $lt = parent::inferred_index();
         if ($lt === Fexpr::IDX_PREF
             && $this->index_type === Fexpr::IDX_PC) {
@@ -917,8 +948,11 @@ abstract class Aggregate_Fexpr extends Fexpr {
         if (empty($want)) {
             $want[] = "a collection like ‘{$this->op}.re’";
         }
-        $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify " . commajoin($want, "or"));
+        $ftch->fexpr_lerror($this, "<0>Ambiguous aggregation, specify " . commajoin($want, "or"));
         return false;
+    }
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch);
     }
     function inferred_index() {
         return 0;
@@ -938,8 +972,8 @@ class My_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new My_Fexpr($ff->args[0]) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_arguments($ftch);
     }
     function inferred_format() {
         return $this->args;
@@ -956,10 +990,6 @@ class All_Fexpr extends Aggregate_Fexpr {
     }
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new All_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
-    }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula)
-            && $this->typecheck_index($formula);
     }
     function body_null_controllers() {
         // `all` has no body null controllers because it promotes `null` bodies
@@ -978,10 +1008,6 @@ class Some_Fexpr extends Aggregate_Fexpr {
     }
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new Some_Fexpr($ff->args[0], $ff->index_type) : null;
-    }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula)
-            && $this->typecheck_index($formula);
     }
     function inferred_format() {
         return $this->args;
@@ -1014,9 +1040,8 @@ class Variance_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new Variance_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch, true);
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_compile_loop("[0.0, 0.0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
@@ -1054,14 +1079,13 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
             ? new Quantile_Fexpr($ff->name, $quantile, $ff->args, $ff->index_type)
             : null;
     }
-    function typecheck(Formula $formula) {
+    function typecheck(FormulaTypechecker $ftch) {
         if ($this->quantile === null
             && $this->args[0]->inferred_index() === 0
             && $this->args[1]->inferred_index() !== 0) {
             $this->varg = 1;
         }
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula);
+        return $this->typecheck_aggregate($ftch, true);
     }
     function inferred_format() {
         return [$this->args[$this->varg]];
@@ -1111,9 +1135,8 @@ class Extremum_Fexpr extends Aggregate_Fexpr {
         }
         return $ff->check_nargs(1) ? new Extremum_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch, true);
     }
     function inferred_format() {
         return $this->args;
@@ -1142,9 +1165,8 @@ class Count_Fexpr extends Aggregate_Fexpr {
         }
         return true;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula)
-            && $this->typecheck_index($formula)
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch)
             && self::check_private_tag_index($this);
     }
     function compile(FormulaCompiler $state) {
@@ -1159,9 +1181,8 @@ class Sum_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new Sum_Fexpr($ff->args[0], $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula)
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch, true)
             && Count_Fexpr::check_private_tag_index($this);
     }
     function compile(FormulaCompiler $state) {
@@ -1183,10 +1204,9 @@ class ArgExtremum_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(2) ? new ArgExtremum_Fexpr($ff->name, $ff->args, $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula)
-            && $this->args[1]->typecheck_math_format($formula)
-            && $this->typecheck_index($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch)
+            && $this->args[1]->typecheck_math_format($ftch);
     }
     function inferred_format() {
         return [$this->args[0]];
@@ -1214,9 +1234,8 @@ class Mean_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         return $ff->check_nargs(1) ? new Mean_Fexpr($ff->args[0], $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch, true);
     }
     function inferred_format() {
         return self::inferred_numeric_format($this->args[0]);
@@ -1234,13 +1253,11 @@ class Wavg_Fexpr extends Aggregate_Fexpr {
     static function make(FormulaCall $ff) {
         if (count($ff->args) === 1) {
             return Mean_Fexpr::make($ff);
-        } else {
-            return $ff->check_nargs(2) ? new Wavg_Fexpr($ff->args, $ff->index_type) : null;
         }
+        return $ff->check_nargs(2) ? new Wavg_Fexpr($ff->args, $ff->index_type) : null;
     }
-    function typecheck(Formula $formula) {
-        return $this->typecheck_arguments($formula, true)
-            && $this->typecheck_index($formula);
+    function typecheck(FormulaTypechecker $ftch) {
+        return $this->typecheck_aggregate($ftch, true);
     }
     function inferred_format() {
         return self::inferred_numeric_format($this->args[0]);
@@ -1319,17 +1336,17 @@ class Let_Fexpr extends Fexpr {
         parent::__construct("let", [$val, $body]);
         $this->vardef = $vardef;
     }
-    function typecheck(Formula $formula) {
+    function typecheck(FormulaTypechecker $ftch) {
         $val = $this->args[0];
         $body = $this->args[1];
-        if (($ok0 = $val->typecheck($formula))) {
+        if (($ok0 = $val->typecheck($ftch))) {
             $this->vardef->set_format($val->format(), $val->format_detail());
             $this->vardef->_index_type = $val->inferred_index();
         } else {
             $this->vardef->set_format(Fexpr::FERROR);
             $this->vardef->_index_type = 0;
         }
-        $ok1 = $body->typecheck($formula);
+        $ok1 = $body->typecheck($ftch);
         if ($ok0 && $ok1) {
             $this->set_format($body->format(), $body->format_detail());
         } else {
@@ -1394,13 +1411,13 @@ class VarUse_Fexpr extends Fexpr {
         parent::__construct("varuse");
         $this->vardef = $vardef;
     }
-    function resolve_neighbor(Formula $formula, $e) {
+    function resolve_neighbor(FormulaTypechecker $ftch, $e) {
         if ($this->vardef->has_format()
-            || !$e->typecheck($formula)) {
+            || !$e->typecheck($ftch)) {
             return;
         }
         $name = $this->vardef->name();
-        $conf = $formula->conf;
+        $conf = $ftch->formula->conf;
         $format = $e->format();
         $format_detail = $e->format_detail();
         switch ($format) {
@@ -1419,7 +1436,7 @@ class VarUse_Fexpr extends Fexpr {
             }
             break;
         case Fexpr::FSUBFIELD:
-            $pv = $format_detail->parse_json_user($formula->placeholder_prow(), $name, $formula->user);
+            $pv = $format_detail->parse_json_user($ftch->formula->placeholder_prow(), $name, $ftch->formula->user);
             if (!$pv || $pv->has_error()) {
                 return;
             }
@@ -1445,9 +1462,9 @@ class VarUse_Fexpr extends Fexpr {
         $this->vardef->ltemp = $x;
         $this->vardef->_info_index = VarDef_Fexpr::INFO_INDEX_CONSTANT;
     }
-    function typecheck(Formula $formula) {
+    function typecheck(FormulaTypechecker $ftch) {
         if (!$this->vardef->has_format()) {
-            $formula->fexpr_lerror($this, "<0>Term ‘" . $this->vardef->name() . "’ not found");
+            $ftch->fexpr_lerror($this, "<0>Term ‘" . $this->vardef->name() . "’ not found");
             return false;
         }
         $this->set_format($this->vardef->format(), $this->vardef->format_detail());
@@ -1832,7 +1849,7 @@ class FormulaCompiler {
     }
 
     private function _pop() {
-        list($this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags) = array_pop($this->_stack);
+        [$this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags] = array_pop($this->_stack);
         $this->indent -= 2;
     }
 
@@ -2176,7 +2193,8 @@ final class Formula implements JsonSerializable {
             }
             return $fe;
         }
-        if (!$fe->typecheck($this)) {
+        $ftch = new FormulaTypechecker($this);
+        if (!$fe->typecheck($ftch)) {
             if (empty($this->lerrors)) {
                 $this->fexpr_lerror($fe, "<0>Formula type mismatch");
             }
