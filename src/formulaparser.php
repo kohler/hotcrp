@@ -33,6 +33,14 @@ class FormulaParser {
 
     const MAXNESTING = 100;
     const MAXDEPTH = 10;
+    /** Parse budget, on the same scale as PaperSearch::MAX_COST: a formula
+     * parsed within a search shares the search's budget. Each operand and
+     * each named-formula or macro expansion costs NODE_COST (formula nodes
+     * cost more to compile and evaluate than search atoms); each step of
+     * qualified-name resolution costs 1, more for a long name. This bounds
+     * the compiled size whatever the expression or the formulas it expands. */
+    const MAX_COST = 20000;
+    const NODE_COST = 4;
 
     static private $_oprassoc = [
         "**" => true
@@ -87,7 +95,37 @@ class FormulaParser {
         // errors expand from the search word, and its parse is charged to
         // the search's budget.
         $ssc = SearchStringContext::make($str, $ssc);
+        if (!$ssc->parent) {
+            $ssc->cost = 0;
+        }
         return new FormulaParser($formula, $str, $ssc);
+    }
+
+    /** @return int */
+    function cost() {
+        return $this->string_context->cost() ?? 0;
+    }
+
+    /** @return bool */
+    function too_complex() {
+        return $this->cost() > self::MAX_COST;
+    }
+
+    /** Charge `$cost` against the formula's parse budget, shared by nested
+     * parsers. Returns false once the budget is exceeded; callers then stop
+     * producing nodes, and Formula::make reports the formula too complex.
+     * @param int $cost
+     * @return bool */
+    private function charge($cost = 1) {
+        return $this->string_context->charge($cost) <= self::MAX_COST;
+    }
+
+    /** Report that the formula exceeded its parse budget, and return an
+     * error expression spanning the whole formula to stand in for it.
+     * @return Fexpr */
+    function lerror_too_complex() {
+        $this->formula->lcerror(0, strlen($this->str), $this->string_context, "<0>Formula too complex");
+        return $this->cerror(0, strlen($this->str));
     }
 
     /** @param string $str
@@ -134,6 +172,10 @@ class FormulaParser {
      * @param string $message
      * @param mixed ...$args */
     function lerror($pos1, $pos2, $message, ...$args) {
+        // (past the budget, parsing is abandoned; only that is reported)
+        if ($this->too_complex()) {
+            return;
+        }
         $this->_last_lerror_pos = $pos1;
         $this->formula->lcerror($pos1, $pos2, $this->string_context, $message, ...$args);
     }
@@ -161,6 +203,10 @@ class FormulaParser {
     private function _find_formula_function(&$name) {
         $s = $name;
         while ($s !== "") {
+            // each step rescans the name, so a long one is charged for its length
+            if (!$this->charge(1 + intdiv(strlen($s), 256))) {
+                return null;
+            }
             if (($kwdef = $this->conf->formula_function($s, $this->user))) {
                 $name = $s;
                 return $kwdef;
@@ -296,6 +342,9 @@ class FormulaParser {
         }
 
         if (isset($kwdef->macro)) {
+            if (!$this->charge(self::NODE_COST)) {
+                return null;
+            }
             if ($kwdef->__recursion ?? false) {
                 $this->lerror_circular($ff->pos1, $ff->pos2, "<0>Formula macro ‘{}’ refers to itself", $ff->name);
                 return null;
@@ -526,7 +575,8 @@ class FormulaParser {
     private function _parse_field($pos1, $f) {
         if ($f instanceof PaperOption) {
             return $this->_parse_one_option($pos1, $f);
-        } else if ($f instanceof ReviewField) {
+        }
+        if ($f instanceof ReviewField) {
             if ($f->view_score <= $this->user->permissive_view_score_bound()) {
                 return Fexpr::cnever();
             } else if ($f instanceof Score_ReviewField
@@ -534,21 +584,25 @@ class FormulaParser {
                 return $this->_reviewer_decoration(new Score_Fexpr($f));
             }
             $this->lerror($pos1, $this->pos, "<0>Review field ‘{$f->name}’ can’t be used in formulas");
-        } else if ($f instanceof NamedFormula) {
+            return $this->cerror($pos1, $this->pos);
+        }
+        if ($f instanceof NamedFormula) {
+            if (!$this->charge(self::NODE_COST)) {
+                return $this->cerror($pos1, $this->pos);
+            }
             if ($f->recursion) {
                 $this->lerror_circular($pos1, $this->pos, "<0>Saved formula ‘{}’ refers to itself", $f->name);
-            } else {
-                try {
-                    $f->recursion = true;
-                    $parser = $this->make_nested($f->expression, null, $pos1, $this->pos);
-                    return $parser->parse();
-                } finally {
-                    $f->recursion = false;
-                }
+                return $this->cerror($pos1, $this->pos);
             }
-        } else {
-            $this->lerror($pos1, $this->pos, "<0>Field not found");
+            try {
+                $f->recursion = true;
+                $parser = $this->make_nested($f->expression, null, $pos1, $this->pos);
+                return $parser->parse();
+            } finally {
+                $f->recursion = false;
+            }
         }
+        $this->lerror($pos1, $this->pos, "<0>Field not found");
         return $this->cerror($pos1, $this->pos);
     }
 
@@ -623,6 +677,9 @@ class FormulaParser {
         $len = strlen($t);
         $this->pos = self::skip_whitespace($t, $this->pos);
         if ($this->pos === $len) {
+            return null;
+        } else if (!$this->charge(self::NODE_COST)) {
+            $this->pos = $len;
             return null;
         }
         $pos1 = $this->pos;
@@ -745,6 +802,11 @@ class FormulaParser {
                 $e = new VarUse_Fexpr($vd);
             } else if (($kwdef = $this->_find_formula_function($m[1]))) {
                 $e = $this->_parse_function($m[1], $kwdef);
+            } else if ($this->too_complex()) {
+                // budget exhausted resolving the name: stop here rather
+                // than trying it as a field
+                $this->pos = $len;
+                return null;
             } else if (!$isfunc && ($f = $this->_find_formula_field($m[0]))) {
                 $this->pos += strlen($m[0]);
                 $e = $this->_parse_field($pos1, $f);

@@ -2130,6 +2130,9 @@ final class Formula implements JsonSerializable {
 
         $f->_fexpr = $fp->parse();
         $f->_params = $fp->params();
+        if ($fp->too_complex()) {
+            $f->_fexpr = $fp->lerror_too_complex();
+        }
 
         if (($f->_flags & self::DEFERRED) === 0) {
             $f->_flags |= self::DEFERRED;

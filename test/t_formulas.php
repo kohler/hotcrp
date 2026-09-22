@@ -2613,6 +2613,67 @@ class Formulas_Tester {
         $conf->qe("delete from PaperReviewPreference where paperId=1");
     }
 
+    function test_formula_parse_budget() {
+        // Parsing is bounded: a very long expression, a very long qualified
+        // name, or a chain of named formulas that expands to too many nodes
+        // is refused as too complex, quickly and with that one error.
+        $u = $this->u_chair;
+        $f = Formula::make($u, join("&&", array_fill(0, 500, "pid")));
+        xassert($f->ok());
+        $f = Formula::make($u, join("&&", array_fill(0, FormulaParser::MAX_COST, "pid")));
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "too complex");
+        xassert(!str_contains($f->full_feedback_text(), "xpected"));
+        $f = Formula::make($u, str_repeat("a.", 100000) . "a");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "too complex");
+        xassert(!str_contains($f->full_feedback_text(), "not found"));
+
+        // a search is charged for the formulas it parses
+        $fx = "formula:(" . join("+", array_fill(0, 300, "pid")) . ")";
+        $srch = new PaperSearch($u, join(" OR ", array_fill(0, 40, $fx)));
+        xassert_eqq($srch->paper_ids(), []);
+        xassert($srch->has_error());
+        xassert_str_contains($srch->full_feedback_text(), "too complex");
+
+        // a chain of named formulas is refused when it saves, not when it
+        // is later used: 8^5 leaves is too many, 8^2 is fine
+        $conf = $this->conf;
+        $saved = [];
+        $refused = $refused_name = null;
+        for ($i = 5; $i >= 0 && $refused === null; --$i) {
+            $expr = $i === 5 ? "pid" : join("+", array_fill(0, 8, "zzchain" . ($i + 1)));
+            $jr = SearchConfig_API::save_namedformula($u, TestQreq::post(["formula/1/id" => "new", "formula/1/name" => "zzchain{$i}", "formula/1/expression" => $expr]));
+            $content = $jr instanceof JsonResult ? $jr->content : $jr;
+            if ($content["ok"]) {
+                $saved[] = "zzchain{$i}";
+            } else {
+                $refused = json_encode($content["message_list"]);
+                $refused_name = "zzchain{$i}";
+            }
+        }
+        xassert_in_eqq("zzchain3", $saved);
+        xassert($refused !== null);
+        xassert_str_contains($refused, "too complex");
+        xassert(Formula::make($u, "zzchain3")->ok());
+        // a refused save leaves no trace, in memory or in the database
+        $zz = array_values(array_filter($conf->named_formulas(), function ($nf) { return str_starts_with($nf->name, "zzchain"); }));
+        xassert_eqq(count($zz), count($saved));
+        xassert_eqq($conf->find_named_formula($refused_name), null);
+        // (delete through the API, which keeps the formula caches current)
+        $req = []; $n = 0;
+        foreach ($conf->named_formulas() as $nf) {
+            if (str_starts_with($nf->name, "zzchain")) {
+                ++$n;
+                $req["formula/{$n}/id"] = (string) $nf->formulaId;
+                $req["formula/{$n}/delete"] = 1;
+            }
+        }
+        SearchConfig_API::save_namedformula($u, TestQreq::post($req));
+        xassert_eqq($conf->find_named_formula("zzchain3"), null);
+        xassert_eqq($conf->fetch_ivalue("select count(*) from Formula where name like 'zzchain%'"), 0);
+    }
+
     function test_named_formula_error_context_in_search() {
         // An error inside a stored formula, surfacing through `formula:NAME`
         // in a search, is located in the formula's own text, with the
