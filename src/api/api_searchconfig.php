@@ -179,6 +179,8 @@ class SearchConfig_API {
 
         // save
         if ($msgset->has_error()) {
+            // the new set was installed only to validate against
+            $user->conf->replace_named_formulas($formula_by_id);
             return ["ok" => false, "message_list" => $msgset->message_list()];
         }
         $q = $qv = [];
@@ -198,8 +200,10 @@ class SearchConfig_API {
                 array_push($qv, $f->name, $f->expression, Conf::$now, $f->formulaId);
             }
         }
-        $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
-        $mresult->free_all();
+        if (!empty($q)) {
+            $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
+            $mresult->free_all();
+        }
 
         $user->conf->replace_named_formulas(null);
         $user->conf->save_refresh_setting("formulas", empty($new_formula_by_id) ? null : 1);
