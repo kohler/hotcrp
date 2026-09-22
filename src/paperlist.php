@@ -407,6 +407,9 @@ final class PaperList extends MessageSet {
                 $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->view_options);
             }
         }
+        // search messages are available before the list renders
+        // (`_reset_vcolumns` refreshes them)
+        $this->append_list($this->search->message_list());
 
         if (($fs = friendly_boolean($qreq->forceShow)) !== null) {
             $this->set_view("force", $fs, self::VIEWORIGIN_REQUEST);

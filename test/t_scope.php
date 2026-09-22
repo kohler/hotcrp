@@ -84,7 +84,7 @@ class Scope_Tester {
     function test_tag_scopes() {
         $this->u_chair->set_scope("submission:read");
         xassert(!$this->u_chair->can_view_tags());
-        xassert_search($this->u_chair, "#fart", "");
+        xassert_search_ignore_warnings($this->u_chair, "#fart", "");
         xassert(!$this->p1->has_viewable_tag("fart", $this->u_chair));
 
         $this->u_chair->set_scope("tag:read");

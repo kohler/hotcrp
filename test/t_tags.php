@@ -629,7 +629,7 @@ class Tags_Tester {
         xassert_str_contains($pset[1]->viewable_tags($u_huitema), " ~~ch2#");
 
         // varghese is administrator, but can't see chair-hidden or chair-public
-        xassert_search($this->u_varghese, "#~~ch", "");
+        xassert_search_ignore_warnings($this->u_varghese, "#~~ch", "");
         xassert(!$this->u_varghese->can_view_tag_somewhere("~~ch"));
         xassert(!$this->u_varghese->can_edit_tag_somewhere("~~ch"));
         xassert(!$this->u_varghese->can_view_tag($pset[1], "~~ch"));
@@ -642,7 +642,7 @@ class Tags_Tester {
         xassert_not_str_contains($pset[1]->viewable_tags($this->u_varghese), " ~~ch2#");
 
         // guerin is normal user, of course can't see chair
-        xassert_search($u_guerin, "#~~ch", "");
+        xassert_search_ignore_warnings($u_guerin, "#~~ch", "");
         xassert(!$u_guerin->can_view_tag_somewhere("~~ch"));
         xassert(!$u_guerin->can_edit_tag_somewhere("~~ch"));
         xassert(!$u_guerin->can_view_tag($pset[1], "~~ch"));
@@ -661,7 +661,7 @@ class Tags_Tester {
         xassert($this->u_varghese->can_view_tag($pset[1], "ch"));
         xassert($this->u_varghese->can_edit_tag($pset[1], "ch", null, 1));
         xassert_str_contains($pset[1]->viewable_tags($this->u_varghese), " ch#");
-        xassert_search($u_guerin, "#ch", "");
+        xassert_search_ignore_warnings($u_guerin, "#ch", "");
         xassert(!$u_guerin->can_view_tag_somewhere("ch"));
         xassert(!$u_guerin->can_edit_tag_somewhere("ch"));
         xassert(!$u_guerin->can_view_tag($pset[1], "ch"));
@@ -704,7 +704,7 @@ class Tags_Tester {
         xassert($this->u_varghese->can_edit_tag($pset[1], "ch", null, 1));
         xassert($this->u_varghese->can_edit_tag_somewhere("ch"));
         xassert_str_contains($pset[1]->viewable_tags($this->u_varghese), "ch");
-        xassert_search($u_guerin, "#ch", "");
+        xassert_search_ignore_warnings($u_guerin, "#ch", "");
         xassert(!$u_guerin->can_view_tag_somewhere("ch"));
         xassert(!$u_guerin->can_view_tag($pset[1], "ch"));
         xassert(!$u_guerin->can_edit_tag($pset[1], "ch", null, 1));

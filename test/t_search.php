@@ -1840,4 +1840,22 @@ class Search_Tester {
         xassert_assign($chair, "paper,action,decision\n2,cleardecision,Desk rejected\n");
         $this->remove_decision("Desk rejected");
     }
+
+    function test_search_api_reports_search_messages() {
+        $u = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        xassert(!$u->isPC);
+        // with and without a rendered format
+        foreach ([[], ["format" => "json", "f" => "title"]] as $extra) {
+            $jr = Search_API::search($u, TestQreq::get(["q" => "formula:(foo bar)", "t" => "a"] + $extra));
+            xassert($jr->content["ok"]);
+            xassert_eqq($jr->content["ids"], []);
+            $ml = $jr->content["message_list"] ?? [];
+            xassert(count($ml) > 0);
+            xassert_str_contains($ml[0]->message, "Expected ‘)’");
+            xassert_eqq($ml[0]->context, "(foo bar)");
+        }
+        $jr = Search_API::search($u, TestQreq::get(["q" => "1-3", "t" => "a"]));
+        xassert($jr->content["ok"]);
+        xassert(!isset($jr->content["message_list"]));
+    }
 }
