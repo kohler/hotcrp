@@ -13,15 +13,11 @@ class Phase_SearchTerm extends SearchTerm {
     private $phase;
 
     /** @param 0|1 $phase */
-    function __construct(?PaperSearch $srch, $phase) {
+    function __construct(PaperSearch $srch, $phase) {
         parent::__construct("phase");
-        if ($srch) {
-            $this->conf = $srch->conf;
-            $this->user = $srch->user;
-            $this->use_viewer = $srch->use_viewer_permissions();
-        } else {
-            $this->use_viewer = false;
-        }
+        $this->conf = $srch->conf;
+        $this->user = $srch->user;
+        $this->use_viewer = $srch->use_viewer_permissions();
         $this->phase = $phase;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -33,7 +29,7 @@ class Phase_SearchTerm extends SearchTerm {
         $srch->lwarning($sword, "<0>Only “phase:review” and “phase:final” are allowed");
         return new False_SearchTerm;
     }
-    /** @return ?ContactPermissions */
+    /** @return ContactPermissions */
     function permuser() {
         if ($this->use_viewer && !$this->conf->is_updating_automatic_tags()) {
             return $this->conf->viewer() ?? $this->user;
@@ -41,8 +37,7 @@ class Phase_SearchTerm extends SearchTerm {
         return $this->user;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ((($pu = $this->permuser())
-             && !$this->permuser()->can_view_some_decision())
+        if (!$this->permuser()->can_view_some_decision()
             || $this->phase !== PaperInfo::PHASE_FINAL) {
             return "true";
         }
