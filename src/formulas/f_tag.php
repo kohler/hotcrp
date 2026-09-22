@@ -60,15 +60,21 @@ class Tag_Fexpr extends Fexpr {
         return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
     }
     static function make_expand_automatic(FormulaCall $ff, TagInfo $ti, $isvalue) {
-        $recursion = FormulaParser::set_current_recursion($ff->parser->recursion + 1);
-        $st = $ti->automatic_search_term();
-        $parser = $ff->parser->make_nested($ti->automatic_formula_expression(), null, $ff->pos1, $ff->pos2);
-        $vfe = $parser->parse();
-        FormulaParser::set_current_recursion($recursion);
+        if ($ti->recursion) {
+            $ff->parser->lerror_circular($ff->pos1, $ff->pos2, "<0>Automatic tag #{} refers to itself", $ti->tag);
+            return Fexpr::cerror();
+        }
+        try {
+            $ti->recursion = true;
+            $st = $ti->automatic_search_term();
+            $parser = $ff->parser->make_nested($ti->automatic_formula_expression(), null, $ff->pos1, $ff->pos2);
+            $vfe = $parser->parse();
+        } finally {
+            $ti->recursion = false;
+        }
 
         if ($st->get_float("circular_reference")) {
-            $ff->lerror("<0>Circular reference in automatic tag #{$ti->tag}");
-            $ff->formula->lerrors[] = MessageItem::error_at("circular_reference");
+            $ff->parser->lerror_circular($ff->pos1, $ff->pos2, "<0>Automatic tag #{} refers to itself", $ti->tag);
             return Fexpr::cerror();
         }
 

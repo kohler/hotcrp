@@ -69,11 +69,11 @@ class SearchStringContext {
     /** @var ?SearchStringContext */
     public $root;
 
-    /** @param string $q
+    /** @param ?string $q
      * @param int $ppos1
      * @param int $ppos2
      * @param ?SearchStringContext $parent */
-    function __construct($q, $ppos1, $ppos2, $parent) {
+    private function __construct($q, $ppos1, $ppos2, $parent) {
         $this->q = $q;
         $this->ppos1 = $ppos1;
         $this->ppos2 = $ppos2;
@@ -82,29 +82,23 @@ class SearchStringContext {
         $this->root = $parent ? $parent->root ?? $parent : null;
     }
 
-    /** @param MessageItem $mi
-     * @param int $pos1
-     * @param int $pos2
-     * @param ?SearchStringContext $context
-     * @param string $base
-     * @return list<MessageItem> */
-    static function expand($mi, $pos1, $pos2, $context, $base) {
-        $ssc = new SearchStringContext($base, $pos1, $pos2, $context);
-        $mis = [$mi];
-        while ($ssc->q !== "" || $ssc->parent) {
-            $mi->pos1 = $ssc->ppos1;
-            $mi->pos2 = $ssc->ppos2;
-            $mi->context = $ssc->q ? : "<empty>";
-            if (!$ssc->parent) {
-                break;
-            }
-            $mi->nested_context = true;
-            $mi = MessageItem::inform_at($mi->field, "");
-            $mi->landmark = "→ expanded from";
-            $mis[] = $mi;
-            $ssc = $ssc->parent;
+    /** @param string $q
+     * @param ?SearchStringContext $skeleton
+     * @return SearchStringContext */
+    static function make($q, $skeleton = null) {
+        if (!$skeleton) {
+            return new SearchStringContext($q, 0, 0, null);
         }
-        return $mis;
+        assert($skeleton->q === null);
+        $skeleton->q = $q;
+        return $skeleton;
+    }
+
+    /** @param int $pos1
+     * @param int $pos2
+     * @return SearchStringContext */
+    function child($pos1, $pos2) {
+        return new SearchStringContext(null, $pos1, $pos2, $this);
     }
 
     /** @param MessageItem $mi
@@ -451,6 +445,7 @@ class PaperSearch extends MessageSet {
         if ($this->conf->is_updating_automatic_tags()) {
             $this->expand_automatic = 1;
         }
+        $this->set_message_formatter($this->conf);
 
         // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -460,7 +455,7 @@ class PaperSearch extends MessageSet {
 
         // the query itself
         $this->q = trim($options["q"] ?? "");
-        $this->_string_context = new SearchStringContext($this->q, 0, 0, null);
+        $this->_string_context = SearchStringContext::make($this->q);
         $this->_string_context->cost = 0;
         $this->_req_sort = $options["sort"] ?? null;
         $this->_req_scoresort = $options["scoresort"] ?? null;
@@ -732,7 +727,7 @@ class PaperSearch extends MessageSet {
      * @param SearchWord $sword
      * @return ?SearchTerm */
     function parse_named_search_body($body, $sword) {
-        $context = new SearchStringContext($body, $sword->kwpos1, $sword->pos2, $this->_string_context);
+        $context = SearchStringContext::make($body, $this->_string_context->child($sword->kwpos1, $sword->pos2));
         $context->charge();
         $this->_string_context = $context;
         $qe = $this->_search_expression($body);

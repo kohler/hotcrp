@@ -94,7 +94,7 @@ class Formulas_Tester {
         $names = array_keys($exprs);
         $formulas = [];
         foreach ($exprs as $name => $expr) {
-            $config = Formula::make_config()->set_deferred(true);
+            $config = (new FormulaConfig)->set_deferred(true);
             $formulas[$name] = Formula::make($this->u_chair, $expr, $config);
         }
 
@@ -802,7 +802,7 @@ class Formulas_Tester {
         $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
 
         // Create a formula with a param
-        $config = Formula::make_config()
+        $config = (new FormulaConfig)
             ->add_param("x", Fexpr::FNUMERIC);
         $f = Formula::make($this->u_chair, "x + 1", $config);
         xassert($f->ok());
@@ -819,7 +819,7 @@ class Formulas_Tester {
         $p19 = $this->conf->checked_paper_by_id(19, $this->u_chair);
 
         // Create a deferred formula
-        $config = Formula::make_config()->set_deferred(true);
+        $config = (new FormulaConfig)->set_deferred(true);
         $f = Formula::make($this->u_chair, "x + 1", $config);
         // Before finalize, format is unknown
         xassert_eqq($f->format(), Fexpr::FUNKNOWN);
@@ -2611,6 +2611,136 @@ class Formulas_Tester {
         $this->seed_paper1_preferences();
         xassert_eqq($this->formula_as($this->u_chair, "count.pc(pref)")->eval($p1c, null), 4);
         $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
+    function test_named_formula_error_context_in_search() {
+        // An error inside a stored formula, surfacing through `formula:NAME`
+        // in a search, is located in the formula's own text, with the
+        // search word it expanded from as context -- not at the formula's
+        // offsets misapplied to the search string.
+        $conf = $this->conf;
+        $u = $this->u_chair;
+        $mk = function ($name, $expr) use ($u) {
+            $jr = SearchConfig_API::save_namedformula($u, TestQreq::post(["formula/1/id" => "new", "formula/1/name" => $name, "formula/1/expression" => $expr]));
+            $content = $jr instanceof JsonResult ? $jr->content : $jr;
+            xassert($content["ok"]);
+        };
+        $mk("zzleaf", "pid * 2");
+        $mk("zzroot", "1 + zzleaf + 3");
+        // the leaf disappears out from under the root
+        $conf->qe("delete from Formula where name='zzleaf'");
+        $conf->replace_named_formulas(null);
+
+        $srch = new PaperSearch($u, "3 OR formula:zzroot");
+        $srch->paper_ids();
+        xassert($srch->has_error());
+        $ml = $srch->message_list();
+        xassert_eqq(count($ml), 2);
+        xassert_str_contains($ml[0]->message, "‘zzleaf’ not found");
+        xassert_eqq($ml[0]->context, "1 + zzleaf + 3");
+        xassert_eqq(substr($ml[0]->context, $ml[0]->pos1, $ml[0]->pos2 - $ml[0]->pos1), "zzleaf");
+        xassert_eqq($ml[1]->landmark, "→ expanded from");
+        xassert_eqq($ml[1]->context, "3 OR formula:zzroot");
+        xassert_eqq(substr($ml[1]->context, $ml[1]->pos1, $ml[1]->pos2 - $ml[1]->pos1), "formula:zzroot");
+
+        // the same through an inline formula that mentions the stored one
+        $srch = new PaperSearch($u, "formula:(pid + zzroot)");
+        $srch->paper_ids();
+        $ml = $srch->message_list();
+        xassert_eqq(count($ml), 3);
+        xassert_eqq($ml[0]->context, "1 + zzleaf + 3");
+        xassert_eqq($ml[1]->context, "(pid + zzroot)");
+        xassert_eqq(substr($ml[1]->context, $ml[1]->pos1, $ml[1]->pos2 - $ml[1]->pos1), "zzroot");
+        xassert_eqq($ml[2]->context, "formula:(pid + zzroot)");
+
+        $conf->qe("delete from Formula where name like 'zz%'");
+        $conf->replace_named_formulas(null);
+    }
+
+    function test_named_formula_self_reference() {
+        $conf = $this->conf;
+        $u = $this->u_chair;
+        $mk = function ($req) use ($u) {
+            $jr = SearchConfig_API::save_namedformula($u, TestQreq::post($req));
+            return $jr instanceof JsonResult ? $jr->content : $jr;
+        };
+        xassert($mk(["formula/1/id" => "new", "formula/1/name" => "zza", "formula/1/expression" => "pid + 1"])["ok"]);
+        $zza = $conf->find_named_formula("zza");
+        xassert($zza instanceof NamedFormula);
+
+        // a save that would make a formula refer to itself is refused,
+        // and the stored definition is untouched
+        $c = $mk(["formula/1/id" => (string) $zza->formulaId, "formula/1/name" => "zza", "formula/1/expression" => "zza + 1"]);
+        xassert(!$c["ok"]);
+        xassert_str_contains($c["message_list"][0]->message, "Saved formula ‘zza’ refers to itself");
+        xassert_eqq($conf->find_named_formula("zza")->expression, "pid + 1");
+
+        // a cycle that slips past validation is reported once, where it
+        // closes, with the expansion path
+        xassert($mk(["formula/1/id" => "new", "formula/1/name" => "zzb", "formula/1/expression" => "zza + 1"])["ok"]);
+        $conf->qe("update Formula set expression='zzb + 1' where name='zza'");
+        $conf->replace_named_formulas(null);
+        $f = Formula::make($u, "zza * 2");
+        xassert(!$f->ok());
+        $ml = $f->message_list();
+        xassert_eqq(count($ml), 3);
+        xassert_eqq($ml[0]->message, "<0>Saved formula ‘zza’ refers to itself");
+        // the field marks a cycle for automatic-tag expansion
+        xassert_eqq($ml[0]->field, "circular_reference");
+        xassert_eqq($ml[0]->context, "zza + 1");
+        xassert_eqq(substr($ml[0]->context, $ml[0]->pos1, $ml[0]->pos2 - $ml[0]->pos1), "zza");
+        xassert_eqq($ml[1]->context, "zzb + 1");
+        xassert_eqq($ml[2]->context, "zza * 2");
+        xassert_eqq($ml[2]->landmark, "→ expanded from");
+
+        $conf->qe("delete from Formula where name like 'zz%'");
+        $conf->replace_named_formulas(null);
+    }
+
+    function test_named_formula_depth_limit() {
+        $conf = $this->conf;
+        $u = $this->u_chair;
+        $mk = function ($name, $expr) use ($u) {
+            $jr = SearchConfig_API::save_namedformula($u, TestQreq::post(["formula/1/id" => "new", "formula/1/name" => $name, "formula/1/expression" => $expr]));
+            xassert(($jr instanceof JsonResult ? $jr->content : $jr)["ok"]);
+        };
+        // a non-cyclic chain of formulas, each one level deeper than the
+        // last; the root formula is depth 1, each expansion one deeper
+        $n = FormulaParser::MAXDEPTH - 2;
+        $mk("zzc0", "pid");
+        for ($i = 1; $i <= $n; ++$i) {
+            $mk("zzc{$i}", "zzc" . ($i - 1) . " + 1");
+        }
+        xassert(Formula::make($u, "zzc" . ($n - 1))->ok());
+        $f = Formula::make($u, "zzc{$n}");
+        xassert(!$f->ok());
+        $ml = $f->message_list();
+        xassert_str_contains($ml[0]->message, "nested too deeply");
+        // located at the innermost expansion, with the path back to the root
+        $contexts = array_values(array_filter(array_map(function ($mi) {
+            return $mi->context;
+        }, $ml)));
+        xassert_eqq($contexts[0], "pid");
+        xassert_eqq($contexts[count($contexts) - 1], "zzc{$n}");
+
+        $conf->qe("delete from Formula where name like 'zz%'");
+        $conf->replace_named_formulas(null);
+    }
+
+    function test_formula_config_flags() {
+        $u = $this->u_chair;
+        xassert(!Formula::make($u, "pid")->use_viewer_permissions());
+        $f = Formula::make($u, "pid", (new FormulaConfig)->set_use_viewer_permissions(true));
+        xassert($f->use_viewer_permissions());
+        xassert(!Formula::make($u, "pid", (new FormulaConfig)->set_use_viewer_permissions(true)->set_use_viewer_permissions(false))->use_viewer_permissions());
+
+        // an indexed expression needs an aggregate unless indexing is allowed
+        $f = Formula::make($u, "pref");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "Need an aggregate function");
+        $f = Formula::make($u, "pref", (new FormulaConfig)->set_allow_indexed(true));
+        xassert($f->ok());
+        xassert($f->indexed());
     }
 
     // A PC member's named formula never shadows a field keyword, and site

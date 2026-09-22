@@ -57,7 +57,7 @@ class NamedSearch_SearchTerm {
 
         // check for recursion
         if ($sj->__recursion ?? false) {
-            $mi = MessageItem::error("<0>Saved searches are circularly defined");
+            $mi = MessageItem::error("<0>Saved search ‘{}’ refers to itself", $word);
             $mis = $srch->expand_message_context($mi, $sword->kwpos1, $sword->pos2, $sword->string_context);
             $srch->append_list($mis);
             $sword->string_context->charge_abort();

@@ -298,7 +298,7 @@ class Search_Tester {
         $srch = new PaperSearch($this->u_root, "ss:xcyc0");
         xassert_eqq($srch->paper_ids(), []);
         xassert($srch->has_error());
-        xassert_str_contains(self::messages_text($srch), "circularly defined");
+        xassert_str_contains(self::messages_text($srch), ["circularly defined", "refers to itself"]);
 
         if ($before === null) {
             $this->conf->save_setting("named_searches", null);

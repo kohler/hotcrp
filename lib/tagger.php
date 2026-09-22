@@ -25,6 +25,8 @@ class TagInfo {
     public $autosearch_value;
     /** @var ?SearchTerm */
     private $_autosearch_term;
+    /** @var bool */
+    public $recursion = false;
     /** @var ?float */
     public $allotment;
     /** @var ?list<TagStyle> */

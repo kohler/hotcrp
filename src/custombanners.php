@@ -22,7 +22,7 @@ class CustomBannerParam {
             if (!isset($pj->value)) {
                 return null;
             }
-            $config = Formula::make_config()->set_deferred(true);
+            $config = (new FormulaConfig)->set_deferred(true);
             $cbp = new CustomBannerParam;
             $cbp->name = $pj->name;
             $cbp->formula = Formula::make($user, $pj->value, $config);
@@ -144,7 +144,7 @@ class CustomBannerParamSet {
         }
 
         foreach ($calcs as $p) {
-            $p->formula->lerrors[] = new MessageItem(2, null, "<0>Circular reference in banner parameter");
+            $p->formula->lerrors[] = MessageItem::error("<0>Banner parameter ‘{}’ refers to itself", $p->name);
             $this->bad_params[] = $p;
         }
     }

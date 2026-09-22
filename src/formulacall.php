@@ -57,9 +57,9 @@ class FormulaCall {
     }
 
     /** @param string $message
-     * @return MessageItem */
-    function lerror($message) {
-        return $this->parser->lerror($this->pos1, $this->pos2, $message);
+     * @param mixed ...$args */
+    function lerror($message, ...$args) {
+        $this->parser->lerror($this->pos1, $this->pos2, $message, ...$args);
     }
 
     /** @param mixed $args

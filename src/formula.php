@@ -2096,7 +2096,8 @@ final class Formula implements JsonSerializable {
     }
 
 
-    /** @return FormulaConfig */
+    /** @return FormulaConfig
+     * @deprecated */
     static function make_config() {
         return new FormulaConfig;
     }
@@ -2107,28 +2108,24 @@ final class Formula implements JsonSerializable {
     const USE_VIEWER_PERMISSIONS = 4;
 
     /** @param string $expr
-     * @param int|FormulaConfig $config
+     * @param ?FormulaConfig $config
      * @return Formula
      * @suppress PhanAccessReadOnlyProperty */
-    static function make(Contact $user, $expr, $config = 0) {
+    static function make(Contact $user, $expr, $config = null) {
         $f = new Formula;
         $f->conf = $user->conf;
         $f->user = $user;
         $f->expression = $expr;
 
-        $fp = new FormulaParser($f, $expr);
-        if (is_int($config)) {
-            $f->_flags = $config;
-        } else {
-            $f->_flags = ($config->allow_indexed ? self::ALLOW_INDEXED : 0)
-                | ($config->deferred ? self::DEFERRED : 0);
-            foreach ($config->params as $name => $finfo) {
-                $vare = new VarDef_Fexpr($name, 0);
-                if ($finfo !== null) {
-                    $vare->set_format($finfo[0], $finfo[1]);
-                }
-                $fp->add_param($vare);
+        $config = $config ?? new FormulaConfig;
+        $fp = FormulaParser::make($f, $expr, $config->string_context);
+        $f->_flags = $config->flags;
+        foreach ($config->params as $name => $finfo) {
+            $vare = new VarDef_Fexpr($name, 0);
+            if ($finfo !== null) {
+                $vare->set_format($finfo[0], $finfo[1]);
             }
+            $fp->add_param($vare);
         }
 
         $f->_fexpr = $fp->parse();
@@ -2144,7 +2141,8 @@ final class Formula implements JsonSerializable {
     /** @param string $expr
      * @return Formula */
     static function make_indexed(Contact $user, $expr) {
-        return self::make($user, $expr, self::ALLOW_INDEXED);
+        $config = (new FormulaConfig)->set_allow_indexed(true);
+        return self::make($user, $expr, $config);
     }
 
 
@@ -2215,7 +2213,7 @@ final class Formula implements JsonSerializable {
             && ($this->_flags & self::ALLOW_INDEXED) === 0) {
             if ($fe->allow_autoaggregate()) {
                 $some_fe = new Some_Fexpr($fe, $fe->some_inferred_index());
-                $some_fe->apply_strspan($fe->pos1, $fe->pos2, null);
+                $some_fe->apply_strspan($fe->pos1, $fe->pos2, $fe->string_context);
                 return $this->_adjust_fexpr($some_fe);
             }
             $this->fexpr_lerror($fe, "<0>Need an aggregate function like ‘sum’ or ‘max’");
@@ -2232,10 +2230,26 @@ final class Formula implements JsonSerializable {
 
     /** @param int $pos1
      * @param int $pos2
-     * @param ?SearchStringContext $context
-     * @param string $message */
-    function lcerror($pos1, $pos2, $context, $message) {
-        $ml = SearchStringContext::expand(MessageItem::error($message), $pos1, $pos2, $context, $this->expression);
+     * @param SearchStringContext $context
+     * @param string $message
+     * @param mixed ...$args */
+    function lcerror($pos1, $pos2, $context, $message, ...$args) {
+        $this->lcerror_at(null, $pos1, $pos2, $context, $message, ...$args);
+    }
+
+    /** @param ?string $field
+     * @param int $pos1
+     * @param int $pos2
+     * @param SearchStringContext $context
+     * @param string $message
+     * @param mixed ...$args */
+    function lcerror_at($field, $pos1, $pos2, $context, $message, ...$args) {
+        assert($context);
+        // `lerrors` is a bare list, so format now rather than at display
+        if (!empty($args)) {
+            $message = $this->conf->_($message, ...$args);
+        }
+        $ml = $context->add_context(MessageItem::error_at($field, $message), $pos1, $pos2);
         array_push($this->lerrors, ...$ml);
     }
 
@@ -2298,16 +2312,6 @@ final class Formula implements JsonSerializable {
     /** @return list<MessageItem> */
     function message_list() {
         return $this->lerrors;
-    }
-
-    /** @param string $field
-     * @return bool */
-    function has_problem_at($field) {
-        foreach ($this->lerrors as $mi) {
-            if ($mi->field === $field && $mi->status >= 2)
-                return true;
-        }
-        return false;
     }
 
     /** @return string */

@@ -113,7 +113,7 @@ class AdminHome_Page {
         }
         // Condition recursion?
         if ($conf->setting("__sf_condition_recursion") > 0)  {
-            $ml[] = MessageItem::error("<0>Circular reference in submission field conditions");
+            $ml[] = MessageItem::error("<0>A submission field condition refers to itself");
             $ml[] = MessageItem::inform("<5>Some presence conditions in submission fields appear to be circularly defined. The fields involved will never appear. You should " . $conf->hotlink("update the submission form settings", "settings", ["group" => "subform"]) . " to fix this problem.");
         }
         // Obsolete options?

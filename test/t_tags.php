@@ -95,6 +95,61 @@ class Tags_Tester {
         xassert_search_all($this->u_chair, "#lotsau", "");
     }
 
+    function test_automatic_tag_formula_references() {
+        $conf = $this->conf;
+        // a value formula may use another automatic tag's value
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [
+                {"tag": "nau", "search": "all", "value": "au"},
+                {"tag": "nau1", "search": "all", "value": "#nau + 1"}
+            ]
+        }');
+        xassert($sv->execute());
+        xassert_eqq($conf->checked_paper_by_id(1)->tag_value("nau"), 4.0);
+        xassert_eqq($conf->checked_paper_by_id(1)->tag_value("nau1"), 5.0);
+
+        // but not its own
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [{"tag": "nau1", "search": "all", "value": "#nau1 + 1"}]
+        }');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "Automatic tag #nau1 refers to itself");
+
+        // nor may its search depend on its own value through a formula
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [{"tag": "nau1", "search": "formula:(#nau1 > 0)", "value": "1"}]
+        }');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "Automatic tag #nau1 refers to itself");
+
+        // nor may its search depend on a value that depends on its own value
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [
+                {"tag": "nau", "search": "#nau1>0", "value": "1"},
+                {"tag": "nau1", "search": "all", "value": "#nau + 1"}
+            ]
+        }');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "refers to itself");
+
+        // nor may two value formulas depend on each other
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [
+                {"tag": "nau", "search": "all", "value": "#nau1 + 1"},
+                {"tag": "nau1", "search": "all", "value": "#nau + 1"}
+            ]
+        }');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "refers to itself");
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [{"tag": "nau", "delete": true}, {"tag": "nau1", "delete": true}]
+        }');
+        xassert($sv->execute());
+        xassert_search_all($this->u_chair, "#nau", "");
+        xassert_search_all($this->u_chair, "#nau1", "");
+    }
+
     function test_tag_patterns() {
         $sv = new SettingValues($this->u_chair);
         xassert_eqq($sv->oldv("tag_readonly"), "accept pcpaper reject");

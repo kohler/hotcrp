@@ -23,19 +23,19 @@ class Formula_SearchTerm extends SearchTerm {
         if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
             $nf = $srch->conf->find_named_formula($word);
         }
-        $flags = $srch->use_viewer_permissions() ? Formula::USE_VIEWER_PERMISSIONS : 0;
+        // the formula parses within the search's string context: its errors
+        // expand from this word, and its parse is charged to the search
+        $config = (new FormulaConfig)->set_use_viewer_permissions($srch->use_viewer_permissions())
+            ->set_string_context($sword->string_context->child($sword->kwpos1, $sword->pos2));
         if ($nf) {
-            $formula = $nf->realize($srch->user, $flags);
+            $formula = $nf->realize($srch->user, $config);
         } else {
             if ($is_graph) {
-                $flags |= Formula::ALLOW_INDEXED;
+                $config->set_allow_indexed(true);
             }
-            $formula = Formula::make($srch->user, $word, $flags);
+            $formula = Formula::make($srch->user, $word, $config);
         }
-        $srch->message_set()->append_list(MessageSet::list_with($formula->message_list(), [
-            "top_context" => $srch->q,
-            "top_pos_offset" => $sword->pos1
-        ]));
+        $srch->message_set()->append_list($formula->message_list());
         return $formula->ok() ? $formula : null;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {

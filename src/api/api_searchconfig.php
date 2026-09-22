@@ -94,7 +94,7 @@ class SearchConfig_API {
 
         // determine new formula set from request
         $id2idx = [];
-        $msgset = new MessageSet;
+        $msgset = (new MessageSet)->set_message_formatter($user->conf);
         for ($fidx = 1; isset($qreq["formula/{$fidx}/id"]); ++$fidx) {
             $name = $qreq["formula/{$fidx}/name"];
             $expr = $qreq["formula/{$fidx}/expression"];
@@ -161,20 +161,37 @@ class SearchConfig_API {
 
         // validate formulas using new formula set
         $user->conf->replace_named_formulas($new_formula_by_id);
+        $broken = [];
         foreach ($new_formula_by_id as $nf) {
             $fdef = $formula_by_id[$nf->formulaId] ?? null;
+            $fidx = $id2idx[$nf->formulaId] ?? null;
             $pfx = $nf->name ? htmlspecialchars($nf->name) . ": " : "";
             $f = $nf->realize($user);
             if ($f->ok()) {
                 if ((!$fdef || $fdef->expression !== $nf->expression)
                     && !$f->viewable())  {
-                    $msgset->error_at("formula/" . $id2idx[$nf->formulaId] . "/expression", "<0>{$pfx}This expression refers to properties you can’t access");
+                    $msgset->error_at("formula/{$fidx}/expression", "<0>{$pfx}This expression refers to properties you can’t access");
+                }
+            } else if ($fidx !== null) {
+                foreach ($f->message_list() as $mi) {
+                    $msgset->append_item($mi->with_field("formula/{$fidx}/expression"));
                 }
             } else {
-                foreach ($f->message_list() as $mi) {
-                    $msgset->append_item($mi->with_field("formula/" . $id2idx[$nf->formulaId] . "/expression"));
+                $broken[] = [$nf, $f];
+            }
+        }
+
+        // a formula outside the request that fails only under the new set
+        // is broken by the request
+        if (!empty($broken)) {
+            $user->conf->replace_named_formulas($formula_by_id);
+            foreach ($broken as [$nf, $f]) {
+                if ($nf->realize($user)->ok()) {
+                    $msgset->error_at(null, "<0>This change would break saved formula ‘{}’", $nf->name);
+                    $msgset->append_list($f->message_list());
                 }
             }
+            $user->conf->replace_named_formulas($new_formula_by_id);
         }
 
         // save

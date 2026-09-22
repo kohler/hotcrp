@@ -101,7 +101,7 @@ class Tag_SearchTerm extends SearchTerm {
             if (($cr = $aterm->get_float("circular_reference"))) {
                 '@phan-var-force true|list<MessageItem> $cr';
                 $srch->append_list($srch->expand_message_context(
-                    MessageItem::error_at("circular_reference", "<0>Circular reference in automatic tag #{$ti->tag}"),
+                    MessageItem::error_at("circular_reference", "<0>Automatic tag #{} refers to itself", $ti->tag),
                     $sword->pos1, $sword->pos2, $sword->string_context
                 ));
                 foreach ($cr === true ? [] : $cr as $mi) {
@@ -127,8 +127,12 @@ class Tag_SearchTerm extends SearchTerm {
                     }
                     $ftext = "let _v_ = {$afe} in " . join(" && ", $ftexts);
                 }
-                $formula = Formula::make($srch->conf->root_user(), $ftext);
-                $allterms[] = SearchTerm::combine("and", $aterm, new Formula_SearchTerm($formula));
+                $config = (new FormulaConfig)->set_string_context($sword->string_context->child($sword->kwpos1, $sword->pos2));
+                $formula = Formula::make($srch->conf->root_user(), $ftext, $config);
+                $srch->message_set()->append_list($formula->message_list());
+                if ($formula->ok()) {
+                    $allterms[] = SearchTerm::combine("and", $aterm, new Formula_SearchTerm($formula));
+                }
             }
         }
 

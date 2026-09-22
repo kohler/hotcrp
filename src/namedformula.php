@@ -1,6 +1,6 @@
 <?php
 // namedformula.php -- HotCRP helper class for named formulas
-// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2026 Eddie Kohler; see LICENSE.
 
 class NamedFormula {
     /** @var Conf
@@ -16,12 +16,10 @@ class NamedFormula {
     public $createdBy = 0;
     /** @var int */
     public $timeModified = 0;
+    /** @var bool */
+    public $recursion = false;
     /** @var ?string */
     private $_abbreviation;
-    /** @var ?Formula */
-    private $_fcache;
-    /** @var ?int */
-    private $_fcache_rights_version;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -77,16 +75,9 @@ class NamedFormula {
         return $this->_abbreviation;
     }
 
-    /** @param int $flags
+    /** @param ?FormulaConfig $config
      * @return Formula */
-    function realize(Contact $user, $flags = 0) {
-        if (!$this->_fcache
-            || $this->_fcache->user !== $user
-            || $this->_fcache->use_viewer_permissions() !== (($flags & Formula::USE_VIEWER_PERMISSIONS) !== 0)
-            || $this->_fcache_rights_version !== Contact::$rights_version) {
-            $this->_fcache = Formula::make($user, $this->expression);
-            $this->_fcache_rights_version = Contact::$rights_version;
-        }
-        return $this->_fcache;
+    function realize(Contact $user, $config = null) {
+        return Formula::make($user, $this->expression, $config);
     }
 }

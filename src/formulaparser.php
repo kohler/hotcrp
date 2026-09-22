@@ -19,8 +19,6 @@ class FormulaParser {
      * @readonly */
     public $string_context;
     /** @var int */
-    public $recursion;
-    /** @var int */
     public $nesting = 0;
     /** @var int */
     private $pos = 0;
@@ -33,11 +31,8 @@ class FormulaParser {
     /** @var ?int */
     private $_last_lerror_pos;
 
-    /** @var int */
-    static public $current_recursion = 0;
-
     const MAXNESTING = 100;
-    const MAXRECURSION = 10;
+    const MAXDEPTH = 10;
 
     static private $_oprassoc = [
         "**" => true
@@ -75,12 +70,24 @@ class FormulaParser {
 
 
     /** @param string $str */
-    function __construct(Formula $formula, $str) {
+    private function __construct(Formula $formula, $str, SearchStringContext $ssc) {
         $this->conf = $formula->conf;
         $this->user = $formula->user;
         $this->formula = $formula;
         $this->str = $str;
-        $this->recursion = self::$current_recursion;
+        $this->string_context = $ssc;
+    }
+
+    /** @param string $str
+     * @param ?SearchStringContext $ssc
+     * @return FormulaParser */
+    static function make(Formula $formula, $str, $ssc = null) {
+        // A formula parsed within a search nests under the search's string
+        // context (`$parent`, where `$str` occupies [$ppos1, $ppos2)): its
+        // errors expand from the search word, and its parse is charged to
+        // the search's budget.
+        $ssc = SearchStringContext::make($str, $ssc);
+        return new FormulaParser($formula, $str, $ssc);
     }
 
     /** @param string $str
@@ -90,25 +97,15 @@ class FormulaParser {
      * @return FormulaParser
      * @suppress PhanAccessReadOnlyProperty */
     function make_nested($str, $macro, $ppos1, $ppos2) {
-        $fp = new FormulaParser($this->formula, $str);
-        $fp->recursion = $this->recursion + 1;
+        $ssc = SearchStringContext::make($str, $this->string_context->child($ppos1, $ppos2));
+        $fp = new FormulaParser($this->formula, $str, $ssc);
         if ($macro) {
             $fp->_macro = $macro;
             $fp->_free_bind = &$this->_free_bind;
             $fp->_bind = $this->_bind;
         }
-        $fp->string_context = new SearchStringContext($str, $ppos1, $ppos2, $this->string_context);
         return $fp;
     }
-
-    /** @param int $recursion
-     * @return int */
-    static function set_current_recursion($recursion) {
-        $r = self::$current_recursion;
-        self::$current_recursion = $recursion;
-        return $r;
-    }
-
 
     /** @param VarDef_Fexpr $vare
      * @return $this */
@@ -134,10 +131,20 @@ class FormulaParser {
 
     /** @param int $pos1
      * @param int $pos2
-     * @param string $message */
-    function lerror($pos1, $pos2, $message) {
+     * @param string $message
+     * @param mixed ...$args */
+    function lerror($pos1, $pos2, $message, ...$args) {
         $this->_last_lerror_pos = $pos1;
-        $this->formula->lcerror($pos1, $pos2, $this->string_context, $message);
+        $this->formula->lcerror($pos1, $pos2, $this->string_context, $message, ...$args);
+    }
+
+    /** @param int $pos1
+     * @param int $pos2
+     * @param string $message
+     * @param mixed ...$args */
+    function lerror_circular($pos1, $pos2, $message, ...$args) {
+        $this->_last_lerror_pos = $pos1;
+        $this->formula->lcerror_at("circular_reference", $pos1, $pos2, $this->string_context, $message, ...$args);
     }
 
     /** @param int $pos
@@ -289,8 +296,17 @@ class FormulaParser {
         }
 
         if (isset($kwdef->macro)) {
-            $parser = $this->make_nested($kwdef->macro, $ff, $ff->pos1, $ff->pos2);
-            return $parser->parse();
+            if ($kwdef->__recursion ?? false) {
+                $this->lerror_circular($ff->pos1, $ff->pos2, "<0>Formula macro ‘{}’ refers to itself", $ff->name);
+                return null;
+            }
+            try {
+                $kwdef->__recursion = true;
+                $parser = $this->make_nested($kwdef->macro, $ff, $ff->pos1, $ff->pos2);
+                return $parser->parse();
+            } finally {
+                $kwdef->__recursion = false;
+            }
         }
 
         return null;
@@ -440,7 +456,7 @@ class FormulaParser {
     }
 
     /** @param string &$field
-     * @return ?object */
+     * @return null|PaperOption|ReviewField|NamedFormula */
     private function _find_formula_field(&$field) {
         $s = $field;
         if (($colon = strpos($s, ":")) !== false) {
@@ -505,6 +521,7 @@ class FormulaParser {
     }
 
     /** @param int $pos1
+     * @param PaperOption|ReviewField|NamedFormula $f
      * @return Fexpr */
     private function _parse_field($pos1, $f) {
         if ($f instanceof PaperOption) {
@@ -518,8 +535,17 @@ class FormulaParser {
             }
             $this->lerror($pos1, $this->pos, "<0>Review field ‘{$f->name}’ can’t be used in formulas");
         } else if ($f instanceof NamedFormula) {
-            $parser = $this->make_nested($f->expression, null, $pos1, $this->pos);
-            return $parser->parse();
+            if ($f->recursion) {
+                $this->lerror_circular($pos1, $this->pos, "<0>Saved formula ‘{}’ refers to itself", $f->name);
+            } else {
+                try {
+                    $f->recursion = true;
+                    $parser = $this->make_nested($f->expression, null, $pos1, $this->pos);
+                    return $parser->parse();
+                } finally {
+                    $f->recursion = false;
+                }
+            }
         } else {
             $this->lerror($pos1, $this->pos, "<0>Field not found");
         }
@@ -857,15 +883,10 @@ class FormulaParser {
 
     /** @return ?Fexpr */
     function parse() {
-        if ($this->recursion >= self::MAXRECURSION) {
+        if ($this->string_context->depth >= self::MAXDEPTH) {
             $fe = Fexpr::cerror();
-            if (($sc = $this->string_context)) {
-                $fe->apply_strspan($sc->ppos1, $sc->ppos2, $sc->parent);
-            } else {
-                $fe->apply_strspan(0, strlen($this->str), null);
-            }
-            $this->formula->fexpr_lerror($fe, "<0>Circular reference in formula");
-            $this->formula->lerrors[] = MessageItem::error_at("circular_reference");
+            $fe->apply_strspan(0, strlen($this->str), $this->string_context);
+            $this->formula->fexpr_lerror($fe, "<0>Formula too complex: nested too deeply");
             return $fe;
         }
         $s = (string) $this->str;
