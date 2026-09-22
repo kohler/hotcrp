@@ -1830,6 +1830,99 @@ class Permission_Tester {
         }
     }
 
+    function test_hidden_decision_edit_withdraw() {
+        // With decisions hidden from authors, a contact author's edit/withdraw
+        // permissions must not reveal the decision: author_edit_state,
+        // perm_edit_paper and perm_withdraw_paper give an identical result for
+        // a hidden accept and a hidden reject. A decision the author can see
+        // may legitimately differ -- a visible accept stays editable, while a
+        // visible reject and a desk reject freeze.
+        $chair = $this->u_chair;
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu"); // contact of #1
+
+        $old_seedec = $this->conf->setting("seedec");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $old_sub_open = $this->conf->setting("sub_open");
+        $old_sub_sub = $this->conf->setting("sub_sub");
+
+        // set a decision on #1, read the author-facing permissions
+        $probe = function ($decision) use ($chair, $author) {
+            xassert_assign($chair, "paper,action,decision\n1,decision,{$decision}\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            $pw = $author->perm_withdraw_paper($prow);
+            return [
+                "edit_state" => $prow->author_edit_state(),
+                "edit_denied" => $author->perm_edit_paper($prow) !== null,
+                "withdraw_denied" => $pw !== null,
+                "withdraw_decided" => $pw !== null && ($pw["decided"] ?? false),
+                "author_sees" => $prow->can_author_view_decision()
+            ];
+        };
+
+        try {
+            // submissions still editable; decisions hidden from authors
+            $this->conf->save_refresh_setting("sub_open", 1);
+            $this->conf->save_refresh_setting("sub_sub", Conf::$now + 100);
+            $this->conf->save_refresh_setting("seedec", 0);
+            $this->conf->save_refresh_setting("au_seedec", null);
+
+            // baseline: an undecided paper is editable and withdrawable
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert_neqq($prow->author_edit_state(), 0);
+            xassert_eqq($author->perm_edit_paper($prow), null);
+            xassert_eqq($author->perm_withdraw_paper($prow), null);
+
+            // hidden accept and hidden reject are indistinguishable: both frozen,
+            // both edit-denied, both withdraw-denied for the same `decided` reason
+            $acc = $probe("accept");
+            $rej = $probe("reject");
+            xassert(!$acc["author_sees"] && !$rej["author_sees"]);
+            xassert_eqq($acc["edit_state"], 0);
+            xassert($acc["edit_denied"] && $acc["withdraw_denied"] && $acc["withdraw_decided"]);
+            xassert_eqq($acc, $rej);
+
+            // authors can see decisions: a visible accept becomes editable again,
+            // a visible reject stays frozen and withdraw-blocked
+            $this->conf->save_refresh_setting("au_seedec", 2);
+            $vacc = $probe("accept");
+            $vrej = $probe("reject");
+            xassert($vacc["author_sees"] && $vrej["author_sees"]);
+            xassert_neqq($vacc["edit_state"], 0);
+            xassert(!$vacc["edit_denied"]);
+            xassert_eqq($vrej["edit_state"], 0);
+            xassert($vrej["edit_denied"] && $vrej["withdraw_denied"]);
+
+            // a desk reject is always author-visible and freezes even with
+            // decisions otherwise hidden from authors
+            $this->conf->save_refresh_setting("au_seedec", null);
+            $sv = SettingValues::make_request($chair, [
+                "has_decision" => 1, "decision/1/id" => "new",
+                "decision/1/name" => "Desk reject", "decision/1/category" => "desk_reject"
+            ]);
+            xassert($sv->execute(), $sv->full_feedback_text());
+            xassert_assign($chair, "paper,action,decision\n1,decision,Desk reject\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert($prow->can_author_view_decision());
+            xassert_eqq($prow->author_edit_state(), 0);
+            xassert($author->perm_edit_paper($prow) !== null);
+        } finally {
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
+            foreach ($this->conf->decision_set() as $dec) {
+                if ($dec->name === "Desk reject") {
+                    $sv = SettingValues::make_request($chair, [
+                        "has_decision" => 1, "decision/1/id" => (string) $dec->id, "decision/1/delete" => "1"
+                    ]);
+                    $sv->execute();
+                }
+            }
+            $this->conf->save_refresh_setting("seedec", $old_seedec);
+            $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+            $this->conf->save_refresh_setting("sub_open", $old_sub_open);
+            $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+        }
+    }
+
     function test_tracker_permissionizer() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
 

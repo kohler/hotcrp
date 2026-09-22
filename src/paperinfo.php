@@ -1898,19 +1898,21 @@ class PaperInfo {
     /** @return 0|1|2 */
     function author_edit_state() {
         if ($this->timeWithdrawn > 0
-            || $this->outcome_sign < 0) {
+            || $this->outcome_sign < 0
+            || ($this->outcome_sign > 0
+                && !$this->can_author_view_decision())) {
             return 0;
         }
         $sr = $this->submission_round();
         if ($this->phase() === self::PHASE_FINAL) {
             return $sr->time_edit_final(true) ? 2 : 0;
         }
-        if (($this->is_new()
-             && !$sr->time_register(true))
-            || !$sr->time_edit($this->timeSubmitted > 0, true)) {
-            return 0;
+        if ((!$this->is_new()
+             || $sr->time_register(true))
+            && $sr->time_edit($this->timeSubmitted > 0, true)) {
+            return 1;
         }
-        return 1;
+        return 0;
     }
 
 
