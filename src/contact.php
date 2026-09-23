@@ -3139,12 +3139,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
     }
 
-    /** @param string $text
+    /** Log an action unless an identical entry was logged recently. Activity
+     * is marked only when an entry is logged.
+     * @param null|int|Contact $dest_user
+     * @param string $text
      * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
-    function log_activity_dedup($text, $pids = null) {
+    function log_activity_dedup_for($dest_user, $text, $pids = null) {
         $this->mark_activity();
         if (!$this->is_anonymous_user()) {
-            $this->conf->log_for($this, $this, $text, $pids, true);
+            $this->conf->log_for($this, $dest_user, $text, $pids, true);
         }
     }
 

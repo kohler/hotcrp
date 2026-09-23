@@ -295,22 +295,6 @@ class Downloader {
         return true;
     }
 
-    /** @param int $first
-     * @param int $last
-     * @return bool */
-    function range_overlaps($first, $last) {
-        assert($first < $last);
-        $length = $this->content_length ?? ($first + 1);
-        foreach ($this->range ?? [[0, null]] as $r) {
-            $r1 = $r[0] ?? 0;
-            $r2 = $r[1] ?? ($length - 1);
-            if ($last > $r1 && $first < $r2 + 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /** @return bool */
     function check_ranges() {
         if ($this->_range_check !== null) {

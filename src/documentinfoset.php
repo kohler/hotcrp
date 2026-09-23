@@ -613,12 +613,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         if ($dopt->range === null) {
             $dopt->set_filename($this->_filename);
         }
+        $dopt->set_content_function([$this, "write_range"]);
         if ($dopt->log_user
-            && $dopt->range_overlaps(0, 4096)
-            && !$dopt->head) {
+            && $dopt->will_emit_content_or_redirect()) {
             DocumentInfo::log_download_activity($this->as_list(), $dopt->log_user);
         }
-        $dopt->set_content_function([$this, "write_range"]);
         return true;
     }
 

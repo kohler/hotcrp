@@ -191,9 +191,9 @@ class LogEntryGenerator {
         }
         $qv[] = $this->uids;
         $qv[] = $this->uids;
+        $qv[] = $this->uids;
         $qv[] = $this->email_regex;
-        // XXX trueContactId (actas)?
-        return "(contactId?a or destContactId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
+        return "(contactId?a or destContactId?a or trueContactId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
     }
 
     /** @return string */

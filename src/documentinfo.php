@@ -2155,13 +2155,6 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
 
-        // Maybe log
-        if ($dopt->log_user
-            && $dopt->range_overlaps(0, 4096)
-            && !$dopt->head) {
-            DocumentInfo::log_download_activity([$this], $dopt->log_user);
-        }
-
         // Download or redirect
         if ($s3_accel) {
             $dopt->set_content_length($this->size());
@@ -2170,6 +2163,12 @@ class DocumentInfo implements JsonSerializable {
             $dopt->set_content_file($path);
         } else {
             $dopt->set_content($this->content);
+        }
+
+        // Maybe log
+        if ($dopt->log_user
+            && $dopt->will_emit_content_or_redirect()) {
+            DocumentInfo::log_download_activity([$this], $dopt->log_user);
         }
         return true;
     }
@@ -2221,28 +2220,38 @@ class DocumentInfo implements JsonSerializable {
         return $x;
     }
 
-    /** @param list<DocumentInfo> $docs */
+    /** Log downloads of `$docs` by `$user`. Downloads by a paper’s authors
+     * are not logged, and neither are downloads of papers for which `$user`
+     * holds an active review token, since review tokens are anonymous.
+     * @param list<DocumentInfo> $docs */
     static function log_download_activity($docs, Contact $user) {
         if ($user->is_anonymous_user()) {
             return;
         }
+        $viewer = $user->base_user();
         $byn = [];
         $any_nonauthor = false;
         foreach ($docs as $doc) {
             if ($doc->documentType !== DTYPE_COMMENT
                 && $doc->conf === $user->conf
                 && $doc->paperId > 0
-                && $doc->paperStorageId > 1) {
+                && $doc->paperStorageId > 1
+                && (!$doc->prow || !$user->active_review_token_for($doc->prow))) {
                 // XXX ignores documents from other conferences
-                $byn[$doc->documentType][] = $doc->paperId;
-                $any_nonauthor = $any_nonauthor || !$doc->prow || !$doc->prow->has_author($user);
+                // downloads via reviewer links are attributed to the reviewer
+                $dest_cid = $user->contactId > 0 ? 0 : (int) $user->reviewer_capability($doc->paperId);
+                $byn[$doc->documentType][$dest_cid][] = $doc->paperId;
+                $any_nonauthor = $any_nonauthor || !$doc->prow || !$doc->prow->has_author($viewer);
             }
         }
-        if ($any_nonauthor) {
-            foreach ($byn as $dtype => $pidm) {
-                $opt = $user->conf->option_by_id($dtype);
-                $name = $opt ? $opt->json_key() : "opt{$dtype}";
-                $user->log_activity_dedup("Download {$name}", array_values(array_unique($pidm)));
+        if (!$any_nonauthor) {
+            return;
+        }
+        foreach ($byn as $dtype => $bydest) {
+            $opt = $user->conf->option_by_id($dtype);
+            $name = $opt ? $opt->json_key() : "opt{$dtype}";
+            foreach ($bydest as $dest_cid => $pidm) {
+                $user->log_activity_dedup_for($dest_cid ? : $user, "Download {$name}", array_values(array_unique($pidm)));
             }
         }
     }
