@@ -3103,20 +3103,21 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ((int) $this->activity_at <= Conf::$now - 2592000
             || (($cdbu = $this->cdb_user())
                 && ((int) $cdbu->activity_at <= Conf::$now - 2592000))) {
-            $this->mark_activity();
+            $this->mark_activity(0);
         }
     }
 
-    function mark_activity() {
-        if (($this->activity_at && $this->activity_at >= Conf::$now)
-            || $this->is_anonymous_user()) {
+    /** @param int $allowance */
+    function mark_activity($allowance = 7200) {
+        if ($this->is_anonymous_user()) {
             return;
         }
-        $this->activity_at = Conf::$now;
-        if ($this->contactId) {
+        if ($this->contactId
+            && (!$this->activity_at || $this->activity_at < Conf::$now - $allowance)) {
             $this->conf->ql("update ContactInfo set lastLogin=? where contactId=?", Conf::$now, $this->contactId);
             $this->update_cdb_roles();
         }
+        $this->activity_at = Conf::$now;
     }
 
     /** @param string $text
