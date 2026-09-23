@@ -569,6 +569,10 @@ class RequestReview_API {
             $destu->contactId, $prow->paperId, $rrow->reviewId, $rrow->contactId);
         $oldu = $user->conf->user_by_id($rrow->contactId, USER_SLICE);
         $user->log_activity_for($destu->contactId, "Review {$rrow->reviewId} reassigned from " . ($oldu ? $oldu->email : "<user {$rrow->contactId}>"), $prow);
+        $destu->update_cdb_roles();
+        if ($oldu) {
+            $oldu->update_cdb_roles();
+        }
 
         if ($destu->contactXid !== $user->contactXid) {
             $review_site_relative = "u/{$useridx}/{$review_site_relative}";

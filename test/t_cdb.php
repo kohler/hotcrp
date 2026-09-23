@@ -30,7 +30,7 @@ class Cdb_Tester {
             exit(1);
         }
 
-        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu", "caracal@fart.edu", "ocelot@fart.edu", "margay@fart.edu", "kodkod@fart.edu", "serval@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
         $this->conf->invalidate_caches("users");
@@ -970,5 +970,93 @@ class Cdb_Tester {
         $lu_jerome = $this->conf->user_by_email("jerome@gotten.edu");
         xassert_eqq($lu_jerome->cflags & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
         xassert_eqq($this->conf->fetch_ivalue("select cflags from ContactInfo where email='jerome@gotten.edu'") & Contact::CF_NEANONASCII, Contact::CF_NEANONASCII);
+    }
+
+    /** Return `$email`'s roles in the contactdb, after pending updates.
+     * Clears user caches first, as a new request would.
+     * @param string $email
+     * @return int */
+    private function cdb_roles_for($email) {
+        $this->conf->invalidate_caches("users", "cdb_users");
+        $cdbu = $this->conf->fresh_cdb_user_by_email($email);
+        xassert(!!$cdbu);
+        return $cdbu ? (int) $cdbu->roles : -1;
+    }
+
+    /** @param string $email
+     * @return Contact */
+    private function make_roleless_user($email) {
+        $u = $this->us1->save_user((object) ["email" => $email, "firstName" => "Roleless", "lastName" => "User"]);
+        xassert(!!$u);
+        xassert_eqq($this->cdb_roles_for($email), 0);
+        return $u;
+    }
+
+    function test_cdb_roles_paper_delete() {
+        $email = "caracal@fart.edu";
+        $sub_open = $this->conf->setting("sub_open");
+        $sub_update = $this->conf->setting("sub_update");
+        $sub_sub = $this->conf->setting("sub_sub");
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_update", Conf::$now + 1000);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 1000);
+        $ps = new PaperStatus($this->user_chair);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Roles paper", "abstract" => "Abstract", "has_authors" => "1", "authors:1:name" => "Caracal", "authors:1:email" => $email]), null));
+        xassert($ps->execute_save());
+        $this->conf->save_refresh_setting("sub_open", $sub_open);
+        $this->conf->save_refresh_setting("sub_update", $sub_update);
+        $this->conf->save_refresh_setting("sub_sub", $sub_sub);
+        xassert_eqq($this->cdb_roles_for($email), Contact::ROLE_AUTHOR);
+
+        $prow = $this->conf->checked_paper_by_id($ps->paperId);
+        xassert($prow->delete_from_database($this->user_chair));
+        xassert_eqq($this->cdb_roles_for($email), 0);
+    }
+
+    function test_cdb_roles_review_delete_no_rights() {
+        $email = "ocelot@fart.edu";
+        $u = $this->make_roleless_user($email);
+        xassert_assign($this->user_chair, "paper,action,email\n2,review,{$email}\n");
+        xassert_eqq($this->cdb_roles_for($email), Contact::ROLE_REVIEWER);
+
+        // Review API and review page delete with `no_rights`
+        $rrow = $this->conf->checked_paper_by_id(2)->fresh_review_by_user($u);
+        xassert(!!$rrow);
+        xassert($rrow->delete($this->user_chair, ["no_rights" => true, "snapshot" => true]));
+        xassert_eqq($this->cdb_roles_for($email), 0);
+    }
+
+    function test_cdb_roles_contact_assignment() {
+        $email = "margay@fart.edu";
+        $this->make_roleless_user($email);
+        xassert_assign($this->user_chair, "paper,action,email\n2,contact,{$email}\n");
+        xassert_eqq($this->cdb_roles_for($email), Contact::ROLE_AUTHOR);
+        xassert_assign($this->user_chair, "paper,action,email\n2,clearcontact,{$email}\n");
+        xassert_eqq($this->cdb_roles_for($email), 0);
+    }
+
+    function test_cdb_roles_claim_review() {
+        $email1 = "kodkod@fart.edu";
+        $email2 = "serval@fart.edu";
+        $u1 = $this->make_roleless_user($email1);
+        $this->make_roleless_user($email2);
+        $rrid = $this->user_chair->assign_review(4, $u1, REVIEW_EXTERNAL);
+        xassert($rrid > 0);
+        xassert_eqq($this->cdb_roles_for($email1), Contact::ROLE_REVIEWER);
+
+        // claimer was active recently, so claiming need not mark activity
+        $rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $u1 = $this->conf->checked_user_by_email($email1);
+        $u1->activity_at = Conf::$now;
+        $qsession = new MemoryQsession("fnoaiwnefoiwnf", ["us" => [$email1, $email2]]);
+        $paper4 = $this->conf->checked_paper_by_id(4);
+        $qreq = (new Qrequest("POST", ["p" => "4", "r" => "{$rrid}", "email" => $email2]))
+            ->set_qsession($qsession);
+        $result = RequestReview_API::claimreview($u1, $qreq, $paper4);
+        $this->conf->save_refresh_setting("rev_open", $rev_open);
+        xassert_eqq($result->content["ok"], true);
+        xassert_eqq($this->cdb_roles_for($email1), 0);
+        xassert_eqq($this->cdb_roles_for($email2), Contact::ROLE_REVIEWER);
     }
 }

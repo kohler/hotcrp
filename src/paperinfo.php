@@ -3844,7 +3844,7 @@ class PaperInfo {
         $uids = [];
         foreach ($this->conflict_types() as $uid => $ctype) {
             if ($ctype >= CONFLICT_AUTHOR)
-                $uids[] = $ctype;
+                $uids[] = $uid;
         }
         foreach ($rrows as $rrow) {
             if ($rrow->reviewType > 0)

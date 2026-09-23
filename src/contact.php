@@ -1140,6 +1140,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     static function update_cdb_roles_list(Conf $conf, $uids) {
+        // author and reviewer status may have changed without a rights update
+        self::update_rights();
         $role_updates = $role_deletes = [];
         $qstager = Dbl::make_multi_qe_stager($conf->dblink);
         foreach (array_unique($uids) as $uid) {
@@ -1152,12 +1154,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $r = $u->cdb_roles();
             if ($r === 0 && $cu->roles > 0) {
                 $role_deletes[] = $cu->contactDbId;
+                $cu->roles = 0;
             } else if ($r !== $cu->roles
                        || ($r !== 0 && (int) $cu->activity_at <= Conf::$now - 604800)) {
                 $role_updates[] = [$cu->contactDbId, $conf->cdb_confid(), $r, Conf::$now];
+                $cu->roles = $r;
+                $cu->activity_at = Conf::$now;
             }
             if ($r !== $u->cdbRoles) {
                 $qstager("update ContactInfo set cdbRoles=? where contactId=?", $r, $u->contactId);
+                $u->cdbRoles = $r;
             }
         }
         $qstager(null);

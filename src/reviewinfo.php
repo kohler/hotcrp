@@ -1150,8 +1150,8 @@ class ReviewInfo implements JsonSerializable {
         // update rights
         if (!($extra["no_rights"] ?? false)) {
             Contact::update_rights();
-            $this->reviewer()->update_cdb_roles();
         }
+        $this->reviewer()->update_cdb_roles();
         // run autosearch
         if (!($extra["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($this->paperId, SearchTerm::ABOUT_REVIEWS);

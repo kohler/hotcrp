@@ -299,4 +299,10 @@ class Conflict_Assigner extends Assigner {
             $aset->stage_qe("delete from PaperConflict where paperId=? and contactId=?", $this->pid, $this->cid());
         }
     }
+    function cleanup(AssignmentSet $aset) {
+        $old_ct = $this->item->pre("_ctype") ?? 0;
+        if (Conflict::is_author($old_ct) !== Conflict::is_author($this->ctype)) {
+            $this->contact->update_cdb_roles();
+        }
+    }
 }
