@@ -2596,7 +2596,7 @@ function change_tail_direction(tail, bubsty, sizes, dir) {
         })));
     tail.style.width = `${wx1}px`;
     tail.style.height = `${wy1}px`;
-    tail.style.top = tail.style.left = tail.style.top = tail.style.bottom = "";
+    tail.style.top = tail.style.right = tail.style.bottom = tail.style.left = "";
     if (dir & 1) {
         tail.style[lcdir[dir]] = `${-wx1}px`;
     } else {
