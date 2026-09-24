@@ -3477,7 +3477,14 @@ class Conf {
         }
         $d = trim($d);
         if (str_ends_with($d, " ago")) {
-            return $this->parse_time_relative(strtolower($d), $reference);
+            [$y, $m, $s] = SettingParser::parse_duration_yms(substr($d, 0, -4));
+            if ($y === null) {
+                return false;
+            }
+            if ($y > 0 || $m > 0) {
+                $reference = strtotime("{$y} years {$m} months ago", $reference);
+            }
+            return $reference - $s;
         }
         if (!preg_match('/\A(.*)\b(utc(?=[-+])|aoe(?=\s|\z))(.*)\z/i', $d, $m)) {
             return strtotime($d, $reference);
@@ -3521,7 +3528,7 @@ class Conf {
         if ($timestamp > 0) {
             $offset = 0;
             if (($zone = $this->timezone())) {
-                $offset = $zone->getOffset(new DateTime("@{$timestamp}"));
+                $offset = $zone->getOffset(DateTimeImmutable::createFromTimestamp($timestamp));
             }
             $timestamp += 43200 - ($timestamp + $offset) % 86400;
         }
@@ -3618,68 +3625,6 @@ class Conf {
             return $d;
         }
         return $timestamp < $reference ? $d . " ago" : "in " . $d;
-    }
-
-    /** @param string $s
-     * @param int $reference
-     * @return int|float|false */
-    private function parse_time_relative($s, $reference) {
-        $upos = -1;
-        $yr = $mo = $sec = 0;
-        while (preg_match('/\A\s*+(\d++\.?+\d*+|\.\d++)\s*+(y(?:|r|ear)s?|mo(?:|n|nth)s?|w(?:|k|eek)s?|d(?:|ay)s?|h(?:|r|our)s?|m(?:|in|inute)s?|s(?:|ec|econd)s?)(?![a-z])/', $s, $m)) {
-            $unit = $m[2];
-            $s = substr($s, strlen($m[0]));
-            if ($unit[0] === "y") {
-                $u = 0;
-            } else if (str_starts_with($unit, "mo")) {
-                $u = 1;
-            } else if ($unit[0] === "w") {
-                $u = 2;
-            } else if ($unit[0] === "d") {
-                $u = 3;
-            } else if ($unit[0] === "h") {
-                $u = 4;
-            } else if ($unit[0] === "m") {
-                $u = 5;
-            } else {
-                $u = 6;
-            }
-            if ($u <= $upos) {
-                return false;
-            }
-            $upos = $u;
-            $amt = floatval($m[1]);
-            $amti = (int) $amt;
-            if ($u === 0) {
-                $yr += $amti;
-                $amt = ($amt - $amti) * 12;
-                $amti = (int) $amt;
-                $u = 1;
-            }
-            if ($u === 1) {
-                $mo += $amti;
-                $amt = ($amt - $amti) * 30;
-                $u = 3;
-            }
-            if ($u === 2) {
-                $sec += $amt * 86400 * 7;
-            } else if ($u === 3) {
-                $sec += $amt * 86400;
-            } else if ($u === 4) {
-                $sec += $amt * 3600;
-            } else if ($u === 5) {
-                $sec += $amt * 60;
-            } else {
-                $sec += $amt;
-            }
-        }
-        if (trim($s) !== "ago") {
-            return false;
-        }
-        if ($yr !== 0 || $mo !== 0) {
-            $reference = strtotime("{$yr} years {$mo} months ago", $reference);
-        }
-        return $reference - $sec;
     }
 
     /** @param string $lo

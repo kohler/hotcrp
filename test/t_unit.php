@@ -1221,6 +1221,36 @@ class Unit_Tester {
         xassert_eqq(SettingParser::parse_duration("never"), -1.0);
         xassert_eqq(SettingParser::parse_duration("none"), 0.0);
         xassert_eqq(SettingParser::parse_duration(""), null);
+        xassert_eqq(SettingParser::parse_duration("1y6mo"), 86400 * (365 + 180.0));
+        xassert_eqq(SettingParser::parse_duration("1:30"), 90.0);
+    }
+
+    function test_parse_duration_yms() {
+        xassert_eqq(SettingParser::parse_duration_yms("2y"), [2, 0, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("1 year 6 months"), [1, 6, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("1.5y"), [1, 6, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("1.5mo"), [0, 1, 15 * 86400.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("2w3d"), [0, 0, 17 * 86400.0]);
+        xassert_eqq(SettingParser::parse_duration_yms(" 1h 15m "), [0, 0, 4500.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("1:30"), [0, 0, 90.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("15"), [0, 0, 15.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("never"), [null, null, -1.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("none"), [null, null, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms(""), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("15m1h"), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("2 dayz"), [null, null, null]);
+    }
+
+    function test_parse_relative_time() {
+        $t = (new DateTimeImmutable("2024-02-28T00:00:00+00:00"))->getTimestamp();
+        xassert_eqq($t, 1709078400);
+        $t1 = (new DateTimeImmutable("2023-02-28T00:00:00+00:00"))->getTimestamp();
+        $t2 = (new DateTimeImmutable("2020-02-28T00:00:00+00:00"))->getTimestamp();
+        xassert_neqq($t2, $t - ($t - $t1) * 4);
+        xassert_eq($this->conf->parse_time("1 hour ago", $t), $t - 3600);
+        xassert_eq($this->conf->parse_time("1 week ago", $t), $t - 86400 * 7);
+        xassert_eq($this->conf->parse_time("1 year ago", $t), $t1);
+        xassert_eq($this->conf->parse_time("4y ago", $t), $t2);
     }
 
     function test_parse_preference() {
