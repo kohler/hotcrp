@@ -671,21 +671,48 @@ class PaperTable {
     }
 
     /** @param string $field
-     * @return string */
+     * @return string
+     * @deprecated */
     function messages_at($field) {
         return $this->edit_status ? $this->edit_status->feedback_html_at($field) : "";
     }
 
+    /** @param string $field
+     * @return iterable<MessageItem> */
+    function message_list_at($field) {
+        return $this->edit_status ? $this->edit_status->message_list_at($field) : [];
+    }
+
     /** @param PaperOption $opt */
     function print_field_description($opt) {
+        $ml = [...$this->message_list_at($opt->formid)];
+        // Add a special message for time-limited fields
+        if ($opt->editable_condition()) {
+            $ts = $opt->editable_term()->visit(function ($st, ...$args) {
+                if ($st instanceof And_SearchTerm) {
+                    return min(...$args);
+                } else if ($st instanceof Or_SearchTerm) {
+                    return max(...$args);
+                } else if ($st instanceof Time_SearchTerm && $st->before()) {
+                    return $st->timestamp();
+                }
+                return INF;
+            });
+            if ((is_int($ts) || is_finite($ts))
+                && $ts > Conf::$now
+                && $ts < $this->prow->submission_round()->resubmit) {
+                $ml[] = MessageItem::warning_note($this->conf->_("<0>You can edit this {submission} field until {:time}.", $ts));
+            }
+        }
         echo '<div id="sf-', $opt->formid, ':d">',
-            $this->messages_at($opt->formid);
+            MessageSet::feedback_html($ml);
         $fr = new FieldRender(FieldRender::CFHTML);
         $opt->render_description($fr);
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }
-        echo $this->messages_at($opt->formid . ":context"), '</div>';
+        echo MessageSet::feedback_html($this->message_list_at($opt->formid . ":context")),
+            '</div>';
     }
 
     /** @param PaperOption $opt

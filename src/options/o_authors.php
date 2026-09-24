@@ -317,10 +317,12 @@ class Authors_PaperOption extends PaperOption {
             $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff), ' ',
             $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff), ' ',
             $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff),
-            $pt->messages_at("authors:{$n}"),
-            $pt->messages_at("authors:{$n}:email"),
-            $pt->messages_at("authors:{$n}:name"),
-            $pt->messages_at("authors:{$n}:affiliation"),
+            MessageSet::feedback_html([
+                ...$pt->message_list_at("authors:{$n}"),
+                ...$pt->message_list_at("authors:{$n}:email"),
+                ...$pt->message_list_at("authors:{$n}:name"),
+                ...$pt->message_list_at("authors:{$n}:affiliation")
+            ]),
             '</div></div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

@@ -507,6 +507,8 @@ hotcrp.tooltip.add_builder("settings-sf", function (info) {
         x = "#settings-sf-caption-name";
     else if (this.name.endsWith("/condition"))
         x = "#settings-sf-caption-condition";
+    else if (this.name.endsWith("/edit_condition"))
+        x = "#settings-sf-caption-edit-condition";
     else if (this.name.endsWith("/description"))
         x = "#settings-sf-caption-description";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);

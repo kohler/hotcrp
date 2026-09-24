@@ -228,9 +228,11 @@ class Contacts_PaperOption extends PaperOption {
             '</span>',
             Ht::entry("contacts:{$anum}:email", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:{$reqidx}:email", "want-focus js-autosubmit uii js-email-populate mr-2"), "autocomplete" => "off", "data-default-value" => ""]),
             Ht::entry("contacts:{$anum}:name", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""]),
-            $pt->messages_at("contacts:{$reqidx}"),
-            $pt->messages_at("contacts:{$reqidx}:name"),
-            $pt->messages_at("contacts:{$reqidx}:email"),
+            MessageSet::feedback_html([
+                ...$pt->message_list_at("contacts:{$reqidx}"),
+                ...$pt->message_list_at("contacts:{$reqidx}:name"),
+                ...$pt->message_list_at("contacts:{$reqidx}:email")
+            ]),
             '</div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

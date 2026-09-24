@@ -633,22 +633,29 @@ class PaperOption implements JsonSerializable {
             $this->_editable_term = null;
         }
     }
+    /** @return SearchTerm */
+    final function editable_term() {
+        if ($this->editable_if === null) {
+            return new True_SearchTerm;
+        } else if ($this->_editable_term !== null) {
+            return $this->_editable_term;
+        }
+        $s = new PaperSearch($this->conf->root_user(), $this->editable_if);
+        $s->set_use_viewer_permissions(true);
+        $this->_editable_term = $s->full_term();
+        return $this->_editable_term;
+    }
     /** @return bool */
     final function test_editable(PaperInfo $prow) {
         if ($this->editable_if === null) {
             return true;
-        }
-        if ($this->_editable_term === null) {
-            $s = new PaperSearch($this->conf->root_user(), $this->editable_if);
-            $s->set_use_viewer_permissions(true);
-            $this->_editable_term = $s->full_term();
         }
         ++$this->_recursion;
         if ($this->_recursion > 5) {
             $this->_editable_term = new False_SearchTerm;
             $this->mark_condition_recursion("editable_if");
         }
-        $x = $this->_editable_term->test($prow, null);
+        $x = $this->editable_term()->test($prow, null);
         --$this->_recursion;
         return $x;
     }

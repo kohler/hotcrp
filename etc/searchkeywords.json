@@ -288,6 +288,9 @@
         "expand_function": "Option_SearchTerm::parse_factory"
     },
 
+    {   "name": "after", "parse_function": "Time_SearchTerm::parse"   },
+    {   "name": "before", "parse_function": "Time_SearchTerm::parse", "before": true   },
+
     {
         "name": "show",
         "parse_function": "Show_SearchTerm::parse", "allow_parens": true,

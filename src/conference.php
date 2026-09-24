@@ -3444,7 +3444,7 @@ class Conf {
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
         }
         if ($include_zone && ($z = $this->_unparse_timezone($value))) {
-            $d .= " $z";
+            $d .= " {$z}";
         }
         return $d;
     }
