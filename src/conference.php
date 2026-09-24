@@ -3528,7 +3528,7 @@ class Conf {
         if ($timestamp > 0) {
             $offset = 0;
             if (($zone = $this->timezone())) {
-                $offset = $zone->getOffset(DateTimeImmutable::createFromTimestamp($timestamp));
+                $offset = $zone->getOffset(new DateTimeImmutable("@{$timestamp}")); // XXX createFromTimestmap available only as of PHP 8.4
             }
             $timestamp += 43200 - ($timestamp + $offset) % 86400;
         }
