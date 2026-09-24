@@ -174,6 +174,11 @@ class LogEntryGenerator {
         return $index;
     }
 
+    private function action_rlike($q) {
+        $dblink = $this->conf->dblink;
+        return Dbl::convert_utf8($dblink, "action") . " rlike " . Dbl::utf8ci($dblink, $q);
+    }
+
     /** @return string */
     private function unparse_pids_where(&$qv) {
         if (empty($this->pids)) {
@@ -181,7 +186,7 @@ class LogEntryGenerator {
         }
         $qv[] = $this->pids;
         $qv[] = "\\(papers.* (" . join("|", $this->pids) . ")[,)]";
-        return "(paperId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
+        return "(paperId?a or " . $this->action_rlike("?") . ")";
     }
 
     /** @return string */
@@ -193,7 +198,7 @@ class LogEntryGenerator {
         $qv[] = $this->uids;
         $qv[] = $this->uids;
         $qv[] = $this->email_regex;
-        return "(contactId?a or destContactId?a or trueContactId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
+        return "(contactId?a or destContactId?a or trueContactId?a or " . $this->action_rlike("?") . ")";
     }
 
     /** @return string */
@@ -202,7 +207,7 @@ class LogEntryGenerator {
             return "false";
         }
         $qv[] = $this->action_regex;
-        return "action rlike " . Dbl::utf8ci($this->conf->dblink, "?");
+        return $this->action_rlike("?");
     }
 
     /** @return string */
