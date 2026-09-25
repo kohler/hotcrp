@@ -4203,32 +4203,25 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->perm_edit_paper_failure($prow, $rights, "w");
     }
 
-    /** @return 0|1|2 */
+    /** @return -1|0|1 */
     function edit_paper_state(PaperInfo $prow) {
-        if ($prow->timeWithdrawn > 0 /* non-overridable */) {
-            return 0;
-        }
         $rights = $this->rights($prow);
-        if ($prow->is_new()
-            && ($sl = $this->conf->site_lock("paper:start")) > 0
-            && ($sl > 1 || !$rights->can_manage())) {
-            return 0;
-        }
         if ($rights->can_manage()) {
-            if ($prow->phase() === PaperInfo::PHASE_FINAL) {
-                return 2;
+            // managers cannot edit withdrawn papers or start papers if the
+            // `paper:start` site lock is greater than 1
+            if ($prow->timeWithdrawn > 0
+                || ($prow->is_new()
+                    && $this->conf->site_lock("paper:start") > 1)) {
+                return -1;
             }
             return 1;
         }
-        if ($rights->allow_author_edit()) {
-            return $prow->author_edit_state();
-        }
-        return 0;
+        return $rights->allow_author_edit() ? $prow->author_edit_state() : -1;
     }
 
     /** @return bool */
     function can_edit_paper(PaperInfo $prow) {
-        return $this->edit_paper_state($prow) !== 0;
+        return $this->edit_paper_state($prow) > 0;
     }
 
     /** @return FailureReason */
@@ -4813,16 +4806,23 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
-     * @return 0|1|2 */
+     * @return 0|1|2
+     *
+     * Can `$opt` be edited on `$prow` independent of deadlines?
+     * Returns 0 (no), 1 (OVERRIDE_EDIT_CONDITIONS is on & option does not
+     * currently exist, but edit conditions executed in the browser could make
+     * it exist, after which it would be editable), or 2 (yes). */
     function edit_option_state(PaperInfo $prow, $opt) {
+        if (!$this->scope_allows(TS::S_SUB_WRITE | ($opt->has_document() ? TS::S_DOC_WRITE : 0), $prow)) {
+            return 0;
+        }
         if ($opt->id === PaperOption::CONTACTSID) {
             return 2;
         }
         $override_ec = ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0;
         if (!$opt->on_form()
             || !$opt->test_exists($prow, $override_ec)
-            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || !$this->scope_allows(TS::S_SUB_WRITE | ($opt->has_document() ? TS::S_DOC_WRITE : 0), $prow)) {
+            || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))) {
             return 0;
         }
         if (!$this->can_manage($prow)
@@ -4833,7 +4833,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         if ($prow->outcome > 0
             && $prow->viewable_phase($this) === PaperInfo::PHASE_FINAL) {
-            if ($this->edit_paper_state($prow) !== 2 || $opt->id === 0) {
+            if ($opt->id === 0) {
                 return 0;
             }
         } else if ($opt->is_final()) {

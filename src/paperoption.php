@@ -1591,7 +1591,7 @@ class Document_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if (($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL)
-            && ($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)
+            && ($this->id === DTYPE_FINAL) !== ($ov->prow->viewable_phase($pt->user) === PaperInfo::PHASE_FINAL)
             && !$pt->settings_mode) {
             $this->print_web_edit_hidden($pt, $ov);
             return;

@@ -97,7 +97,8 @@ class PaperTable {
         $this->prow = $prow;
         $this->allow_admin = $user->allow_admin($this->prow);
         $this->admin = $user->is_admin($this->prow);
-        $this->allow_edit_final = $user->edit_paper_state($this->prow) === 2;
+        $this->allow_edit_final = $user->can_edit_paper($this->prow)
+            && $this->prow->viewable_phase($user) === PaperInfo::PHASE_FINAL;
 
         if (!$this->prow->paperId) {
             $this->can_view_reviews = false;
@@ -789,7 +790,8 @@ class PaperTable {
             && !$this->prow->has_conflict($this->user)
             && $this->mode !== "assign"
             && $this->mode !== "contact"
-            && $this->prow->author_edit_state() === 1) {
+            && $this->prow->author_edit_state() > 0
+            && $this->prow->phase() === PaperInfo::PHASE_REVIEW) {
             $fr->value .= Ht::msg('The authors still have ' . $this->conf->hotlink("time", "deadlines") . ' to make changes.', 1);
         }
 

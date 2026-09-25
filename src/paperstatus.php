@@ -1130,7 +1130,7 @@ final class PaperStatus extends MessageSet {
             $this->_save_status |= self::SSF_ADMIN_UPDATE;
         }
         if (!$prow->is_new()) {
-            if ($this->user->edit_paper_state($prow) === 2) {
+            if ($prow->viewable_phase($this->user) === PaperInfo::PHASE_FINAL) {
                 $this->_save_status |= self::SSF_FINAL_PHASE;
             }
             return true;

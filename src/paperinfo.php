@@ -1895,24 +1895,31 @@ class PaperInfo {
                     && $this->conf->_au_seedec->test($this, null)));
     }
 
-    /** @return 0|1|2 */
+    /** @return -1|0|1
+     *
+     * Return -1 if an author cannot edit this paper because of its state
+     * (time-independent except for registration deadlines), 0 if they
+     * cannot edit because of a deadline, 1 if they can edit. */
     function author_edit_state() {
         if ($this->timeWithdrawn > 0
             || $this->outcome_sign < 0
             || ($this->outcome_sign > 0
                 && !$this->can_author_view_decision())) {
-            return 0;
+            return -1;
         }
         $sr = $this->submission_round();
+        if ($this->is_new()
+            && (!$sr->time_register(true)
+                || $this->conf->site_lock("paper:start") > 0)) {
+            return -1;
+        }
         if ($this->phase() === self::PHASE_FINAL) {
-            return $sr->time_edit_final(true) ? 2 : 0;
+            return $sr->time_edit_final(true) ? 1 : 0;
         }
-        if ((!$this->is_new()
-             || $sr->time_register(true))
-            && $sr->time_edit($this->timeSubmitted > 0, true)) {
-            return 1;
+        if ($this->timeSubmitted > 0 && $sr->freeze) {
+            return -1;
         }
-        return 0;
+        return $sr->time_edit($this->timeSubmitted > 0, true) ? 1 : 0;
     }
 
 

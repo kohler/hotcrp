@@ -1869,7 +1869,7 @@ class Permission_Tester {
             // baseline: an undecided paper is editable and withdrawable
             xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
             $prow = $this->conf->checked_paper_by_id(1);
-            xassert_neqq($prow->author_edit_state(), 0);
+            xassert_gt($prow->author_edit_state(), 0);
             xassert_eqq($author->perm_edit_paper($prow), null);
             xassert_eqq($author->perm_withdraw_paper($prow), null);
 
@@ -1878,7 +1878,7 @@ class Permission_Tester {
             $acc = $probe("accept");
             $rej = $probe("reject");
             xassert(!$acc["author_sees"] && !$rej["author_sees"]);
-            xassert_eqq($acc["edit_state"], 0);
+            xassert_le($acc["edit_state"], 0);
             xassert($acc["edit_denied"] && $acc["withdraw_denied"] && $acc["withdraw_decided"]);
             xassert_eqq($acc, $rej);
 
@@ -1888,9 +1888,9 @@ class Permission_Tester {
             $vacc = $probe("accept");
             $vrej = $probe("reject");
             xassert($vacc["author_sees"] && $vrej["author_sees"]);
-            xassert_neqq($vacc["edit_state"], 0);
+            xassert_gt($vacc["edit_state"], 0);
             xassert(!$vacc["edit_denied"]);
-            xassert_eqq($vrej["edit_state"], 0);
+            xassert_le($vrej["edit_state"], 0);
             xassert($vrej["edit_denied"] && $vrej["withdraw_denied"]);
 
             // a desk reject is always author-visible and freezes even with
@@ -1904,7 +1904,7 @@ class Permission_Tester {
             xassert_assign($chair, "paper,action,decision\n1,decision,Desk reject\n");
             $prow = $this->conf->checked_paper_by_id(1);
             xassert($prow->can_author_view_decision());
-            xassert_eqq($prow->author_edit_state(), 0);
+            xassert_le($prow->author_edit_state(), 0);
             xassert($author->perm_edit_paper($prow) !== null);
         } finally {
             xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
