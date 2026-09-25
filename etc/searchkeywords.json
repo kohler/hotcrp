@@ -162,10 +162,6 @@
     },
     {   "name": "decision", "alias": "dec"   },
     {
-        "name": "perm",
-        "parse_function": "Perm_SearchTerm::parse"
-    },
-    {
         "name": "tag",
         "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "is_hash": false, "has": "any"

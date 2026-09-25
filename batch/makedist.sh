@@ -569,7 +569,6 @@ src/search/st_optionvaluein.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php
 src/search/st_proposal.php
-src/search/st_perm.php
 src/search/st_pdf.php
 src/search/st_phase.php
 src/search/st_realnumberoption.php
