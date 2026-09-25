@@ -423,6 +423,8 @@ class Options_SettingParser extends SettingParser {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the review phase"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:final") === 0) {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the final-version phase"));
+        } else if ($io->deadline_exempt()) {
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’, regardless of submission deadlines"));
         } else {
             $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’"));
         }

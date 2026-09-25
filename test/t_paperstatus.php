@@ -2771,6 +2771,167 @@ Phil Porras.");
         xassert($this->conf->option_by_id(DTYPE_SUBMISSION)->test_editable($newprow));
     }
 
+    function test_deadline_exempt_field() {
+        $conf = $this->conf;
+        $abstract = $conf->option_by_id(PaperOption::ABSTRACTID);
+        $title = $conf->option_by_id(PaperOption::TITLEID);
+        xassert(!$abstract->deadline_exempt());
+        xassert(!$title->deadline_exempt());
+        xassert($conf->option_by_id(PaperOption::CONTACTSID)->deadline_exempt());
+
+        // register a draft and a submission while the deadline is open
+        $old_sub_sub = $conf->setting("sub_sub");
+        $conf->save_refresh_setting("sub_sub", Conf::$now + 100);
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", [
+            "title" => "Draft that will miss the deadline",
+            "abstract" => "Draft abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu"
+        ]);
+        xassert($ps->prepare_save_paper_web($qreq, null));
+        xassert($ps->execute_save());
+        $draft_pid = $ps->paperId;
+        $draft = $this->u_estrin->checked_paper_by_id($draft_pid);
+        xassert_le($draft->timeSubmitted, 0);
+
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = (new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "Submission edited after the deadline",
+            "abstract" => "Submitted abstract",
+            "has_authors" => "1",
+            "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
+        xassert($ps->prepare_save_paper_web($qreq, null));
+        xassert_paper_status($ps);
+        xassert($ps->execute_save());
+        $sub_pid = $ps->paperId;
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert($prow->timeSubmitted > 0);
+
+        // abstract becomes editable for a week after the resubmission deadline
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "abstract",
+            "sf/1/edit_condition" => "before:resubmit+1w"
+        ]);
+        xassert($sv->execute());
+        $abstract = $conf->option_by_id(PaperOption::ABSTRACTID);
+        $title = $conf->option_by_id(PaperOption::TITLEID);
+        xassert($abstract->deadline_exempt());
+        xassert(!$title->deadline_exempt());
+
+        // deadline passes
+        $conf->save_refresh_setting("sub_sub", Conf::$now - 100);
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert(!$this->u_estrin->can_edit_paper($prow));
+        xassert($this->u_estrin->can_edit_option($prow, $abstract));
+        xassert($this->u_estrin->can_edit_option($prow, $title));
+
+        // abstract can be changed
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Abstract changed after the deadline"]);
+        xassert($ps->prepare_save_paper_web($qreq, $prow));
+        xassert(!$ps->has_error());
+        xassert($ps->execute_save());
+        xassert($ps->has_change_at("abstract"));
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert_eqq($prow->abstract(), "Abstract changed after the deadline");
+        xassert($prow->timeSubmitted > 0);
+
+        // title cannot
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["title" => "Title changed after the deadline"]);
+        xassert(!$ps->prepare_save_paper_web($qreq, $prow));
+        xassert($ps->has_error_at("status:submitted"));
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert_eqq($prow->title, "Submission edited after the deadline");
+
+        // the draft has missed its own deadline, so the extension does not apply
+        $draft = $this->u_estrin->checked_paper_by_id($draft_pid);
+        xassert(!$this->u_estrin->can_edit_option($draft, $abstract));
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Draft abstract changed after the deadline"]);
+        xassert($ps->prepare_save_paper_web($qreq, $draft));
+        xassert(!$ps->has_change());
+        $ps = (new PaperStatus($this->u_estrin))->set_ignore_unwritable_fields(false);
+        xassert(!$ps->prepare_save_paper_web($qreq, $draft));
+        xassert($ps->has_error_at("abstract"));
+        $draft = $this->u_estrin->checked_paper_by_id($draft_pid);
+        xassert_eqq($draft->abstract(), "Draft abstract");
+
+        // the extension expires
+        $conf->save_refresh_setting("sub_sub", Conf::$now - 86400 * 8);
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert(!$this->u_estrin->can_edit_option($prow, $abstract));
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Abstract changed too late"]);
+        xassert($ps->prepare_save_paper_web($qreq, $prow));
+        xassert(!$ps->has_change());
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert_eqq($prow->abstract(), "Abstract changed after the deadline");
+
+        // an open-ended condition is editable indefinitely...
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "abstract",
+            "sf/1/edit_condition" => "after:submit"
+        ]);
+        xassert($sv->execute());
+        $abstract = $conf->option_by_id(PaperOption::ABSTRACTID);
+        xassert($abstract->deadline_exempt());
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert($this->u_estrin->can_edit_option($prow, $abstract));
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Abstract changed after submit"]);
+        xassert($ps->prepare_save_paper_web($qreq, $prow));
+        xassert(!$ps->has_error());
+        xassert($ps->execute_save());
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert_eqq($prow->abstract(), "Abstract changed after submit");
+
+        // ...but not on a frozen submission
+        $old_sub_freeze = $conf->setting("sub_freeze");
+        $conf->save_refresh_setting("sub_freeze", 1);
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert($this->u_estrin->perm_edit_paper_state($prow)["frozen"]);
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Abstract changed while frozen"]);
+        xassert(!$ps->prepare_save_paper_web($qreq, $prow));
+        xassert($ps->has_error_at("status:submitted"));
+        $conf->save_refresh_setting("sub_freeze", $old_sub_freeze);
+
+        // ...or a withdrawn one
+        $conf->qe("update Paper set timeWithdrawn=?, timeSubmitted=-timeSubmitted where paperId=?", Conf::$now, $sub_pid);
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert($prow->timeWithdrawn > 0);
+        xassert($this->u_estrin->perm_edit_paper_state($prow)["withdrawn"]);
+        $ps = new PaperStatus($this->u_estrin);
+        $qreq = new Qrequest("POST", ["abstract" => "Abstract changed while withdrawn"]);
+        xassert(!$ps->prepare_save_paper_web($qreq, $prow));
+        xassert($ps->has_error_at("status:withdrawn"));
+        $prow = $this->u_estrin->checked_paper_by_id($sub_pid);
+        xassert_eqq($prow->abstract(), "Abstract changed after submit");
+
+        // restore
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "abstract",
+            "sf/1/edit_condition" => ""
+        ]);
+        xassert($sv->execute());
+        xassert(!$conf->option_by_id(PaperOption::ABSTRACTID)->deadline_exempt());
+        $conf->save_refresh_setting("sub_sub", $old_sub_sub);
+        foreach ([$draft_pid, $sub_pid] as $pid) {
+            $conf->qe("delete from Paper where paperId=?", $pid);
+            $conf->qe("delete from PaperConflict where paperId=?", $pid);
+            $conf->qe("delete from PaperOption where paperId=?", $pid);
+            $conf->qe("delete from PaperStorage where paperId=?", $pid);
+        }
+    }
+
     function test_new_paper_random_pids() {
         $this->conf->save_refresh_setting("random_pids", 1);
         $next_pid = $this->conf->fetch_ivalue("select max(paperId)+1 from Paper");

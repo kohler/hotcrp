@@ -14112,8 +14112,8 @@ function prepare_autoready_condition(f) {
             }
         }
         let t;
-        if (f.hasAttribute("data-contacts-only")) {
-            t = "Save contacts";
+        if (f.hasAttribute("data-limited-edit") || /* XXX backward compat */ f.hasAttribute("data-contacts-only")) {
+            t = "Save changes";
         } else if (!iscond || !readye.checked) {
             t = "Save draft";
         } else if (f.hasAttribute("data-submitted")) {

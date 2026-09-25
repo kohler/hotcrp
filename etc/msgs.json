@@ -54,6 +54,16 @@
     ["<5>{round} external review deadline", "<5>External review deadline", ["!{round}"]],
     ["<5>{round} external review hard deadline", "<5>External review hard deadline", ["!{round}"]],
 
+    {
+        "in": "<5>This {submission} is under review. You can still edit its {fields:list or}, but other fields can’t be changed.",
+        "m": [
+            ["<5>This {submission} is under review. You can still edit its {fields:list or} or withdraw it from consideration, but other fields can’t be changed.", ["{can_withdraw}"]],
+            ["<5>This {submission} is under review and can’t be changed, but you can still withdraw it from consideration.", ["!#{fields}", "{can_withdraw}"]],
+            ["<5>This {submission} is under review and can’t be changed or withdrawn.", ["!#{fields}"]],
+            ["<5>The deadline for updating final versions has passed. You can still edit its {fields:list or}, but other fields can’t be changed.", ["{phase}=final"]],
+            ["<5>The deadline for updating final versions has passed. This {submission} can’t be changed.", ["{phase}=final", "!#{fields}"]]
+        ]
+    },
     ["<0>Updated {submission} (changed {:list})", "<0>Updated {submission}", ["#{0}=0"]],
     ["<0>Updated {submission} (changed {:list})", "<0>Updated final version (changed {:list})", ["{phase}=final"]],
     ["<0>Updated {submission} (changed {:list})", "<0>Updated final version", ["{phase}=final", "#{0}=0"]],

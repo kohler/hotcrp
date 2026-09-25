@@ -80,7 +80,9 @@ final class PaperStatus extends MessageSet {
     /** @var bool */
     private $_documents_changed;
     /** @var bool */
-    private $_noncontacts_changed;
+    private $_deadline_field_changed;
+    /** @var bool */
+    private $_exempt_field_changed;
     /** @var list<DocumentInfo> */
     private $_docs;
     /** @var ?DocumentImporter */
@@ -526,8 +528,10 @@ final class PaperStatus extends MessageSet {
         if (!$this->_documents_changed && $field->has_document()) {
             $this->_documents_changed = true;
         }
-        if ($field->id !== PaperOption::CONTACTSID) {
-            $this->_noncontacts_changed = true;
+        if (!$field->deadline_exempt()) {
+            $this->_deadline_field_changed = true;
+        } else if ($field->id !== PaperOption::CONTACTSID) {
+            $this->_exempt_field_changed = true;
         }
     }
 
@@ -717,8 +721,14 @@ final class PaperStatus extends MessageSet {
 
     private function _prepare_status($pj) {
         // check edit permission if there have been changes
-        if ($this->_noncontacts_changed
-            && ($whynot = $this->user->perm_edit_paper($this->prow))) {
+        if ($this->_deadline_field_changed) {
+            $whynot = $this->user->perm_edit_paper($this->prow);
+        } else if ($this->_exempt_field_changed) {
+            $whynot = $this->user->perm_edit_paper_state($this->prow);
+        } else {
+            $whynot = null;
+        }
+        if ($whynot) {
             $field = $pj->status->withdrawn ? "status:withdrawn" : "status:submitted";
             $whynot->append_to($this, $field, MessageSet::ESTOP);
         }
@@ -1122,7 +1132,8 @@ final class PaperStatus extends MessageSet {
         $this->_author_change_cids = null;
         $this->_paper_submitted = false;
         $this->_documents_changed = false;
-        $this->_noncontacts_changed = $prow->is_new();
+        $this->_deadline_field_changed = $prow->is_new();
+        $this->_exempt_field_changed = false;
         $this->_docs = $this->_tags_changed = [];
         $this->_importer = null;
         $this->_save_status = 0;
@@ -1193,7 +1204,7 @@ final class PaperStatus extends MessageSet {
         foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && (!$o->is_final() || $want_final)
-                && ($o->id === PaperOption::CONTACTSID || $phase !== "contacts")) {
+                && ($phase !== "contacts" || $o->deadline_exempt())) {
                 // Do not test_editable yet; we test_editable in check_field.
                 // This is an arguable semantics decision -- one could say that
                 // a field should be editable only if the *previous version*
@@ -1366,7 +1377,11 @@ final class PaperStatus extends MessageSet {
         }
         // PC conflict changes are subject to the deadline (contact changes are not)
         if (($this->_conflict_changed_bits() & Conflict::FM_PC) !== 0) {
-            $this->_noncontacts_changed = true;
+            if ($this->conf->option_by_id(PaperOption::PCCONFID)->deadline_exempt()) {
+                $this->_exempt_field_changed = true;
+            } else {
+                $this->_deadline_field_changed = true;
+            }
         }
 
         // prepare non-fields for saving

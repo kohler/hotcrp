@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-HotCRP is conference-review software: paper submission, reviewing, comments, rebuttals, PC meetings. It is a PHP application (supports PHP 7.3–8.5) backed by MariaDB/MySQL, with vanilla-JS/CSS front-end assets. There is no build step for PHP; JS/CSS in `scripts/` and `stylesheets/` are served as-is.
+HotCRP is conference-review software: paper submission, reviewing, comments, rebuttals, PC meetings. It is a PHP application (supports PHP 8.1–8.5) backed by MariaDB/MySQL, with vanilla-JS/CSS front-end assets. There is no build step for PHP; JS/CSS in `scripts/` and `stylesheets/` are served as-is.
 
 ## Commands
 

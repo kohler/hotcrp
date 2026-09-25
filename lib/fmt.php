@@ -201,6 +201,8 @@ class FmtContext {
     private function apply_fmtspec_array($fspec, $vformat, $value, $expansion) {
         if ($fspec === ":list") {
             return [$vformat, commajoin($value)];
+        } else if (str_starts_with($fspec, ":list ")) {
+            return [$vformat, commajoin($value, substr($fspec, 6))];
         } else if ($fspec === ":lcrestlist") {
             for ($i = 1; $i < count($value); ++$i) {
                 if (is_string($value[$i])) {

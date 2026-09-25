@@ -86,6 +86,8 @@ class PaperOption implements JsonSerializable {
     private $editable_if;
     /** @var ?SearchTerm */
     private $_editable_term;
+    /** @var ?bool */
+    private $_deadline_exempt;
     /** @var int */
     private $_recursion = 0;
     public $max_size;
@@ -632,6 +634,7 @@ class PaperOption implements JsonSerializable {
             $this->editable_if = self::clean_condition($x);
             $this->_editable_term = null;
         }
+        $this->_deadline_exempt = null;
     }
     /** @return SearchTerm */
     final function editable_term() {
@@ -644,6 +647,20 @@ class PaperOption implements JsonSerializable {
         $s->set_use_viewer_permissions(true);
         $this->_editable_term = $s->full_term();
         return $this->_editable_term;
+    }
+    /** Return true if this field can be edited regardless of submission
+     * deadlines. The contacts field is always exempt; other fields are
+     * exempt when their edit condition mentions time (`before:`, `after:`),
+     * in which case the condition replaces the deadline. Withdrawal,
+     * freeze, and rejection still apply (see `perm_edit_paper_state`).
+     * @return bool */
+    final function deadline_exempt() {
+        if ($this->_deadline_exempt === null) {
+            $this->_deadline_exempt = $this->id === self::CONTACTSID
+                || ($this->editable_if !== null
+                    && Time_SearchTerm::has_time_term($this->editable_term()));
+        }
+        return $this->_deadline_exempt;
     }
     /** @return bool */
     final function test_editable(PaperInfo $prow) {

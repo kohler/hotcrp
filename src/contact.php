@@ -4295,6 +4295,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $whyNot;
     }
 
+    /** Like `perm_edit_paper`, but ignoring deadlines: paper state
+     * (`edit_paper_state() < 0`) still blocks editing.
+     * @return ?FailureReason */
+    function perm_edit_paper_state(PaperInfo $prow) {
+        if ($this->edit_paper_state($prow) >= 0) {
+            return null;
+        }
+        return $this->perm_edit_paper($prow);
+    }
+
     /** @return bool */
     function can_unsubmit_paper(PaperInfo $prow) {
         return $this->can_edit_paper($prow)

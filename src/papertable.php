@@ -687,23 +687,14 @@ class PaperTable {
     /** @param PaperOption $opt */
     function print_field_description($opt) {
         $ml = [...$this->message_list_at($opt->formid)];
-        // Add a special message for time-limited fields
-        if ($opt->editable_condition()) {
-            $ts = $opt->editable_term()->visit(function ($st, ...$args) {
-                if ($st instanceof And_SearchTerm) {
-                    return min(...$args);
-                } else if ($st instanceof Or_SearchTerm) {
-                    return max(...$args);
-                } else if ($st instanceof Time_SearchTerm && $st->before()) {
-                    return $st->timestamp();
-                }
-                return INF;
-            });
-            if ((is_int($ts) || is_finite($ts))
-                && $ts > Conf::$now
-                && $ts < $this->prow->submission_round()->resubmit) {
-                $ml[] = MessageItem::warning_note($this->conf->_("<0>You can edit this {submission} field until {:time}.", $ts));
-            }
+        // Add a special message for time-limited fields. A condition with a
+        // closing time is deadline-exempt, so that time is the field’s real
+        // deadline.
+        if ($opt->editable_condition()
+            && ($ts = Time_SearchTerm::closing_time($opt->editable_term(), $this->prow)) !== null
+            && $ts > Conf::$now
+            && $ts !== $this->prow->submission_round()->resubmit) {
+            $ml[] = MessageItem::warning_note($this->conf->_("<0>You can edit this field until {deadline:time}.", new FmtArg("deadline", $ts)));
         }
         echo '<div id="sf-', $opt->formid, ':d">',
             MessageSet::feedback_html($ml);
@@ -2164,10 +2155,10 @@ class PaperTable {
             if ($sr->submit > 0 && Conf::$now <= $sr->submit) {
                 $this->_main_message(1, '<5>The site is not open for updates at the moment.' . $this->_deadline_override_message());
             } else {
-                $this->_main_message(1, "<5>The " . $this->conf->hotlink("submission deadline", "deadlines") . " has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message());
+                $this->_main_message(1, "<5>The " . $this->conf->hotlink("submission deadline", "deadlines") . " has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_draft_exempt_message() . $this->_deadline_override_message());
             }
         } else {
-            $this->_main_message(MessageSet::URGENT_NOTE, "<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_deadline_override_message());
+            $this->_main_message(MessageSet::URGENT_NOTE, "<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_draft_exempt_message() . $this->_deadline_override_message());
         }
     }
 
@@ -2182,7 +2173,7 @@ class PaperTable {
                     $this->_main_message(MessageSet::SUCCESS, "<5>" . $t);
                 }
             } else if ($this->mode === "edit") {
-                $this->_main_message(1, "<5>The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
+                $this->_main_message(1, $this->_edit_message_closed("final") . $this->_deadline_override_message());
             }
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit"
@@ -2195,13 +2186,50 @@ class PaperTable {
                 }
             }
         } else if ($this->mode === "edit") {
-            if ($this->user->can_withdraw_paper($this->prow, true)) {
-                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed. You can still <a href=\"#contacts\">change its contacts</a> or withdraw it from consideration.";
-            } else {
-                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed or withdrawn. You can still <a href=\"#contacts\">change its contacts</a>.";
-            }
-            $this->_main_message(MessageSet::MARKED_NOTE, $t . $this->_deadline_override_message());
+            $this->_main_message(MessageSet::MARKED_NOTE, $this->_edit_message_closed("review") . $this->_deadline_override_message());
         }
+    }
+
+    /** Return the deadline-exempt fields the viewer can still edit
+     * although the paper’s deadline has passed.
+     * @param bool $include_contacts
+     * @return list<PaperOption> */
+    private function _deadline_exempt_editable_fields($include_contacts) {
+        $state_ok = $this->user->edit_paper_state($this->prow) >= 0;
+        $fields = [];
+        foreach ($this->prow->form_fields() as $o) {
+            if ($o->id === PaperOption::CONTACTSID
+                ? $include_contacts
+                : $state_ok && $o->deadline_exempt()) {
+                if ($this->user->can_edit_option($this->prow, $o))
+                    $fields[] = $o;
+            }
+        }
+        return $fields;
+    }
+
+    /** Return a sentence naming the deadline-exempt fields an author of
+     * an expired draft can still edit, or the empty string.
+     * @return string */
+    private function _draft_exempt_message() {
+        $fields = $this->_deadline_exempt_editable_fields(false);
+        if (empty($fields)) {
+            return "";
+        }
+        return " " . $this->conf->_("<5>You can still edit its {fields:list or}.",
+            new FmtArg("fields", self::field_title_links($fields, "edit_title"), 5));
+    }
+
+    /** Return the message for a submitted paper whose deadline has passed,
+     * naming the deadline-exempt fields the viewer can still edit.
+     * @param 'review'|'final' $phase
+     * @return string */
+    private function _edit_message_closed($phase) {
+        $fields = $this->_deadline_exempt_editable_fields(true);
+        return $this->conf->_("<5>This {submission} is under review. You can still edit its {fields:list or}, but other fields can’t be changed.",
+            new FmtArg("fields", self::field_title_links($fields, "edit_title"), 5),
+            new FmtArg("can_withdraw", $this->user->can_withdraw_paper($this->prow, true)),
+            new FmtArg("phase", $phase));
     }
 
     /** @param iterable<PaperOption> $fields
@@ -2332,7 +2360,7 @@ class PaperTable {
                        && $this->prow->author_user()->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "js-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "js-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
+                $buttons[] = Ht::submit("updatecontacts", "Save changes", ["class" => "js-savepaper btn-primary uic js-mark-submit"]);
             }
             if (!empty($buttons)) {
                 $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "uic js-mark-submit"]);
@@ -2547,7 +2575,7 @@ class PaperTable {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
         }
         if ($this->prow->paperId && $this->edit_mode === 1) {
-            $form_js["data-contacts-only"] = 1;
+            $form_js["data-limited-edit"] = /* XXX backward compat */ $form_js["data-contacts-only"] = true;
         }
         if ($this->useRequest) {
             $form_js["class"] .= " differs";
@@ -2561,13 +2589,17 @@ class PaperTable {
 
     private function _print_editable_fields() {
         $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE))->set_table($this);
+        $state_ok = $this->edit_mode !== 1
+            || $this->user->perm_edit_paper_state($this->prow) === null;
         foreach ($this->prow->form_fields() as $o) {
             if (!$this->user->allow_view_option($this->prow, $o)) {
                 continue;
             }
             $ov = $this->prow->force_option($o);
             if (!$this->user->can_edit_option($this->prow, $o)
-                || ($o->id !== PaperOption::CONTACTSID && $this->edit_mode === 1)) {
+                || ($this->edit_mode === 1
+                    && $o->id !== PaperOption::CONTACTSID
+                    && (!$state_ok || !$o->deadline_exempt()))) {
                 $fr->clear();
                 $o->render($fr, $ov);
                 if ($fr->is_empty()) {

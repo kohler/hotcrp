@@ -1276,6 +1276,92 @@ class Unit_Tester {
         xassert_eq($this->conf->parse_time("4y ago", $t), $t2);
     }
 
+    function test_time_search_deadlines() {
+        $conf = $this->conf;
+        $old_sub = $conf->setting("sub_sub");
+        $old_resub = $conf->setting("sub_resub");
+        $old_grace = $conf->setting("sub_grace");
+        $conf->save_setting("sub_sub", Conf::$now - 1000);
+        $conf->save_setting("sub_resub", Conf::$now - 100);
+        $conf->save_refresh_setting("sub_grace", 50);
+
+        $prow = $conf->checked_paper_by_id(1);
+        xassert($prow->timeSubmitted > 0);
+        $sr = $prow->submission_round();
+        xassert_eqq($sr->resubmit, Conf::$now - 100);
+
+        $test = function ($q) use (&$prow) {
+            $srch = new PaperSearch($this->u_root, $q);
+            xassert_eqq($srch->message_list(), []);
+            return $srch->full_term()->test($prow, null);
+        };
+        $closing = function ($q) use (&$prow) {
+            $srch = new PaperSearch($this->u_root, $q);
+            return Time_SearchTerm::closing_time($srch->full_term(), $prow);
+        };
+        $has_time = function ($q) {
+            $srch = new PaperSearch($this->u_root, $q);
+            return Time_SearchTerm::has_time_term($srch->full_term());
+        };
+
+        // resubmit deadline passed, even counting grace
+        xassert_eqq($test("before:resubmit"), false);
+        xassert_eqq($test("after:resubmit"), true);
+        xassert_eqq($test("before:resubmit+1m"), true);
+        xassert_eqq($test("before:resubmit+49s"), false);
+        xassert_eqq($test("before:resubmit+51s"), true);
+        xassert_eqq($test("before:resubmit-1h"), false);
+        xassert_eqq($test("before:submit+15m"), false);
+        xassert_eqq($test("before:submit+1h"), true);
+        xassert_eqq($test("after:submit before:resubmit+1d"), true);
+        xassert_eqq($test("before:2000"), false);
+        xassert_eqq($test("after:2000"), true);
+
+        // a draft’s resubmission window ends at its submission deadline
+        $draft = PaperInfo::make_placeholder($conf, -1);
+        xassert_le($draft->timeSubmitted, 0);
+        $srch = new PaperSearch($this->u_root, "before:resubmit+1w");
+        xassert_eqq($srch->full_term()->test($draft, null), false);
+        xassert_eqq(Time_SearchTerm::closing_time($srch->full_term(), $draft), Conf::$now - 1000);
+        $srch = new PaperSearch($this->u_root, "before:resubmit-20m");
+        xassert_eqq(Time_SearchTerm::closing_time($srch->full_term(), $draft), Conf::$now - 1300);
+        $srch = new PaperSearch($this->u_root, "before:submit+1h");
+        xassert_eqq($srch->full_term()->test($draft, null), true);
+
+        // display times exclude grace
+        xassert_eqq($closing("before:resubmit"), Conf::$now - 100);
+        xassert_eqq($closing("before:resubmit+1w"), Conf::$now - 100 + 86400 * 7);
+        xassert_eqq($closing("before:submit+1h before:resubmit+1h"), Conf::$now - 1000 + 3600);
+        xassert_eqq($closing("before:submit+1h OR before:resubmit+1h"), Conf::$now - 100 + 3600);
+        xassert_eqq($closing("before:submit+1h OR #foo"), null);
+        xassert_eqq($closing("after:submit"), null);
+        xassert_eqq($closing("before:final"), null);
+
+        // time-term structure
+        xassert_eqq($has_time("before:resubmit"), true);
+        xassert_eqq($has_time("after:submit"), true);
+        xassert_eqq($has_time("before:2030 OR #extension"), true);
+        xassert_eqq($has_time("NOT after:2030"), true);
+        xassert_eqq($has_time("#foo OR (#bar #baz)"), false);
+
+        // bad durations
+        $srch = new PaperSearch($this->u_root, "before:resubmit+3x");
+        xassert_neqq($srch->message_list(), []);
+        xassert($srch->full_term() instanceof False_SearchTerm);
+
+        // unset deadline: `before` is always true, `after` never
+        $conf->save_setting("sub_sub", null);
+        $conf->save_refresh_setting("sub_resub", null);
+        $prow = $conf->checked_paper_by_id(1);
+        xassert_eqq($test("before:resubmit"), true);
+        xassert_eqq($test("after:resubmit"), false);
+        xassert_eqq($closing("before:resubmit"), null);
+
+        $conf->save_setting("sub_sub", $old_sub);
+        $conf->save_setting("sub_resub", $old_resub);
+        $conf->save_refresh_setting("sub_grace", $old_grace);
+    }
+
     function test_parse_preference() {
         xassert_eqq(Preference_AssignmentParser::parsef("--2"), [-2.0, null]);
         xassert_eqq(Preference_AssignmentParser::parsef("--3 "), [-3.0, null]);

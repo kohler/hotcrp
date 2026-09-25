@@ -260,6 +260,16 @@ class Paper_Page {
         }
     }
 
+    /** @return list<int> */
+    private function deadline_exempt_oids() {
+        $oids = [];
+        foreach ($this->prow->form_fields() as $o) {
+            if ($o->deadline_exempt())
+                $oids[] = $o->id;
+        }
+        return $oids;
+    }
+
     function handle_updatecontacts() {
         $conf = $this->conf;
         $this->useRequest = true;
@@ -273,20 +283,29 @@ class Paper_Page {
         $this->ps = new PaperStatus($this->user);
         $this->qreq["status:phase"] = "contacts";
         if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow)) {
-            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
+            $conf->feedback_msg($this->ps->decorated_message_list($this->deadline_exempt_oids()));
             return;
         }
 
         if (!$this->ps->has_change()) {
             $ml = [MessageItem::warning_note("<0>No changes"), MessageItem::warning("")];
-        } else  if ($this->ps->execute_save()) {
-            $ml = [MessageItem::success($conf->_("<0>Updated contacts"))];
+        } else if ($this->ps->execute_save()) {
+            $chf = [];
+            $notify = false;
+            foreach ($this->ps->changed_fields() as $f) {
+                $chf[] = $f->edit_title();
+                $notify = $notify || $f->id !== PaperOption::CONTACTSID;
+            }
+            $ml = [MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", "review")))];
             $this->ps->log_save_activity();
+            if ($notify) {
+                $this->ps->notify_followers();
+            }
         } else {
             $ml = [];
         }
         if (!empty($ml)) {
-            $conf->feedback_msg($ml, $this->ps->decorated_message_list([PaperOption::CONTACTSID]));
+            $conf->feedback_msg($ml, $this->ps->decorated_message_list($this->deadline_exempt_oids()));
         }
 
         if (!$this->ps->has_error()) {
