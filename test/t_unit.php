@@ -1223,6 +1223,8 @@ class Unit_Tester {
         xassert_eqq(SettingParser::parse_duration(""), null);
         xassert_eqq(SettingParser::parse_duration("1y6mo"), 86400 * (365 + 180.0));
         xassert_eqq(SettingParser::parse_duration("1:30"), 90.0);
+        xassert_eqq(SettingParser::parse_duration("P1Y6M"), 86400 * (365 + 180.0));
+        xassert_eqq(SettingParser::parse_duration("PT1H15M"), 60 * 75.0);
     }
 
     function test_parse_duration_yms() {
@@ -1239,6 +1241,27 @@ class Unit_Tester {
         xassert_eqq(SettingParser::parse_duration_yms(""), [null, null, null]);
         xassert_eqq(SettingParser::parse_duration_yms("15m1h"), [null, null, null]);
         xassert_eqq(SettingParser::parse_duration_yms("2 dayz"), [null, null, null]);
+
+        // ISO 8601 durations: `M` is months before the `T` designator and
+        // minutes after it
+        xassert_eqq(SettingParser::parse_duration_yms("P1Y"), [1, 0, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P2M"), [0, 2, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT2M"), [0, 0, 120.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("2M"), [0, 0, 120.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P3W"), [0, 0, 21 * 86400.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P4D"), [0, 0, 4 * 86400.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT5H"), [0, 0, 5 * 3600.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT7S"), [0, 0, 7.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P1Y2M3DT4H5M6S"), [1, 2, 3 * 86400 + 4 * 3600 + 5 * 60 + 6.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P1DT12H"), [0, 0, 36 * 3600.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT1H30M"), [0, 0, 5400.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT0.5H"), [0, 0, 1800.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P1.5Y"), [1, 6, 0.0]);
+        xassert_eqq(SettingParser::parse_duration_yms("P"), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT"), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("PT1H2D"), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("P1DT2D"), [null, null, null]);
+        xassert_eqq(SettingParser::parse_duration_yms("P1D T2H"), [0, 0, 93600.0]);
     }
 
     function test_parse_relative_time() {

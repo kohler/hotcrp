@@ -90,20 +90,37 @@ class SettingParser {
         $yr = $mo = 0;
         $sec = 0.0;
         $pos = 0;
+        $nparsed = 0;
+        if (($iso = str_starts_with($v, "P"))) {
+            $pos = 1;
+        }
         $multipliers = [86400 * 365, 86400 * 30, 86400 * 7, 86400, 3600, 60, 1];
         $unitprefixes = ["y", "mo", "w", "d", "h", "m", "s"];
-        while (preg_match('/\G\s*+(\d++\.?+\d*+|\.\d++)\s*+(y(?:|r|ear)s?|mo(?:|n|nth)s?|w(?:|k|eek)s?|d(?:|ay)s?|h(?:|r|our)s?|m(?:|in|inute)s?|s(?:|ec|econd)s?)(?![a-z])/i', $v, $m, 0, $pos)) {
+        while (preg_match('/\G(\s*+|[-:])(\d++\.?+\d*+|\.\d++)\s*+(y(?:ear|r)?+s?+|mo(?:n(?:th)?+)?+s?+|w(?:(?:ee)?+k)?+s?+|da?+y?+s?+|h(?:(?:ou)?+r)?+s?+|m(?:in(?:ute)?+)?+s?+|s(?:ec(?:ond)?+)?+s?+)(?![a-su-z])|\G\s*+(T)/i', $v, $m, 0, $pos)) {
             $pos += strlen($m[0]);
-            $unit = strtolower($m[2]);
+            if (!empty($m[4])) {
+                if (!$iso || $lastu > 3) {
+                    return [null, null, null];
+                }
+                $lastu = 3.5;
+                continue;
+            }
+            if (($m[1] === "-" || $m[1] === ":") && !$iso) {
+                return [null, null, null];
+            }
+            $unit = strtolower($m[3]);
             $u = 0;
             while (!str_starts_with($unit, $unitprefixes[$u])) {
                 ++$u;
+            }
+            if ($iso && $u === 5 && $lastu <= 0) {
+                $u = 1;
             }
             if ($u <= $lastu) {
                 return [null, null, null];
             }
             $lastu = $u;
-            $amt = floatval($m[1]);
+            $amt = floatval($m[2]);
             if ($amt > 0 && $amt < PHP_INT_MAX) {
                 $amti = (int) $amt;
                 if ($u === 0) {
@@ -119,8 +136,10 @@ class SettingParser {
                 }
             }
             $sec += $amt * $multipliers[$u];
+            ++$nparsed;
         }
-        if ($pos + strspn($v, " \n\r\t\x0C", $pos) === strlen($v)) {
+        if ($nparsed > 0
+            && $pos + strspn($v, " \n\r\t\x0C", $pos) === strlen($v)) {
             return [$yr, $mo, $sec];
         }
         return [null, null, null];

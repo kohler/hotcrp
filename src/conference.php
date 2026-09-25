@@ -3470,10 +3470,10 @@ class Conf {
                 $x[] = preg_quote($this->_unparse_timezone($reference));
             }
             $this->opt["dateFormatTimezoneRemover"] =
-                "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
+                "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?=\\s|\\z)/i";
         }
         if ($this->opt["dateFormatTimezoneRemover"]) {
-            $d = preg_replace($this->opt["dateFormatTimezoneRemover"], " ", $d);
+            $d = preg_replace($this->opt["dateFormatTimezoneRemover"], "", $d);
         }
         $d = trim($d);
         if (str_ends_with($d, " ago")) {
