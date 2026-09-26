@@ -61,8 +61,7 @@ class Time_SearchTerm extends SearchTerm {
         }
         if (strlen($word) === 4
             && ctype_digit($word)) {
-            $word += $before ? 0 : 1;
-            $word .= "-01-01T00:00:00";
+            $word = (intval($word) + ($before ? 0 : 1)) . "-01-01T00:00:00";
         }
         $t = $srch->conf->parse_time($word);
         if ($t === false) {
