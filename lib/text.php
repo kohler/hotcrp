@@ -476,8 +476,8 @@ class Text {
     /** @param string $pattern
      * @param bool $utf8
      * @param string $head lookbehind the first literal must satisfy
+     * @param string $reject character specification (interpolated into []) a wildcard must reject
      * @param string $tail lookahead the final literal must satisfy (word boundary)
-     * @param string $reject character specification (interpolated into []) * must reject
      * @param bool $capture if true, make capture groups for the wildcards
      * @return string */
     static function one_wildcard_regex($pattern, $head, $reject, $tail, $capture = false) {

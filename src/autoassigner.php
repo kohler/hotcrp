@@ -204,7 +204,7 @@ abstract class Autoassigner extends MessageSet {
         }
     }
 
-    /** @return list<string> */
+    /** @return list<string|object> */
     function option_schema() {
         return [];
     }
@@ -408,15 +408,15 @@ abstract class Autoassigner extends MessageSet {
         }
     }
 
-    /** @return list<string> */
+    /** @return list<object> */
     static function costs_schema() {
         return [
-            "assignment_cost#+",
-            "remove_assignment_cost#",
-            "paper_assignment_cost#+",
-            "preference_cost#+",
-            "expertise_x_cost#",
-            "expertise_y_cost#"
+            (object) ["name" => "assignment_cost", "type" => "int", "min" => 0, "max" => 1000000],
+            (object) ["name" => "remove_assignment_cost", "type" => "int", "min" => -1000000, "max" => 1000000],
+            (object) ["name" => "paper_assignment_cost", "type" => "int", "min" => 0, "max" => 1000000],
+            (object) ["name" => "preference_cost", "type" => "int", "min" => 0, "max" => 1000000],
+            (object) ["name" => "expertise_x_cost", "type" => "int", "min" => -1000000, "max" => 1000000],
+            (object) ["name" => "expertise_y_cost", "type" => "int", "min" => -1000000, "max" => 1000000]
         ];
     }
 

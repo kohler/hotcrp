@@ -51,6 +51,40 @@ class MinCostMaxFlow_Tester {
         fwrite(STDERR, "- Phase 1 complete.\n");
     }
 
+    function test_huge_costs_terminate() {
+        // Float prices cannot refine huge costs down to 1/|V| while also
+        // resolving small costs; the solver stops early with a valid,
+        // epsilon-optimal flow instead of relabeling forever.
+        foreach ([1, 1000000000000000000] as $k) {
+            $m = new MinCostMaxFlow;
+            foreach (["u0", "u1", "u2"] as $u) {
+                $m->add_node($u, "u");
+                for ($i = 0; $i < 3; ++$i) {
+                    $m->add_edge(".source", $u, 1, $k * $i);
+                }
+            }
+            foreach (["p0", "p1"] as $p) {
+                $m->add_node($p, "p");
+                $m->add_edge($p, ".sink", 2, 0);
+            }
+            $costs = [7, 23, 41, 5, 60, 12];
+            foreach (["u0", "u1", "u2"] as $u) {
+                foreach (["p0", "p1"] as $p) {
+                    $m->add_edge($u, $p, 1, array_shift($costs));
+                }
+            }
+            $m->run();
+            xassert_eqq($m->precision_limited, $k > 1);
+            xassert_eqq($m->current_flow(), 4);
+            if ($k === 1) {
+                xassert_eqq($m->current_cost(), 66);
+            } else {
+                xassert_ge($m->current_cost(), $k);
+                xassert_le($m->current_cost(), $k + 4 * 60);
+            }
+        }
+    }
+
     function test_full_range_of_results() {
         $m = new MinCostMaxFlow;
         foreach (["u0", "u1", "u2"] as $x) {

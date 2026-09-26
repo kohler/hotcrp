@@ -205,6 +205,8 @@ class MinCostMaxFlow {
     public $nrelabel;
     /** @var bool */
     public $infeasible;
+    /** @var bool */
+    public $precision_limited = false;
 
     const PMAXFLOW = 0;
     const PMAXFLOW_DONE = 1;
@@ -880,6 +882,23 @@ class MinCostMaxFlow {
         }
     }
 
+    /** @param float $epsilon
+     * @return bool */
+    private function cspushrelabel_precise($epsilon) {
+        // Prices are floats. A relabel must lower a price by `$epsilon`
+        // relative to a neighbor's price plus an edge cost; if `$epsilon` is
+        // below a few ULPs of those magnitudes, reduced costs round to zero,
+        // no arc becomes admissible, and `cspushrelabel_discharge` spins.
+        // A refinement lowers prices by at most about 3|V| current epsilons.
+        $m = max(abs($this->mincost), $this->maxcost)
+            + 3 * count($this->v) * $this->epsilon;
+        $pmax = 0;
+        foreach ($this->v as $v) {
+            $pmax = max($pmax, abs($v->price));
+        }
+        return $epsilon >= 8 * PHP_FLOAT_EPSILON * ($m + $pmax);
+    }
+
     function cspushrelabel_finish() {
         // refine the maximum flow to achieve min cost
         $this->mincost_start_at = microtime(true);
@@ -895,6 +914,11 @@ class MinCostMaxFlow {
 
         $this->debug && $this->cspushrelabel_check();
         while ($this->epsilon >= 1 / count($this->v)) {
+            // stop with an epsilon-optimal flow if prices lack precision
+            if (!$this->cspushrelabel_precise($this->epsilon / self::CSPUSHRELABEL_ALPHA)) {
+                $this->precision_limited = true;
+                break;
+            }
             $this->cspushrelabel_refine($phaseno, $nphases);
             $this->debug && $this->cspushrelabel_check();
             ++$phaseno;
@@ -932,7 +956,7 @@ class MinCostMaxFlow {
     function run() {
         assert(!$this->hasrun);
         $this->hasrun = true;
-        $this->infeasible = false;
+        $this->infeasible = $this->precision_limited = false;
         $this->initialize_edges();
         if (($f = $this->make_debug_file())) {
             fwrite($f, $this->dimacs_input(self::DIMACS_MINCOST | self::DIMACS_NAMES));
