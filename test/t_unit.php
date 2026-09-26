@@ -2111,6 +2111,16 @@ class Unit_Tester {
         xassert_eqq((Text::split_name("Kennedy, Bob (Butt Pants)"))[1], "Kennedy");
     }
 
+    function test_split_name_long_suffixes() {
+        // long separator and suffix runs split in linear time
+        $jrs = str_repeat(", Jr", 20000);
+        xassert_eqq(Text::split_name("A{$jrs}"), ["A", $jrs, null]);
+        xassert_eqq(Text::split_name("A{$jrs} Smith"), ["Jr Smith", "A" . substr($jrs, 4), null]);
+        xassert_eqq(Text::split_name("A" . str_repeat(" I", 20000) . " Smith"), ["A" . str_repeat(" I", 20000), "Smith", null]);
+        $commas = str_repeat(",", 50000);
+        xassert_eqq(Text::split_name("{$commas}!"), ["!", substr($commas, 1), null]);
+    }
+
     function test_le_von() {
         xassert_eqq((Text::split_name("Claire Le Goues"))[1], "Le Goues");
         xassert_eqq((Text::split_name("Claire Von La Le Goues"))[1], "Von La Le Goues");

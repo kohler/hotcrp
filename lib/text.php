@@ -264,7 +264,30 @@ class Text {
             . htmlspecialchars($affiliation) . ")</span>";
     }
 
-    const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
+    const SUFFIX_REGEX = 'Jr\.?+|Sr\.?+|Esq\.?+|Ph\.?+D\.?+|M\.?+[SD]\.?+|Junior|Senior|Esquire|I++|IV|VI*+|IX|XI*+|2n?+d|3r?+d|[4-9]th|1\dth';
+
+    /** @param string $name
+     * @return int */
+    static private function suffix_position($name) {
+        // Return the start of `$name`'s trailing suffixes, i.e., the
+        // leftmost match of `(?:[, ]+(?:SUFFIX_REGEX))*\z`, where suffixes
+        // are limited to 7 bytes. Suffixes contain neither commas nor
+        // spaces, so walk backward suffix by suffix, testing an 8-byte window
+        // each time; the equivalent regex backtracks quadratically on
+        // separator runs.
+        $p = $e = strlen($name);
+        while (true) {
+            $s = max(0, $e - 8);
+            if (!preg_match('/[, ](?:' . self::SUFFIX_REGEX . ')\z/i', substr($name, $s, $e - $s), $m)) {
+                return $p;
+            }
+            $e -= strlen($m[0]);
+            while ($e > 0 && ($name[$e - 1] === "," || $name[$e - 1] === " ")) {
+                --$e;
+            }
+            $p = $e;
+        }
+    }
 
     /** @param string $name
      * @return array{string,string,?string} */
@@ -304,7 +327,8 @@ class Text {
             $paren = $m[2];
         }
 
-        preg_match('/\A(.*?)((?:[, ]+(?:' . self::SUFFIX_REGEX . '))*)\z/i', $name, $m);
+        $sfxpos = self::suffix_position($name);
+        $m = [$name, substr($name, 0, $sfxpos), substr($name, $sfxpos)];
         if (($comma = strrpos($m[1], ",")) !== false) {
             $ret[0] = ltrim(substr($m[1], $comma + 1));
             $ret[1] = rtrim(substr($m[1], 0, $comma)) . $m[2];
