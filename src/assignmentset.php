@@ -238,6 +238,17 @@ final class AssignmentState extends MessageSet {
     public $has_user_error = false;
     /** @var int */
     private $cumulative_message_count = 0;  // includes duplicates
+    /** @var int */
+    private $cost = 0;
+    /** @var ?int */
+    private $max_cost;
+
+    // Costs of expensive operations, in units of in-memory items examined.
+    // A paper search costs its running time, with a minimum.
+    const COST_QUERY = 100;
+    const COST_SEARCH_MIN = 500;
+    const COST_SEARCH_PER_MS = 100;
+
     /** @var array */
     private $callables = [];
     /** @var array<string,mixed> */
@@ -341,6 +352,30 @@ final class AssignmentState extends MessageSet {
         $st->items[$k] = new AssignmentItem($x, true);
     }
 
+    /** @param ?int $max_cost
+     * @return $this */
+    function set_max_cost($max_cost) {
+        $this->max_cost = $max_cost;
+        return $this;
+    }
+    /** @return ?int */
+    function max_cost() {
+        return $this->max_cost;
+    }
+    /** @return int */
+    function cost() {
+        return $this->cost;
+    }
+    /** Charge `$n` units of work to the budget.
+     * @param int $n
+     * @throws AssignmentBudgetException if the budget is exhausted */
+    function charge($n = 1) {
+        $this->cost += $n;
+        if ($this->max_cost !== null && $this->cost > $this->max_cost) {
+            throw new AssignmentBudgetException;
+        }
+    }
+
     /** @return list<int> */
     private function pid_keys($q) {
         '@phan-var-force Assignable $q';
@@ -358,7 +393,9 @@ final class AssignmentState extends MessageSet {
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
             $k = $this->extract_key($q, $pid);
-            foreach ($k ? [$st->items[$k] ?? null] : $st->items as $item) {
+            $items = $k ? [$st->items[$k] ?? null] : $st->items;
+            $this->charge(count($items));
+            foreach ($items as $item) {
                 if ($item
                     && (!$item->deleted() || $include_deleted)
                     && $item->type() === $q->type()
@@ -434,6 +471,7 @@ final class AssignmentState extends MessageSet {
      * @return AssignmentItem
      * @suppress PhanAccessReadOnlyProperty */
     function add($x) {
+        $this->charge();
         $k = $this->extract_key($x);
         assert(!!$k);
         $st = $this->pidstate($x->pid);
@@ -519,7 +557,10 @@ final class AssignmentState extends MessageSet {
     /** @param int $cid
      * @return Contact */
     function user_by_id($cid) {
-        return $this->cmap->user_by_id($cid);
+        $nq = $this->cmap->nqueries;
+        $u = $this->cmap->user_by_id($cid);
+        $this->charge(1 + self::COST_QUERY * ($this->cmap->nqueries - $nq));
+        return $u;
     }
     /** @param list<int> $cids
      * @return list<Contact> */
@@ -528,7 +569,10 @@ final class AssignmentState extends MessageSet {
     }
     /** @return ?Contact */
     function user_by_email($email, $create = false, $req = null) {
-        return $this->cmap->user_by_email($email, $create, $req);
+        $nq = $this->cmap->nqueries;
+        $u = $this->cmap->user_by_email($email, $create, $req);
+        $this->charge(1 + self::COST_QUERY * ($this->cmap->nqueries - $nq));
+        return $u;
     }
     /** @return Contact */
     function none_user() {
@@ -553,6 +597,7 @@ final class AssignmentState extends MessageSet {
     /** @return array<int,Contact> */
     function reviewer_users() {
         if ($this->reviewer_users === null) {
+            $this->charge(self::COST_QUERY);
             $this->reviewer_users = $this->cmap->reviewer_users($this->paper_ids());
         }
         return $this->reviewer_users;
@@ -675,6 +720,8 @@ class AssignerContacts {
     private $by_lemail = [];
     /** @var bool */
     private $has_pc = false;
+    /** @var int */
+    public $nqueries = 0;
 
     function __construct(Conf $conf, Contact $viewer) {
         $this->conf = $conf;
@@ -736,6 +783,7 @@ class AssignerContacts {
         if (($u = $this->by_id[$cid] ?? null)) {
             return $u;
         }
+        ++$this->nqueries;
         $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo where contactId=?", $cid);
         $u = Contact::fetch($result, $this->conf)
             ?? Contact::make_keyed($this->conf, ["email" => "unknown contact {$cid}", "contactId" => $cid]);
@@ -757,6 +805,7 @@ class AssignerContacts {
         if (($c = $this->by_lemail[$lemail] ?? null)) {
             return $c;
         }
+        ++$this->nqueries;
         $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo where email=?", $lemail);
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
@@ -764,6 +813,7 @@ class AssignerContacts {
             $is_anonymous = Contact::is_anonymous_email($email);
             assert(validate_email($email) || $is_anonymous);
             if (($cdb = $this->conf->contactdb()) && validate_email($email)) {
+                ++$this->nqueries;
                 $result = Dbl::qe($cdb, "select " . $this->contactdb_user_query_fields() . " from ContactInfo where email=?", $lemail);
                 $c = Contact::fetch($result, $this->conf);
                 Dbl::free($result);
@@ -795,6 +845,7 @@ class AssignerContacts {
     /** @return array<int,Contact> */
     function reviewer_users($pids) {
         $rset = $this->pc_members();
+        ++$this->nqueries;
         $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a and reviewType>0 group by ContactInfo.contactId", $pids);
         while ($result && ($c = Contact::fetch($result, $this->conf))) {
             $rset[$c->contactId] = $this->store($c);
@@ -854,6 +905,9 @@ class AssignmentError extends Exception {
         }
         parent::__construct($message);
     }
+}
+
+class AssignmentBudgetException extends Exception {
 }
 
 abstract class AssignmentParser {
@@ -1220,6 +1274,9 @@ class AssignmentSet {
     private $_cleanup_notify_tracker = [];
     private $qe_stager;
 
+    // Work budget for requests from non-managers, in AssignmentState cost units
+    const MAX_COST_PC = 100000;
+
     const PROGPHASE_PARSE = 1;
     const PROGPHASE_PREAPPLY = 2;
     const PROGPHASE_REALIZE = 3;
@@ -1231,6 +1288,26 @@ class AssignmentSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->astate = new AssignmentState($user);
+        if (!$user->is_manager()) {
+            $this->astate->set_max_cost(self::MAX_COST_PC);
+        }
+    }
+
+    /** @param ?int $max_cost
+     * @return $this */
+    function set_max_cost($max_cost) {
+        $this->astate->set_max_cost($max_cost);
+        return $this;
+    }
+
+    /** @return ?int */
+    function max_cost() {
+        return $this->astate->max_cost();
+    }
+
+    /** @return int */
+    function cost() {
+        return $this->astate->cost();
     }
 
     /** @param callable(AssignmentSet) $progressf
@@ -1582,11 +1659,17 @@ class AssignmentSet {
         } else {
             $search = $this->searches[$pfield] ?? null;
             if ($search === null) {
+                $t0 = hrtime(true);
                 $search = $this->searches[$pfield] = new PaperSearch($this->user, [
                     "q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer
                 ]);
+                $pids = $search->sorted_paper_ids();
+                $ms = (hrtime(true) - $t0) / 1000000;
+                $this->astate->charge(max(AssignmentState::COST_SEARCH_MIN,
+                                          (int) ($ms * AssignmentState::COST_SEARCH_PER_MS)));
+            } else {
+                $pids = $search->sorted_paper_ids();
             }
-            $pids = $search->sorted_paper_ids();
             if ($report_error && $search->has_problem()) {
                 foreach ($search->message_list() as $mi) {
                     $this->astate->append_item($mi->with_landmark($this->astate->landmark()));
@@ -1727,6 +1810,7 @@ class AssignmentSet {
 
         // check for unique PC match
         if ($this->user_universe === AssignmentParser::UU_PC) {
+            $this->astate->charge(count($this->astate->pc_members()));
             $ret = ContactSearch::make_cset(self::req_user_text($req, NAME_E|NAME_L),
                                             $this->user,
                                             $this->astate->pc_members());
@@ -1881,6 +1965,7 @@ class AssignmentSet {
                 $cset = ($cset ?? []) + $this->query_reviewers($prow);
             }
             if ($cset !== null) {
+                $this->astate->charge(count($cset));
                 if (($req["uid"] ?? "") !== "") {
                     $csrch = new ContactSearch(ContactSearch::F_USERID, $req["uid"], $this->astate->user, $cset);
                 } else {
@@ -2006,6 +2091,7 @@ class AssignmentSet {
 
         $ret = 0;
         foreach ($pusers as $auser) {
+            $this->astate->charge();
             $mcount = $this->astate->cumulative_message_count();
             $allow = $aparser->allow_user($prow, $auser, $req, $this->astate);
             if ($allow !== true) {
@@ -2071,10 +2157,22 @@ class AssignmentSet {
         $has_landmark = $csv->has_column("landmark");
         $old_overrides = $this->user->set_overrides($this->astate->overrides);
 
-        // parse file up to 2000 lines at a time
+        // parse file up to 5000 lines at a time
         $this->progress_phase = self::PROGPHASE_PARSE;
-        while ($this->parse_batch($csv, $has_landmark)) {
-            /* do nothing */
+        try {
+            while ($this->parse_batch($csv, $has_landmark)) {
+                /* do nothing */
+            }
+            $exhausted = false;
+        } catch (AssignmentBudgetException) {
+            $this->astate->error("<0>Assignment too long or complex, giving up");
+            $exhausted = true;
+        }
+        // later phases process only items the budget already covered
+        $this->astate->set_max_cost(null);
+        if ($exhausted) {
+            $this->user->set_overrides($old_overrides);
+            return $this;
         }
 
         // call preapply functions and compute diff
@@ -2130,7 +2228,10 @@ class AssignmentSet {
 
     /** @return bool */
     private function parse_batch(CsvParser $csv, $has_landmark) {
-        set_time_limit(30);
+        // a capped request is bounded by its budget, not by batches
+        if ($this->request_count === 0 || $this->astate->max_cost() === null) {
+            set_time_limit(30);
+        }
         $rowlimit = 5000;
         $progresscadence = 1000;
 
@@ -2138,6 +2239,7 @@ class AssignmentSet {
         $reqs = $pids = $progress = [];
         $nrows = 0;
         while ($nrows < $rowlimit && ($req = $csv->next_row())) {
+            $this->astate->charge();
             if ($has_landmark) {
                 $reqs[] = $req["landmark"] ?? $csv->lineno();
             } else {

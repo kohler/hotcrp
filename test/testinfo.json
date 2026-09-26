@@ -45,6 +45,7 @@
             "fresh_db", "Reviews_Tester", "Comments_Tester",
             "Mailer_Tester", "Events_Tester", "UsersPage_Tester",
             "LogEntry_Tester", "DownloadLog_Tester", "Autoassign_Tester",
+            "AssignmentSet_Tester",
             "fresh_db",
             "Formulas_Tester"
         ]
