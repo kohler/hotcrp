@@ -67,6 +67,8 @@ class ContactList {
     private $_au_unsub;
     /** @var array<int,int> */
     private $_pref_data;
+    /** @var list<int> */
+    private $_pref_pids = [];
     /** @var array<int,list<int>> */
     private $_re_data;
     /** @var array<int,list<array{int,int,int,int}>> */
@@ -709,6 +711,15 @@ class ContactList {
         $limit = $this->limit;
         $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "extrev-not-accepted", "all"], true) ? $limit : null;
 
+        $this->_viewable_roles = $this->user->viewable_roles_mask();
+        if ($limit === "pc" || $limit === "fullpc") {
+            $this->_limit_default_roles = Contact::ROLE_PC;
+        } else if ($limit === "unlistedpc") {
+            $this->_limit_default_roles = Contact::ROLE_UNLISTEDPC;
+        } else {
+            $this->_limit_default_roles = 0;
+        }
+
         $args = [];
         if (isset($this->qopt["papers"])) {
             $args["allConflictType"] = true;
@@ -733,6 +744,7 @@ class ContactList {
         if (empty($args)
             && !isset($this->qopt["leads"])
             && !isset($this->qopt["shepherds"])
+            && (!isset($this->qopt["preferences"]) || $this->user->allow_admin_all())
             && !str_starts_with($limit, "au")) {
             return;
         }
@@ -843,15 +855,16 @@ class ContactList {
             }
         }
 
-        $this->user->set_overrides($overrides);
-        $this->_viewable_roles = $this->user->viewable_roles_mask();
-        if ($this->limit === "pc" || $this->limit === "fullpc") {
-            $this->_limit_default_roles = Contact::ROLE_PC;
-        } else if ($this->limit === "unlistedpc") {
-            $this->_limit_default_roles = Contact::ROLE_UNLISTEDPC;
-        } else {
-            $this->_limit_default_roles = 0;
+        if (isset($this->qopt["preferences"]) && !$this->user->allow_admin_all()) {
+            $this->_pref_pids = [];
+            foreach ($prows as $prow) {
+                if ($this->user->can_view_preference($prow, true)) {
+                    $this->_pref_pids[] = $prow->paperId;
+                }
+            }
         }
+
+        $this->user->set_overrides($overrides);
     }
 
     /** @param int $fieldId
@@ -1308,7 +1321,16 @@ class ContactList {
             } else {
                 $this->_pref_data[$this->user->contactId] = 0;
             }
-            $result = $this->conf->qe("select contactId, count(*) from PaperReviewPreference where contactId?a group by contactId", array_keys($this->_pref_data));
+            if ($this->user->allow_admin_all()) {
+                // chair can see all preferences
+                $result = $this->conf->qe("select contactId, count(*) from PaperReviewPreference where contactId?a and (preference!=0 or expertise is not null) group by contactId",
+                    array_keys($this->_pref_data));
+            } else {
+                // count others' preferences only on papers where the viewer
+                // can see aggregate preferences; count own preferences everywhere
+                $result = $this->conf->qe("select contactId, count(*) from PaperReviewPreference where contactId?a and (paperId?a or contactId=?) and (preference!=0 or expertise is not null) group by contactId",
+                    array_keys($this->_pref_data), $this->_pref_pids, $this->user->contactId);
+            }
             while (($row = $result->fetch_row())) {
                 $this->_pref_data[(int) $row[0]] = (int) $row[1];
             }

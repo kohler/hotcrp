@@ -42,8 +42,8 @@
     {
         "name": "test06",
         "members": [
-            "fresh_db", "Reviews_Tester", "Comments_Tester", "UserAPI_Tester",
-            "UploadAPI_Tester", "Mailer_Tester", "Events_Tester",
+            "fresh_db", "Reviews_Tester", "Comments_Tester",
+            "Mailer_Tester", "Events_Tester", "UsersPage_Tester",
             "LogEntry_Tester", "DownloadLog_Tester", "Autoassign_Tester",
             "fresh_db",
             "Formulas_Tester"
@@ -74,7 +74,7 @@
         "members": [
             "PaperAPI_Tester", "ReviewAPI_Tester",
             "FollowAPI_Tester", "Scope_Tester", "Authorize_Tester",
-            "APICounter_Tester",
+            "APICounter_Tester", "UploadAPI_Tester", "UserAPI_Tester",
             "SubmissionRound_Tester", "RequestReviewAPI_Tester"
         ]
     },
