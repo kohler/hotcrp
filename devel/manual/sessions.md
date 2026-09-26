@@ -119,12 +119,6 @@ another associative array.
 
 * `uldisplay`
 
-* `foldpaper`
-
-* `foldpscollab`
-
-* `foldhomeactivity`
-
 * `msgs`
 
 * `settings_highlight`

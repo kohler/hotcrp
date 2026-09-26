@@ -92,28 +92,27 @@ when a user is signed in.
 Update a small set of per-user, per-session UI preferences and return the same
 session information as [`GET /session`](#get-session). This endpoint
 backs the HotCRP Javascript client’s “remember my view” behavior; the
-preferences it manages are cosmetic (folding state, which columns are shown in
-paper and user lists, score-sort order) and have no effect on submissions,
-reviews, or permissions. Unlike `GET /session`, it requires an authenticated,
-same-origin request with a valid `post` CSRF token.
+preferences it manages are cosmetic (which columns are shown in paper and user
+lists, score-sort order) and have no effect on submissions, reviews, or
+permissions. It does not require a signed-in user, but unlike `GET /session`
+it requires a valid `post` CSRF token.
 
 The preferences to change are encoded in the `v` parameter as a
-whitespace-separated list of assignments. Each assignment has the form
-`name[.key][=value]`:
+whitespace-separated list of assignments:
 
-* `name` selects the preference. Recognized names include `foldpaper`,
-  `foldpscollab`, `foldhomeactivity` (folding toggles), `pldisplay`,
-  `pfdisplay`, `uldisplay` (which columns/fields are shown in the paper list,
-  paper form, and user list), and `scoresort` / `ulscoresort` (score sort
-  order).
-* `.key` is an optional sub-selector. For the `*display` preferences it names
-  the column or field being shown or hidden; for `foldpaper` it names an
-  individual foldable region.
-* `=value` is an optional integer. `0` (or an omitted value) means “unfold” or
-  “show”; a nonzero value means “fold” or “hide”.
+* `pldisplay.COLUMN[=value]`, `pfdisplay.COLUMN[=value]`, and
+  `uldisplay.COLUMN[=value]` show or hide a column in the search paper list,
+  the review preferences paper list, and the user list, respectively. A
+  `value` of `0` (or an omitted value) shows the column; a nonzero integer
+  hides it.
+* `scoresort=SORT` sets the score sort order for the search paper list. `SORT` is
+  `counts`, `average`, `median`, `variance`, `maxmin`, or `my`.
+* `ulscoresort=SORT` (or `uldisplay.scoresort=SORT`) sets the score sort
+  order for the user list. `SORT` is `variance` or `maxmin`; any other value
+  restores the default, `average`.
 
-For example, `v=pldisplay.authors=0 foldhomeactivity=1` reveals the authors
-column in the paper list and folds the home-page activity region.
+For example, `v=pldisplay.authors=0 pldisplay.abstract=1` shows the authors
+column in the paper list and hides the abstract column.
 
 Parsing is best-effort: every recognized assignment is applied, and any
 component that is not understood is silently ignored. A successful request

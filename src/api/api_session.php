@@ -41,57 +41,33 @@ class Session_API {
         // independent, so partial application is correct, and lenient parsing
         // keeps clients and servers of different versions interoperable.
         $qreq->open_session();
-        $view = [];
-        preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
+        $view = $uldisplay = [];
+        preg_match_all('/(?:\A|\s)((?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=\s]*+)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
-            if ($m[1] === "foldpaper" && $m[2] !== "") {
-                $x = $qreq->csession($m[1]) ?? [];
-                if (is_string($x)) {
-                    $x = explode(" ", $x);
-                }
-                $x = array_diff($x, [substr($m[2], 1)]);
-                if ($unfold) {
-                    $x[] = substr($m[2], 1);
-                }
-                $v = join(" ", $x);
-                if ($v === "") {
-                    $qreq->unset_csession("foldpaper");
-                } else if (substr_count($v, " ") === count($x) - 1) {
-                    $qreq->set_csession("foldpaper", $v);
-                } else {
-                    $qreq->set_csession("foldpaper", $x);
-                }
-                // XXX backwards compat
-                $qreq->unset_csession("foldpapera");
-                $qreq->unset_csession("foldpaperb");
-                $qreq->unset_csession("foldpaperp");
-                $qreq->unset_csession("foldpapert");
-            } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
+            if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
                 $ss = ScoreInfo::parse_score_sort(substr($m[3], 1));
                 if ($ss !== null) {
                     $view["pl"][] = "sort:[score {$ss}]";
                 }
             } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
                 $want = ScoreInfo::parse_score_sort(substr($m[3], 1));
-                self::change_uldisplay($qreq, ["scoresort" => $want]);
+                $uldisplay["scoresort"] = $want;
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
                 $view[substr($m[1], 0, 2)][] = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
             } else if ($m[1] === "uldisplay"
-                       && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
+                       && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])
+                       && ($m[2] !== ".scoresort" || strlen($m[3]) > 1)) {
                 $v = $m[2] === ".scoresort" ? substr($m[3], 1) : $unfold;
-                self::change_uldisplay($qreq, [substr($m[2], 1) => $v]);
-            } else if (substr($m[1], 0, 4) === "fold" && $m[2] === "") {
-                if ($unfold) {
-                    $qreq->set_csession($m[1], 0);
-                } else {
-                    $qreq->unset_csession($m[1]);
-                }
+                $uldisplay[substr($m[2], 1)] = $v;
             }
         }
         foreach ($view as $report => $viewlist) {
             self::parse_view($qreq, $report, join(" ", $viewlist));
+        }
+        if (!empty($uldisplay)) {
+            self::change_uldisplay($qreq, $uldisplay);
         }
         return true;
     }
@@ -156,7 +132,14 @@ class Session_API {
 
     /** @param array<string,null|bool|string> $settings */
     static private function change_uldisplay(Qrequest $qreq, $settings) {
-        $curl = preg_split('/\s++/', ContactList::uldisplay($qreq), -1, PREG_SPLIT_NO_EMPTY);
+        $uld = [];
+        foreach (preg_split('/\s++/', ContactList::uldisplay($qreq), -1, PREG_SPLIT_NO_EMPTY) as $s) {
+            if (($eq = strpos($s, "=")) !== false) {
+                $uld[substr($s, 0, $eq)] = substr($s, $eq);
+            } else {
+                $uld[$s] = "";
+            }
+        }
         foreach ($settings as $name => $setting) {
             if (($f = $qreq->conf()->review_field($name))) {
                 $keys = [$f->short_id];
@@ -166,29 +149,30 @@ class Session_API {
             } else {
                 $keys = [$name];
             }
+            foreach ($keys as $key) {
+                unset($uld[$key]);
+            }
             if ($name === "scoresort") {
                 $setting = self::clean_ulscoresort($setting);
             }
-            foreach ($keys as $i => $key) {
-                $p = 0;
-                while (($p = self::uldisplay_search($key, $curl, $p)) !== false) {
-                    array_splice($curl, $p, 1);
-                }
-            }
             if ($setting) {
-                $curl[] = $keys[0] . (is_string($setting) ? "={$setting}" : "");
+                $uld[$keys[0]] = is_string($setting) ? "={$setting}" : "";
             }
         }
 
+        ksort($uld);
+        $wantl = [];
+        foreach ($uld as $k => $v) {
+            $wantl[] = $k . $v;
+        }
         $defaultl = explode(" ", trim(ContactList::uldisplay($qreq, true)));
         sort($defaultl);
-        sort($curl);
-        if ($curl === $defaultl) {
+        if ($wantl === $defaultl) {
             $qreq->unset_csession("uldisplay");
-        } else if ($curl === [] || $curl === [""]) {
+        } else if ($wantl === [] || $wantl === [""]) {
             $qreq->set_csession("uldisplay", " ");
         } else {
-            $qreq->set_csession("uldisplay", " " . join(" ", $curl) . " ");
+            $qreq->set_csession("uldisplay", " " . join(" ", $wantl) . " ");
         }
     }
 
