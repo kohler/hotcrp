@@ -2,6 +2,12 @@
 ## runsql.sh -- HotCRP database shell
 ## Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+if [ -t 2 ]; then
+    echo 1>&2
+    printf '\033[31;1m*** `lib/runsql.sh` is deprecated; use `php batch/db.php` instead\033[m\n' 1>&2
+    echo 1>&2
+fi
+
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 set -f   # disable filename globbing
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./

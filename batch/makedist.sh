@@ -121,6 +121,7 @@ batch/cli/cli_test.php
 batch/cli/cli_upload.php
 batch/collaboratordiff.php
 batch/createdb.php
+batch/db.php
 batch/deletepapers.php
 batch/fixdelegation.php
 batch/fileinfo.php
@@ -140,7 +141,6 @@ batch/saveusers.php
 batch/search.php
 batch/settings.php
 batch/sparsifypref.php
-batch/sql.php
 batch/updatecontactdb.php
 
 conf/.htaccess

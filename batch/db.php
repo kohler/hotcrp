@@ -1,13 +1,13 @@
 <?php
-// sql.php -- HotCRP database access script
+// db.php -- HotCRP database access script
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
-    exit(Sql_Batch::make_args($argv)->run());
+    exit(Db_Batch::make_args($argv)->run());
 }
 
-class Sql_Batch {
+class Db_Batch {
     /** @var Dbl_ConnectionParams */
     public $connp;
     /** @var 'shell'|'file'|'query' */
@@ -322,7 +322,7 @@ class Sql_Batch {
         }
         $result = Dbl::qx_raw($dblink, $this->query);
         if (Dbl::is_error($result)) {
-            fwrite(STDERR, "sql.php: {$dblink->error}\n");
+            fwrite(STDERR, "db.php: {$dblink->error}\n");
             return 1;
         }
         $this->handle_result($result);
@@ -342,7 +342,7 @@ class Sql_Batch {
     }
 
     /** @param list<string> $argv
-     * @return Sql_Batch */
+     * @return Db_Batch */
     static function make_args($argv) {
         global $Opt;
         $args = (new Getopt)->long(
@@ -356,9 +356,9 @@ class Sql_Batch {
             "totals Output query result column totals",
             "update-schema Update database schema before running"
         )->description("Access a HotCRP database.
-Usage: php batch/sql.php [-n CONFID] [MYSQL-OPTS...]
-       php batch/sql.php [-n CONFID] [MYSQL-OPTS...] -f SQLFILE
-       php batch/sql.php [-n CONFID] [OPTS...] QUERY...
+Usage: php batch/db.php [-n CONFID] [MYSQL-OPTS...]
+       php batch/db.php [-n CONFID] [MYSQL-OPTS...] -f SQLFILE
+       php batch/db.php [-n CONFID] [OPTS...] QUERY...
 
 With no arguments, run an interactive `mysql` shell on the database.
 With `-f`, pipe that file (or stdin, for `-`) to `mysql`.
@@ -396,6 +396,6 @@ and print the result as CSV (or JSON).")
         if (!$connp || ($connp->name ?? "") === "") {
             throw new CommandLineException("Database not configured");
         }
-        return new Sql_Batch($connp, $mode, $args);
+        return new Db_Batch($connp, $mode, $args);
     }
 }
