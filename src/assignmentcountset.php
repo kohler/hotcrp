@@ -170,12 +170,14 @@ class AssignmentCountSet {
                 }
                 if (($this->has & self::HAS_LEAD)
                     && $prow->leadContactId > 0
-                    && $prow->timeSubmitted > 0) {
+                    && $prow->timeSubmitted > 0
+                    && $this->user->can_view_lead($prow)) {
                     $this->ensure($prow->leadContactId)->lead += 1;
                 }
                 if (($this->has & self::HAS_SHEPHERD)
                     && $prow->shepherdContactId > 0
-                    && $prow->timeSubmitted > 0) {
+                    && $prow->timeSubmitted > 0
+                    && $this->user->can_view_shepherd($prow)) {
                     $this->ensure($prow->shepherdContactId)->shepherd += 1;
                 }
             }
