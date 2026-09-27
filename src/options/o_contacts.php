@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class Contacts_PaperOption extends PaperOption {
+    // hard limit on contacts per submission
+    const MAX_CONTACTS = 1000;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
     }
@@ -20,6 +23,31 @@ class Contacts_PaperOption extends PaperOption {
                 return $i;
         }
         return false;
+    }
+    /** @param list<Author> $ca
+     * @return array<string,Author> */
+    static private function ca_map($ca) {
+        $m = [];
+        foreach ($ca as $c) {
+            $le = strtolower($c->email);
+            $m[$le] = $m[$le] ?? $c;
+        }
+        return $m;
+    }
+    /** @return string */
+    private function too_many_message() {
+        return $this->conf->_("<0>A {submission} may have at most {max} contacts", new FmtArg("max", self::MAX_CONTACTS));
+    }
+    /** @param PaperValue $ov
+     * @param int $nreq
+     * @return ?PaperValue */
+    private function check_parse_count($ov, $nreq) {
+        // reject overlong requests before any per-entry lookup; a request
+        // may list every current user, plus the maximum number of contacts
+        if ($nreq <= count(self::users_anno($ov)) + self::MAX_CONTACTS) {
+            return null;
+        }
+        return PaperValue::make_estop($ov->prow, $this, $this->too_many_message());
     }
 
     function value_force(PaperValue $ov) {
@@ -91,29 +119,29 @@ class Contacts_PaperOption extends PaperOption {
     }
     /** @param list<Author> $specau */
     private function apply_parsed_users(PaperValue $ov, $specau, Contact $user) {
-        $curau = self::users_anno($ov);
+        $curau = self::ca_map(self::users_anno($ov));
         $modified = false;
         $admin = $user->allow_admin($ov->prow);
         $removed_bot = false;
         foreach ($specau as $sau) {
-            $j = self::ca_index($curau, $sau->email);
-            $cau = $j !== false ? $curau[$j] : null;
+            $le = strtolower($sau->email);
+            $cau = $curau[$le] ?? null;
             if (!$cau) {
                 // new contacts must have emails validated
                 if ($sau->conflictType === 0) {
                     continue;
                 } else if (Contact::is_plausible_author_email($sau->email, $admin)) {
-                    $curau[] = $sau;
+                    $curau[$le] = $sau;
                     $modified = true;
                     continue;
                 }
             } else if ($sau->conflictType !== 0) {
                 // requested contact: copy author index, activate placeholder
                 $cau->author_index = $sau->author_index;
-                $modified = $modified || $curau[$j]->is_placeholder();
+                $modified = $modified || $cau->is_placeholder();
                 continue;
             } else if ($admin || !Contact::is_bot_email($sau->email)) {
-                array_splice($curau, $j, 1);
+                unset($curau[$le]);
                 $modified = true;
                 continue;
             }
@@ -134,6 +162,9 @@ class Contacts_PaperOption extends PaperOption {
         if (!$modified) {
             return;
         }
+        if (count($curau) > self::MAX_CONTACTS) {
+            $ov->estop($this->too_many_message());
+        }
         // mark changes on value
         $emails = $cids = [];
         foreach ($curau as $au) {
@@ -141,7 +172,7 @@ class Contacts_PaperOption extends PaperOption {
             $emails[] = $au->email;
         }
         $ov->set_value_data($cids, $emails);
-        $ov->set_anno("users", $curau);
+        $ov->set_anno("users", array_values($curau));
         $ov->set_anno("modified", true);
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
@@ -158,6 +189,9 @@ class Contacts_PaperOption extends PaperOption {
             $au->conflictType = $active ? CONFLICT_CONTACTAUTHOR : 0;
             $au->author_index = $n;
             $reqau[] = $au;
+        }
+        if (($errov = $this->check_parse_count($ov, count($reqau)))) {
+            return $errov;
         }
         // apply specified values
         $this->apply_parsed_users($ov, $reqau, $qreq->user());
@@ -196,10 +230,14 @@ class Contacts_PaperOption extends PaperOption {
         } else {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
+        if (($errov = $this->check_parse_count($ov, count($reqau)))) {
+            return $errov;
+        }
         // in JSON save (unlike web save), any unmentioned contacts are cleared
         $specau = $reqau;
+        $specmap = self::ca_map($specau);
         foreach (self::users_anno($ov) as $au) {
-            if (self::ca_index($specau, $au->email) === false) {
+            if (!isset($specmap[strtolower($au->email)])) {
                 $specau[] = $aux = Author::make_email($au->email);
                 $aux->conflictType = 0;
             }

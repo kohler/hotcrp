@@ -501,6 +501,152 @@ class PaperAPI_Tester {
         $this->conf->invalidate_caches("paper");
     }
 
+    /** @param array<string,mixed> $pj
+     * @return string */
+    private function dry_run_feedback(Contact $u, $pj) {
+        $jr = call_api("=paper", $u, TestQreq::post_json($pj, ["p" => $pj["pid"], "dry_run" => 1]));
+        xassert_eqq($jr->paper ?? null, null);
+        $this->conf->id_randomizer()->cleanup();
+        return ($jr->ok ? "OK " : "!OK ") . json_encode_db($jr->message_list ?? []);
+    }
+
+    function test_many_contacts_authors() {
+        // Any user may dry-run a new submission, and each listed contact
+        // or author may look up or create an account, so overlong
+        // `contacts` and `authors` lists are rejected before that work.
+        $nusers = $this->conf->fetch_ivalue("select count(*) from ContactInfo");
+        $u = $this->conf->checked_user_by_email("kohler@seas.harvard.edu");
+        xassert_eqq($u->roles, 0);
+        xassert(!$u->is_placeholder());
+        $me = ["name" => "Eddie Kohler", "email" => $u->email];
+        $new = ["pid" => "new", "title" => "Many people", "abstract" => "An abstract", "authors" => [$me]];
+        $max = Authors_PaperOption::MAX_AUTHORS;
+        xassert_eqq(Contacts_PaperOption::MAX_CONTACTS, $max);
+        $aumsg = "may have at most {$max} authors";
+        $comsg = "may have at most {$max} contacts";
+
+        // too many contacts, as JSON list, JSON object, and form:
+        // no accounts made
+        $contacts = [$u->email];
+        $post = [
+            "p" => "new", "dry_run" => 1,
+            "title" => "Many people", "abstract" => "An abstract",
+            "has_authors" => 1, "authors:1:email" => $u->email,
+            "has_contacts" => 1, "contacts:1:email" => $u->email, "contacts:1:active" => 1
+        ];
+        for ($i = 2; count($contacts) < $max + 50; ++$i) {
+            $contacts[] = "u{$i}@xc.edu";
+            $post["contacts:{$i}:email"] = "u{$i}@xc.edu";
+            $post["contacts:{$i}:active"] = 1;
+        }
+        $t = $this->dry_run_feedback($u, ["contacts" => $contacts] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, $comsg);
+        $t = $this->dry_run_feedback($u, ["contacts" => (object) array_fill_keys($contacts, true)] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, $comsg);
+        $jr = call_api("=paper", $u, TestQreq::post($post));
+        xassert(!$jr->ok);
+        xassert_str_contains(json_encode_db($jr->message_list), $comsg);
+        $this->conf->id_randomizer()->cleanup();
+        xassert(!$this->conf->fresh_user_by_email("u2@xc.edu"));
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // the limit applies to the resulting contacts, too
+        $t = $this->dry_run_feedback($u, ["contacts" => array_slice($contacts, 0, $max + 1)] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, $comsg);
+        $t = $this->dry_run_feedback($u, ["contacts" => array_merge(["notanemail"], array_slice($contacts, 0, $max))] + $new);
+        xassert_not_str_contains($t, $comsg);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // shorter lists parse as before: invalid address reported,
+        // current contact matched case-insensitively, `false` removes.
+        // NB The error in each request is what keeps the dry run from
+        // creating accounts for the valid addresses.
+        $contacts = ["notanemail", strtoupper($u->email)];
+        $cobj = ["NOTANEMAIL" => true, strtoupper($u->email) => false];
+        for ($i = 0; $i < 20; ++$i) {
+            $contacts[] = "u{$i}@xc.edu";
+            $cobj["u{$i}@xc.edu"] = true;
+        }
+        $t = $this->dry_run_feedback($u, ["contacts" => $contacts] + $new);
+        xassert_not_str_contains($t, $comsg);
+        xassert_str_contains($t, "Invalid email address ‘notanemail’");
+        xassert_not_str_contains($t, "can’t remove yourself");
+        $t = $this->dry_run_feedback($u, ["contacts" => (object) $cobj] + $new);
+        xassert_not_str_contains($t, $comsg);
+        xassert_str_contains($t, "Invalid email address ‘NOTANEMAIL’");
+        xassert_str_contains($t, "can’t remove yourself");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // too many authors, as JSON and as form: no accounts made
+        $authors = [$me];
+        $post = [
+            "p" => "new", "dry_run" => 1,
+            "title" => "Many people", "abstract" => "An abstract",
+            "has_authors" => 1, "authors:1:email" => $u->email
+        ];
+        for ($i = 2; count($authors) < $max + 50; ++$i) {
+            $authors[] = ["name" => "Author {$i}", "email" => "a{$i}@xa.edu"];
+            $post["authors:{$i}:name"] = "Author {$i}";
+            $post["authors:{$i}:email"] = "a{$i}@xa.edu";
+        }
+        $t = $this->dry_run_feedback($u, ["authors" => $authors] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, $aumsg);
+        $jr = call_api("=paper", $u, TestQreq::post($post));
+        xassert(!$jr->ok);
+        xassert_str_contains(json_encode_db($jr->message_list), $aumsg);
+        $this->conf->id_randomizer()->cleanup();
+        xassert(!$this->conf->fresh_user_by_email("a2@xa.edu"));
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // with a configured maximum, that is the limit reported
+        xassert_eqq($this->conf->opt("maxAuthors"), null);
+        $this->conf->set_opt("maxAuthors", 25);
+        $this->conf->invalidate_caches("options");
+        $t = $this->dry_run_feedback($u, ["authors" => $authors] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, "may have at most 25 authors");
+        xassert_not_str_contains($t, $aumsg);
+        $t = $this->dry_run_feedback($u, ["authors" => array_slice($authors, 0, 30)] + $new);
+        xassert_str_starts_with($t, "!OK ");
+        xassert_str_contains($t, "may have at most 25 authors");
+        xassert_not_str_contains($t, $aumsg);
+        $this->conf->set_opt("maxAuthors", null);
+        $this->conf->invalidate_caches("options");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // blank entries don't count, and a new submission's contacts may
+        // name as many people as it may have authors (here the invalid
+        // author address is what prevents account creation)
+        $authors = array_merge([$me], array_fill(0, $max, ""), ["Nobody"]);
+        $t = $this->dry_run_feedback($u, ["authors" => $authors] + $new);
+        xassert_not_str_contains($t, $aumsg);
+        $authors = [$me, ["name" => "Bad Address", "email" => "bogus"]];
+        $contacts = [$u->email];
+        for ($i = 0; count($authors) < $max; ++$i) {
+            $authors[] = ["name" => "Author {$i}", "email" => "a{$i}@xa.edu"];
+            $contacts[] = "a{$i}@xa.edu";
+        }
+        $t = $this->dry_run_feedback($u, ["authors" => $authors, "contacts" => $contacts] + $new);
+        xassert_not_str_contains($t, $aumsg);
+        xassert_not_str_contains($t, $comsg);
+        xassert_str_contains($t, "Invalid email address ‘bogus’");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+
+        // duplicate author emails are still noticed, case-insensitively
+        $authors = [$me, ["name" => "Mikael Degermark", "email" => $this->u_micke->email],
+            ["name" => "Eddie Again", "email" => strtoupper($u->email)], "Nobody"];
+        $t = $this->dry_run_feedback($u, ["authors" => $authors] + $new);
+        xassert_str_contains($t, "same email address has been used for different authors");
+        xassert_str_contains($t, "\"field\":\"authors:1:email\"");
+        xassert_str_contains($t, "\"field\":\"authors:3:email\"");
+        xassert_not_str_contains($t, "\"field\":\"authors:2:email\"");
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo"), $nusers);
+    }
+
     function test_pid_mismatch() {
         $qreq = TestQreq::post_json(["title" => "Foo", "pid" => $this->npid + 1],
             ["p" => 1, "dry_run" => 1]);
