@@ -660,19 +660,22 @@ In thee!
     }
 
     function test_big_upload() {
-        // same content as doubling TEXT until it reaches 20MiB, built in one
-        // allocation so the transient peak is the string, not twice it
+        // content is TEXT doubled until it reaches 20MiB (40MB); chunks are
+        // generated as needed, so the whole string is never in memory
+        $tlen = strlen(self::TEXT);
         $n = 1;
-        while (strlen(self::TEXT) * $n < 20971520) {
+        while ($tlen * $n < 20971520) {
             $n *= 2;
         }
-        $s = str_repeat(self::TEXT, $n);
+        $size = $tlen * $n;
+        $chunksz = 1000000;
+        $period = str_repeat(self::TEXT, intdiv($chunksz, $tlen) + 2);
 
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [
                 "start" => 1,
                 "temp" => 0,
-                "size" => strlen($s),
+                "size" => $size,
                 "filename" => "where.txt",
                 "mimetype" => "text/plain",
             ]))->approve_token();
@@ -683,19 +686,18 @@ In thee!
         $token = $j->token;
 
         $offset = 0;
-        $n = 1000000;
-        while ($offset < strlen($s)) {
+        while ($offset < $size) {
             $qreq = (new Qrequest("POST", [
                     "token" => $token,
                     "offset" => $offset,
                     "filename" => "where.txt"
                 ]))->approve_token()
-                ->set_file_content("blob", substr($s, $offset, $n));
+                ->set_file_content("blob", substr($period, $offset % $tlen, min($chunksz, $size - $offset)));
             $j = call_api("=upload", $user, $qreq, null);
             xassert_eqq($j->ok, true);
             xassert_eqq($j->token, $token);
-            xassert_eqq($j->ranges, [0, min($offset + $n, strlen($s))]);
-            $offset += $n;
+            xassert_eqq($j->ranges, [0, min($offset + $chunksz, $size)]);
+            $offset += $chunksz;
         }
 
         $qreq = (new Qrequest("POST", [
@@ -705,7 +707,7 @@ In thee!
         $j = call_api("=upload", $user, $qreq, null);
         xassert_eqq($j->ok, true);
         xassert_eqq($j->token, $token);
-        xassert_eqq($j->ranges, [0, strlen($s)]);
+        xassert_eqq($j->ranges, [0, $size]);
         $expected_hash = "sha2-054bfbd046e415952829e66856a1c7d6240d97ea2c08de3069d1578052b9b7a7";
         xassert_eqq($j->hash, $expected_hash);
         xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
