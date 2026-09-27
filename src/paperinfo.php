@@ -3099,10 +3099,6 @@ class PaperInfo {
     }
 
 
-    private function ensure_full_review_name() {
-        ReviewInfo::check_ambiguous_names($this->_full_review ?? []);
-    }
-
     /** @return ?ReviewInfo */
     function full_review_by_id($id) {
         if ($this->_full_review_key === null
@@ -3112,7 +3108,6 @@ class PaperInfo {
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
-            $this->ensure_full_review_name();
         }
         if ($this->_full_review_key === "r{$id}") {
             return $this->_full_review[0] ?? null;
@@ -3136,7 +3131,6 @@ class PaperInfo {
                 $rrow->prow->_full_review[] = $rrow;
             }
             Dbl::free($result);
-            $this->ensure_full_review_name();
         }
         if ($this->_full_review_key === "u{$cid}") {
             return $this->_full_review;
@@ -3154,7 +3148,6 @@ class PaperInfo {
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
-            $this->ensure_full_review_name();
         }
         if ($this->_full_review_key === "o{$ordinal}") {
             return $this->_full_review[0] ?? null;
@@ -3257,7 +3250,6 @@ class PaperInfo {
         }
         foreach ($row_set as $prow) {
             $prow->_flags |= self::REVIEW_HAS_NAMES;
-            ReviewInfo::check_ambiguous_names(array_values($prow->all_reviews()));
         }
     }
 

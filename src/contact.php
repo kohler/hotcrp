@@ -1546,7 +1546,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $u = $this->conf->user_by_id($uid, USER_SLICE);
         } else if ($x instanceof ReviewInfo) {
             $u = $x->reviewer();
-            if ($x->nameAmbiguous && $type === "r") {
+            if ($type === "r" && $x->name_ambiguous_for($this)) {
                 $flags |= NAME_E;
             }
         } else {

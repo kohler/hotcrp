@@ -89,8 +89,6 @@ class ReviewInfo implements JsonSerializable {
     private $s11;
 
     // sometimes joined
-    /** @var ?bool */
-    public $nameAmbiguous;
     /** @var ?string */
     public $ratingSignature;
 
@@ -105,6 +103,8 @@ class ReviewInfo implements JsonSerializable {
     private $_history;
     /** @var ?Contact */
     private $_reviewer;
+    /** @var ?bool */
+    private $_name_ambiguous; // viewer-independent; use `name_ambiguous_for`
     /** @var ?ReviewDiffInfo */
     private $_diff;
 
@@ -1210,24 +1210,49 @@ class ReviewInfo implements JsonSerializable {
         return $this;
     }
 
-    /** @param list<ReviewInfo> $rrows */
-    static function check_ambiguous_names($rrows) {
-        // XXXX fuck... this exposes information about whether 2 people with
-        // the same name reviewed a paper, even if only one of their identities
-        // should be visible
-        foreach ($rrows as $i => $rrow) {
-            $rrow->nameAmbiguous = false;
-            $u1 = $rrow->reviewer();
-            for ($j = 0; $j !== $i; ++$j) {
-                $u2 = $rrows[$j]->_reviewer;
-                if ($u1->firstName === $u2->firstName
-                    && $u1->lastName === $u2->lastName
-                    && ($u1->firstName !== "" || $u1->lastName !== "")) {
-                    $rrow->nameAmbiguous = $rrows[$j]->nameAmbiguous = true;
-                    break;
+    /** @return bool */
+    function name_ambiguous_for(Contact $viewer) {
+        if (!$this->prow) {
+            return false;  // should not happen
+        }
+        if ($this->_name_ambiguous === null) {
+            $rrows = $this->prow->all_reviews();
+            $byname = [];
+            foreach ($rrows as $rrow) {
+                $rrow->_name_ambiguous = false;
+                if (!($u = $rrow->reviewer())
+                    || ($n = "{$u->firstName}\0{$u->lastName}") === "\0") {
+                    continue;
+                }
+                if (isset($byname[$n])) {
+                    $byname[$n]->_name_ambiguous = $rrow->_name_ambiguous = true;
+                } else {
+                    $byname[$n] = $rrow;
                 }
             }
+            // `$this` may predate the current review array
+            $this->_name_ambiguous = $rrows[$this->reviewId]->_name_ambiguous ?? false;
         }
+        if (!$this->_name_ambiguous) {
+            return false;
+        } else if ($viewer->is_admin($this->prow)) {
+            return true;
+        }
+        // only disambiguate against reviewers whose identities the viewer
+        // can see
+        $u1 = $this->reviewer();
+        foreach ($this->prow->all_reviews() as $rrow) {
+            if ($rrow->reviewId === $this->reviewId) {
+                continue;
+            }
+            $u2 = $rrow->reviewer();
+            if ($u1->firstName === $u2->firstName
+                && $u1->lastName === $u2->lastName
+                && $viewer->can_view_review_identity($this->prow, $rrow)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @param ?TextPregexes $reg

@@ -2964,6 +2964,100 @@ class Permission_Tester {
         $conf->invalidate_caches("users", "pc", "paper");
     }
 
+    function test_ambiguous_reviewer_name_requires_visible_identity() {
+        // When two reviewers of a paper share a name, reviewer lists
+        // append “ <email>” to tell them apart. That disambiguation must
+        // only consider reviewers whose identities the viewer can see:
+        // otherwise a PC reviewer who cannot see co-reviewer names can
+        // request an external review from a throwaway account named
+        // after a PC member and learn, from the presence of the email
+        // suffix on their own requestee, whether that PC member reviews
+        // the paper.
+        $conf = $this->conf;
+        $old_revopen = $conf->setting("rev_open");
+        $old_viewrevid = $conf->setting("viewrevid");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_NEVER);
+        Contact::update_rights();
+
+        $paper1 = $this->u_chair->checked_paper_by_id(1);
+        $mrow = $paper1->review_by_user($this->u_mgbaker);
+        xassert($mrow && $mrow->reviewType >= REVIEW_PC);
+        $victim = null;
+        foreach ($paper1->all_reviews() as $rrow) {
+            if ($rrow->reviewType >= REVIEW_PC
+                && $rrow->contactId !== $this->u_mgbaker->contactId) {
+                $victim = $conf->user_by_id($rrow->contactId);
+                break;
+            }
+        }
+        xassert(!!$victim);
+        xassert($victim->firstName !== "" && $victim->lastName !== "");
+        $vrow = $paper1->review_by_user($victim);
+
+        // mgbaker cannot see the victim's identity...
+        $mgbaker = $conf->checked_user_by_email($this->u_mgbaker->email);
+        xassert(!$mgbaker->can_view_review_identity($mgbaker->checked_paper_by_id(1), $vrow));
+
+        // ...and requests a review from a lookalike account
+        $probe = Contact::make_keyed($conf, [
+            "email" => "probe-lookalike@_.com",
+            "firstName" => $victim->firstName,
+            "lastName" => $victim->lastName
+        ])->store();
+        $rid = $this->u_mgbaker->assign_review(1, $probe, REVIEW_EXTERNAL);
+        xassert($rid > 0);
+        MailChecker::clear();
+        $paper1 = $conf->checked_paper_by_id(1);
+        $prrow = $paper1->review_by_id($rid);
+        xassert($prrow && $prrow->requestedBy === $this->u_mgbaker->contactId);
+
+        $args = ["q" => "1", "t" => "s", "reviewer" => $this->u_mgbaker->email,
+                 "f" => "show:revdelegation", "format" => "html", "report" => "pl"];
+        $cell = function ($j) {
+            xassert($j->ok);
+            xassert_eqq(count($j->papers), 1);
+            return $j->papers[0]["revdelegation"] ?? "";
+        };
+        $probe_name = htmlspecialchars(Text::nameo($probe, NAME_P));
+        $probe_email = htmlspecialchars($probe->email);
+
+        // the requester sees the requestee, but no disambiguating email
+        $mgbaker = $conf->checked_user_by_email($this->u_mgbaker->email);
+        $t = $cell(call_api("search", $mgbaker, $args));
+        xassert_str_contains($t, $probe_name);
+        xassert_not_str_contains($t, $probe_email);
+        $rrow = $mgbaker->checked_paper_by_id(1)->review_by_id($rid);
+        xassert_not_str_contains($mgbaker->reviewer_html_for($rrow), $probe_email);
+
+        // the chair sees both identities, so the email is useful
+        $t = $cell(call_api("search", $this->u_chair, $args));
+        xassert_str_contains($t, $probe_name);
+        xassert_str_contains($t, $probe_email);
+
+        // so does mgbaker once reviewer names are open to the PC
+        $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_ALWAYS);
+        Contact::update_rights();
+        $mgbaker = $conf->checked_user_by_email($this->u_mgbaker->email);
+        xassert($mgbaker->can_view_review_identity($mgbaker->checked_paper_by_id(1), $vrow));
+        $t = $cell(call_api("search", $mgbaker, $args));
+        xassert_str_contains($t, $probe_name);
+        xassert_str_contains($t, $probe_email);
+
+        $rrow = $this->u_chair->checked_paper_by_id(1)->review_by_id($rid);
+        xassert($rrow->delete($this->u_chair));
+        xassert(!$conf->checked_paper_by_id(1)->review_by_user($probe));
+        $conf->qe("delete from ContactInfo where email=?", $probe->email);
+        if (($cdb = $conf->contactdb())) {
+            Dbl::qe($cdb, "delete from ContactInfo where email=?", $probe->email);
+        }
+        $conf->invalidate_user($probe);
+        MailChecker::clear();
+        $conf->save_refresh_setting("rev_open", $old_revopen);
+        $conf->save_refresh_setting("viewrevid", $old_viewrevid);
+        Contact::update_rights();
+    }
+
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
