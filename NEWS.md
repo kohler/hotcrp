@@ -4,7 +4,7 @@ HotCRP NEWS
 ## Version 3.5
 
 * Security updates: This release fixes a number of vulnerabilities, including
-  a large group reported by Milad Nasr with Claude, Anthropic – thanks!
+  many reported via the Anthropic OSS Program and Milad Nasr – thanks!
 
     * Fix a vulnerability, critical for deployments using a contact database,
       that could misdeliver password reset mails to attacker-chosen mailboxes
@@ -50,6 +50,21 @@ HotCRP NEWS
       (Non-compliant field names in existing installations are grandfathered
       in.)
     * Text fields gain word limit support.
+    * Fields can have their own edit deadlines. An edit condition that
+      mentions time, such as `before:2026-11-01` or `before:resubmit+3d`,
+      replaces the submission round’s deadline for that field. Withdrawn,
+      frozen, and rejected submissions still can’t be edited.
+    * Authors can’t edit an accepted submission until they can see its
+      decision.
+
+* Search
+
+    * Add `before:TIME` and `after:TIME` search terms. They accept dates and
+      the deadline names `register`, `submit`, `resubmit`, and `final`, with
+      optional offsets (`after:submit+2d`).
+    * “Named searches” are now called “saved searches” on the search page.
+    * Speed up parsing and running very long searches.
+    * Remove the undocumented `perm:` search term.
 
 * Comments
 
@@ -84,15 +99,24 @@ HotCRP NEWS
       change, but to make that change a dry-run if there are errors (and/or
       warnings).
     * Rate-limited API requests now return a `Retry-After` header.
-    * Introduce `settings:{read/write/admin}` and
-      `preference:{read/write/admin}` scopes.
+    * Introduce `settings:{read/write/admin}`, `preference:{read/write/admin}`,
+      and `reaction:{read/write/admin}` scopes.
     * Report scope errors more thoroughly.
+    * A single request can upload at most 100 documents.
 
 * Other changes
 
     * The `batch/savepapers.php` script gains `--trust-document-metadata`,
       which subsumes the old `--skip-document-verify`,
       `--skip-document-content`, and `--ignore-content-file` flags.
+    * Document downloads are logged regardless of the requested byte range.
+      Downloads through reviewer links are attributed to the reviewer, and
+      downloads by anonymous review-token holders aren’t logged.
+    * Add `batch/db.php`, which runs SQL against a conference database.
+      `lib/runsql.sh` is deprecated.
+    * A user’s last-activity time is updated at most once every two hours.
+    * Removing a user from the PC also removes them as administrator of any
+      submissions they managed.
 
 
 ## Version 3.4 – 5.Aug.2026
