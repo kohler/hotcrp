@@ -378,6 +378,8 @@ class Xassert {
         ++self::$nerror;
     }
 
+    static public $export_maxlen = 120;
+
     /** @param string $xprefix
      * @param string $eprefix
      * @param mixed $expected
@@ -385,8 +387,8 @@ class Xassert {
      * @param mixed $actual
      * @return string */
     static function match_failure_message($xprefix, $eprefix, $expected, $aprefix, $actual) {
-        $estr = xassert_var_export($expected);
-        $astr = xassert_var_export($actual);
+        $estr = xassert_var_export($expected, self::$export_maxlen);
+        $astr = xassert_var_export($actual, self::$export_maxlen);
         if (strlen($estr) < 20 && strlen($astr) < 20) {
             return "{$xprefix}{$eprefix}{$estr}{$aprefix}{$astr}\n";
         } else {
@@ -514,8 +516,9 @@ function xassert_error_handler($errno, $emsg, $file, $line) {
 set_error_handler("xassert_error_handler");
 
 /** @param mixed $x
+ * @param ?int $maxlen
  * @return string */
-function xassert_var_export($x) {
+function xassert_var_export($x, $maxlen = 120) {
     if (is_scalar($x)) {
         return json_encode_db($x);
     } else if (is_object($x)) {
@@ -523,15 +526,14 @@ function xassert_var_export($x) {
         $ch = spl_object_id($x);
         $xp = "[{$cn}#{$ch}]";
         if (($s = json_encode_db($x))) {
-            $s = strlen($s) > 120 ? substr($s, 0, 120) . "...}" : $s;
+            $s = $maxlen !== null && strlen($s) > $maxlen ? substr($s, 0, $maxlen) . "...}" : $s;
             $xp .= $s;
         }
         return $xp;
     } else if (($s = json_encode_db($x))) {
-        return strlen($s) > 121 ? substr($s, 0, 120) . "..." : $s;
-    } else {
-        return "[" . gettype($s) . "]";
+        return $maxlen !== null && strlen($s) > $maxlen ? substr($s, 0, $maxlen) . "..." : $s;
     }
+    return "[" . gettype($s) . "]";
 }
 
 /** @param mixed $x

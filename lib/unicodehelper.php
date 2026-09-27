@@ -27,7 +27,7 @@ class UnicodePiecewiseTranslation {
      * and ending with a PHP_INT_MAX sentinel.
      * The character at `$this->out[$this->offsets[2*$i]]` corresponds to the
      * character at `$this->in[$this->offsets[2*$i+1]]`; characters up to the
-     * `out` position map one-to-one. */
+     * next `out` position map one-to-one. */
     public $offsets;
     /** @var int */
     private $cursor = 0;
@@ -97,6 +97,145 @@ class UnicodePiecewiseTranslation {
         }
         $this->cursor = $i;
         return $this->offsets[$i + 1] + ($pos - $this->offsets[$i]);
+    }
+}
+
+class UnicodeClusters {
+    /** @var string */
+    private $s;
+    /** @var int */
+    private $lbound;
+    /** @var int */
+    private $rbound;
+    /** @var ?bool */
+    private $ascii;
+
+    /** @param string $s
+     * @param ?int $lbound
+     * @param ?int $rbound */
+    function __construct($s, $lbound = null, $rbound = null) {
+        if (!is_valid_utf8($s)) {
+            $s = UnicodeHelper::utf8_replace_invalid($s, true);
+            is_valid_utf8($s); // set "valid UTF-8" flag
+        }
+        $lbound = max(0, min($lbound ?? 0, strlen($s)));
+        if ($lbound !== 0) {
+            while ($lbound < strlen($s) && (ord($s[$lbound]) & 0xC0) === 0x80) {
+                ++$lbound;
+            }
+        }
+        $rbound = min(strlen($s), max($rbound ?? PHP_INT_MAX, $lbound));
+        if ($rbound !== strlen($s)) {
+            while ($rbound > $lbound && (ord($s[$rbound]) & 0xC0) === 0x80) {
+                --$rbound;
+            }
+        }
+        $this->s = $s;
+        $this->lbound = $lbound;
+        $this->rbound = $rbound;
+    }
+
+    /** @return $this */
+    function analyze() {
+        // scan short windows; otherwise glyphstep checks locally
+        if ($this->ascii === null && $this->rbound - $this->lbound <= 512) {
+            $this->ascii = !preg_match('/[\r\x80-\xFF]/', substr($this->s, $this->lbound, $this->rbound - $this->lbound));
+        }
+        return $this;
+    }
+
+    /** @param ?int $pos1
+     * @param ?int $pos2
+     * @param ?int $bound
+     * @return int */
+    function glyphlen($pos1 = null, $pos2 = null, $bound = null) {
+        $pos1 = max($pos1 ?? 0, $this->lbound);
+        $pos2 = min($pos2 ?? PHP_INT_MAX, $this->rbound);
+        $bound = max(0, $bound ?? PHP_INT_MAX);
+        if ($this->ascii || $pos2 - $pos1 < 2) {
+            return min($pos2 - $pos1, $bound);
+        } else if ($pos2 - $pos1 <= 64) {
+            return min(preg_match_all('/\X/u', substr($this->s, $pos1, $pos2 - $pos1)), $bound);
+        } else if ($bound < 1000
+                   && $bound < $pos2 - $pos1
+                   && preg_match("/[\\x00-\\x0C\\x0E-\\x7F]{" . ($bound + 1) . "}/A", $this->s, $m, 0, $pos1)) {
+            return $bound;
+        }
+        $gl = 0;
+        $step = min((int) (($pos2 - $pos1) / 2), $bound);
+        while (true) {
+            if ($step === 0
+                || !preg_match("/\\X{{$step}}/Au", $this->s, $m, 0, $pos1)) {
+                if ($step <= 1) {
+                    return $gl;
+                }
+            } else if ($pos1 + strlen($m[0]) < $pos2) {
+                $gl += $step;
+                $pos1 += strlen($m[0]);
+                $step = min($step, $bound - $gl);
+                continue;
+            } else if ($pos1 + strlen($m[0]) === $pos2 || $step === 1) {
+                return $gl + $step;
+            }
+            $step = min((int) ($step / 2), $bound - $gl);
+        }
+    }
+
+    /** @param int $pos
+     * @param int $n
+     * @return int */
+    function glyphstep($pos, $n) {
+        if ($n === 0 || $this->ascii) {
+            return min(max($pos + $n, $this->lbound), $this->rbound);
+        } else if ($n > 0) {
+            if ($pos + $n >= $this->rbound) {
+                return $this->rbound;
+            }
+            // fast path: n+1 ASCII bytes other than CR
+            $k = $n + 1;
+            if (preg_match("/[\\x00-\\x0C\\x0E-\\x7F]{{$k}}|(\\X{{$n}})/Au", $this->s, $m, 0, $pos)) {
+                return isset($m[1]) ? min($pos + strlen($m[1]), $this->rbound) : $pos + $n;
+            }
+            return $this->rbound;
+        }
+        $n = -$n;
+        if ($pos - $n <= $this->lbound) {
+            return $this->lbound;
+        }
+        // fast path: n+1 ASCII bytes other than CR
+        $k = $n + 1;
+        if (preg_match("/[\\x00-\\x0C\\x0E-\\x7F]{{$k}}/A", $this->s, $m, 0, $pos - $k)) {
+            return $pos - $n;
+        }
+        // Look back through doubling windows, giving up at 36 bytes/glyph.
+        // A window that starts inside a cluster can mis-split its first two
+        // \X matches (e.g., at a ZWJ), so boundaries are trusted only after
+        // the second match, unless the window starts at the left bound.
+        $limit = max($this->lbound, $pos - 36 * $n);
+        $width = 2 * $n + 8;
+        while (true) {
+            $p1 = max($limit, $pos - $width);
+            while ($p1 > $this->lbound && (ord($this->s[$p1]) & 0xC0) === 0x80) {
+                --$p1;
+            }
+            $nm = preg_match_all('/\X/u', substr($this->s, $p1, $pos - $p1));
+            if ($nm - $n >= ($p1 === $this->lbound ? 0 : 2)) {
+                $skip = $nm - $n;
+            } else if ($p1 === $this->lbound) {
+                return $this->lbound;
+            } else if ($p1 <= $limit) {
+                $skip = min($nm, 2); // farthest trusted boundary
+            } else {
+                // size the next window from this one's bytes per glyph
+                $width = max(2 * $width, (int) ceil(($pos - $p1) / max($nm, 1) * ($n + 4)));
+                continue;
+            }
+            if ($skip > 0) {
+                preg_match("/\\X{{$skip}}/Au", $this->s, $m, 0, $p1);
+                $p1 += strlen($m[0]);
+            }
+            return $p1;
+        }
     }
 }
 
@@ -387,6 +526,14 @@ class UnicodeHelper {
     }
 
     /** @param string $str
+     * @param ?int $lbound
+     * @param ?int $rbound
+     * @return UnicodeClusters */
+    static function utf8_clusters($str, $lbound = null, $rbound = null) {
+        return new UnicodeClusters($str, $lbound, $rbound);
+    }
+
+    /** @param string $str
      * @return int */
     static function utf8_glyphlen($str) {
         return preg_match_all('/\X/u', $str);
@@ -405,7 +552,7 @@ class UnicodeHelper {
         if ($len > 65535) {
             return is_valid_utf8($str) ? $str : false;
         }
-        preg_match('/\A\pM*\X{0,' . $len . '}+/u', $str, $m);
+        preg_match('/\A\X{0,' . $len . '}+/u', $str, $m);
         return isset($m[0]) ? $m[0] : false;
     }
 
@@ -417,7 +564,7 @@ class UnicodeHelper {
         if ($len > 65535) {
             return $str;
         }
-        preg_match('/\A(\pM*+\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
+        preg_match('/\A(\X{0,' . max($len - 3, 0) . '}+)\X{0,3}+/u', $str, $m);
         if (!isset($m[0])) {
             return str_repeat(".", $len);
         } else if (strlen($m[0]) === strlen($str)) {
@@ -427,7 +574,7 @@ class UnicodeHelper {
         } else if ($suffix_len <= 0) {
             return $m[1] . "...";
         }
-        preg_match('/\A(\pM*+\X{' . max($len - $suffix_len - 3, 0) . '}).*(\X{' . min($suffix_len, $len - 3) . '})\z/', $str, $m);
+        preg_match('/\A(\X{' . max($len - $suffix_len - 3, 0) . '})\X*?(\X{' . min($suffix_len, $len - 3) . '})\z/u', $str, $m);
         if (!isset($m[0])) {
             return str_repeat(".", $len);
         }
@@ -444,7 +591,7 @@ class UnicodeHelper {
         // possessive matches only: backtracking into `\X` is quadratic on
         // long clusters (e.g., thousands of combining marks)
         // `$m[1]` is the first `$len` clusters; `$m[0]` adds one character
-        $mok = preg_match('/\A(\pM*+\X{1,' . max($len, 1) . '}+).?/su', $str, $m);
+        $mok = preg_match('/\A(\X{1,' . max($len, 1) . '}+).?/su', $str, $m);
         if ($mok === false) { // input string was not UTF-8 -- should not happen!
             return false;
         } else if ($mok === 0 || strlen($m[1]) === strlen($str)) {
@@ -641,9 +788,13 @@ class UnicodeHelper {
     }
 
     /** @param string $str
+     * @param bool $keep_offsets
      * @return string */
-    static function utf8_replace_invalid($str) {
-        return self::to_utf8("UTF-8", $str);
+    static function utf8_replace_invalid($str, $keep_offsets = false) {
+        if (!$keep_offsets) {
+            return self::to_utf8("UTF-8", $str);
+        }
+        return preg_replace('/(?:[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})(*SKIP)(*FAIL)|[\x80-\xFF]/', "?", $str);
     }
 
     /** Return the offset of the first byte that is not part of a valid UTF-8

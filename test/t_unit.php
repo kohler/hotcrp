@@ -1524,6 +1524,8 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 7), "a̓a̓a̓a̓a̓a̓a̓");
         xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 8), "a̓a̓a̓a̓a̓a̓a̓a̓");
         xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 9), "a̓a̓a̓a̓a̓a̓a̓a̓");
+        // leading combining marks form a cluster of their own
+        xassert_eqq(UnicodeHelper::utf8_prefix("\u{0301}abc", 2), "\u{0301}a");
 
         xassert_eqq(UnicodeHelper::utf8_word_prefix("a aaaaaaabbb", 7), "a");
         xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 7), "aaaaaaaa");
@@ -1595,6 +1597,147 @@ class Unit_Tester {
         xassert_lt(microtime(true) - $t0, max(2.0, 50 * $tw));
     }
 
+    /** Check `Ht::make_mark_substring($s, $pos1, $pos2)`. The mark must
+     * cover the same text; the context must be source text that, on each
+     * side, either reaches a line boundary or holds at least `$minctx` glyphs
+     * before an ellipsis; and the context must total at most `$maxctx` glyphs.
+     * @param string $s
+     * @param int $pos1
+     * @param int $pos2
+     * @param int $minctx
+     * @param int $maxctx
+     * @return array{string,int,int} */
+    private function check_mark_substring($s, $pos1, $pos2, $minctx = 12, $maxctx = 80) {
+        $r = Ht::make_mark_substring($s, $pos1, $pos2);
+        [$t, $q1, $q2] = $r;
+        xassert(is_valid_utf8($t));
+        xassert(0 <= $q1 && $q1 <= $q2 && $q2 <= strlen($t));
+        $unnl = function ($x) {
+            return str_replace("⏎", "\n", $x);
+        };
+        xassert_eqq($unnl(substr($t, $q1, $q2 - $q1)), substr($s, $pos1, $pos2 - $pos1));
+
+        $pre = $unnl(substr($t, 0, $q1));
+        $predots = str_starts_with($pre, "…");
+        if ($predots) {
+            $pre = substr($pre, 3);
+        }
+        xassert_le(strlen($pre), $pos1);
+        xassert_eqq(substr($s, $pos1 - strlen($pre), strlen($pre)), $pre);
+        $prestart = $pos1 - strlen($pre);
+        if ($predots) {
+            xassert_ge(UnicodeHelper::utf8_glyphlen($pre), $minctx);
+        } else {
+            xassert($prestart === 0 || $s[$prestart - 1] === "\n");
+        }
+
+        $post = $unnl(substr($t, $q2));
+        $postdots = str_ends_with($post, "…");
+        if ($postdots) {
+            $post = substr($post, 0, -3);
+        }
+        xassert_eqq(substr($s, $pos2, strlen($post)), $post);
+        $postend = $pos2 + strlen($post);
+        if ($postdots) {
+            xassert_ge(UnicodeHelper::utf8_glyphlen($post), $minctx);
+        } else {
+            xassert($postend === strlen($s) || $s[$postend] === "\n");
+        }
+
+        xassert_le(UnicodeHelper::utf8_glyphlen($pre) + UnicodeHelper::utf8_glyphlen($post), $maxctx);
+        return $r;
+    }
+
+    function test_make_mark_substring() {
+        xassert_eqq(Ht::make_mark_substring("hello world", 6, 11), ["hello world", 6, 11]);
+        xassert_eqq(Ht::make_mark_substring("hello", -1, 0), ["hello", -1, 0]);
+        xassert_eqq(Ht::make_mark_substring("hello", 3, 1), ["hello", 3, 3]);
+
+        // long lines are trimmed around the mark, at either end or both
+        $a = str_repeat("abcdefghij", 10);
+        foreach ([[80, 83], [5, 8], [45, 55], [30, 90], [0, 0], [100, 100]] as $pp) {
+            [$t] = $this->check_mark_substring($a, $pp[0], $pp[1]);
+            xassert(str_contains($t, "…"));
+        }
+        $b = $a . $a;
+        foreach ([[100, 104], [30, 60], [20, 170]] as $pp) {
+            [$t] = $this->check_mark_substring($b, $pp[0], $pp[1]);
+            xassert(str_contains($t, "…"));
+        }
+
+        // a distant newline, or any newline near a long mark, limits the
+        // context to one line
+        [$t] = $this->check_mark_substring("first line\n{$a}\nlast", 40, 44);
+        xassert(!str_contains($t, "⏎") && !str_contains($t, "first") && !str_contains($t, "last"));
+        [$t] = $this->check_mark_substring("first line\n{$a}\nlast", 11, 40);
+        xassert(!str_contains($t, "⏎") && !str_contains($t, "first"));
+        [$t] = $this->check_mark_substring("first line\n{$a}\nlast", 80, 108);
+        xassert(!str_contains($t, "⏎") && !str_contains($t, "last"));
+
+        // a newline near a short mark is shown as ⏎
+        xassert_eqq(Ht::make_mark_substring("ab\ncd ef", 3, 5), ["ab⏎cd ef", 5, 7]);
+        [$t] = $this->check_mark_substring("{$a}\nzz", 97, 100);
+        xassert(str_ends_with($t, "⏎zz"));
+        [$t] = $this->check_mark_substring("zz\n{$a}", 3, 6);
+        xassert(str_starts_with($t, "zz⏎"));
+
+        // glyphs, not bytes, are counted
+        $e = str_repeat("é", 60);
+        [$t] = $this->check_mark_substring("{$e}XYZ{$e}", 120, 123);
+        xassert(str_starts_with($t, "…") && str_ends_with($t, "…"));
+        $z = str_repeat("👩‍👩‍👧", 100);
+        [$t] = $this->check_mark_substring("{$z}KEY{$z}", strlen($z), strlen($z) + 3);
+        xassert(str_starts_with($t, "…") && str_ends_with($t, "…"));
+        $c = str_repeat("e\u{0301}", 60);
+        $this->check_mark_substring("{$c}\r\n{$c}KEY{$c}", 2 * strlen($c) + 2, 2 * strlen($c) + 5);
+    }
+
+    function test_make_mark_substring_long_clusters() {
+        // widening the context around a mark stays roughly linear on long
+        // runs of combining marks, which are single glyphs
+        $tw = INF;
+        for ($i = 0; $i !== 3; ++$i) {
+            $t0 = microtime(true);
+            $a = str_repeat("ab ", 21000);
+            foreach (["{$a}key", "key{$a}", "{$a}key{$a}"] as $s) {
+                $p1 = strpos($s, "key");
+                $this->check_mark_substring($s, $p1, $p1 + 3);
+            }
+            $tw = min($tw, microtime(true) - $t0);
+        }
+
+        $m = str_repeat("\xCC\x81", 32000);
+        $t0 = microtime(true);
+        foreach (["a{$m}key", "key{$m}", "a{$m}key{$m}", "a{$m}key x{$m}", "key a{$m} z"] as $s) {
+            $p1 = strpos($s, "key");
+            // a long cluster near the mark is cut, not copied whole
+            [$t] = $this->check_mark_substring($s, $p1, $p1 + 3, 0);
+            xassert_lt(strlen($t), 8000);
+        }
+        xassert_lt(microtime(true) - $t0, max(2.0, 50 * $tw));
+    }
+
+    function test_make_mark_substring_long_line() {
+        // work is bounded by a window around the mark, however long the
+        // context line
+        $t0 = microtime(true);
+        for ($i = 0; $i !== 2000; ++$i) {
+            Ht::make_mark_substring("aaa KEY bbb", 4, 7);
+        }
+        $tw = microtime(true) - $t0;
+
+        $pad = str_repeat("w", 1 << 20);
+        $t0 = microtime(true);
+        foreach (["{$pad} KEY", "KEY {$pad}", "{$pad} KEY {$pad}", "{$pad}\nKEY {$pad}"] as $s) {
+            $p = strpos($s, "KEY");
+            for ($i = 0; $i !== 2000; ++$i) {
+                Ht::make_mark_substring($s, $p, $p + 3);
+            }
+            $this->check_mark_substring($s, $p, $p + 3);
+        }
+        xassert_lt(microtime(true) - $t0, max(1.0, 200 * $tw));
+    }
+
     function test_utf8_char_abbreviate() {
         xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acaca", 5), "acaca");
         xassert_eqq(UnicodeHelper::utf8_char_abbreviate("acacaa", 5), "ac...");
@@ -1606,6 +1749,12 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 4, 3), "...a");
         xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 3, 3), "...");
         xassert_eqq(UnicodeHelper::utf8_char_abbreviate("aça123caa", 2, 3), "..");
+        // suffixes are whole grapheme clusters, on any line
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("ééééééééééééé", 8, 2), "ééé...éé");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("漢字漢字漢字漢字漢字", 8, 2), "漢字漢...漢字");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("line one\nline two and more", 12, 3), "line o...ore");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("👩‍👩‍👧x👩‍👩‍👧y👩‍👩‍👧z👩‍👩‍👧", 6, 2), "👩‍👩‍👧...z👩‍👩‍👧");
+        xassert_eqq(UnicodeHelper::utf8_char_abbreviate("abcdefghe\u{0301}", 6, 1), "ab...e\u{0301}");
     }
 
     function test_utf8_line_break() {

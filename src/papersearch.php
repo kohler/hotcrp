@@ -454,7 +454,12 @@ class PaperSearch extends MessageSet {
         $this->_qt = self::_canonical_qt($options["qt"] ?? null);
 
         // the query itself
-        $this->q = trim($options["q"] ?? "");
+        $q = trim($options["q"] ?? "");
+        if (!is_valid_utf8($q)) {
+            $q = UnicodeHelper::utf8_replace_invalid($q);
+            is_valid_utf8($q); // mark valid, so later /u matches skip checks
+        }
+        $this->q = $q;
         $this->_string_context = SearchStringContext::make($this->q);
         $this->_string_context->cost = 0;
         $this->_req_sort = $options["sort"] ?? null;

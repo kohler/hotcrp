@@ -2115,6 +2115,10 @@ final class Formula implements JsonSerializable {
         $f = new Formula;
         $f->conf = $user->conf;
         $f->user = $user;
+        if (!is_valid_utf8($expr)) {
+            $expr = UnicodeHelper::utf8_replace_invalid($expr);
+            is_valid_utf8($expr); // mark valid, so later /u matches skip checks
+        }
         $f->expression = $expr;
 
         $config = $config ?? new FormulaConfig;

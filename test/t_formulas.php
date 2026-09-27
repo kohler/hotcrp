@@ -122,6 +122,15 @@ class Formulas_Tester {
         return [$ok, $fmap];
     }
 
+    function test_invalid_utf8_formula_is_sanitized() {
+        $f = Formula::make($this->u_chair, "1 + \xFF");
+        xassert(is_valid_utf8($f->expression));
+        xassert(!$f->ok());
+        foreach ($f->message_list() as $mi) {
+            xassert($mi->context === null || is_valid_utf8($mi->context));
+        }
+    }
+
     function test_numeric_constants() {
         $f = $this->formula("3");
         xassert($f->ok());

@@ -15,6 +15,20 @@ class Search_Tester {
         $this->u_root = $conf->root_user();
     }
 
+    function test_invalid_utf8_query_is_sanitized() {
+        $ps = new PaperSearch($this->u_root, ["q" => "zzunknown1:x \xFF zzunknown2:x"]);
+        $ps->paper_ids();
+        xassert(is_valid_utf8($ps->q));
+        $ncontext = 0;
+        foreach ($ps->message_list() as $mi) {
+            if ($mi->context !== null) {
+                xassert(is_valid_utf8($mi->context));
+                ++$ncontext;
+            }
+        }
+        xassert_gt($ncontext, 0);
+    }
+
     function test_wildcard_search_word_with_slash() {
         // a `/` in a wildcard word must not terminate the regex delimiter
         xassert_search($this->u_root, "round:x/*", "");
