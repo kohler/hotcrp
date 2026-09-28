@@ -628,7 +628,8 @@ class NavigationState {
         }
 
         // merge + remove_dot_segments, but resulting path is always nonempty
-        $path = $up["path"] ?? "";
+        // browsers treat `%2e` as `.` and `\` as `/` in paths
+        $path = str_replace("\\", "/", str_ireplace("%2e", ".", $up["path"] ?? ""));
         if (strpos($path, "//") !== false) { // reject empty segments
             return null;
         }

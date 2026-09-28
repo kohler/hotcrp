@@ -86,6 +86,15 @@ class Navigation_Tester {
         xassert_eqq($nav->resolve_within("/z/q"), "https://y.com/z/q/");
         xassert_eqq($nav->resolve_within("../q/", "https://y.com/z/q/"), "https://y.com/z/q/");
         xassert_eqq($nav->resolve_within("../q/", ""), "https://y.com/z/q/");
+
+        // browsers treat `%2e` as `.` and `\` as `/` in paths
+        xassert_eqq($ns->resolve_within("foo/%2e%2e/%2E%2e/barf", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("foo/.%2e/%2e./barf", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("/fart/%2e%2e/barf", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("foo/%2e%2e/baz?q=%2e%2e", "/fart/"), "http://butt.com/fart/baz?q=%2e%2e");
+        xassert_eqq($ns->resolve_within("foo\\..\\..\\barf", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("\\\\evil.example/", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("foo\\baz", "/fart/"), "http://butt.com/fart/foo/baz");
     }
 
     const FL_OSF = 1;

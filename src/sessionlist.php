@@ -327,6 +327,15 @@ class SessionList {
         return join("", $a);
     }
 
+    /** @param string $urlbase
+     * @return bool */
+    static function urlbase_is_site_relative($urlbase) {
+        // `urlbase` round-trips through the browser; accept only a
+        // site-relative page reference like those `hoturl` generates:
+        // no scheme, no leading slash, no backslash, no dot segments
+        return !!preg_match('/\A[a-z][-a-z0-9_.]*+(?:\/(?!(?:\.|%2e){2}|[\/\\\\])[^\/\\\\?#]*+)*+(?:\z|[?#])/i', $urlbase);
+    }
+
     /** @param Contact $user
      * @param string $info
      * @param string $type
@@ -380,7 +389,9 @@ class SessionList {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $list->description = $j->description;
         }
-        if (isset($j->urlbase) && is_string($j->urlbase)) {
+        if (isset($j->urlbase)
+            && is_string($j->urlbase)
+            && self::urlbase_is_site_relative($j->urlbase)) {
             $list->urlbase = $j->urlbase;
         }
         if ($j->highlight ?? false) {
