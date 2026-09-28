@@ -836,12 +836,12 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // can only edit reviews you own or administer (checked before the
-        // requested type, which would otherwise reveal the review's type)
-        if (($rrow
-             ? !$user->is_owned_review($prow, $rrow)
-             : $reviewer->contactId !== $user->contactId)
-            && !$user->can_manage_reviews($prow)) {
+        // can only edit reviews you own or administer
+        $manager = $user->can_manage_reviews($prow);
+        if (!$manager
+            && ($rrow
+                ? !$user->is_owned_review($prow, $rrow)
+                : $reviewer->contactId !== $user->contactId)) {
             $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
             return false;
         }
@@ -854,9 +854,11 @@ class ReviewValues extends MessageSet {
             if ($reqtype === false) {
                 $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
                 return false;
-            } else if ($rrow ? $reqtype === $rrow->reviewType : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
+            } else if ($rrow && !$rrow->is_ghost()
+                       ? $reqtype === $rrow->reviewType
+                       : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
                 // the reviewer's default type — always allowed
-            } else if (!$user->can_manage_reviews($prow)) {
+            } else if (!$manager) {
                 $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
                 return false;
             } else if ($reqtype > REVIEW_PC && !$reviewer->is_pc_member()) {
@@ -878,29 +880,10 @@ class ReviewValues extends MessageSet {
         }
 
         // a review that does not yet exist is staged onto an unsaved assignable
-        // review; the real database row is created later, by `execute_save`
-        if (!$rrow) {
-            $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
-            if (($whynot = $user->perm_create_review($prow, $reviewer, $round))) {
-                $whynot->append_to($this, null, self::ERROR);
-                return false;
-            }
-            if (($reqtype ?? 0) > REVIEW_PC) {
-                $rtype = $reqtype;
-            } else {
-                $rtype = $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
-            }
-            if (!$reviewer->has_account_here()) {
-                if ($this->disable_users) {
-                    $reviewer->cflags |= Contact::CF_UDISABLED;
-                }
-                $reviewer->store(0, $this->user);
-            }
-            $rrow = $user->assign_review_prop($prow->paperId, $reviewer, $rtype, [
-                "selfassign" => $reviewer === $user, "round_number" => $round
-            ]);
-            if (!$rrow || $rrow->reviewType <= 0) {
-                $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
+        // review; the real database row is created later, by `execute_save`.
+        // (Ghosts are rejected by prepare_create with a proper error message.)
+        if (!$rrow || ($rrow->is_ghost() && !$manager)) {
+            if (!($rrow = $this->prepare_create($prow, $reviewer, $rrow, $reqtype))) {
                 return false;
             }
         } else if ($reqtype !== null && $reqtype !== $rrow->reviewType) {
@@ -922,6 +905,38 @@ class ReviewValues extends MessageSet {
         }
         $this->_save_status |= self::SSF_PREPARED;
         return true;
+    }
+
+    /** @return ?ReviewInfo */
+    private function prepare_create(PaperInfo $prow, Contact $reviewer, ?ReviewInfo $rrow, $reqtype) {
+        $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
+        if (($whynot = $this->user->perm_create_review($prow, $reviewer, $round))) {
+            $whynot->append_to($this, null, self::ERROR);
+            return null;
+        } else if ($rrow) {
+            assert($rrow->is_ghost());
+            $this->rvmsg(self::ERROR, null, $this->conf->_("<0>Your assignment for this {submission} hasn’t been released yet"));
+            return null;
+        }
+        if (($reqtype ?? 0) > REVIEW_PC) {
+            $rtype = $reqtype;
+        } else {
+            $rtype = $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
+        }
+        if (!$reviewer->has_account_here()) {
+            if ($this->disable_users) {
+                $reviewer->cflags |= Contact::CF_UDISABLED;
+            }
+            $reviewer->store(0, $this->user);
+        }
+        $rrow = $this->user->assign_review_prop($prow->paperId, $reviewer, $rtype, [
+            "selfassign" => $reviewer === $this->user, "round_number" => $round
+        ]);
+        if (!$rrow || $rrow->reviewType <= 0) {
+            $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
+            return null;
+        }
+        return $rrow;
     }
 
     /** Commit a review staged by `prepare_save` (creating its database row if

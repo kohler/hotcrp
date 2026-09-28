@@ -5595,6 +5595,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rights = $this->rights($prow);
         return $rights->can_manage_reviews()
             || ($this->is_owned_review($prow, $rrow)
+                && !$rrow->is_ghost()
                 && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)
                 && $rights->scope_allows(TS::S_REV_WRITE));
     }

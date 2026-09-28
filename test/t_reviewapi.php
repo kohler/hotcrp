@@ -394,6 +394,77 @@ class ReviewAPI_Tester {
         xassert_eqq($prow->review_by_user($this->u_estrin)->reviewTime, $etime);
     }
 
+    function test_post_unreleased_assignment() {
+        // a hidden (ghost) assignment isn’t the reviewer’s to edit or adopt
+        $pid = null;
+        foreach ($this->conf->paper_set(["where" => "timeSubmitted>0"], $this->u_chair) as $prow) {
+            if (!$prow->review_by_user($this->u_diot)
+                && !$prow->has_conflict($this->u_diot)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert($pid !== null);
+        xassert_assign($this->u_chair, "paper,action,email,ghost\n{$pid},primary,{$this->u_diot->email},yes\n");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $rrow = $prow->review_by_user($this->u_diot);
+        xassert($rrow && $rrow->is_ghost());
+        $diot = $this->conf->checked_user_by_email($this->u_diot->email);
+        xassert(!$diot->can_edit_review($prow, $rrow));
+
+        foreach ([["OveMer" => "2", "ready" => "0", "dry_run" => "1"],
+                  ["OveMer" => "2", "ready" => "0"]] as $args) {
+            $j = call_api("=review", $diot, $args, $diot->checked_paper_by_id($pid));
+            xassert_eqq($j->ok, false);
+            $t = json_encode($j, JSON_UNESCAPED_UNICODE);
+            xassert_str_contains($t, "hasn’t been released");
+            xassert_not_str_contains($t, "primary");
+        }
+        // addressing it by ID is refused without describing it
+        $j = call_api("=review", $diot, ["r" => (string) $rrow->reviewId, "OveMer" => "2", "ready" => "0"], $diot->checked_paper_by_id($pid));
+        xassert_eqq($j->ok, false);
+        xassert_not_str_contains(json_encode($j), "primary");
+
+        // with self-assignment off, the refusal matches that for a PC member
+        // with no assignment
+        $other = null;
+        foreach ($this->conf->pc_members() as $pc) {
+            if ($pc->contactId !== $this->u_diot->contactId
+                && !$pc->privChair
+                && !$prow->review_by_user($pc)
+                && !$prow->has_conflict($pc)) {
+                $other = $pc;
+                break;
+            }
+        }
+        xassert(!!$other);
+        $old_pcrev_any = $this->conf->setting("pcrev_any");
+        $this->conf->save_refresh_setting("pcrev_any", null);
+        $args = ["OveMer" => "2", "ready" => "0"];
+        $diot = $this->conf->checked_user_by_email($this->u_diot->email);
+        $other = $this->conf->checked_user_by_email($other->email);
+        $jd = call_api("=review", $diot, $args, $diot->checked_paper_by_id($pid));
+        $jo = call_api("=review", $other, $args, $other->checked_paper_by_id($pid));
+        xassert_eqq($jd->ok, false);
+        xassert_eqq($jo->ok, false);
+        xassert_eqq(json_encode($jd->message_list), json_encode($jo->message_list));
+        $this->conf->save_refresh_setting("pcrev_any", $old_pcrev_any);
+
+        // the assignment is unchanged, and an administrator can still edit it
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $rrow = $prow->review_by_user($this->u_diot);
+        xassert($rrow && $rrow->is_ghost());
+        xassert_eqq($rrow->reviewType, REVIEW_PRIMARY);
+        xassert($this->u_chair->can_edit_review($prow, $rrow));
+        $j = call_api("=review", $this->u_chair, ["r" => (string) $rrow->reviewId, "OveMer" => "2", "ready" => "0"], $prow);
+        xassert_eqq($j->ok, true);
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $rrow = $prow->review_by_user($this->u_diot);
+        xassert_eqq($rrow->reviewType, REVIEW_PRIMARY);
+        xassert_eq($rrow->fidval("s01"), 2);
+        xassert($rrow->delete($this->u_chair));
+    }
+
     function test_review_hidden_from_author() {
         $prow = $this->conf->checked_paper_by_id(18);
         $rrow = $prow->checked_review_by_user($this->u_diot); // diot's submitted review 18A
