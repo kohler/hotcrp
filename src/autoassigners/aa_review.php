@@ -113,22 +113,76 @@ class Review_Autoassigner extends Autoassigner {
         return parent::incompletely_assigned_paper_ids();
     }
 
+    /** @param ReviewInfo $rrow
+     * @return bool */
+    private function include_load($rrow) {
+        if ($this->load === self::LOAD_ROUND
+            && $rrow->reviewRound !== $this->round) {
+            return false;
+        } else if ($this->load === self::LOAD_RTYPE) {
+            return $rrow->reviewType === $this->rtype;
+        }
+        return ($rrow->rflags & ReviewInfo::RF_SELF_ASSIGNED) === 0;
+    }
+
+    /** @param int $uid
+     * @param int $n */
+    private function add_load($uid, $n) {
+        $this->add_aauser_load($uid, $n);
+        if ($this->balance === self::BALANCE_ALL) {
+            $this->add_aauser_balance($uid, $n);
+        }
+    }
+
     private function set_load() {
+        // A user who can view every assignment counts loads in SQL. Others
+        // count only the assignments they can identify: loads bound and
+        // balance assignments, so they show through in the result.
+        if ($this->user->allow_admin_all()
+            && (!$this->user->has_scope() || !$this->user->scope()->has_selector())) {
+            $this->set_load_sql();
+            return;
+        }
+        $uids = array_flip($this->user_ids());
+        $load = [];
+        $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        foreach ($this->conf->paper_set(["reviewSignatures" => true, "minimal" => true], $this->user) as $prow) {
+            if (!$this->user->can_view_paper($prow)
+                || !$this->user->can_view_review_identity($prow, null)) {
+                continue;
+            }
+            foreach ($prow->all_reviews() as $rrow) {
+                if (isset($uids[$rrow->contactId])
+                    && $this->include_load($rrow)
+                    && $this->user->can_view_review_identity($prow, $rrow)) {
+                    $load[$rrow->contactId] = ($load[$rrow->contactId] ?? 0) + 1;
+                }
+            }
+        }
+        $this->user->set_overrides($overrides);
+        foreach ($load as $uid => $n) {
+            $this->add_load($uid, $n);
+        }
+        if ($this->has_option("max_load")
+            || $this->has_option("max_load_tag")
+            || $this->balance === self::BALANCE_ALL) {
+            $this->append_item(MessageItem::warning_note("<0>Load limits and balancing consider only the current assignments you can view"));
+        }
+    }
+
+    private function set_load_sql() {
         $q = "select contactId, count(reviewId) from PaperReview where contactId?a";
         if ($this->load === self::LOAD_RTYPE) {
             $q .= " and reviewType={$this->rtype}";
         } else {
-            $q .= " and (reviewType!=" . REVIEW_PC . " or requestedBy!=contactId)";
+            $q .= " and (rflags&" . ReviewInfo::RF_SELF_ASSIGNED . ")=0";
         }
         if ($this->load === self::LOAD_ROUND) {
             $q .= $this->round === null ? " and false" : " and reviewRound={$this->round}";
         }
         $result = $this->conf->qe($q . " group by contactId", $this->user_ids());
         while (($row = $result->fetch_row())) {
-            $this->add_aauser_load((int) $row[0], (int) $row[1]);
-            if ($this->balance === self::BALANCE_ALL) {
-                $this->add_aauser_balance((int) $row[0], (int) $row[1]);
-            }
+            $this->add_load((int) $row[0], (int) $row[1]);
         }
         Dbl::free($result);
     }

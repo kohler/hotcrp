@@ -75,14 +75,15 @@ class Autoassign_Tester {
     }
 
     /** @return Autoassigner */
-    function autoassigner($aaname, $pcc, $pids, $param) {
+    function autoassigner($aaname, $pcc, $pids, $param, ?Contact $user = null) {
+        $user = $user ?? $this->user;
         $gj = $this->conf->autoassigner($aaname);
         if (str_starts_with($gj->function, "+")) {
             $class = substr($gj->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $aa = new $class($this->user, $gj);
+            $aa = new $class($user, $gj);
         } else {
-            $aa = call_user_func($gj->function, $this->user, $gj);
+            $aa = call_user_func($gj->function, $user, $gj);
         }
         '@phan-var-force Autoassigner $aa';
         foreach ($param as $k => $v) {
@@ -501,6 +502,43 @@ class Autoassign_Tester {
         $conf->qe("delete from ContactInfo where email=?", $email);
         $conf->invalidate_caches("users", "pc");
         $conf->update_automatic_tags();
+    }
+
+    function test_load_counts_viewable_assignments() {
+        // a paper administrator’s loads count only assignments they can
+        // view; otherwise load limits reveal hidden reviewers
+        $this->setup_clear();
+        $conf = $this->conf;
+        $admin = $rev = null;
+        foreach ($this->pcc as $uid) {
+            if (!$admin && isset($this->cflts[1][$uid]) && !isset($this->cflts[2][$uid])) {
+                $admin = $conf->user_by_id($uid);
+            } else if (!$rev && !isset($this->cflts[1][$uid]) && !isset($this->cflts[2][$uid])) {
+                $rev = $conf->user_by_id($uid);
+            }
+        }
+        xassert($admin && $rev);
+        xassert_assign($this->user, "paper,action,user\n1,primary,{$rev->email}\n2,administrator,{$admin->email}\n");
+        $admin = $conf->user_by_id($admin->contactId);
+
+        // the administrator can’t see the review on conflicted paper 1...
+        xassert(!$admin->can_view_review_identity($admin->checked_paper_by_id(1), null));
+        $aa = $this->autoassigner("review", [$rev->contactId], [2], ["count" => 1, "max_load" => 1], $admin);
+        $aa->run();
+        xassert($aa->has_assignment());
+        xassert_str_contains($aa->full_feedback_text(), "consider only the current assignments you can view");
+
+        // ...but a user who can view everything counts it
+        $aa = $this->autoassigner("review", [$rev->contactId], [2], ["count" => 1, "max_load" => 1]);
+        $aa->run();
+        xassert(!$aa->has_assignment());
+        xassert_not_str_contains($aa->full_feedback_text(), "consider only the current assignments you can view");
+        $aa = $this->autoassigner("review", [$rev->contactId], [2], ["count" => 1, "max_load" => 2]);
+        $aa->run();
+        xassert($aa->has_assignment());
+
+        xassert_assign($this->user, "paper,action,user\n2,clearadministrator,{$admin->email}\n");
+        $this->setup_clear();
     }
 
     function test_api_requires_manager() {
