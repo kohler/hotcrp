@@ -1157,7 +1157,8 @@ class UserStatus_Tester {
 
     function test_long_collaborators() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
-        $cl = join("\n", array_fill(0, 1024, "Judy Estrin (Packet Design, LLC)"));
+        $cl = join("\n", array_fill(0, 950, "Judy Estrin (Packet Design, LLC)"));
+        xassert_lt(strlen($cl), 32768);
         $qreq->collaborators = $cl;
         $us = (new UserStatus($u))->set_qreq($qreq);
         $us->start_update()->set_user($u);
