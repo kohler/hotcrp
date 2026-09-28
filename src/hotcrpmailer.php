@@ -232,8 +232,14 @@ class HotCRPMailer extends Mailer {
         }
 
         $crows = array_filter($crows, function ($crow) use ($tag) {
-            return (!$tag || $crow->has_tag($tag))
-                && $this->permuser->can_view_comment($this->row, $crow);
+            if (!$this->permuser->can_view_comment($this->row, $crow)
+                || ($tag && !$crow->has_tag($tag))) {
+                return false;
+            } else if (!$tag || $this->permsender->privChair) {
+                return true;
+            }
+            return $this->permsender->can_view_comment_tags($this->row, $crow)
+                && $this->permsender->can_view_tag($this->row, $tag);
         });
 
         $flags = ReviewForm::UNPARSE_NO_TITLE | ReviewForm::UNPARSE_TRUNCATE;

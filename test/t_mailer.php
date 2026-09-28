@@ -6,9 +6,23 @@ class Mailer_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var array<string,?int> */
+    private $saved_settings = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        // `ensure_reviews` changes these to make reviews visible; restore them
+        // in `finalize` so the settings do not leak into a later test class
+        foreach (["viewrev", "au_seerev", "rev_open"] as $k) {
+            $this->saved_settings[$k] = $conf->setting($k);
+        }
+    }
+
+    function finalize() {
+        foreach ($this->saved_settings as $k => $v) {
+            $this->conf->save_setting($k, $v);
+        }
+        $this->conf->refresh_settings();
     }
 
     function run_send_template(MailRecipients $mr, $template, $qreq = []) {
@@ -502,6 +516,56 @@ class Mailer_Tester {
 
         $j = call_api("=comment", $chair, ["c" => (string) $cid, "delete" => 1], $prow);
         xassert($j->ok);
+        MailChecker::clear();
+    }
+
+    function test_comment_tag_filter_censors_hidden_tags() {
+        $conf = $this->conf;
+        $this->ensure_reviews();
+        $conf->save_refresh_setting("tag_hidden", 1, "secret");
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $prow = $conf->checked_paper_by_id(1);
+
+        // a PC-visible comment carrying a hidden tag ("secret") and a normal tag
+        $j = call_api("=comment", $chair, ["c" => "new", "visibility" => "pc",
+                                           "tags" => "hot secret", "text" => "ORACLECOMMENTARY"], $prow);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        $prow = $conf->checked_paper_by_id(1);
+        $crow = ($prow->fetch_comments("commentId={$cid}"))[0];
+        xassert(!!$crow);
+        xassert($crow->has_tag("secret"));
+
+        // two non-chair PC readers, so neither end of the intersection is root
+        $readers = [];
+        foreach ($conf->pc_members() as $pc) {
+            if (!$pc->privChair && $pc->can_view_comment($prow, $crow)) {
+                $readers[] = $pc;
+            }
+        }
+        xassert_gt(count($readers), 1);
+        xassert(!$readers[0]->can_view_tag($prow, "secret"));
+
+        $rest = ["prow" => $prow, "width" => 10000, "censor" => Mailer::CENSOR_PREVIEW, "preview" => true];
+
+        // a non-chair viewer reads the comment and may filter by the visible tag
+        $mailer = new HotCRPMailer($readers[0], $readers[1], $rest);
+        xassert_str_contains($mailer->expand("{{COMMENTS}}", "body"), "ORACLECOMMENTARY");
+        $mailer = new HotCRPMailer($readers[0], $readers[1], $rest);
+        xassert_str_contains($mailer->expand("{{COMMENTS(hot)}}", "body"), "ORACLECOMMENTARY");
+
+        // ...but the hidden tag must not act as a filter oracle (HC-172)
+        $mailer = new HotCRPMailer($readers[0], $readers[1], $rest);
+        xassert_not_str_contains($mailer->expand("{{COMMENTS(secret)}}", "body"), "ORACLECOMMENTARY");
+
+        // a chair sender may still filter by the hidden tag
+        $mailer = new HotCRPMailer($chair, $readers[0], $rest);
+        xassert_str_contains($mailer->expand("{{COMMENTS(secret)}}", "body"), "ORACLECOMMENTARY");
+
+        $j = call_api("=comment", $chair, ["c" => (string) $cid, "delete" => 1], $prow);
+        xassert($j->ok);
+        $conf->save_refresh_setting("tag_hidden", null);
         MailChecker::clear();
     }
 
