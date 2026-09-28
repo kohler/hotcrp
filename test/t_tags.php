@@ -461,6 +461,68 @@ class Tags_Tester {
         xassert_eqq($p7->tag_value("order"), 5.0);
     }
 
+    function test_next_skips_hidden_papers() {
+        // A PC member's #next/#seqnext and checktag must ignore tag values
+        // on submissions they cannot view (drafts, withdrawn papers).
+        xassert_search_all($this->u_chair, "#nxorder", "");
+        $p3 = $this->conf->checked_paper_by_id(3);
+        $p3_submitted = $p3->timeSubmitted;
+        xassert_gt($p3_submitted, 0);
+
+        // paper 3 becomes a draft, which PC members cannot view
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["id" => 3, "status" => (object) ["submitted" => false]]));
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->timeSubmitted, 0);
+        xassert(!$this->u_floyd->can_view_paper($p3));
+
+        // chair places the draft in an order
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,3,nxorder#500\n");
+        $p3->load_tags();
+        xassert_eqq($p3->tag_value("nxorder"), 500.0);
+
+        // `#seqnext` by a PC member must not depend on the hidden value
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $jr = call_api("=tags", $this->u_floyd, ["addtags" => "nxorder#seqnext"], $p2);
+        xassert_eqq($jr->ok, true);
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("nxorder"), 1.0);
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,2,nxorder#clear\n");
+
+        // nor may `checktag` test it
+        xassert_assign($this->u_chair, "action,paper,tag\nchecktag,3,nxorder#500\n");
+        xassert_assign_fail($this->u_chair, "action,paper,tag\nchecktag,3,nxorder#499\n");
+        xassert_assign_fail($this->u_floyd, "action,paper,tag\nchecktag,3,nxorder#500\n");
+        xassert_assign_fail($this->u_floyd, "action,paper,tag\nchecktag,3,nxorder#499\n");
+
+        // same for withdrawn submissions
+        xassert($ps->save_paper_json((object) ["id" => 3, "status" => (object) ["submitted" => true]]));
+        xassert_assign($this->u_chair, "paper,action,notify\n3,withdraw,no\n");
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_lt($p3->timeSubmitted, 0);
+        xassert(!$this->u_floyd->can_view_paper($p3));
+        xassert_eqq($p3->tag_value("nxorder"), 500.0);
+        xassert_assign($this->u_floyd, "action,paper,tag\nseqnexttag,2,nxorder\n");
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("nxorder"), 1.0);
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,2,nxorder#clear\n");
+        xassert_assign_fail($this->u_floyd, "action,paper,tag\nchecktag,3,nxorder#500\n");
+
+        // but the chair, who can view the paper, extends its order
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,2,nxorder#seqnext\n");
+        $p2->load_tags();
+        xassert_eqq($p2->tag_value("nxorder"), 501.0);
+
+        xassert_assign($this->u_chair, "paper,action,notify\n3,revive,no\n");
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,all,nxorder#clear\n");
+        xassert_search_all($this->u_chair, "#nxorder", "");
+        $this->conf->qe("update Paper set timeSubmitted=? where paperId=3", $p3_submitted);
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert_eqq($p3->timeSubmitted, $p3_submitted);
+        xassert_eqq($p3->timeWithdrawn, 0);
+        xassert($this->u_floyd->can_view_paper($p3));
+    }
+
     function test_copy_tag_pattern() {
         $result = $this->conf->qe("select paperId, tagIndex from PaperTag where tag='fart'");
         xassert_search_all($this->u_chair, "#fart", "1 8 2 3 6 5 4 7");

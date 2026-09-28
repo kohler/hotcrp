@@ -103,6 +103,7 @@ class NextTagAssignmentState {
             if ($item->pid() !== $prow->paperId
                 && ($maxvalue === null || $value > $maxvalue)
                 && ($p = $this->astate->prow($item->pid()))
+                && $this->astate->user->can_view_paper($p)
                 && $this->astate->user->can_view_tag($p, $ltag)) {
                 $maxvalue = floor($value);
             }
@@ -410,7 +411,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($this->itype & self::I_CHECK) {
-            $whynot = $state->user->perm_view_tags($prow);
+            $whynot = $state->user->perm_view_paper($prow)
+                ?? $state->user->perm_view_tags($prow);
         } else {
             $whynot = $state->user->perm_edit_some_tag($prow);
         }
