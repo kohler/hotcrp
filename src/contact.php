@@ -385,7 +385,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     static public $prop_max_length = [
         "firstName" => 120, "lastName" => 120, "affiliation" => 2048,
         "email" => 120, "preferredEmail" => 120, "orcid" => 64, "phone" => 64,
-        "country" => 256
+        "country" => 256, "collaborators" => 32768
     ];
 
     /** @param Conf $conf */

@@ -38,6 +38,13 @@ class PaperAPI_Tester {
         $this->u_estrin = $conf->checked_user_by_email("estrin@usc.edu"); // pc
         $this->u_puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu");
         $this->u_micke = $conf->checked_user_by_email("micke@cdt.luth.se");
+
+        // restore the seed submissions that the document tests expect, in case
+        // an earlier suite replaced them (e.g. PaperStatus_Tester)
+        foreach ([1 => "%PDF-whatever", 2 => "%PDF-whatever2"] as $pid => $content) {
+            $ps = new PaperStatus($this->user);
+            $ps->save_paper_json((object) ["id" => $pid, "submission" => (object) ["content" => $content]]);
+        }
     }
 
     function allow_submission() {

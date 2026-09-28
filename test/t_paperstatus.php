@@ -1244,6 +1244,32 @@ class PaperStatus_Tester {
         xassert_eqq($newpaper->option(1)->value, 10);
     }
 
+    function test_save_collaborators_length_limit() {
+        $this->conf->save_setting("sub_collab", 1);
+        $this->conf->refresh_settings();
+        $paper1 = $this->conf->checked_paper_by_id(1);
+
+        // an oversized Collaborators value is rejected and not stored: unbounded
+        // collaborators text drives per-request, per-PC-member conflict matching
+        $big = str_repeat("University of California, Berkeley\n", 2000);
+        xassert_gt(strlen($big), 32768);
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["has_collaborators" => 1, "collaborators" => $big]), $paper1));
+        xassert($ps->has_error_at("collaborators"));
+        xassert_array_eqq($ps->change_list(), [], true);
+
+        // a value under the limit is accepted
+        $ok = str_repeat("University of California, Berkeley\n", 100);
+        xassert_lt(strlen($ok), 32768);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["has_collaborators" => 1, "collaborators" => $ok]), $paper1));
+        xassert(!$ps->has_error_at("collaborators"));
+        // ...but do not save, to leave paper 1 unchanged for later tests
+
+        $this->conf->save_setting("sub_collab", null);
+        $this->conf->refresh_settings();
+    }
+
     function test_save_new_authors() {
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_opt2" => "1", "opt2:1" => "new", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
         $qreq->set_file("submission:file", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::resolve("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -3302,5 +3328,11 @@ Phil Porras.");
 
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
+    }
+
+    function finalize() {
+        // restore the default hash method, which this class overrides to sha1
+        $this->conf->save_setting("opt.contentHashMethod", null);
+        $this->conf->refresh_settings();
     }
 }
