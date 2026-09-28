@@ -836,6 +836,16 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
+        // can only edit reviews you own or administer (checked before the
+        // requested type, which would otherwise reveal the review's type)
+        if (($rrow
+             ? !$user->is_owned_review($prow, $rrow)
+             : $reviewer->contactId !== $user->contactId)
+            && !$user->can_manage_reviews($prow)) {
+            $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
+            return false;
+        }
+
         // resolve a requested review type. Anyone may request the type the
         // reviewer would receive by default; only an administrator may request a
         // different type (e.g. primary/secondary/meta)
@@ -858,15 +868,6 @@ class ReviewValues extends MessageSet {
 
         // look up review
         if (!$rrow) {
-            // Refuse before the lookup when the caller named someone else and
-            // may not administer reviews: otherwise the refusal would differ
-            // depending on whether that user reviews this submission, which
-            // reveals reviewer identities. Either way the request is refused.
-            if ($reviewer->contactId !== $user->contactId
-                && !$user->can_manage_reviews($prow)) {
-                $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
-                return false;
-            }
             $rrow = $prow->fresh_review_by_user($reviewer);
         }
         if (!$rrow && $user === $reviewer && $user->review_tokens()) {
@@ -1102,11 +1103,7 @@ class ReviewValues extends MessageSet {
         '@phan-var-force int $rflags';
 
         // can only edit reviews you own or administer
-        if (!$user->is_owned_review($prow, $rrow)
-            && !$user->can_manage_reviews($prow)) {
-            $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
-            return false;
-        }
+        assert($user->is_owned_review($prow, $rrow) || $user->can_manage_reviews($prow));
 
         // reviewers must match if provided
         if ((isset($this->req["reviewerEmail"])
