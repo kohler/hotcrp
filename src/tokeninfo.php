@@ -548,7 +548,10 @@ class TokenInfo {
     /** @param ?string $key
      * @return mixed */
     final function data($key = null) {
-        $this->_jdata = $this->_jdata ?? json_decode_object($this->data);
+        if ($this->_jdata === null) {
+            $j = $this->data ? json_decode($this->data) : null;
+            $this->_jdata = is_object($j) ? $j : null;
+        }
         return $key ? $this->_jdata->$key ?? null : $this->_jdata;
     }
 
@@ -571,7 +574,10 @@ class TokenInfo {
     /** @param ?string $key
      * @return mixed */
     final function input($key = null) {
-        $this->_jinputData = $this->_jinputData ?? json_decode_object($this->inputData);
+        if ($this->_jinputData === null) {
+            $j = $this->inputData ? json_decode($this->inputData) : null;
+            $this->_jinputData = is_object($j) ? $j : null;
+        }
         return $key ? $this->_jinputData->$key ?? null : $this->_jinputData;
     }
 

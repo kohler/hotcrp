@@ -11,8 +11,11 @@ class ReviewToken_API {
         }
         $ml = [];
         if ($qreq->valid_post() && isset($qreq->token)) {
+            if (strlen($qreq->token) > 8192) {
+                return JsonResult::make_parameter_error("token", "<0>Review token too large");
+            }
             if (str_starts_with($qreq->token, "[")) {
-                $ttexts = json_decode($qreq->token);
+                $ttexts = json_decode($qreq->token) ?? [];
             } else {
                 $ttexts = preg_split('/[\s,;]+/', $qreq->token);
             }
@@ -20,6 +23,7 @@ class ReviewToken_API {
             $tval = [];
             foreach ($ttexts as $t) {
                 if ($t === "") {
+                    continue;
                 } else if (!($token = decode_token($t, "V"))) {
                     $ml[] = MessageItem::error("<0>Invalid review token ‘{$t}’");
                 } else if (($qreq->csession("rev_token_fail") ?? 0) >= 5) {

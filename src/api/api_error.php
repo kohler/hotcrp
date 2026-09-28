@@ -58,7 +58,10 @@ class Error_API {
     static function cspreport(Contact $user, Qrequest $qreq) {
         $bct = $qreq->body_content_type();
         $j = null;
-        if ($bct === "application/reports+json" || $bct === "application/json" || $bct === "application/csp-report") {
+        if (($bct === "application/reports+json"
+             || $bct === "application/json"
+             || $bct === "application/csp-report")
+            && ($qreq->body_size() ?? 8192) < 8192) {
             $j = json_decode($qreq->body() ?? "null");
         }
         if (is_object($j)) {
@@ -83,10 +86,6 @@ class Error_API {
             }
         }
         if (!$ok) {
-            if (($body = $qreq->body())
-                && ($f = SiteLoader::resolve("var/cspreport-invalid.txt"))) {
-                @file_put_contents($f, $bct . "\n" . $body);
-            }
             return new JsonResult(400, [
                 "ok" => false,
                 "message_list" => [MessageItem::error("<0>Unexpected request")],

@@ -225,7 +225,7 @@ class Session_API {
         if (!isset($qreq->message_list)) {
             return JsonResult::make_missing_error("message_list");
         }
-        $mlj = json_decode($qreq->message_list);
+        $mlj = json_decode_user($qreq->message_list, 16384);
         if (!is_array($mlj)) {
             return JsonResult::make_parameter_error("message_list");
         }

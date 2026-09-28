@@ -268,7 +268,8 @@ class AuthorCertification_PaperOption extends PaperOption {
             $e = new AuthorCertification_Entry($u->email);
             $e->uid = $v;
             $e->user = $u;
-            if (($j = json_decode_object($ov->data_by_index($i)))) {
+            $j = json_decode($ov->data_by_index($i) ?? "");
+            if (is_object($j)) {
                 if (isset($j->value)) {
                     $e->value = $j->value;
                 }

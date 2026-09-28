@@ -104,6 +104,9 @@ class Search_API {
 
     static function apply_search(JsonResult $jr, Contact $user, Qrequest $qreq, $search) {
         $search = ltrim($search);
+        if (strlen($search) > 16384) {
+            return;
+        }
         if (str_starts_with($search, "{")) {
             $param = json_decode($search, true);
         } else {

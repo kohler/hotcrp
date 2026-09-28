@@ -301,6 +301,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $sfs === "same-origin" || $sfs === "none";
     }
 
+    /** @return ?int */
+    function body_size() {
+        if ($this->_body !== null || $this->_body_type === self::BODY_NONE) {
+            return strlen($this->_body ?? "");
+        }
+        if ($this->_body_file !== null) {
+            $sz = @filesize($this->_body_file);
+            return $sz === false ? null : $sz;
+        }
+        return stoi($_SERVER["CONTENT_LENGTH"] ?? null);
+    }
+
     /** @return ?string */
     function body() {
         if ($this->_body !== null || $this->_body_type === self::BODY_NONE) {

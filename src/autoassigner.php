@@ -194,12 +194,11 @@ abstract class Autoassigner extends MessageSet {
             $this->oschema->define($x);
         }
         $this->olist = new ViewOptionList;
-        if (($jc = json_decode_object($this->conf->opt("autoassignCosts")))) {
-            foreach ((array) $jc as $name => $value) {
-                $k = "{$name}_cost";
-                if (property_exists($this, $k)) {
-                    $this->$k = $value;
-                }
+        $jc = json_decode($this->conf->opt("autoassignCosts") ?? "");
+        foreach (is_object($jc) ? (array) $jc : [] as $name => $value) {
+            $k = "{$name}_cost";
+            if (property_exists($this, $k)) {
+                $this->$k = $value;
             }
         }
     }
