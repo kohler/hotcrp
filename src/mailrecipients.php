@@ -470,16 +470,14 @@ class MailRecipients extends MessageSet {
         }
 
         // additional manager limit
-        $need_filter = false;
-        if (!$this->user->privChair
-            && ($this->rect->flags & self::F_ANYPC) === 0) {
+        $need_filter = !$this->user->privChair
+            && ($this->rect->flags & self::F_ANYPC) === 0;
+        if ($need_filter) {
             if (!$this->user->is_track_manager()) {
                 $options["myManaged"] = true;
             } else if (($mtt = $this->user->managed_track_tags()) !== null) {
                 $tsm = (new TagSearchMatcher($this->conf->root_user()))->add_tag_list($mtt);
                 $options["where"] = $tsm->exists_sqlexpr("Paper") . " or managerContactId={$this->user->contactId}";
-            } else {
-                $need_filter = true;
             }
         }
 

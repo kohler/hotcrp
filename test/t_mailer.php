@@ -582,6 +582,58 @@ class Mailer_Tester {
         MailChecker::clear();
     }
 
+    function test_track_manager_walled_off_by_paper_administrator() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+        $old_tracks = $conf->setting_data("tracks");
+
+        // estrin (pc, red) is a contact author of paper 1; PC members
+        // tagged red administer the `mailtrk` track, which contains
+        // papers 1 and 2
+        $conf->save_refresh_setting("tracks", 1, '{"mailtrk":{"admin":"+red"}}');
+        xassert_assign($chair, "paper,tag\n1 2,mailtrk\n");
+        Contact::update_rights();
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        xassert($estrin->is_track_manager() && !$estrin->privChair);
+        xassert($conf->checked_paper_by_id(1)->has_author($estrin));
+
+        // a track manager may administer papers on their track, even over
+        // their own conflict, so the mail tool reaches them...
+        foreach (["pcrev", "au"] as $rec) {
+            $mr = (new MailRecipients($estrin))->set_recipients($rec)->set_paper_ids([1, 2]);
+            xassert(!$mr->has_error());
+            xassert_eqq($mr->paper_set()->paper_ids(), [1, 2]);
+        }
+
+        // ...but not once the chair assigns paper 1 its own administrator,
+        // which walls off conflicted managers
+        xassert_assign($chair, "paper,action,user\n1,administrator,{$marina->email}\n");
+        Contact::update_rights();
+        $estrin = $conf->checked_user_by_email("estrin@usc.edu");
+        xassert(!$estrin->allow_admin($conf->checked_paper_by_id(1)));
+        foreach (["pcrev", "au"] as $rec) {
+            $mr = (new MailRecipients($estrin))->set_recipients($rec)->set_paper_ids([1, 2]);
+            xassert(!$mr->has_error());
+            xassert_eqq($mr->paper_set()->paper_ids(), [2]);
+            xassert_eqq($mr->paper(1), null);
+        }
+
+        // the paper administrator still reaches paper 1
+        $marina = $conf->checked_user_by_email($marina->email);
+        $mr = (new MailRecipients($marina))->set_recipients("pcrev")->set_paper_ids([1, 2]);
+        xassert_eqq($mr->paper_set()->paper_ids(), [1]);
+
+        xassert_assign($chair, "paper,action,user\n1,clearadministrator,{$marina->email}\n");
+        xassert_assign($chair, "paper,tag\n1 2,-mailtrk\n");
+        if ($old_tracks === null) {
+            $conf->save_refresh_setting("tracks", null);
+        } else {
+            $conf->save_refresh_setting("tracks", 1, $old_tracks);
+        }
+        Contact::update_rights();
+    }
+
     function test_recipient_address_curly_quotes() {
         // A display name containing curly quotes and address syntax must
         // reach the To: header as one mailbox: MimeText straightens curly
