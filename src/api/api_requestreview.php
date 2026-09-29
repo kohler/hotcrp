@@ -608,7 +608,9 @@ class RequestReview_API {
         $rrows = array_filter($xrrows, function ($rrow) use ($user, $prow) {
             return $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
                 && ($user->can_manage_reviews($prow)
-                    || ($user->contactId && $user->contactId == $rrow->requestedBy));
+                    || ($user->contactId > 0
+                        && $user->contactId == $rrow->requestedBy
+                        && $rrow->reviewType < REVIEW_SECONDARY));
         });
         $requests = array_filter($xrequests, function ($req) use ($user, $prow) {
             return $user->can_manage_reviews($prow)

@@ -6955,8 +6955,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $rrow->set_prop("reviewRound", $round);
         }
         if ($oldtype === 0
-            || (($oldrflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
+            || (($oldtype === REVIEW_EXTERNAL || $oldtype === REVIEW_PC)
                 && $type > REVIEW_PC)) {
+            // a new review, or promotion of an external/optional-PC review into
+            // a chair-managed assignment, belongs to the acting administrator;
+            // this prevents a stale requester from retaining rights over it
             $rrow->set_prop("timeRequested", Conf::$now);
             $new_requester_cid = $this->contactId;
             if (($new_requester = $extra["requester_contact"] ?? null)) {

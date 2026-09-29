@@ -399,4 +399,59 @@ class RequestReviewAPI_Tester {
         $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u->contactId);
         $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
     }
+
+    function test_retractreview_cannot_remove_promoted_primary() {
+        // HC-171: a non-admin requester must not be able to retract a review the
+        // chair has promoted into a primary/secondary/meta assignment.
+        $conf = $this->conf;
+        $prow = $conf->checked_paper_by_id($this->pid);
+        $u_victim = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u_victim->contactId);
+        $prow->load_reviews(true);
+
+        // estrin (a PC reviewer on #20) requests lixia (PC): creates a PC review
+        // whose requestedBy is estrin
+        $qreq = (new Qrequest("POST", ["email" => $u_victim->email]))->approve_token();
+        $jr = RequestReview_API::requestreview($this->u_prober, $qreq, $prow);
+        xassert($jr->content["ok"] ?? false);
+        $prow->load_reviews(true);
+        $rrow = $prow->fresh_review_by_user($u_victim);
+        xassert(!!$rrow);
+        xassert_eqq($rrow->reviewType, REVIEW_PC);
+        xassert_eqq($rrow->requestedBy, $this->u_prober->contactId);
+
+        // the chair promotes lixia to PRIMARY; ownership resets to the chair
+        $this->u_chair->assign_review($this->pid, $u_victim, REVIEW_PRIMARY);
+        $prow->load_reviews(true);
+        $rrow = $prow->fresh_review_by_user($u_victim);
+        xassert_eqq($rrow->reviewType, REVIEW_PRIMARY);
+        xassert_eqq($rrow->requestedBy, $this->u_chair->contactId);
+
+        // the original requester can no longer retract the chair's assignment
+        $qreq = (new Qrequest("POST", ["email" => $u_victim->email]))->approve_token();
+        $jr = RequestReview_API::retractreview($this->u_prober, $qreq, $prow);
+        xassert(!($jr->content["ok"] ?? false));
+        $prow->load_reviews(true);
+        $rrow = $prow->fresh_review_by_user($u_victim);
+        xassert(!!$rrow);
+        xassert_eqq($rrow->reviewType, REVIEW_PRIMARY);
+
+        // control: an unpromoted review the requester made can still be retracted
+        $u_v2 = $conf->checked_user_by_email("van@ee.lbl.gov");
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u_v2->contactId);
+        $prow->load_reviews(true);
+        $qreq = (new Qrequest("POST", ["email" => $u_v2->email]))->approve_token();
+        RequestReview_API::requestreview($this->u_prober, $qreq, $prow);
+        $prow->load_reviews(true);
+        xassert(!!$prow->fresh_review_by_user($u_v2));
+        $qreq = (new Qrequest("POST", ["email" => $u_v2->email]))->approve_token();
+        $jr = RequestReview_API::retractreview($this->u_prober, $qreq, $prow);
+        xassert($jr->content["ok"] ?? false);
+        $prow->load_reviews(true);
+        xassert(!$prow->fresh_review_by_user($u_v2));
+
+        // cleanup
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $this->pid, $u_victim->contactId);
+        $prow->load_reviews(true);
+    }
 }
