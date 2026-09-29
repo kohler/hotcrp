@@ -6453,6 +6453,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
      * @return bool */
     function can_edit_tag_anno($tag) {
         $ufl = $this->tag_edit_flags(null);
+        if (!$this->privChair) {
+            $ufl &= ~TagInfo::TF_OTHER_PRIVATE;
+        }
         $tfl = $this->conf->tags()->edit_flags($tag, $this->contactId, 0);
         // automatic values do not prevent editing annotations
         return ($tfl & $ufl & TagInfo::TFM_PERM_EDIT) !== 0
