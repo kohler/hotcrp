@@ -1556,7 +1556,7 @@ class Authorize_Page {
         // validate content
         if ($this->qreq->body_content_type() !== "application/json"
             || ($reqstr = $this->qreq->body()) === null
-            || !is_object(($reqj = json_decode($reqstr)))
+            || !is_object(($reqj = \Json::decode_user($reqstr, 16384)))
             || !is_array($reqj->redirect_uris ?? null)
             || empty($reqj->redirect_uris)) {
             return $this->oauthregister_error("invalid_request");

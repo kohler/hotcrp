@@ -1,8 +1,6 @@
 <?php
 // jsonparser.php -- HotCRP JSON parser with position tracking support
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
-
-const JSON_ERROR_TRAILING_COMMA = 101;
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class JsonParser {
     /** @var ?string */
@@ -47,7 +45,9 @@ class JsonParser {
         JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
         JSON_ERROR_INVALID_PROPERTY_NAME => "The decoded property name is invalid",
         JSON_ERROR_UTF16 => "Single unpaired UTF-16 surrogate in unicode escape",
-        JSON_ERROR_TRAILING_COMMA => "Trailing commas are not supported"
+        Json::ERROR_TRAILING_COMMA => "Trailing commas are not supported",
+        Json::ERROR_TOO_LONG => "Maximum length exceeded",
+        Json::ERROR_TOO_COMPLEX => "Input too complex"
     ];
 
     const JSON_EXTENDED_WHITESPACE = 1 << 19;
@@ -130,7 +130,7 @@ class JsonParser {
     /** @param ?int $pos
      * @param int $etype
      * @return null */
-    private function set_error($pos, $etype) {
+    function set_error($pos, $etype) {
         if (($this->flags & JSON_THROW_ON_ERROR) !== 0) {
             throw new JsonException(self::$error_messages[$etype], $etype);
         }
@@ -405,7 +405,7 @@ class JsonParser {
                     $key = $this->decode_part($depth + 1, self::CTX_OBJECT_KEY);
                 }
                 if ($this->error_type !== 0) {
-                    if ($this->error_type === JSON_ERROR_TRAILING_COMMA
+                    if ($this->error_type === Json::ERROR_TRAILING_COMMA
                         && ($this->flags & self::JSON5) !== 0) {
                         $this->pos = $this->error_pos;
                         $this->error_type = 0;
@@ -453,7 +453,7 @@ class JsonParser {
 
                 $value = $this->decode_part($depth + 1, self::CTX_ARRAY_ELEMENT);
                 if ($this->error_type !== 0) {
-                    if ($this->error_type === JSON_ERROR_TRAILING_COMMA
+                    if ($this->error_type === Json::ERROR_TRAILING_COMMA
                         && ($this->flags & self::JSON5) !== 0) {
                         $this->pos = $this->error_pos;
                         $this->error_type = 0;
@@ -486,12 +486,12 @@ class JsonParser {
             return self::number_value($m[0], $m[1]);
         } else if ($ch === 93) {     // `]`
             if ($context === self::CTX_ARRAY_ELEMENT) {
-                return $this->set_error($pos, JSON_ERROR_TRAILING_COMMA);
+                return $this->set_error($pos, Json::ERROR_TRAILING_COMMA);
             }
             return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
         } else if ($ch === 125) {    // `}`
             if ($context === self::CTX_OBJECT_KEY) {
-                return $this->set_error($pos, JSON_ERROR_TRAILING_COMMA);
+                return $this->set_error($pos, Json::ERROR_TRAILING_COMMA);
             }
             return $this->set_error($pos, JSON_ERROR_STATE_MISMATCH);
         } else if ($ch < 32) {

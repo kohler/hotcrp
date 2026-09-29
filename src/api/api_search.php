@@ -108,7 +108,8 @@ class Search_API {
             return;
         }
         if (str_starts_with($search, "{")) {
-            $param = json_decode($search, true);
+            $jp = (new JsonParser)->set_assoc(true);
+            $param = Json::decode_user($search, null, $jp);
         } else {
             $pos = str_starts_with($search, "?") ? 1 : 0;
             preg_match_all('/([^&;=\s]*)=([^&;=\s]*)/', $search, $m, PREG_SET_ORDER, $pos);

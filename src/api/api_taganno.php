@@ -35,7 +35,7 @@ class TagAnno_API {
         } else if (!$user->can_edit_tag_anno($tag)) {
             return JsonResult::make_permission_error("tag");
         }
-        $reqanno = json_decode($qreq->anno ?? "");
+        $reqanno = Json::decode_user($qreq->anno ?? "");
         if (!is_object($reqanno) && !is_array($reqanno)) {
             return JsonResult::make_parameter_error("anno");
         }

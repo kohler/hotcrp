@@ -530,23 +530,6 @@ function json_encode_db($x, $flags = 0) {
 }
 
 /** @param ?string $s
- * @param ?int $max_length
- * @return mixed */
-function json_decode_user($s, $max_length = null) {
-    $len = $s === null ? 0 : strlen($s);
-    if ($len === 0 || ($max_length !== null && $len > $max_length)) {
-        return null;
-    }
-    // Refuse hash-collision-shaped input: a collision payload packs ~1 object
-    // member per 7 bytes. Allowing ~32*sqrt(len) members keeps json_decode's
-    // worst case linear in `len` and never trips on normal documents.
-    if ($len > 8192 && substr_count($s, ":") > 32 * (int) sqrt($len)) {
-        return null;
-    }
-    return json_decode($s);
-}
-
-/** @param ?string $s
  * @return ?object */
 function json_decode_object($s) {
     if ($s === null || $s === "" || !is_object(($j = json_decode($s)))) {

@@ -595,6 +595,20 @@ class Authorize_Tester {
         }
     }
 
+    function test_oauthregister_refuses_oversized_body() {
+        // a normal-sized registration succeeds
+        $jr = call_api("=oauthregister", $this->u_empty, TestQreq::post_json(["redirect_uris" => ["https://dloop.com/"]]));
+        xassert(isset($jr->client_id));
+
+        // dynamic client registration is unauthenticated; an oversized body
+        // must be refused before json_decode (HC-116-class hash-collision DoS)
+        $big = '{"redirect_uris":["https://x/cb"],"junk":"' . str_repeat("a", 20000) . '"}';
+        xassert_gt(strlen($big), 16384);
+        $jr = call_api("=oauthregister", $this->u_empty, TestQreq::post_json($big));
+        xassert_eqq($jr->error ?? null, "invalid_request");
+        xassert(!isset($jr->client_id));
+    }
+
     #[RequireClass("Uri\\Rfc3986\\Uri")]
     function test_refresh_token_replay_prevention() {
         // Get initial tokens

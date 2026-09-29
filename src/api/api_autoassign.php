@@ -25,7 +25,7 @@ class Autoassign_API {
 
         $ls = [];
         if (preg_match('/\A\s*\[/', $qreq->$name)) {
-            $list = json_decode($qreq->$name);
+            $list = Json::decode_user($qreq->$name);
             if (!is_array($list)) {
                 return null;
             }
@@ -38,7 +38,7 @@ class Autoassign_API {
                 $ls[] = (string) $elt;
             }
         } else if ($is_param && preg_match('/\A\s*\{/', $qreq->$name)) {
-            $map = json_decode($qreq->$name, true);
+            $map = Json::decode_user($qreq->$name, true);
             if (!is_array($map)) {
                 return null;
             }

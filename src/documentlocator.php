@@ -82,7 +82,7 @@ class DocumentLocator {
         }
 
         // read JSON, check format
-        $jp = Json::decode((string) $jsonstr);
+        $jp = Json::decode_user((string) $jsonstr);
         if (is_object($jp)) {
             if (isset($qreq->q)
                 && ($mode & self::M_MATCH) !== 0) {

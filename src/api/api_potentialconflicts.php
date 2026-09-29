@@ -28,7 +28,7 @@ class PotentialConflicts_API {
         // extract unsaved changes
         $njson = $nqreq = null;
         if (isset($qreq->json)) {
-            $json = json_decode_user($qreq->json, 1 << 20);
+            $json = Json::decode_user($qreq->json, 1 << 20);
             if (!is_object($json)) {
                 return JsonResult::make_parameter_error("json");
             }

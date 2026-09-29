@@ -342,7 +342,7 @@ class SessionList {
      * @param string $type
      * @return ?SessionList */
     static function decode_info_string($user, $info, $type) {
-        if (($j = json_decode_user($info, 1 << 20))
+        if (($j = Json::decode_user($info, 1 << 20))
             && is_object($j)
             && (!isset($j->listid) || is_string($j->listid))) {
             return self::decode_hotlist($user, $j, $type);

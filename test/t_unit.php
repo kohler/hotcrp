@@ -781,7 +781,7 @@ class Unit_Tester {
         xassert_eqq(Json::decode("null"), null);
         xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
         xassert_eqq(Json::decode("[1,]"), null);
-        xassert_eqq(Json::last_error(), JSON_ERROR_TRAILING_COMMA);
+        xassert_eqq(Json::last_error(), Json::ERROR_TRAILING_COMMA);
         xassert_str_contains(Json::last_error_msg(), "at character 3");
         xassert_eqq(Json::decode("[\"a\xffb\"]"), null);
         xassert_eqq(Json::last_error(), JSON_ERROR_UTF8);
@@ -823,7 +823,7 @@ class Unit_Tester {
         xassert_eqq($jp->last_error(), JSON_ERROR_CTRL_CHAR);
         xassert_eqq($jp->error_pos, 3);
         xassert_eqq($jp->set_input("{\"a\":1,}")->base_decode(), null);
-        xassert_eqq($jp->last_error(), JSON_ERROR_TRAILING_COMMA);
+        xassert_eqq($jp->last_error(), Json::ERROR_TRAILING_COMMA);
         xassert_eqq($jp->error_pos, 7);
         $jpo = (new JsonParser)->set_assoc(false);
         xassert_eqq(json_encode($jpo->set_input("{\"\": 1}")->base_decode()), '{"":1}');
@@ -832,6 +832,39 @@ class Unit_Tester {
 
         // whitespace
         xassert_eqq($jp->set_input(" \t\r\n[ \n1 ,\t2\r]\n ")->base_decode(), [1, 2]);
+    }
+
+    function test_json_decode_user() {
+        // normal input decodes as an object, no error
+        $o = Json::decode_user('{"a":1,"authors":"x"}', 1000);
+        xassert(is_object($o));
+        xassert_eqq($o->a, 1);
+        xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
+
+        // empty and over-length inputs are refused with distinct codes
+        xassert_eqq(Json::decode_user("", 1000), null);
+        xassert_eqq(Json::last_error(), JSON_ERROR_SYNTAX);
+        xassert_eqq(Json::decode_user(str_repeat("a", 100), 10), null);
+        xassert_eqq(Json::last_error(), Json::ERROR_TOO_LONG);
+
+        // hash-collision-shaped input (many object members) is refused
+        $evil = "{" . str_repeat('"Ez":0,', 15000) . '"Ez":0}';
+        xassert_gt(strlen($evil), 8192);
+        xassert_eqq(Json::decode_user($evil, 1 << 20), null);
+        xassert_eqq(Json::last_error(), Json::ERROR_TOO_COMPLEX);
+
+        // ...but a long string that merely contains many colons is not
+        // collision-shaped: only structural colons count, so it decodes
+        $colonstr = '{"u":"' . str_repeat("x:", 30000) . '"}';
+        xassert_gt(strlen($colonstr), 8192);
+        xassert(is_object(Json::decode_user($colonstr, 1 << 20)));
+        xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
+
+        // small dense input is below the guard threshold and decodes
+        $small = "{" . str_repeat('"a":0,', 1000) . '"a":0}';
+        xassert_lt(strlen($small), 8192);
+        xassert(is_object(Json::decode_user($small, 1 << 20)));
+        xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
     }
 
     function test_json5() {
