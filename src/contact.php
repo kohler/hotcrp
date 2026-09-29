@@ -5323,9 +5323,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rights = $this->rights($prow);
         return $rights->scope_allows(TS::S_REV_ADMIN)
             && ($rights->allow_admin()
-                || (($rights->reviewType >= REVIEW_PC
-                     || ($this->isPC
-                         && $prow->leadContactId === $this->contactXid))
+                || ($this->contactId > 0 /* not a capability user */
+                    && ($rights->reviewType >= REVIEW_PC
+                        || ($this->isPC
+                            && $prow->leadContactId === $this->contactXid))
                     && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0))
             && (!$check_time
                 || $rights->is_admin()
@@ -5340,10 +5341,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
         if (!$rights->allow_admin()
-            && (($rights->reviewType < REVIEW_PC
-                 && (!$this->isPC
-                     || $prow->leadContactId !== $this->contactXid))
-                || ($this->conf->setting("extrev_chairreq") ?? 0) < 0)) {
+            && !($this->contactId > 0
+                 && ($rights->reviewType >= REVIEW_PC
+                     || ($this->isPC
+                         && $prow->leadContactId === $this->contactXid))
+                 && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0)) {
             $whyNot["permission"] = "review:request";
         } else {
             $whyNot["deadline"] = "extrev_chairreq";

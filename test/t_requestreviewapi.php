@@ -366,6 +366,35 @@ class RequestReviewAPI_Tester {
     // placeholders (harmless for a dry_run) still yields real users once a
     // review materializes.
 
+    function test_requestreview_needs_account() {
+        // a review-accept link grants access to that review, but not the
+        // reviewer’s right to request further reviews
+        $conf = $this->conf;
+        $email = "linkholder-probe@example.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $anon = Contact::make($conf);
+        $anon->set_capability("@ra{$this->pid}", $this->u_hidden->contactId);
+        $prow = $conf->checked_paper_by_id($this->pid, $anon);
+        xassert($this->u_hidden->can_request_review($prow, null, true));
+        xassert(!$anon->can_request_review($prow, null, true));
+        $jr = call_api_result("=requestreview", $anon,
+            ["email" => $email, "given_name" => "Link", "family_name" => "Holder"], $prow);
+        xassert_eqq($jr->status, 403);
+        $t = json_encode($jr->content["message_list"] ?? [], JSON_UNESCAPED_UNICODE);
+        xassert_str_contains($t, "aren’t allowed to request reviews");
+        xassert_not_str_contains($t, "deadline");
+        xassert(!$conf->fresh_user_by_email($email));
+        if (($u = $conf->fresh_user_by_email($email))) {
+            $conf->qe("delete from PaperReview where contactId=?", $u->contactId);
+            $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+        }
+
+        // other users without request rights get the same reason
+        $whynot = $this->u_author->perm_request_review($prow, null, true);
+        xassert_str_contains(json_encode($whynot->message_list(), JSON_UNESCAPED_UNICODE),
+                             "aren’t allowed to request reviews");
+    }
+
     function test_requestreview_creates_nonplaceholder_reviewer() {
         $conf = $this->conf;
         $email = "newrev-req-probe@example.edu";
