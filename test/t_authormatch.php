@@ -114,6 +114,19 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("Lon Deutsch"), true);
     }
 
+    function test_initials_no_redos() {
+        // the initials first-name regex must not backtrack quadratically on a
+        // run of one letter followed by a non-boundary (HC-107); each match is
+        // cheap, so repeat as the per-line collaborator loop does
+        $aum = AuthorMatcher::make_string_guess("J. J. Garcia-Luna-Aceves");
+        $subj = Author::make_string_guess("J" . str_repeat("j", 900) . "0 Garcia-Luna-Aceves");
+        $t0 = microtime(true);
+        for ($i = 0; $i !== 2000; ++$i) {
+            xassert_eqq(!!$aum->test($subj), false);
+        }
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_affiliation_alternates() {
         $aum = AuthorMatcher::make_string_guess("IBM Watson");
         xassert_eqq(!!$aum->test("Fart (IBM Watson)"), true);

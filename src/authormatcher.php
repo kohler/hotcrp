@@ -113,16 +113,16 @@ class AuthorMatcher extends Author {
                 $fnmatch[] = $w;
                 $hlmatch[] = $w;
                 if (ctype_alpha($w[0]) && $i === $fulli) {
-                    $ix = "{$w[0]}[\\.\\s*]*";
+                    $ix = "{$w[0]}[.\\s]*";
                     $imatch[] = $ix;
                     $hlmatch[] = $ix;
                 }
             } else if ($i === 0 && $fulli === count($fws)) {
-                $ix = "{$w}[a-z]*[\\.\\s]*";
+                $ix = "{$w}[a-z]*+[.\\s]*";
                 $imatch[] = $ix;
                 $hlmatch[] = $ix;
             } else if ($i < $fulli) {
-                $imatch[] = "(?:|{$w}[a-z]*[\\.\\s*]*)";
+                $imatch[] = "(?:|{$w}[a-z]*+[.\\s]*)";
             }
         }
         if (!empty($imatch)) {
