@@ -213,6 +213,9 @@ class Paper_API extends MessageSet {
                 $this->disable_users = true;
             }
             if (friendly_boolean($qreq->add_topics)) {
+                if (!$this->user->scope_allows(TokenScope::S_SETTINGS_ADMIN)) {
+                    JsonResult::make_scope_error($qreq, TokenScope::S_SETTINGS_ADMIN, "<0>The `add_topics` parameter requires scope `settings:admin`")->complete();
+                }
                 $this->conf->topic_set()->set_auto_add(true);
                 $this->conf->options()->refresh_topics();
             }
