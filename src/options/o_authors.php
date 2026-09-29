@@ -25,6 +25,20 @@ class Authors_PaperOption extends PaperOption {
     private function make_too_many(PaperInfo $prow) {
         return PaperValue::make_estop($prow, $this, $this->conf->_("<0>A {submission} may have at most {max} authors", new FmtArg("max", $this->effective_max_count())));
     }
+    /** @param string $email
+     * @return bool */
+    private function has_confirmed_orcid($email) {
+        $u = $this->conf->user_by_email($email)
+            ?? Contact::make_placeholder($this->conf, $email);
+        if ($u->confirmed_orcid() === ""
+            && ($cdbu = $u->cdb_user())) {
+            $u->import_prop($cdbu, 1);
+            if ($u->contactId > 0 && $u->prop_changed()) {
+                $u->save_prop();
+            }
+        }
+        return $u->confirmed_orcid() !== "";
+    }
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
@@ -107,8 +121,7 @@ class Authors_PaperOption extends PaperOption {
                 if ($auth->email === "") {
                     $msg_missing = true;
                     $ov->append_item(new MessageItem($status, "authors:{$n}:email"));
-                } else if (!($u = $this->conf->user_by_email($auth->email))
-                           || !$u->confirmed_orcid()) {
+                } else if (!$this->has_confirmed_orcid($auth->email)) {
                     if (!Contact::is_bot_email($auth->email)) {
                         $msg_orcid[] = $auth->email;
                         $ov->append_item(new MessageItem($status, "authors:{$n}"));

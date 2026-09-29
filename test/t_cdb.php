@@ -30,7 +30,7 @@ class Cdb_Tester {
             exit(1);
         }
 
-        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu", "caracal@fart.edu", "ocelot@fart.edu", "margay@fart.edu", "kodkod@fart.edu", "serval@fart.edu"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu", "lynx@fart.edu", "bobcat@fart.edu", "caracal@fart.edu", "ocelot@fart.edu", "margay@fart.edu", "kodkod@fart.edu", "serval@fart.edu", "jaguarundi@fart.edu", "oncilla@fart.edu", "pampas@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
         $this->conf->invalidate_caches("users");
@@ -839,6 +839,56 @@ class Cdb_Tester {
         $nq = Dbl::$nqueries;
         (new CdbUserUpdate($this->conf))->import_empty_props();
         xassert_le(Dbl::$nqueries, $nq + 2);
+    }
+
+    function test_require_orcid_imports_cdb_orcid() {
+        $paper1 = $this->user_chair->checked_paper_by_id(1);
+        $authors = array_map(function ($au) {
+            return (object) ["name" => $au->name(), "email" => $au->email, "affiliation" => $au->affiliation];
+        }, $paper1->author_list());
+
+        // jaguarundi: local account lacks the ORCID iD that cdb has;
+        // oncilla: cdb account only; pampas: no ORCID iD anywhere
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Jaguarundi', lastName='Face', email='jaguarundi@fart.edu', orcid='0000-0002-1825-0097', password=' unset', cflags=0");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Jaguarundi', lastName='Face', email='jaguarundi@fart.edu', password=' unset', cflags=0");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Oncilla', lastName='Face', email='oncilla@fart.edu', orcid='0000-0001-5109-3700', password=' unset', cflags=0");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Pampas', lastName='Face', email='pampas@fart.edu', password=' unset', cflags=0");
+        $this->conf->invalidate_caches("users");
+        xassert_eqq($this->conf->checked_user_by_email("jaguarundi@fart.edu")->confirmed_orcid(), "");
+
+        // author without an ORCID iD is refused;
+        // refused save does not create local accounts
+        $this->conf->set_opt("requireOrcid", 1);
+        $ps = new PaperStatus($this->user_chair);
+        $ps->save_paper_json((object) [
+            "id" => 1, "authors" => ["jaguarundi@fart.edu", "oncilla@fart.edu", "pampas@fart.edu"]
+        ]);
+        xassert_str_contains($ps->full_feedback_text(), "Please ask pampas@fart.edu to sign in");
+        xassert_not_str_contains($ps->full_feedback_text(), "jaguarundi@fart.edu");
+        xassert_not_str_contains($ps->full_feedback_text(), "oncilla@fart.edu");
+        $paper1 = $this->user_chair->checked_paper_by_id(1);
+        xassert(!$paper1->author_by_email("pampas@fart.edu"));
+        xassert(!$this->conf->fresh_user_by_email("oncilla@fart.edu"));
+
+        // authors with cdb ORCID iDs are accepted
+        $ps = new PaperStatus($this->user_chair);
+        $ps->save_paper_json((object) [
+            "id" => 1, "authors" => ["jaguarundi@fart.edu", "oncilla@fart.edu"]
+        ]);
+        xassert_not_str_contains($ps->full_feedback_text(), "ORCID");
+        $paper1 = $this->user_chair->checked_paper_by_id(1);
+        xassert_eqq(array_map(function ($au) { return $au->email; }, $paper1->author_list()),
+                    ["jaguarundi@fart.edu", "oncilla@fart.edu"]);
+        xassert_eqq($this->conf->fresh_user_by_email("jaguarundi@fart.edu")->confirmed_orcid(), "0000-0002-1825-0097");
+        $u_oncilla = $this->conf->fresh_user_by_email("oncilla@fart.edu");
+        xassert_eqq($u_oncilla->confirmed_orcid(), "0000-0001-5109-3700");
+        xassert(!$u_oncilla->is_placeholder());
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ActionLog where destContactId=? and action like 'Account created%'", $u_oncilla->contactId), 1);
+        $this->conf->set_opt("requireOrcid", null);
+
+        // restore the original author list
+        $ps = new PaperStatus($this->conf->root_user());
+        xassert($ps->save_paper_json((object) ["id" => 1, "authors" => $authors]));
     }
 
     function test_import_secondary() {
