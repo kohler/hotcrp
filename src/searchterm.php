@@ -1383,6 +1383,18 @@ class Limit_SearchTerm extends SearchTerm {
         }
         $this->named_limit = $limstr = $limitpair[0];
 
+        // a scope-restricted token that cannot read reviews cannot select
+        // papers by review relationship; `reviewable` still reports track
+        // assignability (handled in `test`/`sqlexpr`), but drops current
+        // assignments
+        if (!$this->user->scope_allows(TokenScope::S_REV_READ)
+            && in_array($limstr, ["ar", "r", "rout", "req"], true)) {
+            if ($srch && $limword) {
+                $srch->lwarning($limword, $conf->_("<0>{Submission} collection requires `review:read` scope"));
+            }
+            $limstr = $limstr === "ar" ? "a" : "none";
+        }
+
         // optimize SQL for some limits
         if ($limstr === "viewable" && $this->user->can_view_all()) {
             $limstr = "all";
@@ -1748,7 +1760,8 @@ class Limit_SearchTerm extends SearchTerm {
             }
             return false;
         case "reviewable":
-            if ($row->has_active_reviewer($this->reviewer)) {
+            if ($this->user->scope_allows(TokenScope::S_REV_READ)
+                && $row->has_active_reviewer($this->reviewer)) {
                 return true;
             }
             return $this->reviewer->pc_track_assignable($row)

@@ -81,6 +81,41 @@ class Scope_Tester {
         xassert_search($this->u_floyd, "1-18", "1 3-18");
     }
 
+    function test_review_limit_requires_review_scope() {
+        $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $save_rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_setting("rev_open", 1);
+        $this->conf->refresh_settings();
+
+        // an unscoped reviewer selects her assignments via the review limits
+        // and sees the revtype column on those papers
+        $u->set_scope();
+        $revd = array_keys(search_json($u, ["q" => "", "t" => "r"]));
+        xassert(!empty($revd));
+        xassert_int_list_eqq(array_keys(search_json($u, ["q" => "re:me", "t" => "s"])), $revd);
+        $rv = search_json($u, ["q" => join(" ", $revd), "t" => "s"], "revtype");
+        $shown = array_values(array_filter($revd, function ($pid) use ($rv) {
+            return isset($rv[$pid]["revtype"]);
+        }));
+        xassert(!empty($shown));
+
+        // a submission:read token (no review scope) cannot learn review
+        // assignments: the review limits degrade to `none` and the revtype
+        // column is censored (HC-191)
+        $u->set_scope("submission:read");
+        xassert_search_ignore_warnings($u, ["q" => "", "t" => "r"], "");
+        xassert_search($u, ["q" => "re:me", "t" => "s"], "");
+        xassert_search_ignore_warnings($u, ["q" => "", "t" => "rout"], "");
+        $rv = search_json($u, ["q" => join(" ", $shown), "t" => "s"], "revtype");
+        foreach ($shown as $pid) {
+            xassert_eqq($rv[$pid]["revtype"] ?? null, null);
+        }
+
+        $u->set_scope();
+        $this->conf->save_setting("rev_open", $save_rev_open);
+        $this->conf->refresh_settings();
+    }
+
     function test_tag_scopes() {
         $this->u_chair->set_scope("submission:read");
         xassert(!$this->u_chair->can_view_tags());

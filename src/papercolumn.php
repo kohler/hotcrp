@@ -690,7 +690,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($rrow
             && ($this->not_me
                 ? $pl->user->can_view_review_identity($row, $rrow)
-                : !$rrow->is_ghost())) {
+                : $pl->user->can_view_review_assignment($row, $rrow))) {
             $ranal = $pl->make_review_analysis($rrow, $row);
         } else {
             $ranal = null;
