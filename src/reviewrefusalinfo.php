@@ -100,4 +100,26 @@ class ReviewRefusalInfo {
         }
         return $this->_reviewer;
     }
+
+    /** @param Contact $viewer
+     * @param PaperInfo $prow
+     * @param bool $interesting_only
+     * @return ?string */
+    function viewable_reason($viewer, $prow, $interesting_only = false) {
+        if (($this->reason ?? "") === ""
+            || ($interesting_only && $this->reason === "request denied by chair")) {
+            return null;
+        }
+        if ($viewer->privChair
+            || $viewer->allow_manage_reviews($prow)
+            || ($this->requestedBy > 0
+                && ($this->requestedBy === $viewer->contactId
+                    || $this->requestedBy === $viewer->reviewer_capability($prow)))
+            || ($this->contactId > 0
+                && ($this->contactId === $viewer->contactId
+                    || $this->contactId === $viewer->reviewer_capability($prow)))) {
+            return $this->reason;
+        }
+        return null;
+    }
 }

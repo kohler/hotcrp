@@ -104,10 +104,8 @@ class RequestReview_API {
                 } else {
                     $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$msgemail} to review this submission");
                 }
-                if ($refusal->reason !== ""
-                    && $refusal->reason !== "request denied by chair"
-                    && ($refusal->requestedBy === $user->contactId || $msgadmin)) {
-                    $ml[] = MessageItem::inform_at("email", "<0>They offered this reason: “{$refusal->reason}”");
+                if (($r = $refusal->viewable_reason($user, $prow, true)) !== null) {
+                    $ml[] = MessageItem::inform_at("email", "<0>They offered this reason: “{$r}”");
                 }
             } else {
                 self::request_generic_error($ml, $conf, $msgemail);
