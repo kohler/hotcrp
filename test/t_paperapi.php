@@ -356,6 +356,30 @@ class PaperAPI_Tester {
         xassert_eqq($doc->content(), "%PDF-JAN");
     }
 
+    function test_papers_zip_data_json_size_limit() {
+        // a ZIP whose `data.json` exceeds the size limit is refused before it
+        // is inflated into memory (HC-083 zip-bomb residual)
+        $this->conf->set_opt("jsonSizeLimit", 2048);
+
+        $big = ["pid" => "new", "title" => str_repeat("x", 5000),
+                "abstract" => "a", "authors" => [["name" => "A B", "email" => "ab@_.com"]],
+                "status" => "draft"];
+        $qreq = TestQreq::post_zip(["data.json" => $big], ["p" => "new", "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok ?? null, false);
+        xassert_str_contains(json_encode($jr), "too large");
+
+        // a small `data.json` passes the size check (dry run, no save)
+        $small = ["pid" => "new", "title" => "Small", "abstract" => "a",
+                  "authors" => [["name" => "A B", "email" => "ab@_.com"]],
+                  "submission" => ["content_file" => "p.pdf"], "status" => "submitted"];
+        $qreq = TestQreq::post_zip(["data.json" => $small, "p.pdf" => "%PDF-x"], ["p" => "new", "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_not_str_contains(json_encode($jr), "too large");
+
+        $this->conf->set_opt("jsonSizeLimit", null);
+    }
+
     function test_submit_new_paper_pleb() {
         $qreq = TestQreq::post_json([
             "pid" => "new", "title" => "Soft Timers for Scalable Protocols",

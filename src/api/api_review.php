@@ -423,7 +423,7 @@ class Review_API extends MessageSet {
         // format; otherwise the request body's content type does. An explicit
         // `json` parameter (like `upload`) is an inline JSON payload obeyed
         // regardless of the body, so it skips the text/form body paths.
-        $docloc = new DocumentLocator;
+        $docloc = new DocumentLocator($this->conf);
         $updoc = $docloc->uploaded_document($qreq);
         $bct = $updoc ? $updoc->mimetype : ($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE);
 

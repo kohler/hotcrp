@@ -108,7 +108,7 @@ class SavePapers_Batch {
     /** @param string $file */
     function set_zipfile($file) {
         assert(!$this->docloc);
-        $this->docloc = new DocumentLocator;
+        $this->docloc = new DocumentLocator($this->conf);
         $this->_ziparchive_json = $this->docloc->set_zipfile($file);
     }
 

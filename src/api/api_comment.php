@@ -264,7 +264,7 @@ class Comment_API extends MessageSet {
         if (!isset($qreq->word_limit)) {
             $this->pex->set_ignore_soft_word_limits(true);
         }
-        $this->docloc = new DocumentLocator;
+        $this->docloc = new DocumentLocator($this->conf);
 
         // check Content-Type
         if (Mimetype::is_form($qreq->body_content_type() ?? Mimetype::FORM_DATA_TYPE)

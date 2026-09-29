@@ -3,16 +3,33 @@
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class DocumentLocator {
+    /** @var Conf */
+    public $conf;
     /** @var ?Qrequest */
     public $attachment_qreq;
     /** @var ?ZipArchive */
     public $ziparchive;
     /** @var ?string */
     public $ziparchive_docdir;
+    /** @var int */
+    private $_json_size_limit;
 
     const M_ONE = 1;
     const M_MULTI = 2;
     const M_MATCH = 4;
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+        // Bound the metadata JSON, which is loaded whole and decoded (~2x peak
+        // memory). Document *files* in a ZIP are separate members streamed to
+        // disk and are not limited by this. Override with `$Opt["jsonSizeLimit"]`.
+        if (($x = $conf->opt("jsonSizeLimit")) !== null) {
+            $this->_json_size_limit = (int) $x;
+        } else {
+            $ml = ini_get_bytes("memory_limit");
+            $this->_json_size_limit = $ml > 0 ? intdiv($ml, 2) : (1 << 30);
+        }
+    }
 
     /** @return ?string */
     function set_zipfile($file) {
@@ -75,6 +92,11 @@ class DocumentLocator {
             if (!$jsonname) {
                 JsonResult::make_error(400, "<0>ZIP `data.json` not found")->complete();
             }
+            // reject a zip bomb before inflating `data.json` into memory
+            $stat = $this->ziparchive->statName($jsonname);
+            if ($stat && $stat["size"] > $this->_json_size_limit) {
+                JsonResult::make_error(413, "<0>ZIP `{$jsonname}` too large")->complete();
+            }
             $jsonstr = $this->ziparchive->getFromName($jsonname);
         } else {
             JsonResult::make_error(400, "<0>Unexpected content type")->complete();
@@ -82,7 +104,7 @@ class DocumentLocator {
         }
 
         // read JSON, check format
-        $jp = Json::decode_user((string) $jsonstr);
+        $jp = Json::decode_user((string) $jsonstr, $this->_json_size_limit);
         if (is_object($jp)) {
             if (isset($qreq->q)
                 && ($mode & self::M_MATCH) !== 0) {
