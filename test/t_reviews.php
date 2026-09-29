@@ -3833,6 +3833,52 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
      * external reviewers from `test_request_reviewer_primary`), so a later test
      * class run in the same process — such as ReviewAPI — sees the three seeded
      * assignments rather than leftover state. */
+    function test_mode3_requester_cannot_submit_subreview_as_full() {
+        // HC-152: under pcrev_editdelegate=3 (approval_private, "external reviews
+        // visible only to their requesters"), "Submit as full review" is
+        // admin-only, but a plain PC requester can still publish a
+        // pending-approval external subreview via approval=submitted.
+        $save_editdelegate = $this->conf->setting("pcrev_editdelegate");
+        $save_chairreq = $this->conf->setting("extrev_chairreq");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 3);
+        $this->conf->save_refresh_setting("extrev_chairreq", null);
+        Contact::update_rights();
+        xassert_eqq($this->conf->ext_subreviews, 3);
+
+        $prow = $this->conf->checked_paper_by_id(17);
+        xassert_gt($prow->timeSubmitted, 0);
+
+        // lixia (plain PC) requests an external reviewer; confirm if proposed
+        $xqreq = new Qrequest("POST", ["email" => "hc152ext@_.com", "name" => "Ext HC152", "affiliation" => "X"]);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $prow);
+        xassert($result->content["ok"] ?? false);
+        if (($result->content["action"] ?? null) === "propose") {
+            $result = RequestReview_API::requestreview($this->u_chair, new Qrequest("POST", ["email" => "hc152ext@_.com"]), $prow);
+            xassert($result->content["ok"] ?? false);
+        }
+        $u_ext = $this->conf->checked_user_by_email("hc152ext@_.com");
+        $prow->load_reviews(true);
+        $rrow = $prow->fresh_review_by_user($u_ext);
+        xassert(!!$rrow);
+
+        // deliver the subreview: it is now pending the requester's approval
+        $rrow = self::set_review_status($rrow, ReviewInfo::RS_DELIVERED, true);
+        xassert($rrow->subject_to_approval());
+        xassert(!$this->u_lixia->allow_admin($prow));
+
+        // the requester submits it "as a full review"; in mode 3 that action is
+        // reserved to admins, so the review must NOT become completed
+        $rrow = save_review($prow, $this->u_lixia, ["approvesubmit" => true], $rrow);
+        xassert_lt($rrow->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+        // cleanup
+        $rrow->delete($this->u_chair);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", $save_editdelegate);
+        $this->conf->save_refresh_setting("extrev_chairreq", $save_chairreq);
+        Contact::update_rights();
+    }
+
     function finalize() {
         // `au_seerev` is left enabled by the author-review-visibility test
         $this->conf->save_refresh_setting("au_seerev", null);

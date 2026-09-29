@@ -1085,14 +1085,19 @@ class ReviewValues extends MessageSet {
 
         if ($rrow->subject_to_approval()) {
             $approval = $approvable ? $this->req["approval"] ?? null : null;
-            if ($approval === "submitted") {
+            if ($approval === "submitted"
+                && $this->conf->ext_subreviews > 2
+                && !$user->can_manage_reviews($prow)) {
+                $approval = "approved";
+            }
+            if (!$nonempty) { // cannot approve or submit empty review
+                $maxstatus = $oldstatus;
+            } else if ($approval === "submitted") {
                 $maxstatus = ReviewInfo::RS_COMPLETED;
             } else if ($approval === "approved") {
                 $maxstatus = ReviewInfo::RS_APPROVED;
-            } else if ($nonempty) {
-                $maxstatus = ReviewInfo::RS_DELIVERED;
             } else {
-                $maxstatus = $oldstatus;
+                $maxstatus = ReviewInfo::RS_DELIVERED;
             }
         } else if ($nonempty) {
             $maxstatus = ReviewInfo::RS_COMPLETED;
@@ -1247,44 +1252,7 @@ class ReviewValues extends MessageSet {
         }
 
         // compute new status
-        if ($view_score === VIEWSCORE_EMPTY) {
-            // empty review: do not submit, adopt, or deliver
-            if ($user->is_my_review($rrow)) {
-                $newstatus = max($oldstatus, ReviewInfo::RS_ACKNOWLEDGED);
-            } else {
-                $newstatus = $oldstatus;
-            }
-        } else if (!$want_ready
-                   || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
-            // unready nonempty review is at least drafted
-            if ($this->can_unsubmit
-                && $user->can_manage_reviews($prow)) {
-                $newstatus = ReviewInfo::RS_DRAFTED;
-            } else {
-                $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
-            }
-        } else if ($oldstatus >= ReviewInfo::RS_COMPLETED) {
-            $newstatus = $oldstatus;
-        } else if ($rrow->subject_to_approval()) {
-            $approval = $user->can_approve_review($prow, $rrow) ? $this->req["approval"] ?? false : false;
-            if (!$approval) {
-                $newstatus = max($oldstatus, ReviewInfo::RS_DELIVERED);
-            } else if ($approval === "approved") {
-                $newstatus = ReviewInfo::RS_APPROVED;
-            } else {
-                $newstatus = ReviewInfo::RS_COMPLETED;
-            }
-        } else {
-            $newstatus = ReviewInfo::RS_COMPLETED;
-        }
-
-        // new status #2
-        $newstatus2 = $this->_compute_new_status($prow, $rrow, $view_score, $allow_new_submit, $approvable);
-        if ($newstatus !== $newstatus2) {
-            error_log("{$this->conf->dbname}: #{$prow->paperId}/{$rrow->reviewId}: old status computation {$newstatus} ≠ new status computation {$newstatus2}");
-            error_log("{$this->conf->dbname}: " . json_encode(["view_score" => $view_score, "allow_new_submit" => $allow_new_submit, "approvable" => $approvable, "old_status" => $rrow->reviewStatus, "mtime" => $rrow->reviewModified, "ready" => $this->req["ready"] ?? null]));
-        }
-        assert($newstatus === $newstatus2);
+        $newstatus = $this->_compute_new_status($prow, $rrow, $view_score, $allow_new_submit, $approvable);
 
         // get the current time; include Conf::$now for tests
         $now = max(Conf::$now, time(), $rrow->reviewModified + 1);
