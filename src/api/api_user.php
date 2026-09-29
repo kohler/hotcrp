@@ -34,7 +34,7 @@ class User_API {
         if (($user->can_view_pc() || $broad_lookup)
             && (!$found || strcasecmp($found->email, $email) !== 0)) {
             $roles = "";
-            if (!$user->is_manager() && !$broad_lookup) {
+            if (!$user->is_track_manager() && !$broad_lookup) {
                 $roles = " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             }
             $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 1",
