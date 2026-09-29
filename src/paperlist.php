@@ -1101,7 +1101,10 @@ final class PaperList extends MessageSet {
         if ($this->_sortcol[0] instanceof Tag_PaperColumn
             && !$this->_sortcol[0]->sort_descending
             && $this->_sortcol[0]->sort_subset === null) {
-            $this->_sort_etag = $this->_sortcol[0]->etag();
+            $etag = $this->_sortcol[0]->etag();
+            if ($this->user->can_view_tag_somewhere($etag)) {
+                $this->_sort_etag = $etag;
+            }
         }
         // done
         $this->_sortcol_fixed = 2;
