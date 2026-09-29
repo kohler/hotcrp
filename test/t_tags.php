@@ -1245,7 +1245,7 @@ class Tags_Tester {
 
         $search = new PaperSearch($this->u_chair, "1");
         $pl = new PaperList("empty", $search);
-        $pl->parse_view("show:tagreport:a/b", PaperList::VIEWORIGIN_MAX);
+        $pl->parse_view("show:tagreport:a/b", ViewCommand::ORIGIN_MAX);
         xassert_str_contains($pl->table_html(), "Varghese");
 
         $aset = new AssignmentSet($this->u_varghese);

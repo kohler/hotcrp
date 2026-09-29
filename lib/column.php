@@ -38,6 +38,11 @@ class Column {
     public $has_content = false;
     /** @var ?ViewOptionList */
     protected $view_options;
+    /** @var ?SearchWord
+     *
+     * Search word of the view command that created this column, if any; used
+     * to locate error messages. */
+    public $sword;
 
     /** @param object|array $arg */
     function __construct($arg) {

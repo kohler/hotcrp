@@ -88,16 +88,6 @@ abstract class SearchTerm {
         return $this->float["view"] ?? [];
     }
 
-    /** @param string $field
-     * @return ?ViewCommand */
-    final function find_view_command($field) {
-        foreach ($this->view_commands() as $svc) {
-            if ($svc->keyword === $field)
-                return $svc;
-        }
-        return null;
-    }
-
     /** @return array<string,mixed> */
     final function float_map() {
         return $this->float;

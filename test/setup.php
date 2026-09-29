@@ -844,7 +844,7 @@ function xassert_int_list_eqq($actual, $expected) {
  * @return array<int,array> */
 function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
-    $pl->parse_view($cols, PaperList::VIEWORIGIN_MAX);
+    $pl->parse_view($cols, ViewCommand::ORIGIN_MAX);
     if ($pl->has_problem() && !$allow_warnings) {
         Xassert::will_print();
         list($first, $rest) = Xassert::landmark(true);
@@ -859,7 +859,7 @@ function search_json($user, $query, $cols = "id", $allow_warnings = false) {
  * @return string */
 function search_text_col($user, $query, $col = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
-    $pl->parse_view($col, PaperList::VIEWORIGIN_MAX);
+    $pl->parse_view($col, ViewCommand::ORIGIN_MAX);
     $tj = $pl->text_json();
     $colx = ($pl->vcolumns())[0]->name;
     $x = [];

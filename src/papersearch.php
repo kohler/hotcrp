@@ -1478,7 +1478,7 @@ class PaperSearch extends MessageSet {
     private static function strip_show_atom($a, $top) {
         if (!$a
             || ($a->kword
-                && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"], true))) {
+                && in_array($a->kword, ["show", "hide", "view", "edit", "sort", "showsort", "editsort"], true))) {
             return [0, 0];
         }
         if ($a->op && $a->op->type === "(" && $top && ($ch = $a->child[0] ?? null)) {

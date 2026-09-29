@@ -63,7 +63,7 @@ class Search_API {
             } else {
                 return JsonResult::make_parameter_error("format");
             }
-            $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
+            $pl->parse_view($qreq->f, ViewCommand::ORIGIN_MAX);
         }
         $ih = $pl->ids_and_groups();
         $jr = JsonResult::make_ok();
@@ -74,7 +74,7 @@ class Search_API {
             $jr->set("hotlist", $pl->session_list_object()->info_string());
         }
         if ($format > 0) {
-            foreach ($pl->format_json($format, PaperList::VIEWORIGIN_MAX) as $k => $v) {
+            foreach ($pl->format_json($format, ViewCommand::ORIGIN_MAX) as $k => $v) {
                 $jr->set($k, $v);
             }
         }

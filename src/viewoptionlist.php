@@ -46,6 +46,19 @@ class ViewOptionList implements IteratorAggregate {
         return $this;
     }
 
+    /** Return the options in this list whose values differ from those in
+     * `$base`.
+     * @param ?ViewOptionList $base
+     * @return ViewOptionList */
+    function difference($base) {
+        $vol = new ViewOptionList;
+        foreach ($this->d as $n => $v) {
+            if (!$base || $base->get($n) !== $v)
+                $vol->d[$n] = $v;
+        }
+        return $vol;
+    }
+
     /** @param ViewOptionList|array<string,string> $list
      * @param ViewOptionSchema $schema
      * @return $this */

@@ -111,7 +111,7 @@ class Tag_PaperColumn extends PaperColumn {
                     $ml[] = MessageItem::inform("<0>This tag is set automatically");
                 }
             }
-            $pl->column_error_at($this->name, $ml);
+            $pl->column_error_at($this->name, $ml, $this->sword);
             return;
         }
         $xti = null;

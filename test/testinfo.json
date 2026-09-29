@@ -16,7 +16,8 @@
             "DocumentBasics_Tester", "FixCollaborators_Tester",
             "Work_Tester",
             "Mention_Tester", "Search_Tester", "Settings_Tester",
-            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester"
+            "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester",
+            "PaperListView_Tester"
         ]
     },
     {

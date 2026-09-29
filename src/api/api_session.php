@@ -91,14 +91,14 @@ class Session_API {
     static function parse_view(Qrequest $qreq, $report, $view) {
         $search = new PaperSearch($qreq->user(), "NONE");
         $pl = new PaperList($report, $search, ["sort" => true], $qreq);
-        $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
+        $pl->apply_view_report_default(ViewCommand::ORIGIN_REPORT);
         $pl->apply_view_session($qreq);
         if ($view instanceof Qrequest) {
             $pl->apply_view_qreq($view);
         } else {
-            $pl->parse_view($view, PaperList::VIEWORIGIN_MAX);
+            $pl->parse_view($view, ViewCommand::ORIGIN_MAX);
         }
-        $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, false);
+        $vd = $pl->unparse_view(ViewCommand::ORIGIN_REPORT, false);
         if (!empty($vd)) {
             $qreq->set_csession("{$report}display", join(" ", $vd));
         } else {

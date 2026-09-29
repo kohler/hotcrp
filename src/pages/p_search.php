@@ -50,7 +50,7 @@ class Search_Page {
         $options["id"] = "show{$type}";
         $xtype = $type === "anonau" ? "authors" : $type;
         $lclass = "checki";
-        if ($this->pl->view_origin($xtype) === PaperList::VIEWORIGIN_SEARCH) {
+        if ($this->pl->view_origin($xtype) === ViewCommand::ORIGIN_SEARCH) {
             $options["disabled"] = true;
             $lclass .= " disabled";
         }

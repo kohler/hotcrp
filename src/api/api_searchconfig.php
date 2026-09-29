@@ -16,8 +16,8 @@ class SearchConfig_API {
             }
 
             $pl = new PaperList($report, $search, ["sort" => true]);
-            $pl->parse_view($qreq->display, PaperList::VIEWORIGIN_MAX);
-            $parsed_view = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
+            $pl->parse_view($qreq->display, ViewCommand::ORIGIN_MAX);
+            $parsed_view = $pl->unparse_view(ViewCommand::ORIGIN_REPORT, true);
             $pl->prepare_table_view();
             if ($pl->has_error()) {
                 return new JsonResult(["ok" => false, "message_list" => $pl->message_list()]);
@@ -41,7 +41,7 @@ class SearchConfig_API {
         $pl = new PaperList($report, $search, ["sortable" => true], $qreq);
         $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();
-        $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
+        $vd = $pl->unparse_view(ViewCommand::ORIGIN_REPORT, true);
         $dml = $pl->prepare_table_view()->message_list();
 
         $qreq->q = $qreq->q ?? "NONE";
@@ -50,8 +50,8 @@ class SearchConfig_API {
         $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
-        $vr = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
-        $vrx = $pl->unparse_view(PaperList::VIEWORIGIN_DEFAULT_DISPLAY, true);
+        $vr = $pl->unparse_view(ViewCommand::ORIGIN_REPORT, true);
+        $vrx = $pl->unparse_view(ViewCommand::ORIGIN_DEFAULT_DISPLAY, true);
 
         return new JsonResult([
             "ok" => true, "report" => $report,

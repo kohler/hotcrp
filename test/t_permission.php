@@ -1153,9 +1153,9 @@ class Permission_Tester {
      * @return string */
     private function revtype_description_html($viewer, $pc, $force = false) {
         $pl = new PaperList("empty", new PaperSearch($viewer, "1"));
-        $pl->parse_view("revtype[description,user={$pc->email}]", PaperList::VIEWORIGIN_MAX);
+        $pl->parse_view("revtype[description,user={$pc->email}]", ViewCommand::ORIGIN_MAX);
         if ($force) {
-            $pl->set_view("force", true, PaperList::VIEWORIGIN_MAX);
+            $pl->set_view("force", true, ViewCommand::ORIGIN_MAX);
         }
         xassert(!$pl->has_problem());
         if ($force) {
@@ -1246,7 +1246,7 @@ class Permission_Tester {
         xassert_eqq($this->revtype_description_html($this->u_chair, $this->u_estrin, true), "Author");
         // text output is censored the same way
         $pl = new PaperList("empty", new PaperSearch($pc, "1"));
-        $pl->parse_view("revtype[description,user=estrin@usc.edu]", PaperList::VIEWORIGIN_MAX);
+        $pl->parse_view("revtype[description,user=estrin@usc.edu]", ViewCommand::ORIGIN_MAX);
         xassert_eqq($pl->text_json()[1]["revtype"] ?? "", "Conflict");
 
         xassert_assign($this->u_chair, "paper,action,user\n1,clearconflict,vera@bombay.com\n2,clearconflict,estrin@usc.edu\n6,clearadministrator,marina@poema.ru\n");

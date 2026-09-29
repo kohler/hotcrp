@@ -1480,7 +1480,7 @@ class Formulas_Tester {
             }
             xassert_eqq($conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
             $pl = new PaperList("empty", new PaperSearch($reviewer, ["t" => "r", "q" => ""]));
-            $pl->parse_view("title", PaperList::VIEWORIGIN_MAX);
+            $pl->parse_view("title", ViewCommand::ORIGIN_MAX);
             $data = $pl->table_html_json()["data"];
             $titles = [];
             foreach ([2, 3, 4] as $pid) {
@@ -1500,7 +1500,7 @@ class Formulas_Tester {
             }
             // ...while the chair's list links the final version.
             $pl = new PaperList("empty", new PaperSearch($this->u_chair, "2 3"));
-            $pl->parse_view("title", PaperList::VIEWORIGIN_MAX);
+            $pl->parse_view("title", ViewCommand::ORIGIN_MAX);
             $data = $pl->table_html_json()["data"];
             xassert_str_contains($data[2]["title"], "-final2.pdf\"");
             xassert_str_contains($data[3]["title"], "-paper3.pdf\"");
@@ -2258,7 +2258,7 @@ class Formulas_Tester {
      * @return string */
     private function topics_column_json(Contact $user, $t, $q) {
         $pl = new PaperList("empty", new PaperSearch($user, ["t" => $t, "q" => $q]));
-        $pl->parse_view("topics", PaperList::VIEWORIGIN_MAX);
+        $pl->parse_view("topics", ViewCommand::ORIGIN_MAX);
         return json_encode($pl->table_html_json()["data"]);
     }
 
@@ -2281,7 +2281,7 @@ class Formulas_Tester {
      * @return array<string,mixed> */
     private function topicscore_column(Contact $user, $pid) {
         $pl = new PaperList("empty", new PaperSearch($user, ["t" => "s", "q" => (string) $pid]));
-        $pl->parse_view("topicscore:marina@poema.ru", PaperList::VIEWORIGIN_MAX);
+        $pl->parse_view("topicscore:marina@poema.ru", ViewCommand::ORIGIN_MAX);
         return ($pl->table_html_json()["data"])[$pid] ?? [];
     }
 
