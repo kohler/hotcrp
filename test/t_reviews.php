@@ -1962,6 +1962,124 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper22->paperId, $rid);
     }
 
+    // A reviewer who declined and was then marked conflicted cannot re-create
+    // the assignment through api/acceptreview (HC-240). An administrator still
+    // can.
+    function test_acceptreview_refuses_conflicted_reviewer() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // request an external reviewer on paper 23, who then declines
+        $paper = $conf->checked_paper_by_id(23);
+        $xqreq = new Qrequest("POST", ["email" => "conflaccept@extrev.org", "name" => "Connie Flict", "affiliation" => "Conflict U"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("conflaccept@extrev.org");
+        $paper = $conf->checked_paper_by_id(23);
+        $rid = $paper->review_by_user($reviewer)->reviewId;
+
+        $xqreq = new Qrequest("POST", ["r" => (string) $rid, "reason" => "conflict of interest"]);
+        $result = RequestReview_API::declinereview($reviewer, $xqreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+        $paper = $conf->checked_paper_by_id(23);
+        xassert(!$paper->fresh_review_by_id($rid));
+        xassert(!!$paper->review_refusal_by_id($rid));
+
+        // the chair pins a conflict for the reviewer
+        xassert_assign($this->u_chair, "paper,action,email,conflict\n23,conflict,conflaccept@extrev.org,pinned conflicted\n");
+        $paper = $conf->checked_paper_by_id(23);
+        xassert($paper->has_conflict($reviewer));
+
+        // the reviewer can no longer re-accept the review into the conflict
+        $xqreq = new Qrequest("POST", ["r" => (string) $rid]);
+        $result = RequestReview_API::acceptreview($reviewer, $xqreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert_eqq($result->content["ok"] ?? null, false);
+        xassert_str_contains(json_encode($result->content), "conflict");
+
+        // and no live review was created; the refusal remains
+        $paper = $conf->checked_paper_by_id(23);
+        xassert(!$paper->fresh_review_by_id($rid));
+        xassert(!!$paper->review_refusal_by_id($rid));
+
+        // an administrator may still reinstate it
+        $xqreq = new Qrequest("POST", ["r" => (string) $rid]);
+        $result = RequestReview_API::acceptreview($this->u_chair, $xqreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"] ?? false);
+        $paper = $conf->checked_paper_by_id(23);
+        xassert(!!$paper->fresh_review_by_id($rid));
+
+        // clean up
+        $paper->fresh_review_by_id($rid)->delete($this->u_chair, ["no_rights" => true]);
+        xassert_assign($this->u_chair, "paper,action,email\n23,clearconflict,conflaccept@extrev.org\n");
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper->paperId, $rid);
+        $conf->qe("delete from PaperReviewRefused where paperId=? and refusedReviewId=?", $paper->paperId, $rid);
+        $conf->qe("delete from ContactInfo where email=?", "conflaccept@extrev.org");
+    }
+
+    // api/claimreview may not move a review onto an account conflicted with the
+    // submission (HC-240). An administrator still can.
+    function test_claimreview_refuses_conflicted_destination() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        // a source reviewer holds an unsubmitted review on paper 23
+        $paper = $conf->checked_paper_by_id(23);
+        $xqreq = new Qrequest("POST", ["email" => "claimsrc@extrev.org", "name" => "Claim Source", "affiliation" => "Src U"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+        $src = $conf->checked_user_by_email("claimsrc@extrev.org");
+        $paper = $conf->checked_paper_by_id(23);
+        $rid = $paper->review_by_user($src)->reviewId;
+
+        // a destination account is pinned conflicted with paper 23
+        $dest = Contact::make_keyed($conf, ["email" => "claimdest@_.com", "name" => "Claim Dest"])->store(0, $this->u_chair);
+        xassert(!!$dest);
+        xassert_assign($this->u_chair, "paper,action,email,conflict\n23,conflict,claimdest@_.com,pinned conflicted\n");
+        $paper = $conf->checked_paper_by_id(23);
+        xassert($paper->has_conflict($dest));
+
+        // signed in as both accounts, the source tries to reassign to the
+        // conflicted destination
+        $qreq = (new Qrequest("POST", ["p" => "23", "r" => (string) $rid, "email" => "claimdest@_.com"]))
+            ->set_qsession(new MemoryQsession("claimtest", ["us" => ["claimsrc@extrev.org", "claimdest@_.com"]]));
+        $result = RequestReview_API::claimreview($src, $qreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert_eqq($result->content["ok"] ?? null, false);
+        xassert_str_contains(json_encode($result->content), "conflict");
+
+        // the review stays with the source reviewer
+        $paper = $conf->checked_paper_by_id(23);
+        xassert_eqq($paper->fresh_review_by_id($rid)->contactId, $src->contactId);
+
+        // an administrator may reassign it despite the conflict
+        $qreq = (new Qrequest("POST", ["p" => "23", "r" => (string) $rid, "email" => "claimdest@_.com"]))
+            ->set_qsession(new MemoryQsession("claimtest2", ["us" => ["chair@_.com", "claimdest@_.com"]]));
+        $result = RequestReview_API::claimreview($this->u_chair, $qreq, $paper);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"] ?? false);
+        $paper = $conf->checked_paper_by_id(23);
+        xassert_eqq($paper->fresh_review_by_id($rid)->contactId, $dest->contactId);
+
+        // clean up
+        $paper->fresh_review_by_id($rid)->delete($this->u_chair, ["no_rights" => true]);
+        xassert_assign($this->u_chair, "paper,action,email\n23,clearconflict,claimdest@_.com\n");
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper->paperId, $rid);
+        $conf->qe("delete from ContactInfo where email in (?, ?)", "claimsrc@extrev.org", "claimdest@_.com");
+    }
+
     // Bulk assignment with notification expands mail keywords, including
     // {{REVIEWACCEPTOR}}, in the notification body
     function test_bulk_assign_request_notify() {

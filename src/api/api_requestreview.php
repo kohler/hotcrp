@@ -364,11 +364,10 @@ class RequestReview_API {
             return null;
         }
         if ($rrow) {
-            if ($user->is_my_review($rrow)
-                && !$rrow->is_ghost()) {
+            $viewable = $user->can_view_review_assignment($prow, $rrow);
+            if ($viewable && $user->is_my_review($rrow)) {
                 return null;
             }
-            $viewable = $user->can_view_review_assignment($prow, $rrow);
         } else if ($refrow) {
             if ($user->contactXid === $refrow->contactId
                 || ($refrow->email && strcasecmp($user->email, $refrow->email) === 0)
@@ -423,6 +422,11 @@ class RequestReview_API {
         $refrow = $prow->review_refusal_by_id($r);
         if (($jr = self::allow_accept_decline($user, $qreq, $prow, $rrow, $refrow))) {
             return $jr;
+        }
+        $rrow_cid = $rrow ? $rrow->contactId : ($refrow ? $refrow->contactId : 0);
+        if (!$user->can_manage_reviews($prow)
+            && $prow->has_conflict($rrow_cid)) {
+            return JsonResult::make_permission_error("r", $prow->conf->_("<0>You have a conflict with {submission} #{$prow->paperId}"));
         }
 
         if (!$rrow) {
@@ -568,6 +572,9 @@ class RequestReview_API {
             return JsonResult::make_permission_error("email", "<0>That account is not enabled here");
         } else if ($rrow->is_bot() || $destu->is_bot()) {
             return JsonResult::make_permission_error("email", "<0>Bot reviews cannot be reassigned");
+        } else if (!$user->can_manage_reviews($prow)
+                   && $prow->has_conflict($destu)) {
+            return JsonResult::make_permission_error("email", $prow->conf->_("<0>Account {$email} has a conflict with {submission} #{$prow->paperId}"));
         }
 
         $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted<=0 and timeApprovalRequested<=0",
