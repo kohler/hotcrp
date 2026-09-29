@@ -380,6 +380,38 @@ class PaperAPI_Tester {
         $this->conf->set_opt("jsonSizeLimit", null);
     }
 
+    function test_zip_document_size_limit() {
+        // HC-230: a ZIP document entry larger than the field's size limit is
+        // refused before it is inflated into a temp file
+        $this->conf->set_opt("uploadMaxFilesize", 4096);
+
+        $bomb = str_repeat("%PDF-1.4 padding\n", 1000); // ~17 KB > 4096
+        xassert_gt(strlen($bomb), 4096);
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["pid" => "new", "title" => "Z", "abstract" => "a",
+                            "authors" => [["name" => "A B", "email" => "ab@_.com"]],
+                            "submission" => ["content_file" => "big.pdf", "mimetype" => "application/pdf"],
+                            "status" => "submitted"],
+            "big.pdf" => $bomb
+        ], ["p" => "new", "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok ?? null, false);
+        xassert_str_contains(json_encode($jr), "too large");
+
+        // a small document passes the size check
+        $qreq = TestQreq::post_zip([
+            "data.json" => ["pid" => "new", "title" => "Z", "abstract" => "a",
+                            "authors" => [["name" => "A B", "email" => "ab@_.com"]],
+                            "submission" => ["content_file" => "ok.pdf", "mimetype" => "application/pdf"],
+                            "status" => "submitted"],
+            "ok.pdf" => "%PDF-ok"
+        ], ["p" => "new", "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_not_str_contains(json_encode($jr), "too large");
+
+        $this->conf->set_opt("uploadMaxFilesize", null);
+    }
+
     function test_submit_new_paper_pleb() {
         $qreq = TestQreq::post_json([
             "pid" => "new", "title" => "Soft Timers for Scalable Protocols",

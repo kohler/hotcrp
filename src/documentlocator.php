@@ -194,6 +194,11 @@ class DocumentLocator {
             $importer->error("<0>{$filename}: File not found");
             return false;
         }
+        // reject a decompression bomb before inflating the entry
+        if ($stat["size"] > $importer->max_upload_size()) {
+            $importer->error("<0>{$filename}: File too large");
+            return false;
+        }
         // use resources to store large files
         if ($stat["size"] > 50000000) {
             if (PHP_VERSION_ID >= 80200) {

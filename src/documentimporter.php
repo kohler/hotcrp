@@ -41,6 +41,16 @@ final class DocumentImporter {
         $this->field = $field;
     }
 
+    /** Maximum accepted size for an imported document, in bytes. Uses the
+     * field's configured `max_size`, else the deployment's upload limit, capped
+     * by `Upload_API::MAX_SIZE`. Bounds decompression on the ZIP-import path.
+     * @return int */
+    function max_upload_size() {
+        $opt = $this->conf->option_by_id($this->dt);
+        $sz = ($opt ? $opt->max_size : null) ?? $this->conf->upload_max_filesize(true);
+        return $sz > 0 ? (int) min($sz, Upload_API::MAX_SIZE) : Upload_API::MAX_SIZE;
+    }
+
     /** @param callable $f
      * @return $this */
     function on_import($f) {
@@ -441,9 +451,16 @@ final class DocumentImporter {
         $content_file = null;
         $template = "upf-%s" . Mimetype::extension($mimetype);
         if (($finfo = Filer::create_tempfile($this->conf->docstore_tempdir(), $template))) {
-            $ok = stream_copy_to_stream($f, $finfo[1]) !== false;
+            // bound decompression: copy at most one byte past the limit, so a
+            // lying declared size can't force an unbounded inflate
+            $max = $this->max_upload_size();
+            $n = stream_copy_to_stream($f, $finfo[1], $max + 1);
             fclose($finfo[1]);
-            $content_file = $ok ? $finfo[0] : null;
+            if ($n !== false && $n <= $max) {
+                $content_file = $finfo[0];
+            } else {
+                @unlink($finfo[0]);
+            }
         }
         fclose($f);
         return $content_file;
