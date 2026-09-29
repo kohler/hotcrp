@@ -49,6 +49,14 @@ class ViewCommand {
         $this->sword = $sword;
     }
 
+    /** @param string $keyword
+     * @param bool $visible
+     * @param int $origin
+     * @return ViewCommand */
+    static function make_visibility($keyword, $visible, $origin = self::ORIGIN_MAX) {
+        return new ViewCommand(($visible ? self::F_SHOW : self::F_HIDE) | $origin, $keyword);
+    }
+
     /** Return the result of applying `$b` after `$a`. If `$b` shows or hides,
      * its visibility and origin replace `$a`’s; otherwise `$a`’s are kept.
      * Options combine, with `$b`’s taking precedence. The result is a new

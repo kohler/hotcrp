@@ -363,7 +363,7 @@ final class PaperList extends MessageSet {
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"], true)) {
             $vol = (new ViewOptionList)->add("page", $qreq->linkto);
-            $this->set_view("linkto", true, ViewCommand::ORIGIN_REQUEST, $vol);
+            $this->add_view(new ViewCommand(ViewCommand::F_SHOW | ViewCommand::ORIGIN_REQUEST, "linkto", $vol));
         }
 
         $this->tagger = new Tagger($this->user);
@@ -405,13 +405,13 @@ final class PaperList extends MessageSet {
         $this->append_list($this->search->message_list());
 
         if (($fs = friendly_boolean($qreq->forceShow)) !== null) {
-            $this->set_view("force", $fs, ViewCommand::ORIGIN_REQUEST);
+            $this->add_view(ViewCommand::make_visibility("force", $fs, ViewCommand::ORIGIN_REQUEST));
         } else if ($this->user->overrides() & Contact::OVERRIDE_CONFLICT) {
             // adopt override-conflict setting from user
-            $this->set_view("force", true, ViewCommand::ORIGIN_REQUEST);
+            $this->add_view(ViewCommand::make_visibility("force", true, ViewCommand::ORIGIN_REQUEST));
         }
-        if ($qreq->selectall) {
-            $vol = (new ViewOptionList)->add("selected", true);
+        if (($sa = friendly_boolean($qreq->selectall)) !== null) {
+            $vol = (new ViewOptionList)->add("selected", $sa);
             $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "sel", $vol));
         }
 
@@ -635,14 +635,10 @@ final class PaperList extends MessageSet {
     /** @param string $k
      * @param bool $v
      * @param ?int $origin
-     * @param ?ViewOptionList $view_options */
+     * @param ?ViewOptionList $view_options
+     * @deprecated */
     function set_view($k, $v, $origin, $view_options = null) {
         $origin = $origin ?? ViewCommand::ORIGIN_MAX;
-        assert(is_bool($v));
-        if (is_int($k)) {
-            error_log("{$k} is an int: " . debug_string_backtrace());
-            $k = (string) $k;
-        }
         $flags = ($v ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | $origin;
         $this->add_view(new ViewCommand($flags, $k, $view_options));
     }
@@ -740,15 +736,14 @@ final class PaperList extends MessageSet {
         // statistics) and restarts display order
         if ($k === "all") {
             if ($vis === ViewCommand::F_HIDE) {
-                $hide = ViewCommand::F_HIDE | $origin;
                 foreach ($vm as $kx => $m) {
                     if ($kx !== "sel" && $kx !== "statistics") {
-                        $m = ViewCommand::merge($m, new ViewCommand($hide, (string) $kx));
+                        $m = ViewCommand::merge($m, ViewCommand::make_visibility((string) $kx, false, $origin));
                         $vm[$kx] = $m;
                     }
                     $m->order = null;
                 }
-                $vm["all"] = new ViewCommand($hide, "all");
+                $vm["all"] = ViewCommand::make_visibility("all", false, $origin);
             }
             return;
         }
@@ -894,7 +889,7 @@ final class PaperList extends MessageSet {
                 continue;
             }
             if ($name !== "" && ($x = friendly_boolean($v)) !== null) {
-                $this->set_view($name, $x, ViewCommand::ORIGIN_REQUEST);
+                $this->add_view(ViewCommand::make_visibility($name, $x, ViewCommand::ORIGIN_REQUEST));
             }
         }
     }
@@ -911,7 +906,7 @@ final class PaperList extends MessageSet {
             }
         }
         foreach ($ignores as $name) {
-            $this->set_view($name, false, ViewCommand::ORIGIN_REQUEST);
+            $this->add_view(ViewCommand::make_visibility($name, false, ViewCommand::ORIGIN_REQUEST));
         }
         // parse request parameters
         if ($qreq->has_a("show")) {
@@ -1083,33 +1078,34 @@ final class PaperList extends MessageSet {
 
     /** @return non-empty-list<PaperColumn> */
     function sorters() {
-        assert($this->_sortcol_fixed !== 1);
-        if ($this->_sortcol_fixed === 0) {
-            $this->_sortcol_fixed = 1;
-            $overrides = $this->user->add_overrides($this->_view_overrides());
-            // apply sorters from search terms
-            if (($thenqe = $this->search->then_term())) {
-                foreach ($thenqe->subset_terms() as $chrange) {
-                    $this->_add_search_sorters($chrange[0], $chrange[1]);
-                }
-            }
-            $this->_add_search_sorters($this->search->main_term(), null);
-            // final default sorter
-            if (empty($this->_sortcol)) {
-                $idcol = ($this->ensure_columns_by_name("id"))[0];
-                $this->_append_sortcol($idcol, ViewCommand::ORIGIN_REPORT);
-            }
-            // default editable tag
-            $this->_sort_etag = "";
-            if ($this->_sortcol[0] instanceof Tag_PaperColumn
-                && !$this->_sortcol[0]->sort_descending
-                && $this->_sortcol[0]->sort_subset === null) {
-                $this->_sort_etag = $this->_sortcol[0]->etag();
-            }
-            // done
-            $this->_sortcol_fixed = 2;
-            $this->user->set_overrides($overrides);
+        if ($this->_sortcol_fixed === 2) {
+            return $this->_sortcol;
         }
+        assert($this->_sortcol_fixed === 0);
+        $this->_sortcol_fixed = 1;
+        $overrides = $this->user->add_overrides($this->_view_overrides());
+        // apply sorters from search terms
+        if (($thenqe = $this->search->then_term())) {
+            foreach ($thenqe->subset_terms() as $chrange) {
+                $this->_add_search_sorters($chrange[0], $chrange[1]);
+            }
+        }
+        $this->_add_search_sorters($this->search->main_term(), null);
+        // final default sorter
+        if (empty($this->_sortcol)) {
+            $idcol = ($this->ensure_columns_by_name("id"))[0];
+            $this->_append_sortcol($idcol, ViewCommand::ORIGIN_REPORT);
+        }
+        // default editable tag
+        $this->_sort_etag = "";
+        if ($this->_sortcol[0] instanceof Tag_PaperColumn
+            && !$this->_sortcol[0]->sort_descending
+            && $this->_sortcol[0]->sort_subset === null) {
+            $this->_sort_etag = $this->_sortcol[0]->etag();
+        }
+        // done
+        $this->_sortcol_fixed = 2;
+        $this->user->set_overrides($overrides);
         return $this->_sortcol;
     }
 

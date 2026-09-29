@@ -49,7 +49,7 @@ class Search_Batch {
     /** @return int */
     function run() {
         $pl = new PaperList("empty", $this->search);
-        $pl->set_view("pid", true, ViewCommand::ORIGIN_MAX);
+        $pl->add_view(ViewCommand::make_visibility("pid", true));
         foreach ($this->fields as $f) {
             $pl->parse_view($f, ViewCommand::ORIGIN_MAX);
         }

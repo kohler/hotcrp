@@ -1155,7 +1155,7 @@ class Permission_Tester {
         $pl = new PaperList("empty", new PaperSearch($viewer, "1"));
         $pl->parse_view("revtype[description,user={$pc->email}]", ViewCommand::ORIGIN_MAX);
         if ($force) {
-            $pl->set_view("force", true, ViewCommand::ORIGIN_MAX);
+            $pl->add_view(ViewCommand::make_visibility("force", true));
         }
         xassert(!$pl->has_problem());
         if ($force) {
