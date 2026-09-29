@@ -1132,7 +1132,9 @@ class ReviewInfo implements JsonSerializable {
 
     private function _commit_prop_delete_assignment(Contact $actor, $extra) {
         $action = $extra["action"] ?? ($this->reviewStatus >= ReviewInfo::RS_DRAFTED ? "deleted" : "unassigned");
-        $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
+        if (!($extra["no_log"] ?? false)) {
+            $actor->log_activity_for($this->contactId, "Review {$this->reviewId} {$action}", $this->paperId);
+        }
         $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
             $this->paperId, $this->reviewId);
         // update global settings

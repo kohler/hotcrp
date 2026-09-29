@@ -484,6 +484,11 @@ class RequestReview_API {
 
         // commit refusal to database
         if ($rrow) {
+            // a decline performed through a review token must not record the
+            // token holder's identity (like every other token action); attribute
+            // it to the anonymous review slot and skip the action log
+            $anon = (bool) $user->active_review_token_for($prow, $rrow);
+            $refusedBy = $anon ? $rrow->contactId : $user->contactId;
             $prow->conf->qe("insert into PaperReviewRefused
                 set paperId=?, email=?, contactId=?,
                     requestedBy=?, timeRequested=?, refusedBy=?,
@@ -491,13 +496,13 @@ class RequestReview_API {
                     refusedReviewId=?, reviewRound=?
                 on duplicate key update reason=coalesce(?,reason)",
                 $prow->paperId, $rrow->reviewer()->email, $rrow->contactId,
-                $rrow->requestedBy, $rrow->timeRequested, $user->contactId,
+                $rrow->requestedBy, $rrow->timeRequested, $refusedBy,
                 Conf::$now, $reason, $rrow->reviewType,
                 $rrid, $rrow->reviewRound,
                 $reason);
 
             // record snapshot of review, then delete review
-            $rrow->delete($user, ["action" => "declined", "snapshot" => true]);
+            $rrow->delete($user, ["action" => "declined", "snapshot" => true, "no_log" => $anon]);
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes

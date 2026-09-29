@@ -3879,6 +3879,52 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_declinereview_via_token_stays_anonymous() {
+        // HC-139: declining an anonymous review slot through its token must not
+        // record or display the token holder's real identity
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+
+        $pid = 20;
+        xassert_assign($this->u_chair, "paper,action,user\n{$pid},review,new-anonymous");
+        $token = $conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewToken!=0", $pid);
+        xassert($token > 0);
+        $prow = $conf->checked_paper_by_id($pid);
+        $rrow = null;
+        foreach ($prow->all_reviews() as $rr) {
+            if ($rr->reviewToken === $token) {
+                $rrow = $rr;
+                break;
+            }
+        }
+        xassert(!!$rrow);
+        $rid = $rrow->reviewId;
+        $placeholder_cid = $rrow->contactId;
+
+        // a signed-in user acquires the token and declines the slot
+        $holder = $this->u_mgbaker;
+        xassert_neqq($holder->contactId, $placeholder_cid);
+        $holder->change_review_token($token, true);
+        $mark = $conf->fetch_ivalue("select coalesce(max(logId),0) from ActionLog");
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => "too busy"]);
+        $result = RequestReview_API::declinereview($holder, $xqreq, $prow);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"] ?? false);
+
+        // refusedBy is the anonymous placeholder, not the token holder
+        $refusedBy = $conf->fetch_ivalue("select refusedBy from PaperReviewRefused where paperId=? and refusedReviewId=?", $pid, $rid);
+        xassert_eqq($refusedBy, $placeholder_cid);
+
+        // no ActionLog row naming the token holder was written
+        $n = $conf->fetch_ivalue("select count(*) from ActionLog where logId>? and contactId=?", $mark, $holder->contactId);
+        xassert_eqq($n, 0);
+
+        // cleanup
+        $holder->change_review_token($token, false);
+        $conf->qe("delete from PaperReviewRefused where paperId=? and refusedReviewId=?", $pid, $rid);
+    }
+
     function finalize() {
         // `au_seerev` is left enabled by the author-review-visibility test
         $this->conf->save_refresh_setting("au_seerev", null);
