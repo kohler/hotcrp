@@ -863,8 +863,9 @@ class Mailer {
 
         // parse headers
         $prep->headers = [];
-        if (($from = MimeText::expand_email_header_setting($this->conf, "emailFrom"))) {
-            $prep->headers["from"] = $mimetext->encode_email_header("From", $from) . $this->eol;
+        if (($from = MimeText::expand_email_header_setting($this->conf, "emailFrom"))
+            && ($fromh = $mimetext->encode_email_header("From", $from))) {
+            $prep->headers["from"] = $fromh . $this->eol;
         }
         $prep->headers["subject"] = $subject . $this->eol;
         $prep->headers["to"] = "";

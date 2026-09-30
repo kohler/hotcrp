@@ -883,4 +883,18 @@ class Mailer_Tester {
         xassert(!$warn->has_error());
         xassert($warn->can_send());
     }
+
+    function test_unparseable_email_from_omits_header() {
+        // an emailFrom setting that can't be encoded leaves out the From
+        // header rather than breaking every message
+        $conf = $this->conf;
+        $old_from = $conf->opt("emailFrom");
+        $conf->set_opt("emailFrom", "noreply@example.org (HotCRP)");
+        $u = $conf->checked_user_by_email("estrin@usc.edu");
+        $prep = HotCRPMailer::prepare_to($u, ["subject" => "Hello", "body" => "Hi there"], ["no_error_quit" => true]);
+        xassert(!isset($prep->headers["from"]));
+        xassert(!$prep->has_error());
+        xassert($prep->can_send());
+        $conf->set_opt("emailFrom", $old_from);
+    }
 }
