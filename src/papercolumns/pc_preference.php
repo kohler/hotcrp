@@ -148,7 +148,8 @@ class Preference_PaperColumn extends PaperColumn {
         }
 
         // account for statistics and maybe wrap HTML in conflict
-        if (!$editable
+        if ($this->not_me
+            && !$editable
             && $this->viewer->view_preference_state($row) === Contact::VIEWPREF_ALLOW_ALL
             && $t !== "") {
             $tag = $this->as_row ? "div" : "span";

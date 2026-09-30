@@ -89,4 +89,33 @@ class Preferences_Tester {
         call_api("=pref", $this->u_chair, ["p" => 1, "u" => $mgbaker->email, "pref" => "0"]);
         $this->u_chair->set_scope();
     }
+
+    function test_conflicted_chair_own_preference_not_folded() {
+        // C11: a conflicted chair viewing their OWN preference must see it
+        // plainly, not folded into the conflict view (fx5) and counted as an
+        // overriding vote — that fold is only for other people's preferences.
+        $conf = $this->conf;
+        $this->u_chair->set_scope();
+
+        // chair records their own preference on paper 2, then becomes conflicted
+        xassert(call_api("=pref", $this->u_chair, ["p" => 2, "pref" => "7"])->ok);
+        xassert_assign($conf->root_user(), "paper,action,user\n2,conflict," . $this->u_chair->email);
+        Contact::update_rights();
+
+        $prow = $conf->checked_paper_by_id(2);
+        xassert($prow->has_conflict($this->u_chair));
+        // conflicted: allowed to administer, but not currently administering
+        xassert_eqq($this->u_chair->view_preference_state($prow), Contact::VIEWPREF_ALLOW_ALL);
+
+        $pl = new PaperList("empty", new PaperSearch($this->u_chair, ["t" => "s", "q" => "2"]));
+        $pl->parse_view("pref", ViewCommand::ORIGIN_MAX);
+        $cell = (($pl->table_html_json()["data"][2] ?? [])["mypref"] ?? "");
+        xassert_str_contains($cell, "7");
+        xassert(!str_contains($cell, "fx5"));
+
+        // clean up
+        xassert_assign($conf->root_user(), "paper,action,user\n2,noconflict," . $this->u_chair->email);
+        call_api("=pref", $this->u_chair, ["p" => 2, "pref" => "0"]);
+        Contact::update_rights();
+    }
 }
