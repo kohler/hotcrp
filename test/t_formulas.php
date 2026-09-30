@@ -2767,6 +2767,32 @@ class Formulas_Tester {
         $conf->replace_named_formulas(null);
     }
 
+    function test_formula_aggregate_cost() {
+        // Evaluation work is bounded by the loops that aggregates imply,
+        // not by how many aggregates a formula uses.
+        $u = $this->u_chair;
+
+        // many aggregates over a paper’s reviews are cheap
+        xassert(Formula::make($u, "avg(OveMer)+avg(RevExp)+(max(OveMer)-min(OveMer))+stddev(OveMer)+count(OveMer)")->ok());
+        xassert(Formula::make($u, join("+", array_fill(0, 30, "avg(OveMer)")))->ok());
+
+        // aggregates still nest at most two deep
+        $f = Formula::make($u, "max.pc(sum.pc(count.pc(pid)))");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "nest too deeply");
+
+        // nested PC aggregates cost the PC size squared per operand, so a
+        // large enough body is too expensive...
+        $npc = count($this->conf->pc_members());
+        $n = intdiv(Formula::MAX_EVAL_COST, $npc * $npc) + 1;
+        $body = join("+", array_fill(0, $n, "pid"));
+        $f = Formula::make($u, "max.pc(sum.pc({$body}))");
+        xassert(!$f->ok());
+        xassert_str_contains($f->full_feedback_text(), "too complex");
+        // ...while the same body in a single PC loop is fine
+        xassert(Formula::make($u, "sum.pc({$body})")->ok());
+    }
+
     function test_named_formula_depth_limit() {
         $conf = $this->conf;
         $u = $this->u_chair;

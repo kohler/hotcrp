@@ -28,7 +28,7 @@ final class FormulaTypechecker {
     /** @var list<Aggregate_Fexpr> */
     public $nest = [];
     /** @var int */
-    public $nloops = 0;
+    public $eval_cost = 0;
 
     function __construct(Formula $formula) {
         $this->formula = $formula;
@@ -213,12 +213,15 @@ abstract class Fexpr implements JsonSerializable {
                 && (!$ismath || $a->typecheck_math_format($ftch))
                 && $ok;
         }
-        if ($ok
-            && ($this->_format === Fexpr::FUNKNOWN
-                || ($this->nonnullable_format() && $this->_format_detail === null))) {
+        if (!$ok) {
+            return false;
+        }
+        $ftch->eval_cost += 1;
+        if ($this->_format === Fexpr::FUNKNOWN
+            || ($this->nonnullable_format() && $this->_format_detail === null)) {
             $this->_typecheck_format();
         }
-        return $ok;
+        return true;
     }
 
     private function _typecheck_format() {
@@ -450,6 +453,7 @@ class Constant_Fexpr extends Fexpr {
             $ftch->fexpr_lerror($this, "<0>Term ‘{$this->x}’ not found");
             return false;
         }
+        $ftch->eval_cost += 1;
         return true;
     }
     function compile(FormulaCompiler $state) {
@@ -906,13 +910,14 @@ abstract class Aggregate_Fexpr extends Fexpr {
         if (count($ftch->nest) > 1) {
             $ftch->fexpr_lerror($this, "<0>Formula too complex: aggregates nest too deeply");
             return false;
-        } else if (++$ftch->nloops > 5) {
-            $ftch->fexpr_lerror($this, "<0>Formula too complex: too many aggregates");
-            return false;
         }
         $ftch->nest[] = $this;
+        $nest_cost = $ftch->eval_cost;
+        $ftch->eval_cost = 1;
         $ok = $this->typecheck_arguments($ftch, $math)
             && $this->typecheck_index($ftch);
+        $ftch->eval_cost *= $this->loop_cost_estimate($ftch->formula->conf);
+        $ftch->eval_cost += $nest_cost;
         array_pop($ftch->nest);
         return $ok;
     }
@@ -956,6 +961,15 @@ abstract class Aggregate_Fexpr extends Fexpr {
     }
     function inferred_index() {
         return 0;
+    }
+    /** @return int|float */
+    function loop_cost_estimate(Conf $conf) {
+        if (($this->index_type & Fexpr::IDXM_PCLIKE) !== 0) {
+            return max(count($conf->pc_members()), 1);
+        } else if (($this->index_type & Fexpr::IDXM_REVIEW) !== 0) {
+            return 12;
+        }
+        return 1;
     }
     function body_null_controllers() {
         return $this->argument_null_controllers();
@@ -1352,6 +1366,7 @@ class Let_Fexpr extends Fexpr {
         } else {
             $this->set_format(Fexpr::FERROR);
         }
+        $ftch->eval_cost += 1;
         return $ok0 && $ok1;
     }
     function null_controllers() {
@@ -1412,8 +1427,14 @@ class VarUse_Fexpr extends Fexpr {
         $this->vardef = $vardef;
     }
     function resolve_neighbor(FormulaTypechecker $ftch, $e) {
-        if ($this->vardef->has_format()
-            || !$e->typecheck($ftch)) {
+        if ($this->vardef->has_format()) {
+            return;
+        }
+        // `$e` is typechecked, and its cost counted, again by its parent
+        $cost = $ftch->eval_cost;
+        $ok = $e->typecheck($ftch);
+        $ftch->eval_cost = $cost;
+        if (!$ok) {
             return;
         }
         $name = $this->vardef->name();
@@ -1468,6 +1489,7 @@ class VarUse_Fexpr extends Fexpr {
             return false;
         }
         $this->set_format($this->vardef->format(), $this->vardef->format_detail());
+        $ftch->eval_cost += 1;
         return true;
     }
     function inferred_index() {
@@ -2191,6 +2213,11 @@ final class Formula implements JsonSerializable {
 
     /* parsing */
 
+    /** Bound on the work a formula does per evaluation: each node costs the
+     * product of the sizes of the aggregate loops enclosing it. Sizes are
+     * conference-level estimates, never per-paper data. */
+    const MAX_EVAL_COST = 100000;
+
     private function _adjust_fexpr(Fexpr $fe) {
         if ($fe->format() === Fexpr::FERROR) {
             if (empty($this->lerrors)) {
@@ -2203,6 +2230,9 @@ final class Formula implements JsonSerializable {
             if (empty($this->lerrors)) {
                 $this->fexpr_lerror($fe, "<0>Formula type mismatch");
             }
+            return $fe;
+        } else if ($ftch->eval_cost > self::MAX_EVAL_COST) {
+            $this->fexpr_lerror($fe, "<0>Formula too complex");
             return $fe;
         }
         foreach ($this->_params as $name => $vare) {
