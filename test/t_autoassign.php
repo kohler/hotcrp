@@ -557,4 +557,22 @@ class Autoassign_Tester {
         $chair = $conf->checked_user_by_email("chair@_.com");
         xassert_eqq(call_api_result("autoassigners", $chair, [])->status ?? 200, 200);
     }
+
+    function test_cost_option_max_enforced() {
+        // A cost above the schema max is rejected (parse returns null, so the
+        // default is used); otherwise a pathological cost could stall MCMF.
+        $vot = null;
+        foreach (Autoassigner::costs_schema() as $sx) {
+            if ($sx->name === "assignment_cost") {
+                $vot = ViewOptionType::make($sx);
+                break;
+            }
+        }
+        xassert($vot !== null);
+        xassert_eqq($vot->parse("500"), 500);
+        xassert_eqq($vot->parse("1000000"), 1000000); // at the max, allowed
+        xassert_eqq($vot->parse("1000001"), null);     // above the max, rejected
+        xassert_eqq($vot->parse("2000000000"), null);  // a pathological cost
+        xassert_eqq($vot->parse("-1"), null);          // below the min
+    }
 }

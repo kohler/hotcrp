@@ -196,7 +196,8 @@ class ViewOptionType {
             return SearchWord::unquote((string) $value);
         } else if ($this->type === "int") {
             if (($iv = stoi($value)) !== null
-                && (!isset($this->min) || $iv >= $this->min)) {
+                && (!isset($this->min) || $iv >= $this->min)
+                && (!isset($this->max) || $iv <= $this->max)) {
                 return $iv;
             }
         } else if ($this->type === "tag") {

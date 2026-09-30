@@ -67,4 +67,26 @@ class Session_Tester {
         Session_API::change_session($qreq, "ulscoresort=average");
         xassert_eqq($qreq->csession("uldisplay"), null);
     }
+
+    function test_store_smsg_skips_null() {
+        // `feedback_msg_content` yields null for messages that render empty;
+        // `store_smsg` must not stash a null entry for one.
+        $qreq = $this->make_qreq();
+        Session_API::store_smsg($qreq, "nullsmsg01", null);
+        xassert_eqq($qreq->gsession("smsg"), null);
+
+        // a real content entry is stored
+        Session_API::store_smsg($qreq, "realsmsg01", ["<5>hi", 2]);
+        $smsgs = $qreq->gsession("smsg");
+        xassert_eqq(count($smsgs), 1);
+        xassert_eqq($smsgs[0][0], "realsmsg01");
+        xassert_eqq($smsgs[0][2], ["<5>hi", 2]);
+
+        // a null mixed with content keeps only the content, and never stores
+        // the null
+        Session_API::store_smsg($qreq, "mixsmsg01", null, ["<5>yo", 1]);
+        $smsgs = $qreq->gsession("smsg");
+        xassert_eqq(count($smsgs), 2);
+        xassert_eqq($smsgs[1], ["mixsmsg01", Conf::$now, ["<5>yo", 1]]);
+    }
 }

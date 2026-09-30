@@ -488,6 +488,20 @@ class Formulas_Tester {
         xassert_eqq($f->eval($p19, null), 4.0);
     }
 
+    function test_expression_annotations() {
+        // A formula graph heading tags each field reference with an <abbr>
+        // tooltip naming the field. Regression: the annotations were always
+        // empty because the top-level expression now parses with a root string
+        // context, not a null one.
+        $f = $this->formula("avg(OveMer) + 1");
+        xassert($f->ok());
+        $annos = $f->expression_annotations();
+        xassert_eqq(count($annos), 1);
+        xassert_eqq($annos[0]->description, "Overall merit");
+        xassert_str_contains($f->annotated_expression_h(),
+            'avg(<abbr title="Overall merit">OveMer</abbr>) + 1');
+    }
+
     function test_no_reviews() {
         // Paper 21 has no reviews
         $p21 = $this->conf->checked_paper_by_id(21, $this->u_chair);

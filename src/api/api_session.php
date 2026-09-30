@@ -266,6 +266,9 @@ class Session_API {
      * @param string $smsg
      * @param array{string,int} ...$mx */
     static function store_smsg($qreq, $smsg, ...$mx) {
+        // `feedback_msg_content` and friends yield null for messages that render
+        // empty; drop those so no null entry is stored
+        $mx = array_values(array_filter($mx, function ($m) { return $m !== null; }));
         if (!empty($mx)) {
             $qreq->open_session();
             $smsgs = $qreq->gsession("smsg") ?? [];

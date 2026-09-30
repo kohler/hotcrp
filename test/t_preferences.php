@@ -118,4 +118,23 @@ class Preferences_Tester {
         call_api("=pref", $this->u_chair, ["p" => 2, "pref" => "0"]);
         Contact::update_rights();
     }
+
+    function test_pref_api_selector_scope() {
+        // A token scoped to one paper (`preference:read#1`) may read that
+        // paper's preference; another paper's is a scope error. Regression: the
+        // scope check's $prow / no-$prow branches were swapped, so with a paper
+        // it ignored the selector, and without one it rejected selector scopes.
+        $conf = $this->conf;
+        $viewer = clone $this->u_chair;
+        $viewer->set_scope("preference:read#1");
+
+        $jr = Preference_API::pref_api($viewer, TestQreq::user_get($viewer), $conf->checked_paper_by_id(1));
+        xassert_eqq($jr->content["ok"] ?? false, true);
+
+        $jr = Preference_API::pref_api($viewer, TestQreq::user_get($viewer), $conf->checked_paper_by_id(2));
+        xassert_eqq($jr->content["ok"] ?? true, false);
+        xassert_eqq($jr->status, 403);
+
+        $viewer->set_scope();
+    }
 }

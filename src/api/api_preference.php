@@ -11,7 +11,7 @@ class Preference_API {
             return JsonResult::make_permission_error();
         }
         $scope = $qreq->is_post() ? ($u !== $viewer ? TokenScope::S_PREF_ADMIN : TokenScope::S_PREF_WRITE) : TokenScope::S_PREF_READ;
-        if ($prow ? !$viewer->scope_allows_some($scope) : !$viewer->scope_allows($scope, $prow)) {
+        if ($prow ? !$viewer->scope_allows($scope, $prow) : !$viewer->scope_allows_some($scope)) {
             return JsonResult::make_scope_error($qreq, $scope);
         }
 

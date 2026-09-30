@@ -386,7 +386,9 @@ abstract class Fexpr implements JsonSerializable {
     /** @param list<FormulaRangeAnno> &$ranges
      * @param string $description */
     final function record_range_anno(&$ranges, $description) {
-        if ($this->pos1 !== null && $this->pos2 !== null && $this->string_context === null) {
+        if ($this->pos1 !== null
+            && $this->pos2 !== null
+            && $this->string_context->parent === null) {
             $ranges[] = new FormulaRangeAnno($this->pos1, $this->pos2, $description);
         }
     }
