@@ -312,11 +312,15 @@ class Authorize_Page {
             $this->redirect_error("login_required");
         }
 
+        // The stored consent scope is canonical (`store_code` unparses the
+        // granted intersection), so canonicalize this request’s scope the same
+        // way before looking it up.
+        $consent_scope = TokenScope::unparse(TokenScope::parse($token_params["scope"], null));
         if (!UserSecurityEvent::session_oauth_confirmation($this->qreq->qsession(),
                 $this->viewer->email,
                 $this->client->client_id,
                 $this->qreq->redirect_uri,
-                $token_params["scope"],
+                $consent_scope,
                 $this->client->is_cdb ? null : $this->conf->dbname)) {
             // no current authorization for exactly this client & scope
             $this->redirect_error("consent_required");
@@ -793,16 +797,11 @@ class Authorize_Page {
                 if (!self::check_scope_syntax($reqscope)) {
                     $this->redirect_error("invalid_scope");
                 }
-                $granted = TokenScope::unparse(TokenScope::intersect(
-                    TokenScope::parse($tokscope, null),
-                    $reqscope
-                ));
-                // carry over OpenID scopes from the request
-                [$result, ] = TokenScope::scope_str_split_openid($tokscope);
-                if ($granted !== "none" || $result === "") {
-                    $result .= $result === "" ? $granted : " " . $granted;
-                }
-                $this->token->change_data("scope", $result);
+                // store requested OIDC scopes ($tokscope) plus the intersection
+                // of requested & consented scopes
+                $this->token->change_data("scope", TokenScope::unparse(TokenScope::intersect(
+                    TokenScope::parse($tokscope, null), $reqscope
+                )));
             }
             $this->token->set_invalid_in(10 * 60)
                 ->update();
@@ -1372,7 +1371,7 @@ class Authorize_Page {
                 ?? $this->client->identity_host($tok))
             ->change_data("client_id", $tok->data("client_id"))
             ->change_data("client_name", $tok->data("client_name"))
-            ->change_data("scope", TokenScope::unparse($ts));
+            ->change_data("scope", TokenScope::unparse($ts ? $ts->without_oidc() : null));
         if (isset($this->client->allow_if)) {
             $atok->change_data("allow_if", $this->client->allow_if);
         }

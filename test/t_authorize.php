@@ -1128,10 +1128,12 @@ class Authorize_Tester {
             ->set_page("authorize"));
     }
 
-    /** @return array{string,?string} */
-    private function authorize_confirm($code, $qs) {
+    /** @param array<string,mixed> $post extra fields the consent form posts,
+     *   e.g. the prefilled `scope` field a real browser submits
+     * @return array{string,?string} */
+    private function authorize_confirm($code, $qs, $post = []) {
         return $this->authorize_go(TestQreq::apply_user($this->u_chair,
-            TestQreq::post(["authconfirm" => 1, "code" => $code]), $qs)
+            TestQreq::post(["authconfirm" => 1, "code" => $code] + $post), $qs)
             ->set_page("authorize"));
     }
 
@@ -1437,6 +1439,21 @@ class Authorize_Tester {
             ["scope" => "read paper:write"] + $param + ["prompt" => "none"], $qs);
         xassert_eqq($how, "redirect");
         xassert_eqq($this->redirect_error($detail), "consent_required");
+
+        // the stored consent scope is canonical (`review:read tag:read`), so a
+        // `prompt=none` request that spells the same scope in another order
+        // (`tag:read review:read`) must still match it. The consent form posts
+        // its prefilled scope field, which is what canonicalizes the stored
+        // scope.
+        $nc = ["scope" => "tag:read review:read"] + $param;
+        [$how, $code] = $this->authorize_run($nc, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs, ["scope" => "tag:read review:read"]);
+        xassert_eqq($how, "redirect");
+        [$how, $detail] = $this->authorize_run($nc + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), null);
+        xassert_str_contains($detail ?? "", "code=");
     }
 
     /** `prompt=none` forbids interaction, so each condition the consent page
@@ -2941,7 +2958,8 @@ class Authorize_Tester {
         // ...and real selectors are unaffected
         xassert_eqq(TokenScope::unparse(TokenScope::parse("all#12", null)), "all#12");
         xassert_eqq(TokenScope::unparse(TokenScope::parse("submission:admin#r1", null)), "submission:admin#r1");
-        xassert_eqq(TokenScope::unparse(TokenScope::parse("openid read#3", null)), "read#3");
+        // an OIDC scope grants no API access, but is retained by the round-trip
+        xassert_eqq(TokenScope::unparse(TokenScope::parse("openid read#3", null)), "openid read#3");
     }
 
     /** A disabled provider hides its sign-in button. It must not still

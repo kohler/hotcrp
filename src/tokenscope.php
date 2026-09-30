@@ -58,6 +58,8 @@ final class TokenScope {
     private $_any_bits;
     /** @var ?list<TokenSubsetScope> */
     private $_rest;
+    /** @var ?string */
+    private $_oidc;
     /** @var Contact */
     private $_user;
 
@@ -81,8 +83,9 @@ final class TokenScope {
 
     /** @param int $all_bits
      * @param ?list<TokenSubsetScope> $rest
-     * @param ?Contact $user */
-    function __construct($all_bits, $rest = null, $user = null) {
+     * @param ?Contact $user
+     * @param ?string $oidc */
+    function __construct($all_bits, $rest = null, $user = null, $oidc = null) {
         $this->_all_bits = $this->_any_bits = $all_bits;
         foreach ($rest ?? [] as $tss) {
             if (($this->_all_bits & $tss->bits) === $tss->bits) {
@@ -99,6 +102,7 @@ final class TokenScope {
             $this->_rest[] = clone $tss;
         }
         $this->_user = $user;
+        $this->_oidc = $oidc;
     }
 
     /** @param string $s
@@ -114,6 +118,7 @@ final class TokenScope {
         $all_bits = 0;
         $any = false;
         $rest = null;
+        $oidc = null;
         '@phan-var-force ?list $rest';
         foreach (explode(" ", $s) as $w) {
             if ($w === "") {
@@ -125,6 +130,11 @@ final class TokenScope {
             }
             if ($b === -2) {
                 $any = true; // OIDC scope only, no explicit API access
+                if ($oidc === null) {
+                    $oidc = $w;
+                } else {
+                    $oidc .= " {$w}";
+                }
                 continue;
             }
             if ($b > 0) {
@@ -168,7 +178,7 @@ final class TokenScope {
         if (!$any) {
             return null;
         }
-        return new TokenScope($all_bits, $rest, $user);
+        return new TokenScope($all_bits, $rest, $user, $oidc);
     }
 
 
@@ -283,7 +293,8 @@ final class TokenScope {
                 $rest[] = new TokenSubsetScope($b, $atss->type, $atss->selector);
             }
         }
-        return new TokenScope($all, $rest, $tsa->_user ?? $tsb->_user);
+        // OIDC (identity) scopes come from the left operand only
+        return new TokenScope($all, $rest, $tsa->_user ?? $tsb->_user, $tsa->_oidc);
     }
 
     /** Return true if this scope grants rights on a selected subset of
@@ -298,7 +309,17 @@ final class TokenScope {
      * @return TokenScope */
     function without_selectors() {
         if ($this->_rest !== null) {
-            return new TokenScope($this->_all_bits, null, $this->_user);
+            return new TokenScope($this->_all_bits, null, $this->_user, $this->_oidc);
+        }
+        return $this;
+    }
+
+    /** Return this scope with its OIDC (identity) scopes removed. An access
+     * token conveys API permissions only, so its scope carries no OIDC scopes.
+     * @return TokenScope */
+    function without_oidc() {
+        if ($this->_oidc !== null) {
+            return new TokenScope($this->_all_bits, $this->_rest, $this->_user, null);
         }
         return $this;
     }
@@ -353,10 +374,13 @@ final class TokenScope {
 
     /** @return string */
     static function unparse(?TokenScope $ts) {
-        if (!$ts || $ts->_all_bits === ~0) {
+        if (!$ts) {
             return "all";
         }
-        $a = $ts->_all_bits !== 0 ? self::unparse_bits($ts->_all_bits) : [];
+        $a = $ts->_oidc ? [$ts->_oidc] : [];
+        if ($ts->_all_bits !== 0) {
+            array_push($a, ...self::unparse_bits($ts->_all_bits));
+        }
         foreach ($ts->_rest ?? [] as $tss) {
             if ($tss->type === 1) {
                 $sfx = "#{$tss->selector}";
