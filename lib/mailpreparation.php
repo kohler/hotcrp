@@ -137,8 +137,8 @@ class MailPreparation extends MessageSet implements JsonSerializable {
             || ($this->headers["cc"] ?? null) !== ($p->headers["cc"] ?? null)
             || ($this->headers["reply-to"] ?? null) !== ($p->headers["reply-to"] ?? null)
             || $this->preparation_owner !== $p->preparation_owner
-            || !empty($this->errors)
-            || !empty($p->errors)) {
+            || $this->has_error()
+            || $p->has_error()) {
             return false;
         }
         $max_recipients = $this->conf->opt("emailMaxRecipients") ?? 200;
@@ -160,9 +160,10 @@ class MailPreparation extends MessageSet implements JsonSerializable {
     /** @return bool */
     function can_send() {
         // see also MailPreparation::send()
-        return (empty($this->errors)
-                && (!$this->sensitive || $this->conf->opt("sendEmail")))
-            || $this->conf->opt("debugShowSensitiveEmail");
+        return !$this->has_error()
+            && (!$this->sensitive
+                || $this->conf->opt("sendEmail")
+                || $this->conf->opt("debugShowSensitiveEmail"));
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -244,7 +245,7 @@ class MailPreparation extends MessageSet implements JsonSerializable {
 
         // can we send? (subset of self::can_send())
         $sendEmail = $this->conf->opt("sendEmail");
-        $sendable = empty($this->errors) && $sendEmail;
+        $sendable = !$this->has_error() && $sendEmail;
 
         // create valid To: header
         $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
@@ -321,10 +322,12 @@ class MailPreparation extends MessageSet implements JsonSerializable {
         if (!isset($this->headers["subject"]) && !empty($this->subject)) {
             $j["subject"] = $this->subject;
         }
-        $j = [];
-        foreach (["body", "sensitive", "errors", "unique_preparation", "reset_capability", "landmark"] as $k) {
+        foreach (["body", "sensitive", "unique_preparation", "reset_capability", "landmark"] as $k) {
             if (!empty($this->$k))
                 $j[$k] = $this->$k;
+        }
+        if ($this->has_message()) {
+            $j["message_list"] = $this->message_list();
         }
         return $j;
     }

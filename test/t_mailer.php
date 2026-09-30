@@ -860,4 +860,27 @@ class Mailer_Tester {
         $conf->save_refresh_setting("au_seedec", $old_au_seedec);
         $conf->save_refresh_setting("final_open", $old_final_open);
     }
+
+    function test_preparation_errors_block_send_and_merge() {
+        // A preparation with a rejected header is withheld and never merged
+        // with others; one with only warnings is still sent.
+        $conf = $this->conf;
+        $u = $conf->checked_user_by_email("estrin@usc.edu");
+        $tmpl = ["subject" => "Hello", "body" => "Hi there"];
+        $rest = ["no_error_quit" => true];
+        xassert($conf->opt("debugShowSensitiveEmail")); // doesn't override errors
+        $good = HotCRPMailer::prepare_to($u, $tmpl, $rest);
+        $bad = HotCRPMailer::prepare_to($u, $tmpl + ["cc" => "bad@@address"], $rest);
+        xassert(!$good->has_error());
+        xassert($bad->has_error());
+        xassert($good->can_send());
+        xassert(!$bad->can_send());
+        xassert(!$good->can_merge($bad));
+        xassert(!$bad->can_merge($good));
+
+        $warn = HotCRPMailer::prepare_to($u, ["subject" => "Hello", "body" => "Hi {{IF(1)}}"], $rest);
+        xassert($warn->has_message());
+        xassert(!$warn->has_error());
+        xassert($warn->can_send());
+    }
 }
