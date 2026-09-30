@@ -139,6 +139,35 @@ class PaperStatus_Tester {
         xassert_eqq($doc->npages(new CheckFormat($this->conf, CheckFormat::RUN_NEVER)), 2);
     }
 
+    function test_import_max_upload_size() {
+        // A ZIP-imported document (and a CLI `savepapers.php x.zip`) is bounded
+        // by the upload-API limit, not the raw `upload_max_filesize` ini value
+        // (2M on the CLI), so normal PDFs are accepted.
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $imp = new DocumentImporter($paper1, DTYPE_SUBMISSION, 0, new MessageSet);
+
+        $save_api = $this->conf->opt("uploadApiMaxSize");
+        $save_umf = $this->conf->opt("uploadMaxFilesize");
+        $this->conf->set_opt("uploadApiMaxSize", null);
+        $this->conf->set_opt("uploadMaxFilesize", null);
+
+        // no field or deployment limit: the upload-API default applies
+        xassert_eqq($imp->max_upload_size(), Upload_API::MAX_SIZE);
+
+        // an explicit upload-API cap applies
+        $this->conf->set_opt("uploadApiMaxSize", 50 << 20);
+        xassert_eqq($imp->max_upload_size(), 50 << 20);
+
+        // an explicit deployment upload cap constrains it, the ini value alone
+        // does not
+        $this->conf->set_opt("uploadApiMaxSize", null);
+        $this->conf->set_opt("uploadMaxFilesize", "8M");
+        xassert_eqq($imp->max_upload_size(), (int) $this->conf->upload_max_filesize(true));
+
+        $this->conf->set_opt("uploadApiMaxSize", $save_api);
+        $this->conf->set_opt("uploadMaxFilesize", $save_umf);
+    }
+
     function test_paper_replace_document() {
         $pex = new PaperExport($this->conf->root_user());
         $paper2a = $pex->paper_json(2);

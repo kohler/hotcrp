@@ -42,12 +42,23 @@ final class DocumentImporter {
     }
 
     /** Maximum accepted size for an imported document, in bytes. Uses the
-     * field's configured `max_size`, else the deployment's upload limit, capped
-     * by `Upload_API::MAX_SIZE`. Bounds decompression on the ZIP-import path.
+     * field's configured `max_size`, else the upload-API limit, capped by
+     * `Upload_API::MAX_SIZE`. Bounds decompression on the ZIP-import path.
+     *
+     * The raw `upload_max_filesize` ini limit does not apply: an imported
+     * document arrives through the upload API (or the CLI), not a PHP multipart
+     * upload. Only an explicit `uploadMaxFilesize` deployment option, which is a
+     * deliberate cap, constrains it.
      * @return int */
     function max_upload_size() {
         $opt = $this->conf->option_by_id($this->dt);
-        $sz = ($opt ? $opt->max_size : null) ?? $this->conf->upload_max_filesize(true);
+        if ($opt && $opt->max_size > 0) {
+            $sz = $opt->max_size;
+        } else if ($this->conf->opt("uploadMaxFilesize") !== null) {
+            $sz = $this->conf->upload_max_filesize(true);
+        } else {
+            $sz = $this->conf->opt("uploadApiMaxSize") ?? Upload_API::MAX_SIZE;
+        }
         return $sz > 0 ? (int) min($sz, Upload_API::MAX_SIZE) : Upload_API::MAX_SIZE;
     }
 
