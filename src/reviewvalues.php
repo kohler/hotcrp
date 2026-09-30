@@ -836,19 +836,10 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // can only edit reviews you own or administer
-        $manager = $user->can_manage_reviews($prow);
-        if (!$manager
-            && ($rrow
-                ? !$user->is_owned_review($prow, $rrow)
-                : $reviewer->contactId !== $user->contactId)) {
-            $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
-            return false;
-        }
-
         // resolve a requested review type. Anyone may request the type the
         // reviewer would receive by default; only an administrator may request a
         // different type (e.g. primary/secondary/meta)
+        $manager = $user->can_manage_reviews($prow);
         $reqtype = $this->requested_review_type();
         if ($reqtype !== null) {
             if ($reqtype === false) {
@@ -877,6 +868,15 @@ class ReviewValues extends MessageSet {
             if (($xrrows = $prow->reviews_by_user(-1, $user->review_tokens()))) {
                 $rrow = $xrrows[0];
             }
+        }
+
+        // can only edit reviews you own or administer
+        if (!$manager
+            && ($rrow
+                ? !$user->is_owned_review($prow, $rrow)
+                : $reviewer->contactId !== $user->contactId)) {
+            $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
+            return false;
         }
 
         // a review that does not yet exist is staged onto an unsaved assignable

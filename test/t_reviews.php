@@ -3997,6 +3997,58 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_offline_subreview_upload_by_delegate() {
+        // C3: a PC member who delegated an external review may upload an OFFLINE
+        // review form for it. The form's Reviewer line names the external
+        // reviewer, so the ownership check must run after the review is looked
+        // up (is_owned_review), not on the form's email alone.
+        $conf = $this->conf;
+        $save_editdelegate = $conf->setting("pcrev_editdelegate");
+        $save_chairreq = $conf->setting("extrev_chairreq");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("pcrev_editdelegate", 2);
+        $conf->save_refresh_setting("extrev_chairreq", null);
+        Contact::update_rights();
+        xassert_gt($conf->ext_subreviews, 1);
+
+        $prow = $conf->checked_paper_by_id(17);
+
+        // lixia (plain PC) requests an external reviewer; confirm if proposed
+        $result = RequestReview_API::requestreview($this->u_lixia,
+            new Qrequest("POST", ["email" => "c3ext@_.com", "name" => "Cee Three", "affiliation" => "X"]), $prow);
+        xassert($result->content["ok"] ?? false);
+        if (($result->content["action"] ?? null) === "propose") {
+            $result = RequestReview_API::requestreview($this->u_chair,
+                new Qrequest("POST", ["email" => "c3ext@_.com"]), $prow);
+            xassert($result->content["ok"] ?? false);
+        }
+        $u_ext = $conf->checked_user_by_email("c3ext@_.com");
+        $prow->load_reviews(true);
+        $rrow = $prow->fresh_review_by_user($u_ext);
+        xassert(!!$rrow);
+        xassert_eqq($rrow->requestedBy, $this->u_lixia->contactId);
+
+        // lixia downloads the offline form for the delegated review and uploads
+        // a score on it; the delegate owns the review, so the upload is saved
+        $form = $conf->review_form()->text_form($prow, $rrow, $this->u_lixia);
+        xassert_str_contains($form, "Reviewer: Cee Three <c3ext@_.com>");
+        $form = preg_replace('/^\(Your choice here\)$/m', "3", $form, 1);
+        $tf = (new ReviewValues($this->u_lixia))->set_text($form, "c3ext.txt");
+        xassert($tf->parse_text());
+        xassert($tf->check_and_save(null));
+        xassert(!$tf->has_error());
+
+        $rrow2 = $prow->fresh_review_by_user($u_ext);
+        xassert_eqq($rrow2->fidval("s01"), 3);
+
+        // cleanup
+        $rrow2->delete($this->u_chair);
+        $conf->qe("delete from ReviewRequest where paperId=? and email=?", $prow->paperId, "c3ext@_.com");
+        $conf->save_refresh_setting("pcrev_editdelegate", $save_editdelegate);
+        $conf->save_refresh_setting("extrev_chairreq", $save_chairreq);
+        Contact::update_rights();
+    }
+
     function test_declinereview_via_token_stays_anonymous() {
         // HC-139: declining an anonymous review slot through its token must not
         // record or display the token holder's real identity
