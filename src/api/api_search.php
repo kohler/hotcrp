@@ -73,6 +73,11 @@ class Search_API {
         if (friendly_boolean($qreq->hotlist)) {
             $jr->set("hotlist", $pl->session_list_object()->info_string());
         }
+        if (friendly_boolean($qreq->default_tracker_visibility)
+            && $user->is_track_manager()) {
+            $permissionizer = new MeetingTracker_Permissionizer($pl->conf, $ih[0]);
+            $jr->set("default_tracker_visibility", $permissionizer->default_visibility());
+        }
         if ($format > 0) {
             foreach ($pl->format_json($format, ViewCommand::ORIGIN_MAX) as $k => $v) {
                 $jr->set($k, $v);

@@ -22,6 +22,7 @@ class SiteLoader {
         "JsonSerializable" => "lib/json.php",
         "Limit_SearchTerm" => "src/searchterm.php",
         "LoginHelper" => "lib/login.php",
+        "MeetingTracker_Permissionizer" => "src/meetingtracker.php",
         "MessageItem" => "lib/messageset.php",
         "Numeric_ValueFormat" => "src/valueformat.php",
         "PaperInfoSet" => "src/paperinfo.php",

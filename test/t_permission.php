@@ -1940,7 +1940,7 @@ class Permission_Tester {
         xassert($permissionizer->check_admin_perm($this->conf->root_user()));
         xassert($permissionizer->check_admin_perm($user_jon));
 
-        xassert_eqq($permissionizer->default_visibility(), "");
+        xassert_eqq($permissionizer->default_visibility(), "all");
         $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red","view":"-blue"}}');
         $permissionizer = new MeetingTracker_Permissionizer($this->conf, [3, 9, 13]);
         xassert_eqq($permissionizer->default_visibility(), "-blue");

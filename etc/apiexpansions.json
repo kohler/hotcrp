@@ -154,7 +154,7 @@
   {
     "name": "search", "get": true,
     "tags": ["Search"],
-    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?session ?<qa ?<qo ?<qx",
+    "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?session ?<qa ?<qo ?<qx ?default_tracker_visibility",
     "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
   },
   {

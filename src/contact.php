@@ -2054,6 +2054,43 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_capabilities[$name] ?? null;
     }
 
+    /** @param string $name
+     * @param mixed $value
+     * @return bool */
+    function set_capability($name, $value) {
+        $oldval = $this->capability($name);
+        if (($value ? : null) === $oldval) {
+            return false;
+        }
+        if ($value) {
+            $this->_capabilities[$name] = $value;
+        } else {
+            unset($this->_capabilities[$name]);
+            if (empty($this->_capabilities)) {
+                $this->_capabilities = null;
+            }
+        }
+        $this->update_my_rights();
+        return true;
+    }
+
+    /** @param string $text */
+    function apply_capability_text($text) {
+        // Add capabilities from arguments; program defensively
+        $words = preg_split('/ ++/', substr($text, 0, 4096), 33, PREG_SPLIT_NO_EMPTY);
+        foreach ($words as $i => $s) {
+            if ($i < 32 && ($uf = $this->conf->token_handler($s))) {
+                call_user_func($uf->apply_function, $this, $uf, $s);
+            }
+        }
+    }
+
+    function clear_capabilities() {
+        $this->_capabilities = null;
+        unset($this->_hoturl_defaults["cap"]);
+        $this->update_my_rights();
+    }
+
     /** @param int $pid
      * @return bool */
     function has_capability_for($pid) {
@@ -2102,41 +2139,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_capabilities ? $this->capability_paper_ids("@ra") : [];
     }
 
-    /** @param string $name
-     * @param mixed $value
-     * @return bool */
-    function set_capability($name, $value) {
-        $oldval = $this->capability($name);
-        if (($value ? : null) === $oldval) {
-            return false;
-        }
-        if ($value) {
-            $this->_capabilities[$name] = $value;
-        } else {
-            unset($this->_capabilities[$name]);
-            if (empty($this->_capabilities)) {
-                $this->_capabilities = null;
-            }
-        }
-        $this->update_my_rights();
-        return true;
-    }
 
-    /** @param string $text */
-    function apply_capability_text($text) {
-        // Add capabilities from arguments; program defensively
-        $words = preg_split('/ ++/', substr($text, 0, 4096), 33, PREG_SPLIT_NO_EMPTY);
-        foreach ($words as $i => $s) {
-            if ($i < 32 && ($uf = $this->conf->token_handler($s))) {
-                call_user_func($uf->apply_function, $this, $uf, $s);
-            }
-        }
-    }
-
-    function clear_capabilities() {
-        $this->_capabilities = null;
-        unset($this->_hoturl_defaults["cap"]);
-        $this->update_my_rights();
+    /** @return array<string,string> -- Note that return values are urlencoded */
+    function hoturl_defaults() {
+        return $this->_hoturl_defaults ?? [];
     }
 
     /** @param string $text
@@ -2152,11 +2158,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         } else {
             $this->_hoturl_defaults["cap"] = join(" ", $a);
         }
-    }
-
-    /** @return array<string,string> -- Note that return values are urlencoded */
-    function hoturl_defaults() {
-        return $this->_hoturl_defaults ?? [];
     }
 
 
@@ -4080,16 +4081,24 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 || $this->can_edit_any_password());
     }
 
-    /** @return bool */
+    /** @param ?MeetingTracker_Config $tracker_json
+     * @return bool */
     function can_view_tracker($tracker_json = null) {
+        if ($this->tracker_kiosk_state > 0) {
+            // a kiosk sees trackers its creator could administer
+            $creator = $this->capability("@kiosk_user");
+            return $creator
+                && $creator->can_view_tracker($tracker_json)
+                && (!$tracker_json
+                    || MeetingTracker_Permissionizer::check_admin_perm_list($creator, $tracker_json->admin_perm));
+        }
         return ($this->privChair
                 || ($this->isPC
                     && $this->check_xtrack("viewtracker")
                     && (!$tracker_json
                         || ($tracker_json->visibility ?? "") === ""
                         || ($this->has_tag(substr($tracker_json->visibility, 1))
-                            === ($tracker_json->visibility[0] === "+"))))
-                || $this->tracker_kiosk_state > 0)
+                            === ($tracker_json->visibility[0] === "+")))))
             && $this->scope_allows(TS::S_OTH_READ);
     }
 

@@ -148,10 +148,14 @@ This response might be returned for the search `10-12 THEN 5-8`:
 * param warn_missing boolean: Get warnings for missing submissions.
 * param ?forceShow
 * param hotlist boolean: Get a `hotlist` response field.
+* param default_tracker_visibility boolean: Get a `default_tracker_visibility` response field (track managers only).
 * response_schema search_response
 * response ?hotlist hotlist
 
     * condition hotlist
+* response ?default_tracker_visibility string: Default visibility for a meeting tracker over the matching submissions: `all` for the whole PC, `+TAG` or `-TAG` for PC members with or without a tag, or `+none` for administrators only.
+
+    * condition default_tracker_visibility
 * response ?fields [object]
 
     * condition format

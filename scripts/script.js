@@ -4002,7 +4002,7 @@ handle_ui.on("js-tracker", function (evt) {
         const trp = "tr/" + trno, ktrp = "k-tr/" + trno,
             $t = $e("fieldset", {class: "tracker-group", "data-index": trno, "data-trackerid": tr.trackerid},
                 $e("legend", "mb-1",
-                    $e("input", {id: ktrp + "/name", type: "text", name: trp + "/name", size: 24, class: "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
+                    $e("input", {id: ktrp + "/name", type: "text", name: trp + "/name", size: 24, class: "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New unnamed tracker" : "Unnamed tracker"})),
                 hidden_input(trp + "/id", tr.trackerid));
         if (tr.trackerid === "new" && siteinfo.paperid)
             $t.append(hidden_input(trp + "/p", siteinfo.paperid));
@@ -4011,14 +4011,15 @@ handle_ui.on("js-tracker", function (evt) {
         let vis = tr.visibility || "", vistype;
         if (vis === "+none" || vis === "none") {
             vistype = "none";
-            vis = "";
-        } else if (vis !== "") {
-            vistype = vis.charAt(0);
+            vis = "x";
+        } else if (vis === "" || vis === "all") {
+            vistype = "all";
+            vis = "x";
         } else {
-            vistype = "";
+            vistype = vis.charAt(0);
         }
         const gvis = (dl.tracker && dl.tracker.global_visibility) || "",
-            vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
+            vismap = [["all", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
             vissel = $e("select", {id: ktrp + "/visibility_type", name: trp + "/visibility_type", class: "uich js-foldup", "data-default-value": vistype});
         if (hotcrp.status.is_admin) {
             vismap.push(["none", "Administrators only"]);
@@ -4032,12 +4033,13 @@ handle_ui.on("js-tracker", function (evt) {
                 $e("input", {type: "text", name: trp + "/visibility", value: vis.substring(1), placeholder: "(tag)", class: "need-suggest need-autogrow pc-tags fx ml-2"}))));
         if (gvis) {
             let gvist;
-            if (gvis === "+none")
+            if (gvis === "+none") {
                 gvist = "Administrators only";
-            else if (gvis.charAt(0) === "+")
+            } else if (gvis.charAt(0) === "+") {
                 gvist = "PC members with tag " + gvis.substring(1);
-            else
+            } else {
                 gvist = "PC members without tag " + gvis.substring(1);
+            }
             $t.append($e("div", "entryi",
                 $e("label", null, "Global visibility"),
                 $e("div", "entry", gvist, $e("div", "f-d", "This ", $e("a", {href: hoturl("settings", {group: "tracks"})}, "setting"), " restricts all trackers."))));
@@ -4092,18 +4094,40 @@ handle_ui.on("js-tracker", function (evt) {
         clearInterval(elapsed_timer);
     }
     function new_tracker() {
-        var tr = {
-            is_new: true, trackerid: "new",
-            visibility: wstor.site(false, "hotcrp-tracking-visibility"),
-            hide_conflicts: true,
-            listinfo: document.body.getAttribute("data-hotlist")
-        }, $myg = $(this).closest("div.lg");
-        if (siteinfo.paperid) {
-            tr.papers = [{pid: siteinfo.paperid}];
+        const $myg = $(this).closest("div.lg"),
+            listinfo = document.body.getAttribute("data-hotlist");
+        function make(visibility) {
+            const tr = {
+                is_new: true, trackerid: "new",
+                visibility: visibility,
+                hide_conflicts: true,
+                listinfo: listinfo
+            };
+            if (siteinfo.paperid) {
+                tr.papers = [{pid: siteinfo.paperid}];
+            }
+            focus_within($(make_tracker(tr)).insertBefore($myg));
+            $myg.remove();
+            $pu.awaken();
         }
-        focus_within($(make_tracker(tr)).insertBefore($myg));
-        $myg.remove();
-        $pu.awaken();
+        const recent = tracker_recent_visibility();
+        let ids = null;
+        try {
+            const j = JSON.parse(listinfo || "null");
+            ids = j && j.ids ? decode_session_list_ids(j.ids) : null;
+        } catch (err) {
+        }
+        if (recent !== null || !ids || ids.length === 0) {
+            make(recent);
+            return;
+        }
+        // ask the server for the list’s default visibility
+        this.disabled = true;
+        $.ajax(hoturl("api/search", {q: "pidcode:" + encode_session_list_ids(ids), t: "viewable", default_tracker_visibility: 1}), {
+            method: "GET", success: function (data) {
+                make(data && data.ok ? data.default_tracker_visibility : null);
+            }
+        });
     }
     function make_submit_success(hiding, why) {
         return function (data) {
@@ -4209,15 +4233,25 @@ handle_ui.on("js-tracker", function (evt) {
         start();
     } else {
         $.post(hoturl("=api/trackerconfig"),
-               {"tr/1/id": "new", "tr/1/listinfo": document.body.getAttribute("data-hotlist"), "tr/1/p": siteinfo.paperid, "tr/1/visibility": wstor.site(false, "hotcrp-tracking-visibility")},
+               {"tr/1/id": "new", "tr/1/listinfo": document.body.getAttribute("data-hotlist"), "tr/1/p": siteinfo.paperid, "tr/1/visibility": tracker_recent_visibility() || ""},
                make_submit_success({}, "new"));
     }
 });
 
+// A recently chosen tracker visibility overrides the default for new trackers.
+function tracker_recent_visibility() {
+    const x = wstor.site_json(false, "hotcrp-tracking-visibility");
+    if (x && typeof x === "object" && typeof x.v === "string"
+        && x.at > now_sec() - 172800) {
+        return x.v;
+    }
+    return null;
+}
+
 function tracker_configure_success() {
     if (dl.tracker_here) {
-        var visibility = tracker_find(dl.tracker_here).visibility || null;
-        wstor.site(false, "hotcrp-tracking-visibility", visibility);
+        const visibility = tracker_find(dl.tracker_here).visibility || "all";
+        wstor.site(false, "hotcrp-tracking-visibility", {v: visibility, at: now_sec()});
     }
     tracker_configured = false;
 }

@@ -7,26 +7,40 @@ class Buzzer_Page {
     static function kiosk_manager(Contact $user, Qrequest $qreq) {
         $kiosks = (array) ($user->conf->setting_json("__tracker_kiosk") ? : []);
         uasort($kiosks, function ($a, $b) {
-            return $a->update_at - $b->update_at;
+            return $a->update_at <=> $b->update_at;
         });
         $kchange = false;
-        // delete old kiosks
-        while (!empty($kiosks)
-               && (count($kiosks) > 12 || current($kiosks)->update_at <= Conf::$now - 172800)) {
-            array_shift($kiosks);
-            $kchange = true;
-            reset($kiosks);
+        // delete old and ownerless kiosks, then this user’s excess kiosks
+        $nmine = 0;
+        foreach ($kiosks as $k => $kj) {
+            if ($kj->update_at <= Conf::$now - MeetingTracker::KIOSK_LIFETIME
+                || !isset($kj->by)) {
+                unset($kiosks[$k]);
+                $kchange = true;
+            } else if ($kj->by === $user->contactId) {
+                ++$nmine;
+            }
+        }
+        foreach ($kiosks as $k => $kj) {
+            if ($nmine <= 12) {
+                break;
+            } else if ($kj->by === $user->contactId) {
+                unset($kiosks[$k]);
+                $kchange = true;
+                --$nmine;
+            }
         }
         // look for new kiosks
         $kiosk_keys = [null, null];
         foreach ($kiosks as $k => $kj) {
-            if ($kj->update_at >= Conf::$now - 7200)
+            if ($kj->by === $user->contactId
+                && $kj->update_at >= Conf::$now - 7200)
                 $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
         }
         for ($i = 0; $i <= 1; ++$i) {
             if (!$kiosk_keys[$i]) {
                 $key = base48_encode(random_bytes(12));
-                $kiosks[$key] = (object) ["update_at" => Conf::$now, "show_papers" => !!$i];
+                $kiosks[$key] = (object) ["by" => $user->contactId, "update_at" => Conf::$now, "show_papers" => !!$i];
                 $kiosk_keys[$i] = $kchange = $key;
             }
         }
@@ -45,33 +59,21 @@ class Buzzer_Page {
         return $kiosk_keys;
     }
 
-    static function kiosk_lookup(Conf $conf, $key) {
-        $kiosks = (array) ($conf->setting_json("__tracker_kiosk") ? : []);
-        if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= Conf::$now - 604800) {
-            return $kiosks[$key];
-        } else {
-            return null;
-        }
-    }
-
     static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
 
-        $kiosk = null;
         $kiosk_keys = $user->is_track_manager() ? self::kiosk_manager($user, $qreq) : null;
-        if (($key = $qreq->path_component(0))
-            && ($kiosk = self::kiosk_lookup($conf, $key))) {
-            $user->set_capability("@kiosk", $key);
-            $user->set_default_cap_param("hckk_{$key}", true);
-        } else if (($key = $user->capability("@kiosk"))) {
-            $kiosk = self::kiosk_lookup($conf, $key);
+        if (!$user->has_account_here()) {
+            if (($key = $qreq->path_component(0))
+                && MeetingTracker::apply_kiosk($user, $key)) {
+                $user->set_capability("@kiosk", $key);
+                $user->set_default_cap_param("hckk_{$key}", true);
+            } else if (($key = $user->capability("@kiosk"))) {
+                MeetingTracker::apply_kiosk($user, $key);
+            }
         }
-        if ($kiosk) {
-            $user->tracker_kiosk_state = $kiosk->show_papers ? 2 : 1;
-            $show_papers = $kiosk->show_papers;
-        } else {
-            $show_papers = true;
-        }
+        $kiosk = $user->tracker_kiosk_state > 0;
+        $show_papers = $user->tracker_kiosk_state !== 1;
 
         // user
         if (!$user->isPC && !$user->tracker_kiosk_state) {

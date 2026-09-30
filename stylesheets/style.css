@@ -1573,6 +1573,13 @@ span.expander.after {
 .btn-x:hover::after {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L31 31M1 31L31 1' style='stroke:%23e8863a' stroke-width='2' /%3E%3C/svg%3E");
 }
+/* the tracker stays light */
+#p-tracker .btn-x::after {
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L31 31M1 31L31 1' style='stroke:%23222222' stroke-width='2' /%3E%3C/svg%3E");
+}
+#p-tracker .btn-x:hover::after {
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L31 31M1 31L31 1' style='stroke:%23c45500' stroke-width='2' /%3E%3C/svg%3E");
+}
 }
 .closebtn {
 	display: inline-block;
