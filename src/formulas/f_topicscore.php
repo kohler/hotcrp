@@ -43,7 +43,9 @@ class TopicScore_Fexpr extends Fexpr {
         if (!empty($cond)) {
             $r = "(" . join(" && ", $cond) . " ? {$r} : null)";
         }
-        $state->lstmt[] = "if (!array_key_exists({$uid}, {$tscores})) { {$tscores}[{$uid}] = {$r}; }";
-        return "{$tscores}[{$uid}]";
+        // `$uid` is null when the indexed reviewer's identity is hidden; the
+        // score is then null too
+        $state->lstmt[] = "if ({$uid} !== null && !array_key_exists({$uid}, {$tscores})) { {$tscores}[{$uid}] = {$r}; }";
+        return "({$uid} !== null ? {$tscores}[{$uid}] : null)";
     }
 }

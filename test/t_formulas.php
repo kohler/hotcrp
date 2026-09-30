@@ -2913,4 +2913,45 @@ class Formulas_Tester {
         xassert_eqq($conf->find_all_fields("OveMer.1"), []);
         xassert_eqq($conf->review_form()->field("s01")->search_keyword(), "OveMer");
     }
+
+    function test_topicscore_hidden_reviewer_no_deprecation() {
+        // A topicscore formula becomes any-review-indexed for a PC member who
+        // can't view the PC (secretPC). It memoizes per reviewer id; a hidden
+        // reviewer's id is null, which must not be used as an array key (a PHP
+        // 8.5 deprecation).
+        $conf = $this->conf;
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,mjh@isi.edu\n19,review,lixia@cs.ucla.edu");
+        save_review(19, $this->u_mjh, ["ovemer" => 3, "revexp" => 2, "ready" => true]);
+        save_review(19, $this->u_lixia, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+
+        $save_viewrevid = $conf->setting("viewrevid");
+        $conf->save_refresh_setting("viewrevid", -1); // PC never sees reviewer identities
+        $conf->set_opt("secretPC", true);             // ... and cannot view the PC
+        Contact::update_rights();
+
+        $viewer = $conf->checked_user_by_email("mjh@isi.edu");
+        xassert(!$viewer->can_view_pc());
+        // the viewer sees another reviewer's review on paper 19, identity hidden
+        $p19 = $conf->checked_paper_by_id(19, $viewer);
+        $hidden = 0;
+        foreach ($p19->viewable_reviews_as_display($viewer) as $rr) {
+            if ($rr->contactId !== $viewer->contactId
+                && !$viewer->can_view_review_identity($p19, $rr)) {
+                ++$hidden;
+            }
+        }
+        xassert_gt($hidden, 0);
+
+        // evaluating the any-review-indexed topicscore graph must not raise a
+        // null-array-key deprecation for the hidden reviewer
+        $fg = new FormulaGraph($viewer, "scatter", "pid", "topicscore");
+        $fg->add_dataset(new FormulaGraphDataset("19", "all", "", ""));
+        xassert($fg->prepare());
+        [$j, $warnings] = $this->graph_json_and_warnings($fg);
+        xassert_eqq($warnings, []);
+
+        $conf->set_opt("secretPC", null);
+        $conf->save_refresh_setting("viewrevid", $save_viewrevid);
+        Contact::update_rights();
+    }
 }
