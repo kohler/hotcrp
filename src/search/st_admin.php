@@ -71,7 +71,7 @@ class Admin_SearchTerm extends SearchTerm {
                 }
                 $tsm->add_tag_list($mttl);
             }
-            $where[] = $tsm->exists_sqlexpr("Paper");
+            $where[] = $tsm->exists_sqlexpr("Paper") ?? "false";
         }
         $uids = array_map(function ($p) { return $p->contactId; }, $this->match);
         $where[] = "Paper.managerContactId" . CountMatcher::sqlexpr_using($uids);

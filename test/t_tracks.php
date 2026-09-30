@@ -161,6 +161,8 @@ class Tracks_Tester {
         $this->conf->qe("delete from ContactCounter where contactId=?", $u_jon->contactId);
         $u_jon->invalidate_contact_counter();
         xassert_search($u_jon, "admin:me", "1 2 3");
+        xassert_search($u_jon, ["q" => "", "t" => "alladmin"], "1 2 3");
+        xassert_search($u_jon, ["q" => "", "t" => "actadmin"], "1 2 3");
 
         $this->conf->save_refresh_setting("tracks", null);
         xassert_assign($this->u_chair, "paper,tag\n1-3,-~~sys\n", true);
@@ -200,6 +202,14 @@ class Tracks_Tester {
         foreach (PaperInfoSet::make_search($this->u_chair, "-canadmin:me") as $p) {
             xassert(!$this->u_chair->allow_admin($p));
         }
+
+        // a token without tag scope finds the same administered papers
+        $u_jon->set_scope("submission:read");
+        $admin = array_keys(search_json($u_jon, ["q" => "", "t" => "admin"]));
+        xassert(!empty($admin));
+        xassert_search($u_jon, ["q" => "", "t" => "alladmin"], $admin);
+        xassert_search($u_jon, ["q" => "", "t" => "actadmin"], $admin);
+        $u_jon->set_scope();
 
         $this->conf->save_refresh_setting("tracks", null);
     }

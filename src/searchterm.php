@@ -1701,8 +1701,8 @@ class Limit_SearchTerm extends SearchTerm {
             if (($mttl = $this->user->managed_track_tags()) === null) {
                 // do nothing
             } else if (!empty($mttl)) {
-                $tsm = (new TagSearchMatcher($this->user))->add_tag_list($mttl);
-                $fx[] = $tsm->exists_sqlexpr("Paper");
+                $tsm = (new TagSearchMatcher($this->user->conf->root_user()))->add_tag_list($mttl);
+                $fx[] = $tsm->exists_sqlexpr("Paper") ?? "false";
             }
             $ff[] = "(" . join(" or ", $fx) . ")";
             break;
@@ -1712,7 +1712,7 @@ class Limit_SearchTerm extends SearchTerm {
                 $fx[] = "Paper.managerContactId=0";
             } else if (!empty($mttl)) {
                 $tsm = (new TagSearchMatcher($this->user->conf->root_user()))->add_tag_list($mttl);
-                $fx[] = "(Paper.managerContactId=0 and " . $tsm->exists_sqlexpr("Paper") . ")";
+                $fx[] = "(Paper.managerContactId=0 and " . ($tsm->exists_sqlexpr("Paper") ?? "false") . ")";
             }
             $ff[] = "(" . join(" or ", $fx) . ")";
             break;

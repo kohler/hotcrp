@@ -477,7 +477,7 @@ class MailRecipients extends MessageSet {
                 $options["myManaged"] = true;
             } else if (($mtt = $this->user->managed_track_tags()) !== null) {
                 $tsm = (new TagSearchMatcher($this->conf->root_user()))->add_tag_list($mtt);
-                $options["where"] = $tsm->exists_sqlexpr("Paper") . " or managerContactId={$this->user->contactId}";
+                $options["where"] = ($tsm->exists_sqlexpr("Paper") ?? "false") . " or managerContactId={$this->user->contactId}";
             }
         }
 
