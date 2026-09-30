@@ -126,7 +126,7 @@ class Tag_ListAction extends ListAction {
                 $x[] = "{$action},{$p->paperId}," . join(" ", $tags) . "\n";
             }
             $assignset->parse(join("", $x));
-        } else if (!empty($papers) && $act === "cr" && $user->privChair) {
+        } else if (!$papers->is_empty() && $act === "cr" && $user->privChair) {
             $source_tag = $qreq->tagcr_source ?? $qreq->source_tag;
             $source_tag = trim((string) $source_tag);
             if ($source_tag === "") {
@@ -135,7 +135,7 @@ class Tag_ListAction extends ListAction {
             $tagger = new Tagger($user);
             if ($tagger->check_syntax($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
                 && $tagger->check_syntax($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-                $r = new PaperRank($papers);
+                $r = new PaperRank($papers->paper_ids());
                 $r->load_user_tag_ranks($user->conf, $source_tag);
                 $r->set_gapless($gapless);
                 $r->set_printable_header($qreq, "Search", "search");

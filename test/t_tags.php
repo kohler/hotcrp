@@ -1330,4 +1330,41 @@ class Tags_Tester {
 
         xassert_assign($this->u_chair, "action,paper,tag\ntag,1,~wildbar#clear\n");
     }
+
+    function test_calculate_rank() {
+        // PC members rank papers with a private tag; a chair combines them
+        $pids = [];
+        foreach ($this->u_chair->paper_set(["where" => "timeSubmitted>0"]) as $prow) {
+            if (!$prow->has_conflict($this->u_varghese)
+                && !$prow->has_conflict($this->u_floyd)
+                && count($pids) < 3) {
+                $pids[] = $prow->paperId;
+            }
+        }
+        xassert_eqq(count($pids), 3);
+        [$a, $b, $c] = $pids;
+        xassert_assign($this->u_varghese, "paper,action,tag\n{$a},tag,~crank#1\n{$b},tag,~crank#2\n{$c},tag,~crank#3\n");
+        xassert_assign($this->u_floyd, "paper,action,tag\n{$a},tag,~crank#1\n{$c},tag,~crank#2\n{$b},tag,~crank#3\n");
+
+        $qreq = TestQreq::post_page("api/searchaction", ["p" => join(" ", $pids), "tag" => "crank"])
+            ->set_user($this->u_chair);
+        $ssel = SearchSelection::make($qreq, $this->u_chair);
+        $la = ListAction::lookup("tag/calculate_rank", $this->u_chair, $qreq, $ssel, ListAction::F_API);
+        xassert($la instanceof ListAction);
+        $jr = $la->run($this->u_chair, $qreq, $ssel);
+        xassert($jr instanceof JsonResult);
+        xassert_eqq($jr->content["ok"], true);
+
+        // both rank $a first, so it ranks first
+        $v = [];
+        foreach ($pids as $pid) {
+            $v[$pid] = $this->conf->checked_paper_by_id($pid)->tag_value("crank");
+            xassert($v[$pid] !== null);
+        }
+        xassert($v[$a] < $v[$b] && $v[$a] < $v[$c]);
+
+        xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,crank\n");
+        xassert_assign($this->u_varghese, "paper,action,tag\nall,cleartag,~crank\n");
+        xassert_assign($this->u_floyd, "paper,action,tag\nall,cleartag,~crank\n");
+    }
 }
