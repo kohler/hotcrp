@@ -103,8 +103,14 @@ class DocumentLocator {
             $jsonstr = ""; // unreachable - shut up Phan
         }
 
-        // read JSON, check format
-        $jp = Json::decode_user((string) $jsonstr, $this->_json_size_limit);
+        // read JSON, check format. A chair is trusted: the bulk-paper paths are
+        // chair-only, and their large documents are not hash-collision attacks,
+        // so lift the complexity cap for them (the length limit still applies).
+        $parser = (new JsonParser)->set_user($this->_json_size_limit);
+        if (($u = $qreq->user()) && $u->privChair) {
+            $parser->set_complexity_scale(0);
+        }
+        $jp = Json::decode((string) $jsonstr, $parser);
         if (is_object($jp)) {
             if (isset($qreq->q)
                 && ($mode & self::M_MATCH) !== 0) {

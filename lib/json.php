@@ -33,32 +33,18 @@ class Json {
         return $x;
     }
 
-    /** Like Json::decode, but refuse hash-collision-shaped input.
+    /** Like Json::decode, but bound length and refuse hash-collision-shaped
+     * input, as befits untrusted input.
+     *
+     * A caller that must accept large, legitimately complex documents (e.g. a
+     * chair or an administrative batch tool) builds its own parser and calls
+     * `Json::decode`, raising `JsonParser::set_complexity_scale` or setting it
+     * to 0 to lift the complexity cap.
      * @param ?string $s
      * @param ?int $max_length
-     * @param ?JsonParser $jp
      * @return mixed */
-    static function decode_user($s, $max_length = null, $jp = null) {
-        $jp = $jp ?? self::default_parser();
-        self::$last_parser = $jp;
-        $len = $s === null ? 0 : strlen($s);
-        if ($len === 0 || ($max_length !== null && $len > $max_length)) {
-            $jp->set_error($len, $len === 0 ? JSON_ERROR_SYNTAX : self::ERROR_TOO_LONG);
-            return null;
-        }
-        // A hash collision input packs ~1 object member per 7 bytes. Allowing
-        // ~32*sqrt(len) members keeps json_decode's worst case linear in
-        // `len` and never trips on normal documents. A backup case attempts
-        // to allow strings containing lots of colons.
-        if ($len > 8192) {
-            $max_colon = 32 * (int) sqrt($len);
-            if (substr_count($s, ":") > $max_colon
-                && preg_match_all('/(?:"[^"\\\\]*+(?:\\\\.[^"\\\\]*+)*+(?:"|\z))(*SKIP)(*FAIL)|:/', $s) > $max_colon) {
-                $jp->set_error($len, self::ERROR_TOO_COMPLEX);
-                return null;
-            }
-        }
-        return self::decode($s, $jp);
+    static function decode_user($s, $max_length = null) {
+        return self::decode($s, (new JsonParser)->set_user($max_length));
     }
 
     /** @return int */

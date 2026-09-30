@@ -21,6 +21,10 @@ class JsonParser {
     private $maxdepth = 512;
     /** @var int */
     private $flags = 0;
+    /** @var ?int */
+    private $max_length;
+    /** @var ?float */
+    private $complexity_scale;
 
     /** @var string
      * @readonly */
@@ -118,6 +122,28 @@ class JsonParser {
      * @return $this */
     function set_filename($filename) {
         $this->filename = $filename;
+        return $this;
+    }
+
+    /** @param ?int $max_length
+     * @return $this */
+    function set_max_length($max_length) {
+        $this->max_length = $max_length;
+        return $this;
+    }
+
+    /** @param ?float $scale
+     * @return $this */
+    function set_complexity_scale($scale = 1.0) {
+        $this->complexity_scale = $scale;
+        return $this;
+    }
+
+    /** @param ?int $max_length
+     * @return $this */
+    function set_user($max_length = null) {
+        $this->max_length = $max_length ?? $this->max_length;
+        $this->complexity_scale = $this->complexity_scale ?? 1.0;
         return $this;
     }
 
@@ -511,8 +537,7 @@ class JsonParser {
         $this->error_pos = 0;
         $this->pos = 0;
 
-        // Reject invalid UTF-8 up front, as json_decode does. This is much
-        // cheaper than parsing and does not depend on the input's structure.
+        // Reject invalid UTF-8 up front
         if (($upos = UnicodeHelper::utf8_invalid_offset($this->input)) !== false) {
             $this->assoc = $assoc;
             return $this->set_error($upos, JSON_ERROR_UTF8);
@@ -536,6 +561,27 @@ class JsonParser {
      * it would cost a lot and help little.
      * @return mixed */
     function decode() {
+        // checks before calling `json_decode`: length, complexity
+        $len = strlen($this->input);
+        if ($len === 0 || $len > ($this->max_length ?? $len)) {
+            $this->set_error($len, $len === 0 ? JSON_ERROR_SYNTAX : Json::ERROR_TOO_LONG);
+            return null;
+        }
+
+        // A hash collision input packs ~1 object member per 7 bytes. Allowing
+        // ~32*sqrt(len) members keeps json_decode's worst case linear in
+        // `len` and never trips on normal documents. A backup case attempts
+        // to allow strings containing lots of colons.
+        if ($this->complexity_scale > 0 && $len > 8192) {
+            $max_colon = 32 * $this->complexity_scale * sqrt($len);
+            if (substr_count($this->input, ":") > $max_colon
+                && preg_match_all('/(?:"[^"\\\\]*+(?:\\\\.[^"\\\\]*+)*+(?:"|\z))(*SKIP)(*FAIL)|:/', $this->input) > $max_colon) {
+                $this->set_error($len, Json::ERROR_TOO_COMPLEX);
+                return null;
+            }
+        }
+
+        // fast path: C decoder
         $x = json_decode($this->input, $this->assoc, $this->maxdepth, $this->flags);
         $err = json_last_error();
         if ($err === JSON_ERROR_NONE) {
@@ -543,7 +589,8 @@ class JsonParser {
             $this->error_pos = 0;
             return $x;
         }
-        // Don't locate errors in large JSONs
+
+        // check for error that shouldn’t be resolved
         if ($err === JSON_ERROR_DEPTH
             || ($err !== JSON_ERROR_UTF8
                 && strlen($this->input) > self::MAX_LOCATE_SIZE
@@ -551,6 +598,8 @@ class JsonParser {
             $this->set_error(null, $err);
             return null;
         }
+
+        // resolve error with PHP parser (set error position or parse with extended rules)
         return $this->base_decode();
     }
 

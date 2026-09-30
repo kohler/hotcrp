@@ -63,7 +63,8 @@ class SaveUsers_Batch {
     }
 
     function parse_json($str) {
-        $j = Json::decode_user($str);
+        // a trusted administrative batch tool: no untrusted-input complexity cap
+        $j = Json::decode($str);
         $ja = null;
         if (is_array($j)) {
             $ja = $j;

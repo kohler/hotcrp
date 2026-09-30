@@ -865,6 +865,31 @@ class Unit_Tester {
         xassert_lt(strlen($small), 8192);
         xassert(is_object(Json::decode_user($small, 1 << 20)));
         xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
+
+        // a large *legitimate* bulk document — an array of many small objects,
+        // not one hash-collision object — trips the default complexity cap
+        $rows = [];
+        for ($i = 0; $i !== 8000; ++$i) {
+            $rows[] = "{\"email\":\"u{$i}@x.edu\",\"firstName\":\"F{$i}\",\"lastName\":\"L{$i}\"}";
+        }
+        $bulk = "[" . join(",", $rows) . "]";
+        xassert_eqq(Json::decode_user($bulk, 1 << 20), null);
+        xassert_eqq(Json::last_error(), Json::ERROR_TOO_COMPLEX);
+
+        // ...but a caller that raises the complexity scale accepts it...
+        $a = Json::decode($bulk, (new JsonParser)->set_user(1 << 20)->set_complexity_scale(4.0));
+        xassert(is_array($a));
+        xassert_eqq(count($a), 8000);
+        xassert_eqq(Json::last_error(), JSON_ERROR_NONE);
+
+        // ...and a scale of 0 lifts the cap entirely
+        $a = Json::decode($bulk, (new JsonParser)->set_user(1 << 20)->set_complexity_scale(0));
+        xassert(is_array($a));
+        xassert_eqq(count($a), 8000);
+
+        // the length limit still applies whatever the scale
+        xassert_eqq(Json::decode(str_repeat("a", 100), (new JsonParser)->set_user(10)->set_complexity_scale(0)), null);
+        xassert_eqq(Json::last_error(), Json::ERROR_TOO_LONG);
     }
 
     function test_json5() {

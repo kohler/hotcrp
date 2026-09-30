@@ -19,7 +19,7 @@ class CheckUpdates_Page {
         $status = 0;
         if ($user->privChair
             && isset($qreq->data)
-            && ($data = Json::decode_user($qreq->data, null, (new JsonParser)->set_assoc(true)))
+            && ($data = (new JsonParser)->set_assoc(true)->set_user()->decode($qreq->data))
             && isset($data["updates"])
             && is_array($data["updates"])) {
             foreach ($data["updates"] as $update) {
