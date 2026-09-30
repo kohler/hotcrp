@@ -39,9 +39,14 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         return $this->expand_any_user($prow, $req, $state);
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return $contact->contactId !== 0;
+        // a user not found among the reviewers has no review to unsubmit
+        return $contact->contactId !== 0
+            || $contact === $state->not_found_user();
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+        if ($contact === $state->not_found_user()) {
+            return false;
+        }
         // parse round and reviewtype arguments
         $rarg0 = trim((string) $req["round"]);
         $oldround = null;

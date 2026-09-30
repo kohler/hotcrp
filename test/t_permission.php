@@ -3011,6 +3011,85 @@ class Permission_Tester {
         $conf->invalidate_caches("users", "pc", "paper");
     }
 
+    function test_reviewers_only_uid_outside_reviewers_is_noop() {
+        // A reviewers-only row whose uid names no reviewer of the paper has
+        // nothing to do. It succeeds silently whether or not the uid is an
+        // account, so it reveals nothing about which accounts exist.
+        $conf = $this->conf;
+        $chair = $this->u_chair;
+        $marina = $this->u_marina;   // PC
+        $kohler = $this->u_kohler;   // not PC
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert_eqq($p1->review_type($marina), 0);
+        xassert_eqq($p1->review_type($kohler), 0);
+        xassert(!$p1->has_conflict($marina));
+        foreach ([$marina->contactId, $kohler->contactId, 999999] as $uid) {
+            foreach (["clearreview", "unsubmitreview"] as $action) {
+                $aset = (new AssignmentSet($chair))->set_override_conflicts(true);
+                $aset->parse("paper,action,uid\n1,{$action},{$uid}\n");
+                xassert(!$aset->has_error());
+                xassert_eqq($aset->message_list(), []);
+                xassert_eqq(count($aset->assignments()), 0);
+            }
+        }
+
+        // the assignment select sends clearreview + conflict by uid
+        $select = function ($conflict) use ($chair, $marina, $p1) {
+            $j = call_api("=assign", $chair, TestQreq::post(["p" => 1, "format" => "none", "assignments" => json_encode([
+                ["pid" => 1, "uid" => $marina->contactId, "action" => "clearreview"],
+                ["pid" => 1, "uid" => $marina->contactId, "action" => "conflict", "conflict" => $conflict]
+            ])]), $p1);
+            xassert_eqq($j->ok, true);
+        };
+        $select("conflict");
+        xassert($conf->checked_paper_by_id(1)->has_conflict($marina));
+        $select(false);
+        xassert(!$conf->checked_paper_by_id(1)->has_conflict($marina));
+    }
+
+    function test_uid_any_user_resolution_depends_on_viewer() {
+        // A uid in a row with no candidate set, such as a contact, resolves
+        // any account for a chair, who can list all users anyway. Other
+        // administrators resolve only viewable PC members, and every other
+        // uid gets the same message whether or not it is an account.
+        $conf = $this->conf;
+        $chair = $this->u_chair;
+        $marina = $this->u_marina;   // PC, not chair
+        $kohler = $this->u_kohler;   // not PC
+        $estrin = $this->u_estrin;   // PC
+        $none = $conf->fetch_ivalue("select max(contactId) from ContactInfo") + 1000;
+        xassert_eqq($conf->checked_paper_by_id(1)->managerContactId, 0);
+        xassert_assign($chair, "paper,action,email\n1,manager,{$marina->email}\n");
+        $marina = $conf->checked_user_by_email($marina->email);
+        xassert(!$marina->privChair);
+        xassert($marina->can_manage($marina->checked_paper_by_id(1)));
+
+        $parse = function (Contact $user, $uid) {
+            $aset = (new AssignmentSet($user))->set_override_conflicts(true);
+            $aset->parse("paper,action,uid\n1,contact,{$uid}\n");
+            $msgs = [];
+            foreach ($aset->message_list() as $mi) {
+                $msgs[] = preg_replace('/#\d+/', "#N", $mi->message);
+            }
+            return [$aset->has_error(), count($aset->assignments()), $msgs];
+        };
+
+        // a chair can name any account
+        xassert_eqq($parse($chair, $kohler->contactId), [false, 1, []]);
+        xassert_eqq($parse($chair, $estrin->contactId), [false, 1, []]);
+        xassert_eqq($parse($chair, $none)[0], true);
+
+        // a non-chair manager can name PC members; other accounts look
+        // exactly like nonexistent ones
+        xassert_eqq($parse($marina, $estrin->contactId), [false, 1, []]);
+        $nonpc = $parse($marina, $kohler->contactId);
+        xassert_eqq($nonpc[0], true);
+        xassert_eqq($nonpc, $parse($marina, $none));
+
+        xassert_assign($chair, "paper,action\n1,clearmanager\n");
+        xassert_eqq($conf->checked_paper_by_id(1)->managerContactId, 0);
+    }
+
     function test_ambiguous_reviewer_name_requires_visible_identity() {
         // When two reviewers of a paper share a name, reviewer lists
         // append “ <email>” to tell them apart. That disambiguation must

@@ -161,12 +161,14 @@ class Review_AssignmentParser extends AssignmentParser {
         return null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        // User “none” is never allowed
+        $rdata = $this->make_rdata($req, $state);
+        // A user not found among the reviewers is a no-op for `clearreview`;
+        // other non-users are never allowed
         if (!$contact->contactId) {
-            return false;
+            return $contact === $state->not_found_user()
+                && !$rdata->might_create_review();
         }
         // PC reviews must be PC members
-        $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
             $uname = $contact->name(NAME_E);
             $state->paper_error("<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
@@ -195,6 +197,9 @@ class Review_AssignmentParser extends AssignmentParser {
         return true;
     }
     function apply(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
+        if ($user === $state->not_found_user()) {
+            return false;
+        }
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->error_ftext) {
             return new AssignmentError($rdata->error_ftext);

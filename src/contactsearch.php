@@ -130,6 +130,9 @@ class ContactSearch {
                                ? ($this->type & self::FM_PC) === self::F_PC
                                  && ($u->roles & Contact::ROLE_PCLIKE) === 0
                                : ($u->roles & $this->viewable_roles) === 0)) {
+                    // Chairs can enumerate all users by ID (the condition
+                    // restricts PC-only searches); others, including track
+                    // managers, can only name viewable PC members.
                     $u = null;
                 }
                 if ($u) {

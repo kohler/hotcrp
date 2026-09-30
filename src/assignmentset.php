@@ -1742,6 +1742,9 @@ class AssignmentSet {
         }
 
         // check user ID
+        if (isset($req["uid"])) {
+            $req["uid"] = trim($req["uid"]);
+        }
         if (($req["uid"] ?? "") !== "") {
             if (($uid = stoi($req["uid"])) < 0) {
                 $this->error("<0>Invalid user ID");
@@ -1956,7 +1959,7 @@ class AssignmentSet {
      * @return null|string|list<Contact> */
     private function resolve_users($udef, $req, AssignmentParser $parser, PaperInfo $prow) {
         if ($udef === "retry") {
-            // check the requested universe, if any
+            // construct the requested universe, if any
             $cset = null;
             if (($this->user_universe & AssignmentParser::UU_PC) !== 0) {
                 $cset = $this->astate->pc_members();
@@ -1966,12 +1969,19 @@ class AssignmentSet {
             }
             if ($cset !== null) {
                 $this->astate->charge(count($cset));
-                if (($req["uid"] ?? "") !== "") {
-                    $csrch = new ContactSearch(ContactSearch::F_USERID, $req["uid"], $this->astate->user, $cset);
-                } else {
-                    $text = self::req_user_text($req, NAME_E | NAME_L);
-                    $csrch = new ContactSearch(ContactSearch::F_USER, $text, $this->astate->user, $cset);
-                }
+            }
+
+            // search in universe (UID search included)
+            $uid = $req["uid"] ?? "";
+            if ($uid !== "") {
+                $csrch = new ContactSearch(ContactSearch::F_USERID, $uid, $this->astate->user, $cset);
+            } else if ($cset !== null) {
+                $text = self::req_user_text($req, NAME_E | NAME_L);
+                $csrch = new ContactSearch(ContactSearch::F_USER, $text, $this->astate->user, $cset);
+            } else {
+                $csrch = null;
+            }
+            if ($csrch !== null) {
                 if ($csrch->resolved_unique()) {
                     return $csrch->users();
                 } else if ($csrch->is_empty()) {
