@@ -1093,6 +1093,53 @@ class Permission_Tester {
         $this->conf->qe("update Paper set timeWithdrawn=0, timeSubmitted=? where paperId=3", $sub3);
     }
 
+    function test_reviewer_pdf_needs_active_review_of_submitted_paper() {
+        // Reviewers can view the papers they review, but they can view PDFs
+        // only for submitted papers and only while their review is active.
+        // A PC member who fails that test may still view the PDF through the
+        // ordinary PC rules.
+        $pid = 25;
+        $p = $this->conf->checked_paper_by_id($pid);
+        $sub = $p->timeSubmitted;
+        xassert($sub > 0);
+        foreach ([$this->u_marina, $this->u_estrin, $this->u_kohler] as $u) {
+            xassert(!$p->has_conflict($u));
+            xassert(!$p->review_by_user($u));
+        }
+        xassert(!$this->u_kohler->isPC);
+
+        // reviewers of a draft see the paper, but not the PDF
+        xassert_assign($this->u_chair, "paper,action,email\n{$pid},primary,marina@poema.ru\n{$pid},external,kohler@seas.harvard.edu\n");
+        $this->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $pid);
+        $p = $this->conf->checked_paper_by_id($pid);
+        foreach ([$this->u_marina, $this->u_kohler] as $u) {
+            xassert($u->can_view_paper($p));
+            xassert(!$u->can_view_paper($p, true));
+        }
+        $this->conf->qe("update Paper set timeSubmitted=? where paperId=?", $sub, $pid);
+        $p = $this->conf->checked_paper_by_id($pid);
+        foreach ([$this->u_marina, $this->u_kohler] as $u) {
+            xassert($u->can_view_paper($p, true));
+        }
+
+        // a review-accept link whose review is gone grants paper view only
+        xassert_assign($this->u_chair, "paper,action,email\n{$pid},clearreview,kohler@seas.harvard.edu\n");
+        $p = $this->conf->checked_paper_by_id($pid);
+        xassert(!$p->review_by_user($this->u_kohler));
+        $blank = Contact::make($this->conf);
+        $blank->set_capability("@ra{$pid}", $this->u_kohler->contactId);
+        xassert($blank->can_view_paper($p));
+        xassert(!$blank->can_view_paper($p, true));
+
+        // ...but a PC member holding such a link still gets PC access
+        $this->u_estrin->set_capability("@ra{$pid}", $this->u_kohler->contactId);
+        xassert($this->u_estrin->can_view_paper($p));
+        xassert($this->u_estrin->can_view_paper($p, true));
+        $this->u_estrin->set_capability("@ra{$pid}", null);
+
+        xassert_assign($this->u_chair, "paper,action,email\n{$pid},clearreview,marina@poema.ru\n");
+    }
+
     function test_assign_administrator() {
         xassert_search($this->u_chair, "has:admin", "");
         xassert_search($this->u_chair, "conflict:me", "");

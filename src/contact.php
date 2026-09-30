@@ -3854,30 +3854,29 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             }
 
             // check paper & document visibility
-            if ($allow_administer || $act_author_view) {
-                $cif |= PCI::CIF_VIEW | PCI::CIF_VIEW_DOC;
-            } else if (!$sub_read_scope) {
+            $docbit = ($ci->scope_bits & TS::S_DOC_READ) !== 0 ? PCI::CIF_VIEW_DOC : 0;
+            if (!$sub_read_scope) {
                 // cannot view
-            } else if ($ci->review_status > 0) {
-                $cif |= PCI::CIF_VIEW;
-                if ($ci->review_status > PCI::CIRS_DECLINED
-                    || $prow->timeSubmitted != 0) {
-                    $cif |= PCI::CIF_VIEW_DOC;
+            } else if ($allow_administer
+                       || $act_author_view
+                       || ($ci->review_status > PCI::CIRS_DECLINED
+                           && $prow->timeSubmitted != 0)) {
+                $cif |= PCI::CIF_VIEW | $docbit;
+            } else {
+                if ($allow_pc_broad
+                    && $this->conf->time_pc_view($prow, false)) {
+                    $v = $allow_pc ? 0 : $this->conf->setting("pc_confpdf") ?? 0;
+                } else {
+                    $v = 2;
                 }
-            } else if ($allow_pc_broad
-                       && $this->conf->time_pc_view($prow, false)) {
-                $v = $allow_pc ? 0 : $this->conf->setting("pc_confpdf") ?? 0;
-                if ($v < 2) {
+                if ($v < 2 || $ci->review_status > 0) {
                     $cif |= PCI::CIF_VIEW;
-                    if ($v < 1
-                        && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
-                        && $this->conf->time_pc_view($prow, true)) {
-                        $cif |= PCI::CIF_VIEW_DOC;
-                    }
                 }
-            }
-            if (($ci->scope_bits & TS::S_DOC_READ) === 0) {
-                $cif &= ~PCI::CIF_VIEW_DOC;
+                if ($v < 1
+                    && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
+                    && $this->conf->time_pc_view($prow, true)) {
+                    $cif |= $docbit;
+                }
             }
 
             $ci->__set_ciflags($cif);
