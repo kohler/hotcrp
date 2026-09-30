@@ -82,6 +82,9 @@ class Follow_AssignmentParser extends AssignmentParser {
             && !$state->user->can_manage($prow)) {
             $state->paper_error($prow->failure_reason(["administer" => true]));
             return false;
+        } else if (!$state->user->scope_allows(TokenScope::S_OTH_WRITE, $prow)) {
+            $state->paper_error($prow->failure_reason(["scope" => TokenScope::S_OTH_WRITE]));
+            return false;
         }
         return $contact->contactId !== 0
             && $contact->can_view_paper($prow);

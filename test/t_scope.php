@@ -472,6 +472,82 @@ class Scope_Tester {
     }
 
     /** @param int $pid
+     * @return ?int */
+    private function watch($pid, Contact $u) {
+        return $this->conf->fetch_ivalue("select watch from PaperWatch where paperId=? and contactId=?", $pid, $u->contactId);
+    }
+
+    /** @param int $pid
+     * @param ?int $w */
+    private function restore_watch($pid, Contact $u, $w) {
+        if ($w === null) {
+            $this->conf->qe("delete from PaperWatch where paperId=? and contactId=?", $pid, $u->contactId);
+        } else {
+            $this->conf->qe("insert into PaperWatch set paperId=?, contactId=?, watch=? on duplicate key update watch=?", $pid, $u->contactId, $w, $w);
+        }
+    }
+
+    /** @param ?int $w
+     * @return bool */
+    static private function following($w) {
+        return (($w ?? 0) & Contact::WATCH_REVIEW) !== 0;
+    }
+
+    function test_follow_requires_write_scope() {
+        // Changing follow state is a write: `other:write` for your own, and
+        // `submeta:admin` as well for another user’s, via /api/follow or
+        // /api/assign.
+        $u_lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $w_floyd = $this->watch(1, $this->u_floyd);
+        $w_lixia = $this->watch(6, $u_lixia);
+        $want = !self::following($w_floyd);
+        $want_lixia = !self::following($w_lixia);
+        $yn = $want ? "yes" : "no";
+        $yn_lixia = $want_lixia ? "yes" : "no";
+
+        // read scope can’t change your own follow state
+        $this->u_floyd->set_scope("read");
+        $jr = call_api("=assign", $this->u_floyd, self::assign_qreq("action,paper,following\nfollow,1,{$yn}\n"));
+        xassert_eqq($jr->ok, false);
+        $resp = call_api_result("=follow", $this->u_floyd, TestQreq::post(["p" => 1, "following" => $want ? "1" : "0"]));
+        self::xassert_scope_error($resp, "other:write");
+        xassert_eqq($this->watch(1, $this->u_floyd), $w_floyd);
+
+        // other:write can, by either route
+        $this->u_floyd->set_scope("read other:write");
+        $jr = call_api("=follow", $this->u_floyd, TestQreq::post(["p" => 1, "following" => $want ? "1" : "0"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(self::following($this->watch(1, $this->u_floyd)), $want);
+        $nyn = $want ? "no" : "yes";
+        $jr = call_api("=assign", $this->u_floyd, self::assign_qreq("action,paper,following\nfollow,1,{$nyn}\n"));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(self::following($this->watch(1, $this->u_floyd)), !$want);
+
+        // changing another user’s follow state also requires submeta:admin
+        foreach (["read", "read other:write"] as $scope) {
+            $this->u_chair->set_scope($scope);
+            $jr = call_api("=assign", $this->u_chair, self::assign_qreq("action,paper,email,following\nfollow,6,{$u_lixia->email},{$yn_lixia}\n"));
+            xassert_eqq($jr->ok, false);
+            $resp = call_api_result("=follow", $this->u_chair, TestQreq::post(["p" => 6, "u" => $u_lixia->email, "following" => $want_lixia ? "1" : "0"]));
+            self::xassert_scope_error($resp, $scope === "read" ? "other:write" : "submeta:admin");
+            xassert_eqq($this->watch(6, $u_lixia), $w_lixia);
+        }
+        $this->u_chair->set_scope("read other:write submission:admin");
+        $jr = call_api("=follow", $this->u_chair, TestQreq::post(["p" => 6, "u" => $u_lixia->email, "following" => $want_lixia ? "1" : "0"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(self::following($this->watch(6, $u_lixia)), $want_lixia);
+        $nyn_lixia = $want_lixia ? "no" : "yes";
+        $jr = call_api("=assign", $this->u_chair, self::assign_qreq("action,paper,email,following\nfollow,6,{$u_lixia->email},{$nyn_lixia}\n"));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(self::following($this->watch(6, $u_lixia)), !$want_lixia);
+
+        $this->u_chair->set_scope();
+        $this->u_floyd->set_scope();
+        $this->restore_watch(1, $this->u_floyd, $w_floyd);
+        $this->restore_watch(6, $u_lixia, $w_lixia);
+    }
+
+    /** @param int $pid
      * @return ?string */
     private function share_salt($pid) {
         $tok = AuthorView_Capability::find($this->conf->checked_paper_by_id($pid));

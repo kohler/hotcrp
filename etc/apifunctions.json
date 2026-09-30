@@ -24,7 +24,7 @@
     {   "name": "documenthistory", "get": true, "session": false, "deprecated": true, "function": "Document_API::documenthistory"   },
     {   "name": "documentlist", "get": true, "session": false, "function": "Document_API::documentlist"   },
     {   "name": "events", "get": true, "session": false, "function": "Events_API::run"   },
-    {   "name": "follow", "post": true, "paper": true, "xxx": true, "function": "Follow_API::run"   },
+    {   "name": "follow", "post": true, "paper": true, "function": "Follow_API::run", "scope": "other:write"   },
     {   "name": "formatcheck", "get": true, "session": false, "function": "FormatCheck_API::run"   },
     {   "name": "graphdata", "get": true, "session": false, "allow_if": "pc", "function": "GraphData_API::graphdata"   },
     {   "name": "job", "get": true, "auth": false, "session": false, "function": "Job_API::job"   },

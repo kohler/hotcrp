@@ -1,6 +1,6 @@
 <?php
 // api_follow.php -- HotCRP paper-related API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class Follow_API {
     /** @param ?PaperInfo $prow */
@@ -9,6 +9,11 @@ class Follow_API {
         $following = friendly_boolean($qreq->following);
         if ($following === null) {
             return JsonResult::make_parameter_error("following", "Expected boolean");
+        } else if (!$user->scope_allows(TokenScope::S_OTH_WRITE, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_OTH_WRITE);
+        } else if ($user !== $reviewer
+                   && !$user->scope_allows(TokenScope::S_SUB_ADMIN, $prow)) {
+            return JsonResult::make_scope_error($qreq, TokenScope::S_SUB_ADMIN);
         }
         $bits = Contact::WATCH_REVIEW_EXPLICIT | ($following ? Contact::WATCH_REVIEW : 0);
         $user->conf->qe("insert into PaperWatch set paperId=?, contactId=?, watch=? on duplicate key update watch=(watch&~?)|?",
