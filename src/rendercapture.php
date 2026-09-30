@@ -17,6 +17,9 @@ class RenderCapture {
 
         Qrequest::set_main_request($qreq);
         $old_viewer = $conf->swap_viewer($user);
+        if (!Contact::$main_user) {
+            Contact::set_main_user($user);
+        }
         Navigation::headers_reset();
         $conf->_header_printed = false;
 

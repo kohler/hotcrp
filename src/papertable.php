@@ -3084,7 +3084,7 @@ class PaperTable {
         }
         return $pret
             . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")
-            . ($any_comments ? CommentInfo::script($prow) : "")
+            . ($any_comments ? CommentInfo::script($prow, $this->user) : "")
             . (empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>');
     }
 
@@ -3215,7 +3215,7 @@ class PaperTable {
         }
 
         if ($ncmt) {
-            CommentInfo::print_script($this->prow);
+            CommentInfo::print_script($this->prow, $this->user);
         }
         if ($s !== "") {
             echo Ht::unstash_script($s);

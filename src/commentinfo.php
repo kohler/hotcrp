@@ -243,8 +243,9 @@ class CommentInfo {
 
 
     /** @param PaperInfo $prow
+     * @param ContactInfo $user
      * @return string */
-    static function script($prow) {
+    static function script($prow, $user) {
         if (!Ht::mark_stash("papercomment")) {
             return "";
         }
@@ -257,7 +258,7 @@ class CommentInfo {
                 $j["hwl"] = $rrd->hard_wordlimit;
             }
             $crow->commentRound = $rrd->id;
-            if (Contact::$main_user->can_edit_response($prow, $crow)) {
+            if ($user->can_edit_response($prow, $crow)) {
                 if (($m = $rrd->instructions($prow->conf)) !== false) {
                     $j["instrux"] = $m;
                 }
@@ -270,9 +271,10 @@ class CommentInfo {
         return Ht::unstash_script(join(";", $t));
     }
 
-    /** @param PaperInfo $prow */
-    static function print_script($prow) {
-        echo self::script($prow);
+    /** @param PaperInfo $prow
+     * @param ContactInfo $user */
+    static function print_script($prow, $user) {
+        echo self::script($prow, $user);
     }
 
 
