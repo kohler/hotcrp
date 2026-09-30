@@ -694,6 +694,20 @@ class Mailer {
         $this->field = $field;
         $old_viewer = $this->conf->swap_viewer($this->permuser);
 
+        try {
+            return $this->_expand_text($text);
+        } finally {
+            $this->conf->swap_viewer($old_viewer);
+            $this->context = $old_context;
+            $this->width = $old_width;
+            $this->line_prefix = $old_line_prefix;
+            $this->field = $old_field;
+        }
+    }
+
+    /** @param string $text
+     * @return string */
+    private function _expand_text($text) {
         // expand out conditionals first to avoid confusion with wordwrapping
         $text = $this->_expand_conditionals(cleannl($text));
 
@@ -783,12 +797,6 @@ class Mailer {
         if ($this->context !== self::CONTEXT_BODY) {
             $text = rtrim(preg_replace('/[\r\n\f\x0B]++/', ' ', $text));
         }
-
-        $this->conf->swap_viewer($old_viewer);
-        $this->context = $old_context;
-        $this->width = $old_width;
-        $this->line_prefix = $old_line_prefix;
-        $this->field = $old_field;
         return $text;
     }
 

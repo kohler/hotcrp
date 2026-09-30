@@ -810,4 +810,54 @@ class Mailer_Tester {
             xassert(!empty($j->templates));
         }
     }
+
+    function test_preview_expands_field_with_phase_condition() {
+        // A chair’s mail preview evaluates field conditions for both sender and
+        // recipient. A compound condition involving `phase:` must work there.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $old_final_open = $conf->setting("final_open");
+        $old_au_seedec = $conf->setting("au_seedec");
+        $conf->save_refresh_setting("final_open", 1);
+        $conf->save_refresh_setting("au_seedec", 2);
+        xassert_assign($chair, "paper,action,decision\n13,decision,yes\n");
+
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "new",
+            "sf/1/name" => "Camera note",
+            "sf/1/type" => "text",
+            "sf/1/presence" => "custom",
+            "sf/1/condition" => "phase:final OR #camnote"
+        ]);
+        xassert($sv->execute());
+        $opt = $conf->options()->find("Camera note");
+        xassert(!!$opt);
+        $ps = new PaperStatus($conf->root_user());
+        xassert($ps->save_paper_json((object) ["id" => 13, $opt->json_key() => "Final-phase note"]));
+
+        // a non-chair sender, so the preview bounds expansion by both users
+        $sender = $conf->checked_user_by_email("marina@poema.ru");
+        xassert(!$sender->privChair);
+        xassert(!$conf->checked_paper_by_id(13)->has_conflict($sender));
+        xassert_assign($chair, "paper,action,user\n13,manager,{$sender->email}\n");
+        $sender = $conf->checked_user_by_email($sender->email);
+
+        $prow = $conf->checked_paper_by_id(13);
+        xassert_eqq($prow->phase(), PaperInfo::PHASE_FINAL);
+        $author = $prow->author_user();
+        $mailer = new HotCRPMailer($sender, $author, ["prow" => $prow, "width" => 10000, "censor" => Mailer::CENSOR_PREVIEW, "preview" => true]);
+        xassert_eqq($mailer->expand("[{{CameraNote}}]", "body"), "[Final-phase note]\n");
+        xassert_assign($chair, "paper,action\n13,clearmanager\n");
+
+        $sv = SettingValues::make_request($chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $opt->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert_assign($chair, "paper,action,decision\n13,cleardecision,yes\n");
+        $conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        $conf->save_refresh_setting("final_open", $old_final_open);
+    }
 }

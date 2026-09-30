@@ -85,6 +85,10 @@ abstract class ContactPermissions {
     abstract function can_view_shepherd(?PaperInfo $prow);
     /** @return bool */
     abstract function can_view_decision(PaperInfo $prow);
+    /** @return bool */
+    abstract function can_view_all_decision();
+    /** @return bool */
+    abstract function can_view_some_decision();
     /** @return int */
     abstract function tag_perm_flags(?PaperInfo $prow);
     /** @param string $tag

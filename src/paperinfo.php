@@ -1335,7 +1335,7 @@ class PaperInfo {
     }
 
     /** @return 0|1 */
-    function viewable_phase(?Contact $user = null) {
+    function viewable_phase(?ContactPermissions $user = null) {
         $p = $this->phase();
         if ($p === self::PHASE_FINAL
             && $user

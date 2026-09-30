@@ -5,7 +5,7 @@
 class HotCRPMailPreparation extends MailPreparation {
     /** @var ?PaperInfo */
     public $prow;
-    /** @var bool */
+    /** @var int */
     public $recipient_class = 0;
     /** @var bool */
     public $reviewer_recipient = false;
@@ -719,11 +719,13 @@ class HotCRPMailer extends Mailer {
         self::send_combined_preparations($preps);
     }
 
-    /** @param list<HotCRPMailPreparation> $preps */
+    /** @param list<MailPreparation> $preps */
     static function send_combined_preparations($preps) {
+        /** @var list<HotCRPMailPreparation> $repreps */
         $repreps = [];
         foreach ($preps as $prep) {
-            if ($prep->recipient_class !== HotCRPMailer::RCLASS_REVIEWER
+            if (!($prep instanceof HotCRPMailPreparation)
+                || $prep->recipient_class !== HotCRPMailer::RCLASS_REVIEWER
                 || !$prep->prow) {
                 continue;
             }
