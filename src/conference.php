@@ -2806,7 +2806,7 @@ class Conf {
     function enabled_pc_members() {
         $pcm = [];
         foreach ($this->pc_members() as $cid => $u) {
-            if (!$u->is_dormant())
+            if (!$u->is_disabled())
                 $pcm[$cid] = $u;
         }
         return $pcm;

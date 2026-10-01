@@ -137,4 +137,43 @@ class Preferences_Tester {
 
         $viewer->set_scope();
     }
+
+    /** The review preferences page treats unlisted PC members as PC. */
+    function test_reviewprefs_page_unlisted_pc() {
+        $conf = $this->conf;
+        $email = "unlistedprefs@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        xassert(!!$us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]), $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $unl = $conf->checked_user_by_email($email);
+        xassert($unl->is_pc_member() && !$unl->is_listed_pc_member());
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $visit = function (Contact $u, $args) {
+            $qreq = TestQreq::user_get($u, $args)->set_page("reviewprefs");
+            Qrequest::set_main_request($qreq);
+            $old_test_mode = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                ReviewPrefs_Page::go($u, $qreq);
+                return [null, ob_get_contents()];
+            } catch (Redirection $r) {
+                return [$r->url, ob_get_contents()];
+            } finally {
+                ob_end_clean();
+                Navigation::$test_mode = $old_test_mode;
+                $this->conf->claim_saved_messages();
+            }
+        };
+        // a chair may pick an unlisted PC member
+        [$redir, $out] = $visit($chair, ["reviewer" => $email]);
+        xassert_eqq($redir, null);
+        xassert_not_str_contains($out, "not on the PC");
+        // an unlisted PC member sees their own preferences
+        [$redir, $out] = $visit($unl, []);
+        xassert_eqq($redir, null);
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
 }

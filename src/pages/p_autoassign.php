@@ -47,7 +47,7 @@ class Autoassign_Page {
                 continue;
             }
             $this->_pcids[] = $id;
-            if (!$pc->is_dormant()) {
+            if (!$pc->is_disabled()) {
                 $this->_enabled_pcids[] = $id;
             }
             if (($pc->roles & Contact::ROLE_PC) !== 0) {
@@ -135,7 +135,7 @@ class Autoassign_Page {
             }
         }
         if (!isset($qreq->pctyp)
-            || !in_array($qreq->pctyp, ["all", "enabled", "listed", "sel"], true)) {
+            || !in_array($qreq->pctyp, ["all", "enabled", "listed", "unlisted", "sel"], true)) {
             if ($this->has_disabled_pc_members()
                 && count($this->_enabled_pcids) > 2) {
                 $qreq->pctyp = "enabled";

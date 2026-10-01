@@ -190,12 +190,12 @@ class ReviewPrefs_Page {
             $u = ctype_digit($qreq->reviewer)
                 ? $conf->user_by_id(intval($qreq->reviewer), USER_SLICE)
                 : $conf->user_by_email($qreq->reviewer, USER_SLICE);
-            if ($u && ($u->roles & Contact::ROLE_PC) !== 0) {
+            if ($u && $u->is_pc_member()) {
                 $reviewer = $u;
                 $correct_reviewer = true;
                 $qreq->reviewer = $u->email;
             }
-        } else if (!$qreq->reviewer && !($user->roles & Contact::ROLE_PC)) {
+        } else if (!$qreq->reviewer && $user->privChair && !$user->is_pc_member()) {
             foreach ($conf->pc_members() as $pcm) {
                 $qreq->redirect_self(["reviewer" => $pcm->email]);
                 // in case redirection fails:

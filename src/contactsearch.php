@@ -142,14 +142,14 @@ class ContactSearch {
             return $uids2;
         }
         if ($this->viewable_roles !== 0) {
-            $allow_dormant = true;
+            $allow_disabled = true;
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") === 0) {
                 $roles = Contact::ROLE_ANYPC;
             } else if (($this->type & self::F_PC) !== 0
                        && strcasecmp($this->text, "enabled") === 0) {
                 $roles = Contact::ROLE_ANYPC;
-                $allow_dormant = false;
+                $allow_disabled = false;
             } else if (($this->type & self::F_PC) !== 0
                        && (strcasecmp($this->text, "any") === 0
                            || strcasecmp($this->text, "all") === 0
@@ -167,7 +167,7 @@ class ContactSearch {
                 $cids = [];
                 foreach ($this->conf->pc_users() as $p) {
                     if (($p->roles & $roles) !== 0
-                        && ($allow_dormant || !$p->is_dormant()))
+                        && ($allow_disabled || !$p->is_disabled()))
                         $cids[] = $p->contactId;
                 }
                 $this->is_roles = true;

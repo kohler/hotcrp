@@ -504,6 +504,45 @@ class Autoassign_Tester {
         $conf->update_automatic_tags();
     }
 
+    /** “Enabled” PC members are those not disabled; PC members who have never
+     * signed in count. The autoassign page keeps an explicit `unlisted` choice. */
+    function test_enabled_pc_includes_placeholders_not_disabled() {
+        $conf = $this->conf;
+        $emails = ["aaplaceholder@_.com", "aadisabled@_.com"];
+        $conf->qe("delete from ContactInfo where email?a", $emails);
+        $us = new UserStatus($conf->root_user());
+        foreach ($emails as $email) {
+            xassert(!!$us->save_user((object) ["email" => $email, "roles" => ["pc"]]), $us->full_feedback_text());
+        }
+        $conf->qe("update ContactInfo set cflags=? where email=?", Contact::CF_PLACEHOLDER, $emails[0]);
+        $conf->qe("update ContactInfo set cflags=? where email=?", Contact::CF_UDISABLED, $emails[1]);
+        $conf->invalidate_caches("users", "pc");
+        $ph = $conf->checked_user_by_email($emails[0]);
+        $dis = $conf->checked_user_by_email($emails[1]);
+        xassert($ph->is_placeholder() && !$ph->is_disabled());
+        xassert($dis->is_disabled());
+
+        $eids = ContactSearch::make_pc("enabled", $conf->root_user())->user_ids();
+        xassert_in_eqq($ph->contactId, $eids);
+        xassert_not_in_eqq($dis->contactId, $eids);
+        xassert(isset($conf->enabled_pc_members()[$ph->contactId]));
+        xassert(!isset($conf->enabled_pc_members()[$dis->contactId]));
+
+        $page = function ($args) {
+            $qreq = TestQreq::get($args)->set_user($this->user);
+            new Autoassign_Page($this->user, $qreq);
+            return $qreq->pctyp;
+        };
+        xassert_eqq($page(["pctyp" => "unlisted"]), "unlisted");
+        // with only a placeholder, the default is still the entire PC
+        $conf->qe("delete from ContactInfo where email=?", $emails[1]);
+        $conf->invalidate_caches("users", "pc");
+        xassert_eqq($page([]), "all");
+
+        $conf->qe("delete from ContactInfo where email?a", $emails);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_load_counts_viewable_assignments() {
         // a paper administrator’s loads count only assignments they can
         // view; otherwise load limits reveal hidden reviewers
