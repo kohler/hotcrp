@@ -1803,16 +1803,7 @@ class PaperInfo {
             return $u ? [$u] : [];
         }
 
-        $has_track_admin = false;
-        if ($this->conf->check_track_admin_sensitivity()) {
-            foreach ($this->conf->track_tags() as $ttag) {
-                if ($this->conf->track_permission($ttag, Track::ADMIN)
-                    && $this->has_tag($ttag)) {
-                    $has_track_admin = true;
-                    break;
-                }
-            }
-        }
+        $has_track_admin = $this->conf->check_paper_track_sensitivity($this, Track::ADMIN);
 
         $as = $cas = [];
         foreach ($this->conf->pc_members() as $u) {

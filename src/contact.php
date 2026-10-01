@@ -3412,23 +3412,22 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return ($this->roles & self::ROLE_TRACK_MANAGER) !== 0;
     }
 
-    /** @return ?list<string> */
+    /** Return the tags of the tracks this user administers, or null if they
+     * administer the default track, whose papers no tag list describes.
+     * @return ?list<string> */
     function managed_track_tags() {
         if ($this->privChair) {
             return null;
         }
         $t = [];
         if ($this->is_track_manager()) {
-            $unmatched = true;
             foreach ($this->conf->track_list() as $tr) {
                 if (!$tr->perm[Track::ADMIN]
-                    || !$this->has_permission($tr->perm[Track::ADMIN])
-                    || ($tr->is_default && !$unmatched)) {
+                    || !$this->has_permission($tr->perm[Track::ADMIN])) {
                     continue;
                 } else if ($tr->is_default) {
                     return null;
                 }
-                $unmatched = false;
                 $t[] = $tr->tag;
             }
         }

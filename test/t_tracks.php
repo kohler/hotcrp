@@ -178,7 +178,55 @@ class Tracks_Tester {
         xassert_search($u_jon, ["q" => "", "t" => "alladmin"], $canadmin);
         xassert_search($u_jon, ["q" => "", "t" => "actadmin"], $canadmin);
 
+        // administering another track too still covers the default track's
+        // papers, which are those matching no other track
+        xassert_assign($this->u_chair, "paper,tag\n1,blue\n", true);
+        $this->conf->save_refresh_setting("tracks", 1, '{"blue":{"admin":"+red"},"_":{"admin":"+red"}}');
+        $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk");
+        $canadmin = array_keys(search_json($this->u_chair, "canadmin:jon@cs.ucl.ac.uk"));
+        xassert_in_eqq(1, $canadmin);
+        xassert_in_eqq(2, $canadmin);
+        xassert_search($u_jon, ["q" => "", "t" => "alladmin"], $canadmin);
+        xassert_search($u_jon, ["q" => "", "t" => "actadmin"], $canadmin);
+        foreach ([1, 2] as $pid) {
+            xassert($u_jon->is_primary_administrator($u_jon->checked_paper_by_id($pid)));
+        }
+        $admin = array_keys(search_json($this->u_chair, "admin:jon@cs.ucl.ac.uk"));
+        xassert_in_eqq(1, $admin);
+        xassert_in_eqq(2, $admin);
+        xassert_search($u_jon, "admin:me", $admin);
+
         $this->conf->save_refresh_setting("tracks", null);
+        xassert_assign($this->u_chair, "paper,tag\n1,-blue\n", true);
+    }
+
+    function test_administrators_default_track() {
+        // a paper's administrators include those of the default track when
+        // it matches no other track
+        $emails = function ($pid) {
+            $prow = $this->u_chair->checked_paper_by_id($pid);
+            return array_map(function ($u) { return $u->email; }, $prow->administrators());
+        };
+        xassert_assign($this->u_chair, "paper,tag\n1,blue\n", true);
+        foreach (['{"_":{"admin":"+red"}}',
+                  '{"blue":{"admin":"+red"},"_":{"admin":"+red"}}'] as $tj) {
+            $this->conf->save_refresh_setting("tracks", 1, $tj);
+            $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+            foreach ([1, 2] as $pid) {
+                xassert($u_jon->is_primary_administrator($u_jon->checked_paper_by_id($pid)));
+                xassert_in_eqq("jon@cs.ucl.ac.uk", $emails($pid));
+                xassert_not_in_eqq($this->u_chair->email, $emails($pid));
+            }
+        }
+
+        // a track without administrators leaves its papers to the chairs
+        $this->conf->save_refresh_setting("tracks", 1, '{"blue":{"admin":"+red"}}');
+        xassert_in_eqq("jon@cs.ucl.ac.uk", $emails(1));
+        xassert_in_eqq($this->u_chair->email, $emails(2));
+        xassert_not_in_eqq("jon@cs.ucl.ac.uk", $emails(2));
+
+        $this->conf->save_refresh_setting("tracks", null);
+        xassert_assign($this->u_chair, "paper,tag\n1,-blue\n", true);
     }
 
     function test_admin_search() {
