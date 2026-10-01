@@ -4937,6 +4937,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 || ($this->_capabilities !== null
                     && ($this->_capabilities["@ra{$rbase->paperId}"] ?? null) === $rbase->contactId)
                 || ($rbase->requestedBy === $this->contactId
+                    && $this->contactId > 0
                     && $rbase->reviewType === REVIEW_EXTERNAL
                     && $this->conf->ext_subreviews
                     && $this->act_requester($prow)));

@@ -4049,6 +4049,43 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
     }
 
+    function test_unrequested_external_review_has_no_requester() {
+        // External reviews assigned by root have requestedBy 0; signed-out
+        // viewers (contactId 0) are not their requesters.
+        $conf = $this->conf;
+        $save_editdelegate = $conf->setting("pcrev_editdelegate");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("pcrev_editdelegate", 2);
+        Contact::update_rights();
+
+        $pid = 17;
+        xassert_assign($conf->root_user(), "paper,action,email,name\n{$pid},review,norequester1@_.com,Norequester One\n{$pid},review,norequester2@_.com,Norequester Two\n");
+        $u_ext1 = $conf->checked_user_by_email("norequester1@_.com");
+        $u_ext2 = $conf->checked_user_by_email("norequester2@_.com");
+        $prow = $conf->checked_paper_by_id($pid);
+        $rrow1 = $prow->fresh_review_by_user($u_ext1);
+        $rrow2 = $prow->fresh_review_by_user($u_ext2);
+        xassert_eqq($rrow1->requestedBy, 0);
+        xassert_eqq($rrow2->requestedBy, 0);
+
+        $tok = ReviewAccept_Capability::make($rrow1, true);
+        $u_anon = Contact::make($conf);
+        $u_anon->apply_capability_text($tok->salt);
+        $prow = $conf->checked_paper_by_id($pid, $u_anon);
+        xassert($u_anon->can_view_paper($prow));
+        xassert($u_anon->is_owned_review($prow, $prow->review_by_user($u_ext1)));
+        xassert($u_anon->can_edit_review($prow, $prow->review_by_user($u_ext1)));
+        $rrow2 = $prow->review_by_user($u_ext2);
+        xassert(!$u_anon->is_owned_review($prow, $rrow2));
+        xassert(!$u_anon->can_edit_review($prow, $rrow2));
+        xassert(!Contact::make($conf)->is_owned_review($prow, $rrow2));
+
+        // cleanup
+        xassert_assign($conf->root_user(), "paper,action,email\n{$pid},clearreview,norequester1@_.com\n{$pid},clearreview,norequester2@_.com\n");
+        $conf->save_refresh_setting("pcrev_editdelegate", $save_editdelegate);
+        Contact::update_rights();
+    }
+
     function test_declinereview_via_token_stays_anonymous() {
         // HC-139: declining an anonymous review slot through its token must not
         // record or display the token holder's real identity
