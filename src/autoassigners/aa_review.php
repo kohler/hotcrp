@@ -163,9 +163,10 @@ class Review_Autoassigner extends Autoassigner {
         foreach ($load as $uid => $n) {
             $this->add_load($uid, $n);
         }
-        if ($this->has_option("max_load")
-            || $this->has_option("max_load_tag")
-            || $this->balance === self::BALANCE_ALL) {
+        if (!$this->user->privChair
+            && ($this->has_option("max_load")
+                || $this->has_option("max_load_tag")
+                || $this->balance === self::BALANCE_ALL)) {
             $this->append_item(MessageItem::warning_note("<0>Load limits and balancing consider only the current assignments you can view"));
         }
     }

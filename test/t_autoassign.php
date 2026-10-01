@@ -528,7 +528,8 @@ class Autoassign_Tester {
         xassert($aa->has_assignment());
         xassert_str_contains($aa->full_feedback_text(), "consider only the current assignments you can view");
 
-        // ...but a user who can view everything counts it
+        // ...but a chair counts it, and isn’t warned
+        xassert($this->user->privChair);
         $aa = $this->autoassigner("review", [$rev->contactId], [2], ["count" => 1, "max_load" => 1]);
         $aa->run();
         xassert(!$aa->has_assignment());
