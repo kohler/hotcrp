@@ -13,8 +13,8 @@
 // dictionary's `/N` is not used; readers ignore it, so it could be edited
 // without changing what a viewer shows.) Input is untrusted, so every kind of
 // work is bounded by an explicit budget: file reads and bytes read, inflated
-// bytes, cross-reference sections, object-resolution depth, page-tree size,
-// and syntactic nesting. Exceeding a budget also yields null.
+// bytes, cross-reference sections and entries, object-resolution depth,
+// page-tree size, and syntactic nesting. Exceeding a budget also yields null.
 
 namespace HotCRP;
 use Mimetype;
@@ -41,9 +41,11 @@ class PDFMimetype implements \JsonSerializable {
     private $ninflated = 0;
     /** @var int */
     private $depth = 0;
+    /** @var int */
+    private $nentries = 0;
 
-    /** @var array<int,array{1|2,int,int}> */
-    private $xref = [];   // [1, offset, generation] or [2, stream, index]
+    /** @var array<int,int> */
+    private $xref = [];   // see `xref_offset`, `xref_stream`
     /** @var array<string,mixed> */
     private $trailer = [];
     /** @var array<int,mixed> */
@@ -67,6 +69,7 @@ class PDFMimetype implements \JsonSerializable {
     const MAX_INFLATE = 16777216;         // per stream
     const MAX_INFLATE_TOTAL = 33554432;
     const MAX_XREF_SECTIONS = 64;
+    const MAX_ENTRIES = 524288;           // xref rows plus object-stream offsets
     const MAX_DEPTH = 16;
     const MAX_TREE_DEPTH = 64;
     const MAX_TREE_NODES = 16384;
@@ -370,22 +373,22 @@ class PDFMimetype implements \JsonSerializable {
         if ($x === null) {
             $this->log("object %d: not in xref", $num);
             return null;
-        } else if ($x[0] === 1) {
-            $io = $this->indirect_at($x[1]);
-            if ($io === null || $io->num !== $num || $io->gen !== $x[2]) {
-                $this->log("object %d: not found at offset %d", $num, $x[1]);
+        } else if ($x >= 0) {
+            $off = $x >> 16;
+            $io = $this->indirect_at($off);
+            if ($io === null || $io->num !== $num || $io->gen !== ($x & 65535)) {
+                $this->log("object %d: not found at offset %d", $num, $off);
                 return null;
             }
-            //$this->log("object %d at %d: %s", $num, $x[1], self::unparse($io->value));
             return $io->value;
         }
-        $os = $this->objstm($x[1]);
-        $v = $os ? $os->object($num, $x[2]) : null;
+        $stream = (-1 - $x) >> 24;
+        $os = $this->objstm($stream);
+        $v = $os ? $os->object($num, (-1 - $x) & 0xFFFFFF) : null;
         if ($v === null) {
-            $this->log("object %d: not found in object stream %d", $num, $x[1]);
+            $this->log("object %d: not found in object stream %d", $num, $stream);
             return null;
         }
-        //$this->log("object %d in stream %d: %s", $num, $x[1], self::unparse($v));
         return $v;
     }
 
@@ -397,11 +400,11 @@ class PDFMimetype implements \JsonSerializable {
         }
         $this->objstms[$num] = null; // cycles resolve to null
         // object streams cannot themselves live in object streams
-        $x = $this->xref[$num] ?? null;
-        $io = $x !== null && $x[0] === 1 ? $this->indirect_at($x[1]) : null;
+        $x = $this->xref[$num] ?? -1;
+        $io = $x >= 0 ? $this->indirect_at($x >> 16) : null;
         if ($io === null
             || $io->num !== $num
-            || $io->gen !== $x[2]
+            || $io->gen !== ($x & 65535)
             || !is_array($io->value)
             || !is_int($n = $this->resolve($io->value["N"] ?? null))
             || $n < 0
@@ -418,10 +421,12 @@ class PDFMimetype implements \JsonSerializable {
             for ($i = 0; $i !== $n; ++$i) {
                 $onum = $tok->next();
                 $off = $tok->next();
-                if (!is_int($onum) || !is_int($off)) {
+                if (!is_int($onum) || !is_int($off)
+                    || ($v = PDFObjectStream::offset_entry($onum, $off)) === null
+                    || !$this->charge_entries(1)) {
                     break;
                 }
-                $os->offsets[] = [$onum, $off];
+                $os->offsets[] = $v;
             }
         } catch (PDFException $e) {
         }
@@ -431,6 +436,41 @@ class PDFMimetype implements \JsonSerializable {
 
 
     // cross-reference sections
+
+    // Each xref entry is one int. Nonnegative values are in-file objects,
+    // `offset << 16 | generation`; negative values are compressed objects,
+    // `-1 - (stream << 24 | index)`.
+
+    /** @param int $off
+     * @param int $gen
+     * @return ?int */
+    static private function xref_offset($off, $gen) {
+        if ($off < 0 || $off >= (1 << 46) || $gen < 0 || $gen > 65535) {
+            return null;
+        }
+        return ($off << 16) | $gen;
+    }
+
+    /** @param int $stream
+     * @param int $index
+     * @return ?int */
+    static private function xref_stream($stream, $index) {
+        if ($stream < 0 || $stream >= (1 << 38) || $index < 0 || $index >= (1 << 24)) {
+            return null;
+        }
+        return -1 - (($stream << 24) | $index);
+    }
+
+    /** @param int $n
+     * @return bool */
+    private function charge_entries($n) {
+        $this->nentries += $n;
+        if ($this->nentries > self::MAX_ENTRIES) {
+            $this->log("entry budget exhausted");
+            return false;
+        }
+        return true;
+    }
 
     /** Load cross-reference sections starting at `$pos`, newest first.
      * The first definition of an object or trailer key wins. Every section
@@ -508,11 +548,14 @@ class PDFMimetype implements \JsonSerializable {
                 $gen = $tok->next();
                 $type = $tok->next();
                 if (!is_int($off) || !is_int($gen) || !($type instanceof PDFKeyword)
-                    || ($type->name !== "n" && $type->name !== "f")) {
+                    || ($type->name !== "n" && $type->name !== "f")
+                    || !$this->charge_entries(1)) {
                     return null;
                 }
-                if ($type->name === "n" && !isset($this->xref[$start + $i])) {
-                    $this->xref[$start + $i] = [1, $off, $gen];
+                if ($type->name === "n"
+                    && !isset($this->xref[$start + $i])
+                    && ($v = self::xref_offset($off, $gen)) !== null) {
+                    $this->xref[$start + $i] = $v;
                 }
             }
         }
@@ -549,6 +592,10 @@ class PDFMimetype implements \JsonSerializable {
             if (!is_int($start) || $start < 0 || !is_int($count)) {
                 break;
             }
+            $nrows = max(min($count, intdiv($dlen - $pos, $rowlen)), 0);
+            if (!$this->charge_entries($nrows)) {
+                return null;
+            }
             for ($i = 0; $i !== $count && $pos + $rowlen <= $dlen; ++$i, $pos += $rowlen) {
                 $f = [];
                 $p = $pos;
@@ -565,9 +612,14 @@ class PDFMimetype implements \JsonSerializable {
                 if (isset($this->xref[$num])) {
                     continue;
                 } else if ($type === 1) {
-                    $this->xref[$num] = [1, $f[1], $f[2]];
+                    $v = self::xref_offset($f[1], $f[2]);
                 } else if ($type === 2) {
-                    $this->xref[$num] = [2, $f[1], $f[2]];
+                    $v = self::xref_stream($f[1], $f[2]);
+                } else {
+                    $v = null;
+                }
+                if ($v !== null) {
+                    $this->xref[$num] = $v;
                 }
             }
         }
@@ -806,20 +858,30 @@ class PDFObjectStream {
     public $data;
     /** @var int */
     public $first;
-    /** @var list<array{int,int}> */
-    public $offsets = [];
+    /** @var list<int> */
+    public $offsets = [];   // `object number << 24 | offset`
+
+    /** @param int $onum
+     * @param int $off
+     * @return ?int */
+    static function offset_entry($onum, $off) {
+        if ($onum < 0 || $onum >= (1 << 38) || $off < 0 || $off >= (1 << 24)) {
+            return null;
+        }
+        return ($onum << 24) | $off;
+    }
 
     /** @param int $num
      * @param int $index
      * @return mixed */
     function object($num, $index) {
         $x = $this->offsets[$index] ?? null;
-        if ($x === null || $x[0] !== $num) {
+        if ($x === null || ($x >> 24) !== $num) {
             return null;
         }
         try {
             $tok = new PDFTokenizer($this->data, 0, true);
-            $tok->pos = $this->first + $x[1];
+            $tok->pos = $this->first + ($x & 0xFFFFFF);
             return $tok->parse_value();
         } catch (PDFException $e) {
             return null;

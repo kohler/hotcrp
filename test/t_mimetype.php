@@ -119,6 +119,48 @@ class Mimetype_Tester {
         xassert(!isset(HotCRP\PDFMimetype::make_string("")->content_info()["npages"]));
     }
 
+    /** A one-page PDF whose xref stream has `$n` rows of width `$w`.
+     * @param int $n
+     * @param string $w
+     * @return string */
+    static private function pdf_with_xref_stream_rows($n, $w) {
+        $rowlen = array_sum(array_map("intval", explode(" ", $w)));
+        $comp = gzcompress(str_repeat("\0", $n * $rowlen), 9);
+        $s = "%PDF-1.5\n";
+        $off = [];
+        foreach (["<< /Type /Catalog /Pages 2 0 R >>",
+                  "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                  "<< /Type /Page /Parent 2 0 R >>"] as $i => $obj) {
+            $off[] = strlen($s);
+            $s .= ($i + 1) . " 0 obj\n{$obj}\nendobj\n";
+        }
+        $tbl = strlen($s);
+        $s .= sprintf("xref\n0 4\n0000000000 65535 f \n%010d 00000 n \n%010d 00000 n \n%010d 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\n", ...$off);
+        $offx = strlen($s);
+        $s .= "4 0 obj\n<< /Type /XRef /W [{$w}] /Index [100 {$n}] /Size " . ($n + 100)
+            . " /Root 1 0 R /Length " . strlen($comp) . " /Filter /FlateDecode /Prev {$tbl} >>\nstream\n"
+            . $comp . "\nendstream\nendobj\nstartxref\n{$offx}\n%%EOF\n";
+        return $s;
+    }
+
+    function test_pdf_xref_entry_memory() {
+        // many-entry xref streams are compact
+        $s = self::pdf_with_xref_stream_rows(300000, "1 4 1");
+        $m0 = memory_get_usage();
+        $pm = HotCRP\PDFMimetype::make_string($s);
+        xassert_eqq($pm->content_info()["npages"] ?? null, 1);
+        xassert_lt(memory_get_usage() - $m0, 32 << 20);
+        unset($pm);
+
+        // a few KB of PDF cannot demand unbounded entries
+        $s = self::pdf_with_xref_stream_rows(4000000, "0 1 0");
+        xassert_lt(strlen($s), 16384);
+        $m0 = memory_get_usage();
+        $pm = HotCRP\PDFMimetype::make_string($s);
+        xassert(!isset($pm->content_info()["npages"]));
+        xassert_lt(memory_get_usage() - $m0, 64 << 20);
+    }
+
     function xxx_test_mp4() {
         foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
             $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);
