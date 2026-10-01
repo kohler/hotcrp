@@ -1746,7 +1746,7 @@ class AssignmentSet {
             $req["uid"] = trim($req["uid"]);
         }
         if (($req["uid"] ?? "") !== "") {
-            if (($uid = stoi($req["uid"])) < 0) {
+            if (($uid = stoi($req["uid"]) ?? -1) < 0) {
                 $this->error("<0>Invalid user ID");
                 return "error";
             } else if ($uid === 0) {

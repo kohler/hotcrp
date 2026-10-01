@@ -3047,6 +3047,19 @@ class Permission_Tester {
         xassert(!$conf->checked_paper_by_id(1)->has_conflict($marina));
     }
 
+    function test_uid_must_be_numeric() {
+        // the uid column takes user IDs, not search keywords like `me`
+        foreach (["me", "chair", "pc", "12x", "1.5", "-3"] as $uid) {
+            foreach (["shepherd", "clearreview", "contact"] as $action) {
+                $aset = (new AssignmentSet($this->u_chair))->set_override_conflicts(true);
+                $aset->parse("paper,action,uid\n1,{$action},{$uid}\n");
+                xassert($aset->has_error(), "{$action} {$uid}");
+                xassert_str_contains($aset->full_feedback_text(), "Invalid user ID");
+                xassert_eqq(count($aset->assignments()), 0);
+            }
+        }
+    }
+
     function test_uid_any_user_resolution_depends_on_viewer() {
         // A uid in a row with no candidate set, such as a contact, resolves
         // any account for a chair, who can list all users anyway. Other
