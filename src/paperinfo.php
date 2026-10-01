@@ -528,6 +528,8 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     public $loaded_allprefs = 0;
     /** @var bool */
     public $prefetched_conflict_users = false;
+    /** @var bool */
+    public $prefetched_primary_documents = false;
 
     /** @param Conf $conf */
     function __construct($conf) {
@@ -567,6 +569,7 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     function add_paper(PaperInfo $prow) {
         $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
+        $this->prefetched_primary_documents = false;
     }
     /** @param Dbl_Result $result
      * @param ?Contact $user */
@@ -905,6 +908,8 @@ class PaperInfo {
     private $_base_option_array;
     /** @var ?DocumentInfo */
     private $_primary_document;
+    /** @var ?DocumentInfo */
+    private $_final_document;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
     /** @var ?list<PaperDocumentLink> */
@@ -2638,15 +2643,22 @@ class PaperInfo {
             return $doc && $doc->documentType === $dtype ? $doc : null;
         }
 
-        if ((($dtype === DTYPE_SUBMISSION
-              && $did == $this->paperStorageId
-              && $this->finalPaperStorageId <= 0)
-             || ($dtype === DTYPE_FINAL
-                 && $did == $this->finalPaperStorageId))
+        if ($dtype === DTYPE_SUBMISSION
+            && $did == $this->paperStorageId
             && !$full) {
-            $this->_primary_document = $this->_primary_document
-                ?? DocumentInfo::make_primary_document($this, $dtype, $this->size);
+            if ($this->finalPaperStorageId <= 0) {
+                $this->_primary_document = $this->_primary_document
+                    ?? DocumentInfo::make_primary_document($this, $dtype, $this->size);
+            } else if (!$this->_primary_document) {
+                $this->ensure_primary_documents();
+            }
             return $this->_primary_document;
+        } else if ($dtype === DTYPE_FINAL
+                   && $did == $this->finalPaperStorageId
+                   && !$full) {
+            $this->_final_document = $this->_final_document
+                ?? DocumentInfo::make_primary_document($this, $dtype, $this->size);
+            return $this->_final_document;
         }
 
         if ($this->_document_array === null) {
@@ -2667,18 +2679,28 @@ class PaperInfo {
     }
 
     function ensure_primary_documents() {
-        if ($this->_primary_document || count($this->_row_set) <= 1) {
+        if ($this->_row_set->prefetched_primary_documents) {
             return;
         }
+        $this->_row_set->prefetched_primary_documents = true;
         $psids = [];
         foreach ($this->_row_set as $prow) {
-            $psids[] = $prow->finalPaperStorageId <= 0 ? $prow->paperStorageId : $prow->finalPaperStorageId;
+            if ($prow->paperStorageId > 1) {
+                $psids[] = $prow->paperStorageId;
+            }
+            if ($prow->finalPaperStorageId > 1) {
+                $psids[] = $prow->finalPaperStorageId;
+            }
         }
         $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperStorageId?a", $psids);
         while (($di = DocumentInfo::fetch($result, $this->conf))) {
             if (($prow = $this->_row_set->get($di->paperId))) {
                 $di->prow = $prow;
-                $prow->_primary_document = $di;
+                if ($di->documentType === DTYPE_SUBMISSION) {
+                    $prow->_primary_document = $prow->_primary_document ?? $di;
+                } else {
+                    $prow->_final_document = $prow->_final_document ?? $di;
+                }
             }
         }
         Dbl::free($result);
@@ -2744,8 +2766,9 @@ class PaperInfo {
     }
 
     function invalidate_documents() {
-        $this->_primary_document = null;
+        $this->_primary_document = $this->_final_document = null;
         $this->_document_array = null;
+        $this->_row_set->prefetched_primary_documents = false;
     }
 
     function pause_mark_inactive_documents() {

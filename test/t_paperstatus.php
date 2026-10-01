@@ -847,6 +847,50 @@ class PaperStatus_Tester {
         $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
     }
 
+    function test_submission_document_with_final_version() {
+        // A paper with a final version still has its submission document:
+        // loaded alone, and batched across a list of papers.
+        $root = $this->conf->root_user();
+        $old_final_open = $this->conf->setting("final_open");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $this->conf->save_setting("final_open", 1);
+        $this->conf->save_refresh_setting("au_seedec", 1);
+        $pids = [];
+        foreach (["Final A", "Final B"] as $title) {
+            $pid = $this->make_author_paper($title)->paperId;
+            $ps = new PaperStatus($root);
+            xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "accepted"]));
+            $ps = new PaperStatus($root);
+            xassert($ps->save_paper_json((object) ["pid" => $pid, "final" => (object) ["content" => "%PDF-final {$title}\n"]]));
+            $pids[] = $pid;
+        }
+
+        $prow = $this->conf->checked_paper_by_id($pids[0]);
+        xassert_gt($prow->finalPaperStorageId, 1);
+        $sub = $prow->document(DTYPE_SUBMISSION);
+        xassert($sub && $sub->documentType === DTYPE_SUBMISSION);
+        xassert_eqq($sub->content(), "%PDF-2");
+        xassert_eqq($prow->document(DTYPE_FINAL)->content(), "%PDF-final Final A\n");
+        // still there after invalidation (as after a save)
+        $prow->invalidate_documents();
+        $sub = $prow->document(DTYPE_SUBMISSION);
+        xassert($sub && $sub->documentType === DTYPE_SUBMISSION);
+
+        $prows = $root->paper_set(["paperId" => $pids]);
+        $nq = Dbl::$nqueries;
+        foreach ($prows as $prow) {
+            xassert_eqq($prow->document(DTYPE_SUBMISSION)->paperStorageId, $prow->paperStorageId);
+        }
+        xassert_eqq(Dbl::$nqueries - $nq, 1);
+
+        foreach ($pids as $pid) {
+            $ps = new PaperStatus($root);
+            xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "unknown"]));
+        }
+        $this->conf->save_setting("final_open", $old_final_open);
+        $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+    }
+
     /** @return PaperInfo */
     private function make_author_paper($title) {
         $ps = new PaperStatus($this->u_estrin);
