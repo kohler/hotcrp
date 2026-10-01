@@ -75,12 +75,10 @@ class Tag_Assignable extends Assignable {
 class NextTagAssignmentState {
     /** @var AssignmentState */
     private $astate;
-    /** @var ?string */
-    private $prev_ltag;
+    /** @var array<string,?float> */
+    private $ltag_map;
     /** @var ?int */
     private $expected_state_version;
-    /** @var ?float */
-    private $prev_value;
 
     function __construct(AssignmentState $astate) {
         $this->astate = $astate;
@@ -89,11 +87,13 @@ class NextTagAssignmentState {
      * @param bool $isseq
      * @return float */
     function compute_next(PaperInfo $prow, $ltag, $isseq) {
-        if ($this->astate->state_version() === $this->expected_state_version
-            && $this->prev_ltag === $ltag) {
-            $this->prev_value += Tagger::value_increment($isseq);
+        if ($this->astate->state_version() !== $this->expected_state_version) {
+            $this->ltag_map = [];
+        }
+        if (isset($this->ltag_map[$ltag])) {
+            $v = $this->ltag_map[$ltag] += Tagger::value_increment($isseq);
             ++$this->expected_state_version;
-            return $this->prev_value;
+            return $v;
         }
         Tag_Assignable::load_tag($this->astate, $ltag);
         $items = $this->astate->query_items(new Tag_Assignable(null, $ltag));
@@ -108,10 +108,9 @@ class NextTagAssignmentState {
                 $maxvalue = floor($value);
             }
         }
-        $this->prev_value = ($maxvalue ?? 0.0) + Tagger::value_increment($isseq);
-        $this->prev_ltag = $ltag;
+        $v = $this->ltag_map[$ltag] = ($maxvalue ?? 0.0) + Tagger::value_increment($isseq);
         $this->expected_state_version = $this->astate->state_version() + 1;
-        return $this->prev_value;
+        return $v;
     }
 }
 

@@ -461,6 +461,49 @@ class Tags_Tester {
         xassert_eqq($p7->tag_value("order"), 5.0);
     }
 
+    function test_next_alternating_with_direct_tags() {
+        // In one assignment file, `seqnexttag` continues after the highest
+        // value the order has at that point, including direct `tag` rows
+        // above it. (`nexttag` is the same, but leaves random gaps.)
+        $root = $this->conf->root_user();
+        xassert_search_all($root, "#altorder", "");
+        $values = function () use ($root) {
+            $v = [];
+            foreach ($root->paper_set(["paperId" => [1, 2, 3, 4, 5, 6]]) as $prow) {
+                $v[$prow->paperId] = $prow->tag_value("altorder");
+            }
+            return $v;
+        };
+
+        xassert_assign($root, "action,paper,tag
+seqnexttag,1,altorder
+tag,2,altorder#10
+seqnexttag,3,altorder
+tag,4,altorder#5
+seqnexttag,5,altorder
+tag,3,altorder#2
+seqnexttag,6,altorder\n");
+        xassert_eqq($values(), [1 => 1.0, 2 => 10.0, 3 => 2.0, 4 => 5.0, 5 => 12.0, 6 => 13.0]);
+
+        // a paper's own value is ignored, so the paper at the end stays there
+        xassert_assign($root, "action,paper,tag\nseqnexttag,6,altorder\n");
+        xassert_eqq($values()[6], 13.0);
+
+        // clearing in the same file lowers the next value
+        xassert_assign($root, "action,paper,tag\ntag,6,altorder#clear\nseqnexttag,1,altorder\n");
+        $v = $values();
+        xassert_eqq($v[6], null);
+        xassert_eqq($v[1], 13.0);
+
+        // `nexttag` lands after the maximum, within its largest gap
+        xassert_assign($root, "action,paper,tag\ntag,2,altorder#20\nnexttag,4,altorder\n");
+        $v4 = $values()[4];
+        xassert($v4 >= 21.0 && $v4 <= 24.0);
+
+        xassert_assign($root, "action,paper,tag\ncleartag,all,altorder\n");
+        xassert_search_all($root, "#altorder", "");
+    }
+
     function test_next_skips_hidden_papers() {
         // A PC member's #next/#seqnext and checktag must ignore tag values
         // on submissions they cannot view (drafts, withdrawn papers).
