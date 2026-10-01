@@ -87,6 +87,11 @@ The API also supports form upload using the parameter conventions of the HotCRP
 web application. These conventions are subject to change, and third-party
 applications should prefer JSON.
 
+The [`GET /paper`](#get-paper) endpoint defaults to truncating word-limited text
+fields at their soft word limits. A field truncated this way (marked `soft`
+under the uploaded JSON‘s `truncated` key) is not saved, and is reported as an
+error. Provide `word_limit=hard` to `GET /paper` to avoid this error.
+
 To test a modification without saving, supply a `dry_run=1` parameter. This
 will test the uploaded JSON but make no visible changes to the database.
 Supply `dry_run=if_warning` to save only if the modification produces no
@@ -177,6 +182,10 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
 
     * default true
     * badge admin
+* param ?word_limit =soft|hard: Which word limit applies to long text fields
+  in the returned submission object.
+
+    * default hard
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?pid pid: ID of the modified or newly created submission.
 * response ?+valid boolean: True if and only if the modification was valid.
@@ -344,6 +353,10 @@ be applied to all papers returned by the `q` search query.
 * param reviewer
 
     * group Search modifiers
+* param ?word_limit =soft|hard: Which word limit applies to long text fields
+  in the returned submission objects.
+
+    * default hard
 * response ?papers [paper]: The modified submission objects.
 
     * condition !dry_run

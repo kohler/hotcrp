@@ -170,6 +170,9 @@ class Paper_API extends MessageSet {
 
         // set parameters
         $this->set_post_param($qreq);
+        if (!isset($qreq->word_limit)) {
+            $this->pex->set_ignore_soft_word_limits(true);
+        }
         $this->docloc = new DocumentLocator($this->conf);
 
         // check Content-Type

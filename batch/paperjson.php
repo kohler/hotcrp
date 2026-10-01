@@ -55,7 +55,8 @@ class PaperJson_Batch {
 
         $apj = [];
         $pex = new PaperExport($this->user);
-        $pex->set_include_permissions(false);
+        $pex->set_include_permissions(false)
+            ->set_ignore_soft_word_limits(true);
         $rf = $conf->review_form();
         foreach ($pset as $prow) {
             $pj1 = $pex->paper_json($prow);

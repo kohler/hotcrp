@@ -675,6 +675,15 @@ class Comment_API extends MessageSet {
             return $req;
         }
         $req["text"] = isset($jp->text) ? rtrim(cleannl((string) $jp->text)) : "";
+        // text cut at a word limit: the soft cut loses visible text
+        $band = isset($jp->text) ? ((array) ($jp->truncated ?? []))["text"] ?? null : null;
+        if ($band === "soft") {
+            $this->error_at("text", $this->conf->_("<0>Refusing to save truncated comment"));
+            $this->inform_at("text", $this->conf->_("<0>Request the comment with ‘word_limit=hard’ to edit it."));
+            return null;
+        } else if ($band === "hard") {
+            $this->warning_at("text", $this->conf->_("<0>Text was cut at the hard word limit"));
+        }
         if (isset($jp->tags)) {
             $req["tags"] = is_array($jp->tags) ? join(" ", $jp->tags) : $jp->tags;
         }

@@ -120,6 +120,11 @@ JSON.
 Saving with `text` empty and no attachments is refused for a new comment, but
 deletes an existing one (it is treated as `delete=1`).
 
+The [`GET /comment`](#get-comment) endpoint defaults to truncating comments
+at their soft word limits. A comment truncated this way (marked `soft`
+under the uploaded JSON‘s `truncated` key) is not saved, and is reported as an
+error. Provide `word_limit=hard` to `GET /comment` to avoid this error.
+
 To test a modification without saving, supply a `dry_run=1` parameter. This will
 test the uploaded JSON but make no visible changes to the database. Supply
 `dry_run=if_warning` to save only if the modification produces no warnings, or

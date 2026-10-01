@@ -22,6 +22,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $pex = new PaperExport($user);
         $pex->set_include_permissions(false);
         $pex->set_override_ratings(true);
+        $pex->set_ignore_soft_word_limits(true);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_admin($prow)) {
                 $pj[] = $j = $pex->paper_json($prow);

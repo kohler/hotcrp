@@ -280,7 +280,7 @@
         "/paper": {
             "post": {
                 "summary": "Create or modify submission",
-                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (when the request body has content-type\n   `application/json`).\n3. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n4. As a previously-uploaded JSON or ZIP file, represented by an [upload\n   token](#post-upload) in the `upload` parameter.\n\nThe JSON object is a submission object whose fields define the modifications\napplied to the submission. The object need not specify all submission fields;\nabsent fields remain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` field\nare present, then they must match.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This\nwill test the uploaded JSON but make no visible changes to the database.\nSupply `dry_run=if_warning` to save only if the modification produces no\nwarnings, or `dry_run=if_error` to save unless it produces an error (some\nmistakes, such as missing required fields or fields with invalid values, are\nreported as errors but do not ordinarily prevent saving). The response reports\n`dry_run` when a save was withheld.\n\n\n## ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n\n## Administrator use\n\nSubmission administrators can use this endpoint to set some submission fields,\nsuch as `decision`, that have other endpoints as well.\n\nSite administrators can choose specific IDs for new submissions by setting `p`\n(or JSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `if_unmodified_since` to\n`0`.\n",
+                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification is specified in JSON in any of these forms:\n\n1. In a JSON-formatted request parameter named `json`.\n2. As a JSON request body (when the request body has content-type\n   `application/json`).\n3. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n4. As a previously-uploaded JSON or ZIP file, represented by an [upload\n   token](#post-upload) in the `upload` parameter.\n\nThe JSON object is a submission object whose fields define the modifications\napplied to the submission. The object need not specify all submission fields;\nabsent fields remain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` field\nare present, then they must match.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application. These conventions are subject to change, and third-party\napplications should prefer JSON.\n\nThe [`GET /paper`](#get-paper) endpoint defaults to truncating word-limited text\nfields at their soft word limits. A field truncated this way (marked `soft`\nunder the uploaded JSON‘s `truncated` key) is not saved, and is reported as an\nerror. Provide `word_limit=hard` to `GET /paper` to avoid this error.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This\nwill test the uploaded JSON but make no visible changes to the database.\nSupply `dry_run=if_warning` to save only if the modification produces no\nwarnings, or `dry_run=if_error` to save unless it produces an error (some\nmistakes, such as missing required fields or fields with invalid values, are\nreported as errors but do not ordinarily prevent saving). The response reports\n`dry_run` when a save was withheld.\n\n\n## ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n\n## Administrator use\n\nSubmission administrators can use this endpoint to set some submission fields,\nsuch as `decision`, that have other endpoints as well.\n\nSite administrators can choose specific IDs for new submissions by setting `p`\n(or JSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `if_unmodified_since` to\n`0`.\n",
                 "operationId": "paper-post",
                 "x-order": 87,
                 "tags": [
@@ -422,12 +422,27 @@
                         "x-order": 11
                     },
                     {
-                        "$ref": "#/components/parameters/p",
+                        "name": "word_limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "soft",
+                                "hard"
+                            ],
+                            "default": "hard"
+                        },
+                        "description": "Which word limit applies to long text fields\nin the returned submission object.",
                         "x-order": 12
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow",
+                        "$ref": "#/components/parameters/p",
                         "x-order": 13
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow",
+                        "x-order": 14
                     }
                 ],
                 "requestBody": {
@@ -848,28 +863,36 @@
                         "x-order": 14
                     },
                     {
-                        "name": "notify_authors",
+                        "name": "word_limit",
                         "in": "query",
                         "required": false,
-                        "schema": {},
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "soft",
+                                "hard"
+                            ],
+                            "default": "hard"
+                        },
+                        "description": "Which word limit applies to long text fields\nin the returned submission objects.",
                         "x-order": 15
                     },
                     {
-                        "name": "reason",
+                        "name": "notify_authors",
                         "in": "query",
                         "required": false,
                         "schema": {},
                         "x-order": 16
                     },
                     {
-                        "name": "if_unmodified_since",
+                        "name": "reason",
                         "in": "query",
                         "required": false,
                         "schema": {},
                         "x-order": 17
                     },
                     {
-                        "name": "word_limit",
+                        "name": "if_unmodified_since",
                         "in": "query",
                         "required": false,
                         "schema": {},
@@ -7697,7 +7720,7 @@
             },
             "post": {
                 "summary": "Create or modify comment",
-                "description": "Create or modify a comment on submission `p`. Select the comment with `c` (see\n[Identifying a comment](#tag-comments)): a numeric comment ID modifies or\ndeletes an existing comment, `new` creates an ordinary comment, and\n`response`/`R2response` creates or updates a response.\n\nThe modification is specified in JSON in any of these forms:\n\n* In a `json` request parameter;\n* As an `application/json` request body;\n* As an `application/zip` archive whose `data.json` (or `*-data.json`) member is\n  the object—other members may be referenced as attachments;\n* Or via an [upload token](#post-upload) in the `upload` request parameter,\n  pointing at a previously-uploaded JSON or ZIP file.\n\nThe object’s `cid` (or `response`) selects the target comment; its `text`,\n`visibility`, `topic`, `tags`, `blind`, `draft`, and `delete` fields carry the\nupdate. (A one-element array holding a single object is also accepted.) The\n`dry_run` and `if_unmodified_since` controls are still read from the query\nstring.\n\nAttachments are given as a `docs` array, each entry either retaining an existing\nattachment by `docid` or uploading a new one: inline via `content` (raw text) or\n`content_base64`, or by `content_file`, which names a file in the ZIP archive or\nan uploaded file field in a `json` form request. An omitted `docs` key keeps the\ncomment’s current attachments.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application (such as a `text` parameter for the comment body). These\nconventions are subject to change, and third-party applications should prefer\nJSON.\n\nSaving with `text` empty and no attachments is refused for a new comment, but\ndeletes an existing one (it is treated as `delete=1`).\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the uploaded JSON but make no visible changes to the database. Supply\n`dry_run=if_warning` to save only if the modification produces no warnings, or\n`dry_run=if_error` to save unless it produces an error; the response reports\n`dry_run` when a save was withheld.\n\n\n## Concurrency\n\nAn edit conflict returns `\"ok\": false`, `\"valid\": false`, and `\"conflict\": true`,\nwith the `comment` field holding the server’s current version so the client can\nreconcile. Conflicts arise two ways:\n\n* Editing a response can collide with a concurrent edit automatically.\n* Any comment edit can be guarded explicitly with `if_unmodified_since`: pass the\n  comment’s last-known `modified_at`, and the edit is rejected—with a message\n  keyed to `if_unmodified_since`—if the comment has changed since. Pass\n  `if_unmodified_since=0` to require that the comment not already exist.\n\n## Attachments\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#post-upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#post-upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
+                "description": "Create or modify a comment on submission `p`. Select the comment with `c` (see\n[Identifying a comment](#tag-comments)): a numeric comment ID modifies or\ndeletes an existing comment, `new` creates an ordinary comment, and\n`response`/`R2response` creates or updates a response.\n\nThe modification is specified in JSON in any of these forms:\n\n* In a `json` request parameter;\n* As an `application/json` request body;\n* As an `application/zip` archive whose `data.json` (or `*-data.json`) member is\n  the object—other members may be referenced as attachments;\n* Or via an [upload token](#post-upload) in the `upload` request parameter,\n  pointing at a previously-uploaded JSON or ZIP file.\n\nThe object’s `cid` (or `response`) selects the target comment; its `text`,\n`visibility`, `topic`, `tags`, `blind`, `draft`, and `delete` fields carry the\nupdate. (A one-element array holding a single object is also accepted.) The\n`dry_run` and `if_unmodified_since` controls are still read from the query\nstring.\n\nAttachments are given as a `docs` array, each entry either retaining an existing\nattachment by `docid` or uploading a new one: inline via `content` (raw text) or\n`content_base64`, or by `content_file`, which names a file in the ZIP archive or\nan uploaded file field in a `json` form request. An omitted `docs` key keeps the\ncomment’s current attachments.\n\nThe API also supports form upload using the parameter conventions of the HotCRP\nweb application (such as a `text` parameter for the comment body). These\nconventions are subject to change, and third-party applications should prefer\nJSON.\n\nSaving with `text` empty and no attachments is refused for a new comment, but\ndeletes an existing one (it is treated as `delete=1`).\n\nThe [`GET /comment`](#get-comment) endpoint defaults to truncating comments\nat their soft word limits. A comment truncated this way (marked `soft`\nunder the uploaded JSON‘s `truncated` key) is not saved, and is reported as an\nerror. Provide `word_limit=hard` to `GET /comment` to avoid this error.\n\nTo test a modification without saving, supply a `dry_run=1` parameter. This will\ntest the uploaded JSON but make no visible changes to the database. Supply\n`dry_run=if_warning` to save only if the modification produces no warnings, or\n`dry_run=if_error` to save unless it produces an error; the response reports\n`dry_run` when a save was withheld.\n\n\n## Concurrency\n\nAn edit conflict returns `\"ok\": false`, `\"valid\": false`, and `\"conflict\": true`,\nwith the `comment` field holding the server’s current version so the client can\nreconcile. Conflicts arise two ways:\n\n* Editing a response can collide with a concurrent edit automatically.\n* Any comment edit can be guarded explicitly with `if_unmodified_since`: pass the\n  comment’s last-known `modified_at`, and the edit is rejected—with a message\n  keyed to `if_unmodified_since`—if the comment has changed since. Pass\n  `if_unmodified_since=0` to require that the comment not already exist.\n\n## Attachments\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#post-upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#post-upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
                 "operationId": "comment-post",
                 "x-order": 10,
                 "tags": [

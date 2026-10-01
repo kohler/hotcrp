@@ -2892,6 +2892,53 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_comment_echo_respects_truncation() {
+        // a comment object returned cut at a word limit, then saved back
+        $conf = $this->conf;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $rrd = $conf->response_round_list()[0];
+        $old_wl = $rrd->wordlimit;
+        $old_hwl = $rrd->hard_wordlimit;
+        $rrd->wordlimit = 10;
+        $rrd->hard_wordlimit = 20;
+
+        $words = [];
+        for ($i = 1; $i <= 30; ++$i) {
+            $words[] = "w{$i}";
+        }
+        $prow = $conf->checked_paper_by_id(1);
+        $cs = new CommentStatus($this->u_chair);
+        xassert($cs->prepare_save(CommentInfo::make_response_template($rrd, $prow),
+                                  ["text" => join(" ", $words), "submit" => true]),
+                $cs->full_feedback_text());
+        xassert($cs->execute_save(), $cs->full_feedback_text());
+        $prow = $conf->checked_paper_by_id(1);
+        $cid = $prow->all_comments()[0]->commentId;
+        $msgs = function ($jr) {
+            return array_map(function ($mi) { return [$mi->field ?? null, $mi->status]; }, $jr->message_list ?? []);
+        };
+
+        // text cut at the soft limit is refused
+        $cj = call_api("comment", $this->u_chair, ["c" => $cid], $prow)->comment;
+        xassert_eqq($cj->truncated ?? null, ["text" => "soft"]);
+        $jr = call_api("=comment", $this->u_chair, TestQreq::post_json($cj, ["c" => $cid, "dry_run" => 1]), $prow);
+        xassert_eqq($jr->valid, false);
+        xassert_in_eqq(["text", 2], $msgs($jr));
+
+        // text cut at the hard limit is saved with a warning
+        $cj = call_api("comment", $this->u_chair, ["c" => $cid, "word_limit" => "hard"], $prow)->comment;
+        xassert_eqq($cj->truncated ?? null, ["text" => "hard"]);
+        $jr = call_api("=comment", $this->u_chair, TestQreq::post_json($cj, ["c" => $cid, "dry_run" => 1]), $prow);
+        xassert_eqq($jr->valid, true);
+        xassert_in_eqq(["text", 1], $msgs($jr));
+        xassert_not_in_eqq(["truncated", 1], $msgs($jr));
+
+        $rrd->wordlimit = $old_wl;
+        $rrd->hard_wordlimit = $old_hwl;
+        $conf->qe("delete from PaperComment where paperId=1");
+        MailChecker::clear();
+    }
+
     // Comments keep no version history, so the type bits are the whole record
     // of who wrote what: `CT_BOT` describes the version you are reading,
     // `CT_BOT_PREVIOUS` remembers that an earlier one was a bot's.

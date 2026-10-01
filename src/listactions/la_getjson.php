@@ -22,7 +22,7 @@ class GetJson_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $pj = [];
-        $pex = new PaperExport($user);
+        $pex = (new PaperExport($user))->set_ignore_soft_word_limits(true);
         if ($this->iszip) {
             $this->zipdoc = new DocumentInfoSet($user->conf->download_prefix . "data.zip");
             $pex->on_document_export([$this, "document_callback"]);

@@ -57,6 +57,8 @@ final class PaperStatus extends MessageSet {
     private $_submitted_problem_fields;
     /** @var ?list<string> */
     private $_unknown_fields;
+    /** @var array<int,string> */
+    private $_truncated_fields = [];
     /** @var list<PaperOption> */
     private $_fdiffs;
     /** @var list<PaperOption> */
@@ -454,6 +456,17 @@ final class PaperStatus extends MessageSet {
             }
         }
 
+        // `truncated` names fields an export cut at a word limit
+        $itruncated = [];
+        if (isset($ipj->truncated)) {
+            if (is_object($ipj->truncated)
+                || (is_array($ipj->truncated) && !array_is_list($ipj->truncated))) {
+                $itruncated = (array) $ipj->truncated;
+            } else {
+                $this->syntax_error_at("truncated");
+            }
+        }
+
         $ikeys = [];
         foreach ($this->prow->form_fields() as $o) {
             if (!$this->user->allow_view_option($this->prow, $o)) {
@@ -472,6 +485,10 @@ final class PaperStatus extends MessageSet {
             if ($j !== null) {
                 $xpj->$k = $j;
                 $ikeys[$xk] = true;
+                $band = $itruncated[$xk] ?? $itruncated[$k] ?? null;
+                if ($band === "soft" || $band === "hard") {
+                    $this->_truncated_fields[$o->id] = $band;
+                }
             }
         }
 
@@ -494,7 +511,7 @@ final class PaperStatus extends MessageSet {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
                 || property_exists($xstatus, $k)
-                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"], true)
+                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class", "overlong", "truncated"], true)
                 || $k[0] === "_"
                 || $k[0] === "\$") {
                 continue;
@@ -604,6 +621,17 @@ final class PaperStatus extends MessageSet {
         if (!$editable
             && ($oj === null || $this->ignore_unwritable_fields)) {
             return;
+        }
+        // text cut at a word limit: the soft cut loses visible text
+        $band = $oj !== null ? $this->_truncated_fields[$opt->id] ?? null : null;
+        if ($band === "soft" || ($band !== null && !$editable)) {
+            if ($editable) {
+                $this->error_at($this->option_key($opt), $this->_("<0>Refusing to save truncated field"));
+                $this->inform_at($this->option_key($opt), $this->_("<0>Request the paper with ‘word_limit=hard’ to edit it."));
+            }
+            return;
+        } else if ($band === "hard") {
+            $this->warning_at($this->option_key($opt), $this->_("<0>Text was cut at the hard word limit"));
         }
         if ($oj === null) {
             $ov = null;
@@ -1126,6 +1154,7 @@ final class PaperStatus extends MessageSet {
             $this->_prepare_submitted_problem_fields();
         }
         $this->_unknown_fields = $this->_resave_fields = null;
+        $this->_truncated_fields = [];
         $this->_conflict_changemask = 0;
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_created_contacts = null;

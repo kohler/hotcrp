@@ -132,6 +132,40 @@ class PaperAPI_Tester {
         }
         xassert($found);
 
+        // echoing text cut at the soft limit is refused...
+        $pj = $get([])->paper;
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj, ["p" => $pid, "dry_run" => 1]));
+        xassert_not_in_eqq("Notes", $jr->change_list);
+        $msgs = array_map(function ($mi) { return [$mi->field ?? null, $mi->status]; }, $jr->message_list);
+        xassert_in_eqq(["Notes", 2], $msgs);
+        // ...while text cut at the hard limit saves with a warning
+        $pj = $get(["word_limit" => "hard"])->paper;
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj, ["p" => $pid, "dry_run" => 1]));
+        xassert_eqq($jr->valid, true);
+        xassert_eqq($jr->change_list, ["Notes"]);
+        $msgs = array_map(function ($mi) { return [$mi->field ?? null, $mi->status]; }, $jr->message_list);
+        xassert_in_eqq(["Notes", 1], $msgs);
+        xassert_not_in_eqq(["options", 1], $msgs); // not an unknown field
+        // POST responses default to the hard limit
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json((object) ["pid" => $pid], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count_words($jr->paper->Notes ?? ""), 20);
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json((object) ["pid" => $pid], ["p" => $pid, "word_limit" => "soft"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count_words($jr->paper->Notes ?? ""), 10);
+
+        // bulk JSON exports are for reimport, so they carry the full text
+        $u_chair = $conf->checked_user_by_email("chair@_.com");
+        $qreq = TestQreq::get(["p" => (string) $pid]);
+        $ssel = SearchSelection::make($qreq, $u_chair);
+        $la = ListAction::lookup("get/json", $u_chair, $qreq, $ssel);
+        xassert($la instanceof ListAction);
+        $dopt = $la->run($u_chair, $qreq, $ssel);
+        xassert($dopt instanceof Downloader);
+        $pj = json_decode($dopt->content_string());
+        xassert_eqq($pj->pid ?? null, $pid);
+        xassert_eqq(count_words($pj->Notes ?? ""), 20);
+
         TestRunner::reset_options();
         $conf->invalidate_caches("options", "paper");
     }
