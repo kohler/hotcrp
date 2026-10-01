@@ -205,7 +205,7 @@ class JsonParser {
                 && ctype_xdigit(substr($s, $pos + 2, 4))
                 && ($v1 = intval(substr($s, $pos + 2, 4), 16)) >= 0xDC00
                 && $v1 < 0xE000) {
-                $v = (($v - 0xD800) << 10) | ($v1 - 0xDC00);
+                $v = 0x10000 + ((($v - 0xD800) << 10) | ($v1 - 0xDC00));
                 $pos += 6;
             }
             if ($v < 0xD800 || $v >= 0xE000) {

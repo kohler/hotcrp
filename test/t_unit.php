@@ -896,6 +896,14 @@ class Unit_Tester {
         $jp = (new JsonParser)->set_assoc(true);
         $jp5 = (new JsonParser)->set_assoc(true)->set_flags(JsonParser::JSON5);
 
+        // surrogate pairs decode to the supplementary character
+        xassert_eqq($jp5->set_input("['\\ud83d\\ude00']")->base_decode(), ["\u{1F600}"]);
+        xassert_eqq($jp5->set_input("['a\\uD834\\uDD1Eb']")->base_decode(), ["a\u{1D11E}b"]);
+        xassert_eqq($jp5->set_input("{'\\ud83d\\ude00': 1}")->base_decode(), ["\u{1F600}" => 1]);
+        xassert_eqq($jp5->set_input("[\"\\ud83d\\ude00\\'\"]")->base_decode(), ["\u{1F600}'"]);
+        xassert_eqq($jp5->set_input("['\\ud83d']")->base_decode(), null);
+        xassert_eqq($jp5->error_type, JSON_ERROR_UTF16);
+
         xassert_eqq($jp->set_input("[\"a\"]")->base_decode(), ["a"]);
         xassert($jp->ok());
         xassert_eqq($jp5->set_input("[\"a\"]")->base_decode(), ["a"]);
