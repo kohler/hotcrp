@@ -871,6 +871,20 @@ class Navigation_Tester {
         ]);
         xassert_eqq($ns->host, "[::1]");
         xassert_eqq($ns->server, "http://[::1]:8080");
+        // `SERVER_NAME` may hold an unbracketed IPv6 address
+        $ns = NavigationState::make_server([
+            "SERVER_NAME" => "::1", "SERVER_PORT" => 8080,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+
+        $ns = NavigationState::make_server([
+            "SERVER_NAME" => "2001:db8::5", "SERVER_PORT" => 80,
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+        xassert_eqq($ns->host, "[2001:db8::5]");
+        xassert_eqq($ns->server, "http://[2001:db8::5]");
     }
 
     function test_base_numbered_host() {
