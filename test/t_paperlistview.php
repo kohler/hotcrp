@@ -252,6 +252,33 @@ class PaperListView_Tester {
         xassert_eqq(self::summary($pl)[4], "sel id title status revtype mypref[edit,topics=no] lead");
     }
 
+    /** A bad column's error is reported once, however often the view is
+     * unparsed before the list renders. */
+    function test_column_error_reported_once() {
+        foreach (["show:(OveMer+1)", "show:nonexistentfield"] as $view) {
+            $pl = new PaperList("pl", new PaperSearch($this->u_chair, "NONE"), ["sort" => true]);
+            $pl->parse_view($view, ViewCommand::ORIGIN_MAX);
+            $pl->unparse_view(ViewCommand::ORIGIN_REPORT, true);
+            $pl->unparse_view(ViewCommand::ORIGIN_NONE, true);
+            $pl->prepare_table_view();
+            $pl->text_json();
+            $msgs = [];
+            foreach ($pl->message_list() as $mi) {
+                if ($mi->message !== "")
+                    $msgs[] = $mi->message;
+            }
+            xassert_ge(count($msgs), 1);
+            xassert_eqq(count($msgs), count(array_unique($msgs)), $view);
+        }
+
+        // saving such a default display is refused, with the error once
+        $old = $this->conf->setting_data("pldisplay_default");
+        $jr = call_api("=viewoptions", $this->u_chair, ["report" => "pl", "display" => "show:(OveMer+1)"]);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq(count($jr->message_list), 1);
+        xassert_eqq($this->conf->setting_data("pldisplay_default"), $old);
+    }
+
     function test_chair_default() {
         $old = $this->conf->setting_data("pldisplay_default");
         foreach ([

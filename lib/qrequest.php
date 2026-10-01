@@ -794,7 +794,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         $url = $this->_conf->selfurl($this, ["actas" => $au->email]);
         $t = "Act as " . Text::nameo($au, NAME_P);
-        return $prefix . Ht::link(Ht::make_icon("viewas", ["class" => "viewas-icon"]), $url, ["title" => $t]);
+        return $prefix . Ht::link(Ht::make_icon("viewas", ["class" => "viewas-icon"]), $url, ["title" => $t, "aria-label" => $t]);
     }
 
 

@@ -503,7 +503,7 @@ class FormulaGraph extends MessageSet {
     /** @param string $s
      * @return ?array{int,string} */
     static function graph_type_prefix($s) {
-        if (!preg_match('/\A\s*+(cdf(?![-\w(])|)((?:ogive|cumfreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w(])|)((?:stack|fraction)(?![-\w(])|)((?:box|boxplot)(?![-\w(])|)(scatter(?:plot|)(?![-\w(])|)((?:numdot|ldot|dotlabel)(?:plot|s|)(?![-\w(])|)(dot(?:plot|s|)(?![-\w(])|)(multicdf(?![-\w(])|)(?![-\w(])\s*+/', $s, $m)) {
+        if (!preg_match('/\A\s*+(cdf(?![-\w(])|)((?:ogive|cumfreq|cdffreq|cumulativefrequency)(?![-\w])|)((?:count|bars?|barchart)(?![-\w(])|)((?:stack|fraction)(?![-\w(])|)((?:box|boxplot)(?![-\w(])|)(scatter(?:plot|)(?![-\w(])|)((?:numdot|ldot|dotlabel)(?:plot|s|)(?![-\w(])|)(dot(?:plot|s|)(?![-\w(])|)(multicdf(?![-\w(])|)(?![-\w(])\s*+/', $s, $m)) {
             return null;
         } else if ($m[1]) {
             return [self::GT_CDF, $m[0]];

@@ -2121,7 +2121,7 @@ function graph_dot(element, view) {
         hoverer.mouseout();
         let myd = [];
         if (hl.ids.length) {
-            myd = gdata.filter(d => id_in_pids(d.id, hl.ids));
+            myd = view.graph.gdata.filter(d => id_in_pids(d.id, hl.ids));
         }
         dot_highlight(svg, myd);
     }
@@ -2523,7 +2523,7 @@ function graph_boxplot(element, view) {
     svg.append("path").attr("class", "gbox mean gbox-hover");
     const hovers = svg.selectAll(".gbox-hover")
             .style("display", "none")
-            .style("ponter-events", "none"),
+            .style("pointer-events", "none"),
         hoverer = make_hover_interactor(svg, hovers);
 
     element.addEventListener("hotgraphhighlight", ev => highlight(ev.detail),
@@ -2744,7 +2744,7 @@ const graphers = {
         function: graph_cdf,
         zoom: "x"
     },
-    cdffreq: {
+    cumfreq: {
         prepare_function: graph_cdf_prepare,
         function: graph_cdf,
         zoom: "x"

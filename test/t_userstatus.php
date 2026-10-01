@@ -382,6 +382,58 @@ class UserStatus_Tester {
         $conf->invalidate_caches("users", "pc");
     }
 
+    /** The profile page reopens the last tab, but a link that names the main
+     * tab (e.g. to a section there) stays on it. */
+    function test_profile_remembers_tab() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $qs = new MemoryQsession("profiletab", ["u" => $chair->email]);
+        $visit = function (Contact $u, $args) use ($qs) {
+            $qreq = TestQreq::user_get($u, $args, $qs)->set_page("profile");
+            Qrequest::set_main_request($qreq);
+            $old_test_mode = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                $pp = new Profile_Page($u, $qreq);
+                $pp->handle_request();
+                $pp->print();
+                return null;
+            } catch (Redirection $r) {
+                return $r->url;
+            } catch (PageCompletion $pc) {
+                return null;
+            } finally {
+                ob_end_clean();
+                Navigation::$test_mode = $old_test_mode;
+            }
+        };
+        xassert_eqq($visit($chair, ["t" => "preferences"]), null);
+        // a bare profile link returns to that tab
+        xassert_str_contains($visit($chair, []) ?? "", "preferences");
+        // a link that names the main tab stays there
+        xassert_eqq($visit($chair, ["t" => "main"]), null);
+        xassert_eqq($visit($chair, []), null);
+    }
+
+    /** Choosing a theme previews it, but only on the viewer's own profile. */
+    function test_theme_preview_only_for_self() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $render = function (Contact $u) use ($chair) {
+            $us = (new UserStatus($chair))->set_qreq((new Qrequest("GET"))->approve_token());
+            $us->set_user($u);
+            ob_start();
+            $us->print_members("preferences");
+            return ob_get_clean();
+        };
+        $self = $render($chair);
+        xassert_str_contains($self, "name=\"theme\"");
+        xassert_str_contains($self, "js-retheme");
+        $other = $render($this->conf->checked_user_by_email("mgbaker@cs.stanford.edu"));
+        xassert_str_contains($other, "name=\"theme\"");
+        xassert_not_str_contains($other, "js-retheme");
+    }
+
     /** Two actions on the profile page are dead ends for a bot: mail is never
      * sent to one, and its reviews cannot be transferred. Neither is offered. */
     function test_bot_profile_dead_ends() {

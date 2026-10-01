@@ -96,7 +96,7 @@ class SettingParser {
         }
         $multipliers = [86400 * 365, 86400 * 30, 86400 * 7, 86400, 3600, 60, 1];
         $unitprefixes = ["y", "mo", "w", "d", "h", "m", "s"];
-        while (preg_match('/\G(\s*+|[-:])(\d++\.?+\d*+|\.\d++)\s*+(y(?:ear|r)?+s?+|mo(?:n(?:th)?+)?+s?+|w(?:(?:ee)?+k)?+s?+|da?+y?+s?+|h(?:(?:ou)?+r)?+s?+|m(?:in(?:ute)?+)?+s?+|s(?:ec(?:ond)?+)?+s?+)(?![a-su-z])|\G\s*+(T)/i', $v, $m, 0, $pos)) {
+        while (preg_match('/\G(\s*+|[-:])(\d++\.?+\d*+|\.\d++)\s*+(y(?:ear|r)?+s?+|mo(?:n(?:th)?+)?+s?+|w(?:(?:ee)?+k)?+s?+|da?+y?+s?+|h(?:(?:ou)?+r)?+s?+|m(?:in(?:ute)?+s?+)?+|s(?:ec(?:ond)?+)?+s?+)(?![a-su-z])|\G\s*+(T)/i', $v, $m, 0, $pos)) {
             $pos += strlen($m[0]);
             if (!empty($m[4])) {
                 if (!$iso || $lastu > 3) {

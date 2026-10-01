@@ -337,9 +337,10 @@ class Assign_Page {
             if ($rrow->contactId !== $this->user->contactId
                 && $this->user->privChair
                 && $this->user->allow_admin($this->prow)) {
+                $actast = "Act as " . $this->user->reviewer_text_for($rrowid);
                 $actas = " " . Ht::link(Ht::make_icon("viewas", ["class" => "viewas-icon"]),
                     $this->prow->reviewurl(["actas" => $rrowid->email]),
-                    ["title" => "Become user"]);
+                    ["title" => $actast, "aria-label" => $actast]);
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);

@@ -897,7 +897,7 @@ class ContactList {
                 $t .= " " . $this->conf->hotlink(
                     Ht::make_icon("viewas", ["class" => "viewas-icon"]),
                     "index", ["actas" => $row->email],
-                    ["title" => $actast]
+                    ["title" => $actast, "aria-label" => $actast]
                 );
             }
             if ($row->is_disabled() && $this->user->isPC) {

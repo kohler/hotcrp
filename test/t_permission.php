@@ -1222,6 +1222,36 @@ class Permission_Tester {
         return $pl->table_html_json()["data"][1]["revtype"] ?? "";
     }
 
+    function test_conflict_column_sort_shows_pins_to_managers() {
+        // Pinned non-conflicts sort apart from ordinary non-conflicts only
+        // for a manager editing conflicts; others can't tell them apart.
+        $conf = $this->conf;
+        $pcm = $this->u_mgbaker;
+        $pids = [7, 9];
+        foreach ($pids as $pid) {
+            xassert(!$conf->checked_paper_by_id($pid)->has_conflict($pcm));
+        }
+        $conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values (7,?,?),(9,?,?)",
+            $pcm->contactId, Conflict::F_PIN, $pcm->contactId, Conflict::F_PIN);
+        Contact::update_rights();
+        $order = function (Contact $viewer, $col) use ($conf, $pcm) {
+            $srch = new PaperSearch($viewer, ["t" => "s", "q" => "6-10", "reviewer" => $pcm]);
+            $pl = new PaperList("empty", $srch, ["sort" => true]);
+            $pl->set_reviewer_user($pcm);
+            $pl->parse_view("show:{$col} sort:{$col}", ViewCommand::ORIGIN_MAX);
+            return $pl->paper_ids();
+        };
+        try {
+            $pcm = $conf->checked_user_by_email($pcm->email);
+            xassert(!$pcm->is_manager());
+            xassert_eqq($order($pcm, "editconf"), $order($pcm, "conf"));
+            xassert_neqq($order($this->u_chair, "editconf"), $order($this->u_chair, "conf"));
+        } finally {
+            $conf->qe("delete from PaperConflict where paperId?a and contactId=?", $pids, $pcm->contactId);
+            Contact::update_rights();
+        }
+    }
+
     function test_pc_conflict_kind_hidden_with_authors() {
         // When PC conflicts are visible but (blind) authors are not,
         // neither get/pcconf nor revtype[description] may reveal which

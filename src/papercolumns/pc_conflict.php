@@ -69,9 +69,10 @@ class Conflict_PaperColumn extends PaperColumn {
             && !$pl->user->can_view_authors($row)) {
             $ct = Conflict::CT_DEFAULT;
         }
+        // only a manager editing conflicts sorts pinned conflicts separately
         if (($ct & Conflict::F_PIN) !== 0
             && (!$this->editable
-                || $pl->user->allow_manage($row))) {
+                || !$pl->user->allow_manage($row))) {
             $ct &= ~Conflict::F_PIN;
         }
         return $ct;

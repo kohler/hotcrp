@@ -209,7 +209,11 @@ class MentionLister {
     /** @param Qrequest $qreq
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
-        if ($prow && $user->new_comment_flags($prow) === 0) {
+        // a user who can't comment gets no paper-specific names, except an
+        // author, who may still write a response
+        if ($prow
+            && $user->new_comment_flags($prow) === 0
+            && !$prow->has_author($user)) {
             $prow = null;
         }
         $mlister = new MentionLister($user, $prow, CommentInfo::CTVIS_AUTHOR, self::FOR_COMPLETION);

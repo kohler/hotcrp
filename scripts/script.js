@@ -1042,7 +1042,7 @@ let cache = new Map;
 
 function image(alt, className) {
     return $e("img", {src: `${siteinfo.assets}images/${this.image_stem}24.svg`,
-                      alt: alt || mi.description || "File", class:
+                      alt: alt || this.description || "File", class:
                       className ?? "sdlimg"});
 }
 
@@ -1052,8 +1052,13 @@ return function (type, filename) {
     if (semi >= 0) {
         type = type.substring(0, semi).trim();
     }
-    if (cache.has(type)) {
-        return cache.get(type);
+    // a gzip file’s icon depends on its name
+    const targz = type === "application/gzip"
+        && typeof filename === "string"
+        && filename.endsWith(".tar.gz"),
+        key = targz ? type + ";tar" : type;
+    if (cache.has(key)) {
+        return cache.get(key);
     }
     const ch = type.charCodeAt(0);
     let ans;
@@ -1065,9 +1070,7 @@ return function (type, filename) {
         } else if (type === "application/zip"
                    || type === "application/x-tar"
                    || type === "application/x-rar-compressed"
-                   || (filename !== null
-                       && filename.endsWith(".tar.gz")
-                       && type === "application/gzip")) {
+                   || targz) {
             ans = {image_stem: "archive"};
         } else if (type === "application/vnd.ms-powerpoint") {
             ans = {image_stem: "slides", description: "PowerPoint"};
@@ -1091,7 +1094,7 @@ return function (type, filename) {
     }
     ans = ans || {image_stem: "generic"};
     ans.image = image;
-    cache.set(type, ans);
+    cache.set(key, ans);
     return ans;
 };
 })();
@@ -4758,7 +4761,10 @@ function foldup(evt, opts) {
         } else if ((l = evt.target.closest("label"))) {
             opts.open = true;
             preventDefault = false;
-            if (l.control && l.control.checkVisibility()) {
+            if (l.control
+                && (l.control.checkVisibility
+                    ? l.control.checkVisibility()
+                    : l.control.offsetParent !== null)) {
                 return;
             }
         }
@@ -14681,8 +14687,8 @@ handle_ui.on("js-offline-review", function () {
         filee = $e("input", {type: "file", name: "file", accept: "text/plain", hidden: true}),
         uploade = $e("button", {type: "submit", name: "upload", value: 1, class: "btn-success btn-big"}, $svg_licon("upload"), " Upload form");
     let $pu, dry_run = true;
-    (rid != "") && (args1.r = rid);
-    self.hasAttribute("data-force") && (args1.forceShow = 1);
+    rid && (args1.r = rid);
+    self.form.hasAttribute("data-force") && (args1.forceShow = 1);
 
     /** @return {boolean} */
     function has_file() {

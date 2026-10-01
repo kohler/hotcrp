@@ -957,7 +957,12 @@ final class PaperList extends MessageSet {
             $order = $hide_all ? $vc->order : null;
             $pos = self::$view_fake[$name] ?? null;
             if ($pos === null) {
+                // look up the column only for its name and order; rendering
+                // reports any errors
+                $old_stash = $this->_column_error_stash;
+                $this->_column_error_stash = [];
                 $fs = $this->conf->paper_columns($name, $this->xtp);
+                $this->_column_error_stash = $old_stash;
                 if (count($fs) && isset($fs[0]->order)) {
                     $pos = $fs[0]->order;
                     $name = $fs[0]->name;

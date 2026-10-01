@@ -181,6 +181,33 @@ class Mention_Tester {
         }
     }
 
+    function test_mentioncompletion_for_author_without_comment_rights() {
+        // an author who can't start comments may still write a response, so
+        // completion offers the paper's names (co-authors), not the whole PC
+        $conf = $this->conf;
+        $old_cmt_author = $conf->setting("cmt_author");
+        $conf->save_refresh_setting("cmt_author", null);
+        $prow = $conf->checked_paper_by_id(2);
+        $au = $conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert(!$au->isPC && $prow->has_author($au));
+        xassert_eqq($au->new_comment_flags($prow), 0);
+        $names = $this->mention_names($au, $prow);
+        $coauthors = 0;
+        foreach ($prow->author_list() as $a) {
+            if (strcasecmp($a->email, $au->email) !== 0
+                && in_array(Text::name($a->firstName, $a->lastName, $a->email, NAME_P), $names, true)) {
+                ++$coauthors;
+            }
+        }
+        xassert_gt($coauthors, 0);
+        foreach ($conf->pc_members() as $pc) {
+            if (!$prow->has_author($pc)) {
+                xassert_not_in_eqq($pc->name(NAME_P), $names);
+            }
+        }
+        $conf->save_refresh_setting("cmt_author", $old_cmt_author);
+    }
+
     /** @param int $ctype
      * @return int */
     private function add_shepherd_comment($ctype) {
@@ -193,8 +220,7 @@ class Mention_Tester {
 
     function test_mentioncompletion_gates_shepherd_existence() {
         $conf = $this->conf;
-        // the author must be able to initiate a comment, else `mentioncompletion`
-        // returns nothing regardless of what they can see
+        // let the author comment as well as respond
         $old_cmt_author = $conf->setting("cmt_author");
         $old_cmt_always = $conf->setting("cmt_always");
         $conf->save_refresh_setting("cmt_author", 2);

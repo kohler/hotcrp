@@ -1820,11 +1820,13 @@ class UserStatus extends MessageSet {
         }
         echo '<div class="', $us->control_class("theme", "w-text"), '">',
             $us->feedback_html_under("theme", "/");
+        // preview a theme only on the viewer's own profile
+        $klass = $us->is_auth_self() ? "uich js-retheme" : null;
         foreach (["auto" => "Automatic (follow system setting)",
                   "light" => "Light",
                   "dark" => "Dark"] as $value => $label) {
             echo '<label class="checki"><span class="checkc">',
-                Ht::radio("theme", $value, $reqtheme === $value, ["class" => "uich js-retheme", "data-default-checked" => $itheme === $value]),
+                Ht::radio("theme", $value, $reqtheme === $value, ["class" => $klass, "data-default-checked" => $itheme === $value]),
                 '</span>', $us->conf->_($label), "</label>\n";
         }
         echo "</div>\n";

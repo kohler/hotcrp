@@ -603,13 +603,24 @@ class Review_API extends MessageSet {
         $this->prow = $prow;
         $rv = $this->make_rv(false)->set_text(convert_to_utf8($content), $filename);
         $override = friendly_boolean($qreq->override) ?? false;
+        // an upload for a specific review (`r`) saves into that review; the
+        // form itself names only a reviewer
+        $rrow = null;
+        if ($prow !== null) {
+            [$ok, $rrow] = $this->post_target($this->qreq_r);
+            if (!$ok) {
+                $this->single = true;
+                $this->execute_fail();
+                return $this->post_result();
+            }
+        }
         $nmatch = $nother = 0;
         while ($rv->set_req_override($override)->parse_text()) {
             if ($prow === null || $rv->req_pid() === $prow->paperId) {
                 ++$nmatch;
                 $this->reset_item();
                 $this->apply_precondition($rv, null);
-                $this->execute_save($rv, null);
+                $this->execute_save($rv, $rrow);
             } else {
                 // ignore reviews for other submissions, dropping their messages
                 ++$nother;

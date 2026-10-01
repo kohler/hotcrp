@@ -1047,6 +1047,25 @@ class Formulas_Tester {
         xassert_eqq($fg->fy->expression, "pid");
     }
 
+    function test_graph_types_have_renderers() {
+        // every graph type the server sends names a grapher in graph.js
+        $js = file_get_contents(SiteLoader::resolve("scripts/graph.js"));
+        foreach ([["scatter", "pid", "pid"], ["dot", "pid", "pid"], ["ldot", "pid", "pid"],
+                  ["cdf", "pid", ""], ["ogive", "pid", ""], ["cdffreq", "pid", ""], ["bar", "pid", "count"],
+                  ["fraction", "pid", "count"], ["box", "pid", "pid"]] as $t) {
+            $fg = new FormulaGraph($this->u_chair, $t[0], $t[1], $t[2]);
+            $fg->add_dataset(new FormulaGraphDataset("", "all", "", ""));
+            $fg->prepare();
+            $gtype = $fg->graph_json([])["gtype"] ?? null;
+            xassert(is_string($gtype) && $gtype !== "blank", $t[0]);
+            xassert(preg_match('/^    ' . preg_quote($gtype) . ': \{$/m', $js) === 1, "{$t[0]} → {$gtype}");
+        }
+        foreach (["ogive", "cumfreq", "cdffreq", "cumulativefrequency"] as $name) {
+            xassert_eqq(FormulaGraph::graph_type_prefix($name)[0] ?? null, FormulaGraph::GTS_OGIVE, $name);
+        }
+        xassert_eqq(FormulaGraph::graph_type_prefix("cdf")[0] ?? null, FormulaGraph::GT_CDF);
+    }
+
     /** @param string $gtype
      * @param string $fx
      * @param string $fy

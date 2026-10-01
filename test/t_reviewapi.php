@@ -227,6 +227,54 @@ class ReviewAPI_Tester {
         $prow->load_reviews(true);
     }
 
+    /** An offline form uploaded for a specific review (`r`) saves into that
+     * review even when its Reviewer line is gone. */
+    function test_post_text_targets_requested_review() {
+        $prow = $this->conf->checked_paper_by_id(18);
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        xassert(!$prow->review_by_user($chair));
+        $rrow = $prow->checked_review_by_user($this->u_diot);
+        $old = $rrow->fidval("s01");
+        $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
+        $text = preg_replace('/^==\+== Reviewer:.*\n/m', "", $text);
+        $text = preg_replace('/\n\d\. Weak reject\n/', "\n3. Weak accept\n", $text);
+        $qreq = TestQreq::post(["p" => 18, "r" => (string) $this->r18a_id])
+            ->set_file_content("file", $text, "review18A.txt", "text/plain");
+        $j = call_api("review", $chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $prow->load_reviews(true);
+        xassert(!$prow->review_by_user($chair));
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), 3);
+        // restore
+        call_api("=review", $this->u_diot, ["r" => "0", "OveMer" => (string) $old, "ready" => "1"], $prow);
+        $this->conf->qe("delete from PaperReview where paperId=18 and contactId=?", $chair->contactId);
+        $prow->load_reviews(true);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), $old);
+
+        // a form naming a reviewer other than `r`'s is refused
+        $other = null;
+        foreach ($this->conf->pc_members() as $pc) {
+            if (!$prow->review_by_user($pc) && !$prow->has_conflict($pc) && !$pc->privChair) {
+                $other = $pc;
+                break;
+            }
+        }
+        xassert(!!$other);
+        xassert_assign($chair, "paper,action,user\n18,primary,{$other->email}\n");
+        $prow->load_reviews(true);
+        $orrow = $prow->checked_review_by_user($other);
+        $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));
+        $qreq = TestQreq::post(["p" => 18, "r" => (string) $orrow->reviewId])
+            ->set_file_content("file", $text, "review18A.txt", "text/plain");
+        $j = call_api("review", $chair, $qreq, $prow);
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list), "Reviewer conflict");
+        $prow->load_reviews(true);
+        xassert_lt($prow->checked_review_by_user($other)->reviewStatus, ReviewInfo::RS_COMPLETED);
+        xassert_eq($prow->checked_review_by_user($this->u_diot)->fidval("s01"), $old);
+        xassert_assign($chair, "paper,action,user\n18,clearreview,{$other->email}\n");
+    }
+
     function test_post_text_if_warning() {
         $prow = $this->conf->checked_paper_by_id(18);
         $text = file_get_contents(SiteLoader::resolve("test/review18A.txt"));

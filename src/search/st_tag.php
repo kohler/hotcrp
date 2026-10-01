@@ -106,7 +106,7 @@ class Tag_SearchTerm extends SearchTerm {
                 ));
                 foreach ($cr === true ? [] : $cr as $mi) {
                     $srch->append_item($mi->with([
-                        "landmark" => "<5>→ <em>expands to</em> ", "message" => "", "status" => MessageSet::INFORM
+                        "landmark" => "→ expands to", "message" => "", "status" => MessageSet::INFORM
                     ]));
                 }
             }
