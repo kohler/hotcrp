@@ -739,6 +739,12 @@ class Scope_Tester {
         xassert_eqq($isect("read#1", null), "read#1");
         xassert_eqq($isect(null, null), "all");
         xassert_eqq($isect("all", "tag:read#1"), "tag:read#1");
+        // general rights aren't repeated on a selector, so a scope intersected
+        // with itself is unchanged
+        foreach (["read paper:write#5", "read tag:write#red", "read paper:write#5 tag:write#6",
+                  "submission:read review:write#3"] as $s) {
+            xassert_eqq($isect($s, $s), $s);
+        }
 
         // the intersection never grants what either side withholds, on any
         // paper; where both sides use the same selector it grants exactly

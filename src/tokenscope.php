@@ -400,8 +400,13 @@ final class TokenScope {
             } else /* $lt === 3 */ {
                 $sfx = "?q=" . urlencode($tss->selector);
             }
-            foreach (self::unparse_bits($tss->bits) as $pfx) {
-                $a[] = $pfx . $sfx;
+            // name the selector's rights as whole scopes, leaving out those
+            // the general rights already grant
+            foreach (self::unparse_bits($tss->bits | $ts->_all_bits) as $pfx) {
+                $mask = self::$scopes[$pfx] ?? null;
+                if ($mask === null || ($mask & ~$ts->_all_bits) !== 0) {
+                    $a[] = $pfx . $sfx;
+                }
             }
         }
         return empty($a) ? "none" : join(" ", $a);
