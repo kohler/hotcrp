@@ -24,7 +24,7 @@ class Conflict_Fexpr extends Fexpr {
         $x = "({$uid} && ({$ctmap}[{$uid}] ?? 0) > " . CONFLICT_MAXUNCONFLICTED . ")";
         if ($this->ispc) {
             $pcmap = $state->g_viewable_pc();
-            $x = "(isset({$pcmap}[{$uid}]) ? {$x} : null)";
+            $x = "({$uid} !== null && isset({$pcmap}[{$uid}]) ? {$x} : null)";
         }
         return $x;
     }

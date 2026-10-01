@@ -696,9 +696,9 @@ class Shift_Fexpr extends Fexpr {
         return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
-        $t1 = $state->ltemp($this->args[0]->compile($state));
-        $t2 = $state->ltemp($this->args[1]->compile($state));
-        return "(is_int({$t1}) && is_int({$t2}) && {$t2} >= 0 ? {$t1} {$this->op} {$t2} : null)";
+        $t1 = $state->ltemp("Bitwise_Fexpr::int_operand(" . $this->args[0]->compile($state) . ")");
+        $t2 = $state->ltemp("Bitwise_Fexpr::int_operand(" . $this->args[1]->compile($state) . ")");
+        return "({$t1} !== null && {$t2} !== null && {$t2} >= 0 ? {$t1} {$this->op} {$t2} : null)";
     }
 }
 
@@ -707,13 +707,24 @@ class Bitwise_Fexpr extends Fexpr {
         assert($op === "&" || $op === "|" || $op === "^");
         parent::__construct($op, [$e1, $e2]);
     }
+    /** @param mixed $x
+     * @return ?int */
+    static function int_operand($x) {
+        if (is_int($x)) {
+            return $x;
+        } else if (is_float($x) && $x >= PHP_INT_MIN && $x < PHP_INT_MAX) {
+            // (float) PHP_INT_MAX rounds up to 2**63, so `<` is exact
+            return (int) $x;
+        }
+        return null;
+    }
     function typecheck(FormulaTypechecker $ftch) {
         return $this->typecheck_arguments($ftch, true);
     }
     function compile(FormulaCompiler $state) {
-        $t1 = $state->ltemp($this->args[0]->compile($state));
-        $t2 = $state->ltemp($this->args[1]->compile($state));
-        return "(is_int({$t1}) && is_int({$t2}) ? {$t1} {$this->op} {$t2} : null)";
+        $t1 = $state->ltemp("Bitwise_Fexpr::int_operand(" . $this->args[0]->compile($state) . ")");
+        $t2 = $state->ltemp("Bitwise_Fexpr::int_operand(" . $this->args[1]->compile($state) . ")");
+        return "({$t1} !== null && {$t2} !== null ? {$t1} {$this->op} {$t2} : null)";
     }
 }
 

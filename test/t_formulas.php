@@ -339,6 +339,30 @@ class Formulas_Tester {
         xassert_eqq($this->formula("(3 > 2) ^^ (1 < 2)")->eval($prow, null), null);
     }
 
+    function test_bitwise_operators() {
+        $prow = $this->conf->checked_paper_by_id(1, $this->u_chair);
+        xassert_eqq($this->formula("5 & 3")->eval($prow, null), 1);
+        xassert_eqq($this->formula("5 | 2")->eval($prow, null), 7);
+        xassert_eqq($this->formula("6 ^ 3")->eval($prow, null), 5);
+        xassert_eqq($this->formula("1 << 3")->eval($prow, null), 8);
+        xassert_eqq($this->formula("16 >> 2")->eval($prow, null), 4);
+
+        // float operands truncate
+        xassert_eqq($this->formula("5.5 & 3")->eval($prow, null), 1);
+        xassert_eqq($this->formula("5 | 2.9")->eval($prow, null), 7);
+        xassert_eqq($this->formula("1.9 << 3")->eval($prow, null), 8);
+        xassert_eqq($this->formula("1 << 3.0")->eval($prow, null), 8);
+        xassert_eqq($this->formula("16 >> 2.5")->eval($prow, null), 4);
+
+        // non-integer-representable operands and negative shifts are null
+        xassert_eqq($this->formula("(2 ** 100) & 1")->eval($prow, null), null);
+        xassert_eqq($this->formula("1 | (2 ** 1024)")->eval($prow, null), null);
+        xassert_eqq($this->formula("(2 ** 100) << 1")->eval($prow, null), null);
+        xassert_eqq($this->formula("1 << (2 ** 100)")->eval($prow, null), null);
+        xassert_eqq($this->formula("1 << -1")->eval($prow, null), null);
+        xassert_eqq($this->formula("true & 1")->eval($prow, null), null);
+    }
+
     function test_unary_operators() {
         $prow = $this->conf->checked_paper_by_id(1, $this->u_chair);
         xassert_eqq($this->formula("-3")->prepare()->eval($prow, null), -3);
@@ -2979,5 +3003,51 @@ class Formulas_Tester {
         $conf->set_opt("secretPC", null);
         $conf->save_refresh_setting("viewrevid", $save_viewrevid);
         Contact::update_rights();
+    }
+
+    function test_review_indexed_preference_hidden_reviewer() {
+        // A review-indexed preference looks up preferences by reviewer id,
+        // which is null for a reviewer the viewer can't identify; a null
+        // array key is a PHP 8.5 deprecation. The lookup needs a viewer who
+        // sees every preference, an administrator, and only a token without
+        // `review:read` hides reviewers from one. Such a token hides the
+        // reviews too, so the review loop never meets a hidden reviewer.
+        $conf = $this->conf;
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,mjh@isi.edu\n19,review,lixia@cs.ucla.edu");
+        xassert_assign($this->u_chair, "paper,action,user,preference\n19,pref,mjh@isi.edu,7\n19,pref,lixia@cs.ucla.edu,-3");
+
+        $u = $conf->fresh_user_by_id($this->u_chair->contactId);
+        $u->set_scope("preference:read");
+        $p19 = $conf->checked_paper_by_id(19, $u);
+        xassert_eqq($u->view_preference_state($p19), Contact::VIEWPREF_ALL);
+        $rrows = $p19->reviews_as_list();
+        xassert_gt(count($rrows), 0);
+        foreach ($rrows as $rrow) {
+            xassert(!$u->can_view_review_identity($p19, $rrow));
+        }
+
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) use (&$warnings) {
+            $warnings[] = "{$errstr} @ " . basename($errfile) . ":{$errline}";
+            return true;
+        });
+        try {
+            $eval = function ($expr) use ($u, $p19) {
+                $f = Formula::make($u, $expr);
+                xassert($f->ok(), $expr);
+                return $f->prepare()->eval($p19, null);
+            };
+            // every preference is visible...
+            xassert_eqq($eval("sum.pref(pref)"), 4);
+            // ...but no review is, so review-indexed preferences find nothing
+            xassert_eqq($eval("count.re(1)"), 0);
+            xassert_eqq($eval("sum.re(pref)"), null);
+            xassert_eqq($eval("count.re(pref > 0)"), 0);
+        } finally {
+            restore_error_handler();
+        }
+        xassert_eqq($warnings, []);
+
+        xassert_assign($this->u_chair, "paper,action,user,preference\n19,pref,mjh@isi.edu,0\n19,pref,lixia@cs.ucla.edu,0");
     }
 }
