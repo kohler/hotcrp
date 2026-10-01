@@ -149,12 +149,12 @@ class Formula_PaperColumnFactory {
         $name = substr($name, strlen($prefix));
 
         if (!$nf) {
-            $nf = $xtp->conf->find_named_formula($name);
+            $nf = $xtp->conf->find_named_formula($name, $xtp->user);
         }
         if (!$nf
             && str_starts_with($name, "\"")
             && strpos($name, "\"", 1) === strlen($name) - 1) {
-            $nf = $xtp->conf->find_named_formula(substr($name, 1, -1));
+            $nf = $xtp->conf->find_named_formula(substr($name, 1, -1), $xtp->user);
         }
         if ($nf) {
             $ff = $nf->realize($xtp->user);

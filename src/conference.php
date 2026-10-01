@@ -1411,9 +1411,13 @@ class Conf {
         $this->_abbrev_matcher = null;
     }
 
-    /** @return ?NamedFormula */
-    function find_named_formula($text) {
-        return $this->abbrev_matcher()->find1($text, self::MFLAG_FORMULA);
+    /** Return the viewable named formula matching `$text` for `$user`. The root
+     * user matches only among global configuration.
+     * @param string $text
+     * @return ?NamedFormula */
+    function find_named_formula($text, Contact $user) {
+        $nf = $this->abbrev_matcher()->find1($text, self::MFLAG_FORMULA);
+        return $nf && $user->can_view_named_formula($nf) ? $nf : null;
     }
 
     /** @return array<int,NamedFormula> */

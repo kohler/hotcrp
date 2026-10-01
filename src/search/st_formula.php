@@ -20,8 +20,8 @@ class Formula_SearchTerm extends SearchTerm {
      * @return ?Formula */
     static private function read_formula($word, $sword, $srch, $is_graph) {
         $nf = null;
-        if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
-            $nf = $srch->conf->find_named_formula($word);
+        if (preg_match('/\A[^(){}\[\]]++\z/', $word)) {
+            $nf = $srch->conf->find_named_formula($word, $srch->user);
         }
         // the formula parses within the search's string context: its errors
         // expand from this word, and its parse is charged to the search

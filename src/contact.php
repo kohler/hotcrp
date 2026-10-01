@@ -6106,6 +6106,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_named_formula(NamedFormula $nf) {
+        if ($this->is_root_user()) {
+            return $nf->createdBy <= 0;
+        }
         return $nf->createdBy === $this->contactId
             || $this->privChair
             || $nf->realize($this)->viewable();

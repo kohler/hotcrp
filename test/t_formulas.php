@@ -2706,7 +2706,7 @@ class Formulas_Tester {
         // a refused save leaves no trace, in memory or in the database
         $zz = array_values(array_filter($conf->named_formulas(), function ($nf) { return str_starts_with($nf->name, "zzchain"); }));
         xassert_eqq(count($zz), count($saved));
-        xassert_eqq($conf->find_named_formula($refused_name), null);
+        xassert_eqq($conf->find_named_formula($refused_name, $u), null);
         // (delete through the API, which keeps the formula caches current)
         $req = []; $n = 0;
         foreach ($conf->named_formulas() as $nf) {
@@ -2717,7 +2717,7 @@ class Formulas_Tester {
             }
         }
         SearchConfig_API::save_namedformula($u, TestQreq::post($req));
-        xassert_eqq($conf->find_named_formula("zzchain3"), null);
+        xassert_eqq($conf->find_named_formula("zzchain3", $u), null);
         xassert_eqq($conf->fetch_ivalue("select count(*) from Formula where name like 'zzchain%'"), 0);
     }
 
@@ -2773,7 +2773,7 @@ class Formulas_Tester {
             return $jr instanceof JsonResult ? $jr->content : $jr;
         };
         xassert($mk(["formula/1/id" => "new", "formula/1/name" => "zza", "formula/1/expression" => "pid + 1"])["ok"]);
-        $zza = $conf->find_named_formula("zza");
+        $zza = $conf->find_named_formula("zza", $u);
         xassert($zza instanceof NamedFormula);
 
         // a save that would make a formula refer to itself is refused,
@@ -2781,7 +2781,7 @@ class Formulas_Tester {
         $c = $mk(["formula/1/id" => (string) $zza->formulaId, "formula/1/name" => "zza", "formula/1/expression" => "zza + 1"]);
         xassert(!$c["ok"]);
         xassert_str_contains($c["message_list"][0]->message, "Saved formula ‘zza’ refers to itself");
-        xassert_eqq($conf->find_named_formula("zza")->expression, "pid + 1");
+        xassert_eqq($conf->find_named_formula("zza", $u)->expression, "pid + 1");
 
         // a cycle that slips past validation is reported once, where it
         // closes, with the expansion path
@@ -2921,6 +2921,15 @@ class Formulas_Tester {
         $f = Formula::make($root, "OveMer.1");
         xassert(!$f->ok());
         xassert_str_contains($f->full_feedback_text(), "not found");
+        // ...including as a `formula:` search or a formula column
+        $srch = new PaperSearch($root, ["q" => "formula:OveMer.1", "t" => "all"]);
+        xassert_eqq($srch->paper_ids(), []);
+        xassert($srch->has_problem());
+        xassert_neqq((new PaperSearch($u_pc, ["q" => "formula:OveMer.1", "t" => "s"]))->paper_ids(), []);
+        $pl = new PaperList("empty", new PaperSearch($root, ["q" => "1", "t" => "all"]));
+        $pl->parse_view("\"OveMer.1\"", ViewCommand::ORIGIN_MAX);
+        $pl->text_json();
+        xassert_eqq($pl->vcolumns(), []);
 
         // the author and the chair can still use it under its own keyword
         xassert(Formula::make($u_pc, "OveMer.1")->ok());
