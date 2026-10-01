@@ -529,9 +529,7 @@ final class AssignmentState extends MessageSet {
             }));
         }
         if (!empty($pids)) {
-            foreach ($this->user->paper_set(["paperId" => $pids]) as $prow) {
-                $this->prows[$prow->paperId] = $prow;
-            }
+            $this->fetch_paper_set(["paperId" => $pids]);
         }
         $this->pid_attempts = [0];
         foreach ($pids as $pid) {
@@ -541,10 +539,19 @@ final class AssignmentState extends MessageSet {
     }
     function fetch_all_prows() {
         assert(empty($this->prows) && empty($this->pid_attempts));
-        foreach ($this->user->paper_set([]) as $prow) {
-            $this->prows[$prow->paperId] = $prow;
-        }
+        $this->fetch_paper_set([]);
         $this->pid_attempts = [-1];
+    }
+    /** Papers the user couldn't view even with a wider token scope are
+     * treated as missing, so errors don't reveal whether they exist.
+     * @return bool */
+    private function fetch_paper_set($args) {
+        $overrides = $this->user->add_overrides(Contact::OVERRIDE_SCOPE);
+        foreach ($this->user->paper_set($args) as $prow) {
+            if ($this->user->can_view_paper($prow))
+                $this->prows[$prow->paperId] = $prow;
+        }
+        $this->user->set_overrides($overrides);
     }
     /** @return PaperInfo */
     function placeholder_prow() {
@@ -2103,7 +2110,17 @@ class AssignmentSet {
         foreach ($pusers as $auser) {
             $this->astate->charge();
             $mcount = $this->astate->cumulative_message_count();
+            $nmsg = $this->astate->message_count();
             $allow = $aparser->allow_user($prow, $auser, $req, $this->astate);
+            if ($allow !== true
+                && !$this->astate->user_explicit
+                && $auser->contactId !== $this->user->contactXid
+                && !$this->user->can_manage($prow)) {
+                // another implicit user (from `any` or `external`) that the
+                // user can't affect is skipped, not reported
+                $this->astate->clear_messages_since($nmsg);
+                continue;
+            }
             if ($allow !== true) {
                 if ($allow instanceof AssignmentError) { // XXX backward compat
                     $this->astate->paper_error($allow->getMessage());

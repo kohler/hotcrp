@@ -836,28 +836,8 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // resolve a requested review type. Anyone may request the type the
-        // reviewer would receive by default; only an administrator may request a
-        // different type (e.g. primary/secondary/meta)
         $manager = $user->can_manage_reviews($prow);
-        $reqtype = $this->requested_review_type();
-        if ($reqtype !== null) {
-            if ($reqtype === false) {
-                $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
-                return false;
-            } else if ($rrow && !$rrow->is_ghost()
-                       ? $reqtype === $rrow->reviewType
-                       : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
-                // the reviewer's default type — always allowed
-            } else if (!$manager) {
-                $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
-                return false;
-            } else if ($reqtype > REVIEW_PC && !$reviewer->is_pc_member()) {
-                $uname = $reviewer->name(NAME_E);
-                $this->rvmsg(self::ERROR, "reviewType", "<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
-                return false;
-            }
-        }
+        $req_rrow = $rrow;
 
         // look up review
         if (!$rrow) {
@@ -877,6 +857,29 @@ class ReviewValues extends MessageSet {
                 : $reviewer->contactId !== $user->contactId)) {
             $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
             return false;
+        }
+
+        // resolve a requested review type. Anyone may request the type the
+        // reviewer would receive by default; only an administrator may request a
+        // different type (e.g. primary/secondary/meta). Checked after ownership,
+        // so an error never reveals another reviewer's review type.
+        $reqtype = $this->requested_review_type();
+        if ($reqtype !== null) {
+            if ($reqtype === false) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Invalid review type");
+                return false;
+            } else if ($req_rrow && !$req_rrow->is_ghost()
+                       ? $reqtype === $req_rrow->reviewType
+                       : $reqtype === REVIEW_PC || $reqtype === REVIEW_EXTERNAL) {
+                // the reviewer's default type — always allowed
+            } else if (!$manager) {
+                $this->rvmsg(self::ERROR, "reviewType", "<0>Only an administrator can set the review type");
+                return false;
+            } else if ($reqtype > REVIEW_PC && !$reviewer->is_pc_member()) {
+                $uname = $reviewer->name(NAME_E);
+                $this->rvmsg(self::ERROR, "reviewType", "<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
+                return false;
+            }
         }
 
         // a review that does not yet exist is staged onto an unsaved assignable

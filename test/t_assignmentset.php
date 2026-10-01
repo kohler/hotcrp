@@ -32,6 +32,51 @@ class AssignmentSet_Tester {
         return false;
     }
 
+    function test_invisible_paper_answers_like_missing_paper() {
+        // assignment errors don't reveal whether an invisible paper exists
+        $u = $this->u_puneet;
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert(!$u->can_view_paper($p2));
+        xassert(!$this->conf->paper_by_id(9999));
+        $answer = function ($pid, $row) use ($u) {
+            $aset = new AssignmentSet($u);
+            $aset->parse("paper,action,user,tag,decision\n{$pid},{$row}\n");
+            $msgs = [];
+            foreach ($aset->message_list() as $mi) {
+                $msgs[] = str_replace("#{$pid}", "#N", $mi->message);
+            }
+            return [$aset->has_error(), $msgs];
+        };
+        foreach (["tag,,fart", "decision,,,,accept", "follow,{$u->email}",
+                  "lead,{$this->u_mgbaker->email}", "pref,{$u->email}",
+                  "conflict,{$this->u_mgbaker->email}", "review,{$this->u_mgbaker->email}"] as $row) {
+            xassert_eqq($answer(2, $row), $answer(9999, $row), $row);
+        }
+    }
+
+    function test_any_user_skips_others_for_nonmanagers() {
+        // `follow,any` acts on whom the user may change, and doesn't reveal
+        // whether others follow
+        $u = $this->u_mgbaker;
+        $p3 = $this->conf->checked_paper_by_id(3);
+        xassert($u->can_view_paper($p3) && !$u->can_manage($p3));
+        $others = [$this->u_chair->contactId, $this->u_puneet->contactId];
+        $this->conf->qe("delete from PaperWatch where paperId=3 and contactId?a", $others);
+        $answer = function () use ($u) {
+            $aset = new AssignmentSet($u);
+            $aset->parse("paper,action,user,following\n3,follow,any,clear\n");
+            return [$aset->has_error(), $aset->full_feedback_text()];
+        };
+        $alone = $answer();
+        xassert(!$alone[0]);
+        $this->conf->qe("insert into PaperWatch (paperId,contactId,watch) values (3,?,3),(3,?,3)", ...$others);
+        xassert_eqq($answer(), $alone);
+        $aset = new AssignmentSet($u);
+        xassert($aset->parse("paper,action,user,following\n3,follow,any,clear\n") && $aset->execute());
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperWatch where paperId=3 and contactId?a and watch!=0", $others), 2);
+        $this->conf->qe("delete from PaperWatch where paperId=3 and contactId?a", $others);
+    }
+
     function test_budget_applies_to_nonmanagers() {
         xassert_eqq((new AssignmentSet($this->u_chair))->max_cost(), null);
         xassert_eqq((new AssignmentSet($this->conf->root_user()))->max_cost(), null);

@@ -968,6 +968,27 @@ class ReviewAPI_Tester {
         $this->conf->refresh_settings();
     }
 
+    function test_review_type_error_hides_type() {
+        // a user who can view but not edit a review learns nothing about its type
+        $old_viewrev = $this->conf->setting("viewrev");
+        $this->conf->save_refresh_setting("viewrev", 1);
+        $prow = $this->conf->checked_paper_by_id(18);
+        $rrow = $prow->review_by_id($this->r18a_id);
+        xassert(!$this->u_estrin->is_owned_review($prow, $rrow));
+        xassert(!$this->u_estrin->can_manage_reviews($prow));
+        xassert($this->u_estrin->can_view_review($prow, $rrow));
+        $answers = [];
+        foreach (["primary", "secondary", "pc", "external", "meta"] as $rtype) {
+            $qreq = TestQreq::post_json(["object" => "review", "review_type" => $rtype], ["r" => $this->r18a_id]);
+            $j = call_api("review", $this->u_estrin, $qreq, $prow);
+            xassert_eqq($j->ok, false);
+            $answers[$rtype] = json_encode($j->message_list ?? []);
+        }
+        xassert_eqq(count(array_unique($answers)), 1);
+        xassert_str_contains($answers["pc"], "permission to edit this review");
+        $this->conf->save_refresh_setting("viewrev", $old_viewrev);
+    }
+
     function test_fetch() {
         $qreq = TestQreq::get(["p" => 18, "r" => $this->r18a_id]);
         $jr = call_api("review", $this->u_diot, $qreq);

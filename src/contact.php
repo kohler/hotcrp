@@ -3729,7 +3729,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (($this->_overrides & self::OVERRIDE_SCOPE) !== 0) {
             $linkflags |= PCI::CIF_OVERRIDE_SCOPE;
         }
-        if ($linkflags !== 0) {
+        // a hidden paper stays hidden under any override
+        if ($linkflags !== 0
+            && !isset($this->hidden_papers[$prow->paperId])) {
             $ci = $ci->get_linked_rights(($ci->ciflags & PCI::CIFM_SET0) | $linkflags);
         }
 
@@ -4505,12 +4507,25 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
+        // blame the token's scope only if a wider scope would show the paper;
+        // otherwise the answer would reveal that the paper exists
+        $scope_bits = 0;
         if ($pdf && !$rights->scope_allows(TS::S_DOC_READ)) {
-            $whyNot["scope"] = TS::S_DOC_READ;
+            $scope_bits = TS::S_DOC_READ;
         } else if (!$rights->scope_allows(TS::S_SUB_READ)) {
-            $whyNot["scope"] = TS::S_SUB_READ;
-        } else if ($pdf
-                   && $this->can_view_paper($prow)) {
+            $scope_bits = TS::S_SUB_READ;
+        }
+        if ($scope_bits !== 0) {
+            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
+            $view_unscoped = $this->can_view_paper($prow, $pdf);
+            $this->set_overrides($overrides);
+            if ($view_unscoped) {
+                $whyNot["scope"] = $scope_bits;
+                return $whyNot;
+            }
+        }
+        if ($pdf
+            && $this->can_view_paper($prow)) {
             $whyNot["permission"] = "document:view";
         } else if ((!$rights->allow_author_view()
                     && $rights->review_status === 0

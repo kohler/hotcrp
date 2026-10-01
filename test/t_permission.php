@@ -1178,6 +1178,16 @@ class Permission_Tester {
         xassert(!$marina->can_view_paper($paper4));
         xassert(!$marina->can_manage($paper4));
 
+        // a hidden paper's failure doesn't depend on token scope, so a scoped
+        // token doesn't learn that the paper is there
+        $unscoped = $marina->perm_view_paper($paper4)->unparse_text();
+        $marina->set_scope("settings:read");
+        $fr = $marina->perm_view_paper($paper4);
+        xassert(!isset($fr["scope"]));
+        xassert_eqq($fr->unparse_text(), $unscoped);
+        xassert(!$marina->can_view_paper($paper4));
+        $marina->set_scope();
+
         Contact::update_rights(); // forget Marina's cached rights
     }
 

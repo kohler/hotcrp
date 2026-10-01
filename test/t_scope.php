@@ -385,6 +385,34 @@ class Scope_Tester {
         return $e;
     }
 
+    function test_scope_error_does_not_reveal_papers() {
+        // a token without paper scope learns about a paper only if the user
+        // could see it with a wider token
+        $u = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        xassert(!$u->isPC);
+        $own = $this->conf->checked_paper_by_id(1);
+        xassert($own->has_author($u));
+        $other = $this->conf->checked_paper_by_id(2);
+        xassert(!$other->has_author($u));
+        xassert(!$u->can_view_paper($other));
+        xassert(!$this->conf->paper_by_id(9999));
+
+        $answer = function ($pid) use ($u) {
+            $resp = call_api_result("paper", $u, TestQreq::get(["p" => $pid]));
+            $j = $resp->content;
+            return [$resp->response_code(), str_replace("#{$pid}", "#N", json_encode($j["message_list"] ?? []))];
+        };
+        foreach (["settings:read", "submission:read#9998"] as $scope) {
+            $u->set_scope($scope);
+            xassert_eqq($answer(2), $answer(9999), $scope);
+            xassert_eqq($answer(2)[0], 404, $scope);
+            // the user's own paper reports the scope it lacks
+            $resp = call_api_result("paper", $u, TestQreq::get(["p" => 1]));
+            self::xassert_scope_error($resp, "submeta:read");
+        }
+        $u->set_scope();
+    }
+
     function test_api_scope_gate_obeys_paper_selectors() {
         // an endpoint's declared scope may be granted for a single paper
         $this->u_chair->set_scope("paper:admin#1");
