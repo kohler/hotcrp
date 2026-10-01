@@ -4,7 +4,7 @@
 
 namespace HotCRP;
 use Conf, Contact, MessageItem, Navigation, NavigationState, Qrequest;
-use Redirection, LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
+use Redirection, LoginHelper, TokenInfo, UpdateSession, UserSecurityEvent, UserStatus;
 use Session_API;
 
 class OAuth_Page {
@@ -74,6 +74,9 @@ class OAuth_Page {
             // at most.
             $ma = ctype_digit($this->qreq->max_age ?? "") ? intval($this->qreq->max_age) : 0;
             $tokdata["max_age"] = min($ma, 3600);
+        } else if (ctype_digit($this->qreq->max_age ?? "")) {
+            // a sign-in that must be fresh (e.g. for `prompt=login`)
+            $tokdata["max_age"] = min(intval($this->qreq->max_age), 3600);
         }
         if (friendly_boolean($this->qreq->quiet)) {
             $tokdata["quiet"] = true;
@@ -127,8 +130,9 @@ class OAuth_Page {
             if (isset($this->qreq->email) && validate_email($this->qreq->email)) {
                 $params .= "&login_hint=" . rawurlencode($this->qreq->email);
             }
-            if (ctype_digit($this->qreq->max_age ?? "")) {
-                $params .= "&max_age=" . $this->qreq->max_age;
+            if (isset($tokdata["max_age"])) {
+                $params .= ($tokdata["max_age"] === 0 ? "&prompt=login" : "")
+                    . "&max_age=" . $tokdata["max_age"];
             }
         }
         throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
@@ -290,8 +294,12 @@ class OAuth_Page {
                 MessageItem::inform("<0>HotCRP requires your email to sign you in.")
             ];
         }
-        if (property_exists($jid, "email_verified")
-            && !friendly_boolean($jid->email_verified)) {
+        // The email names the account, so it must be verified: the provider
+        // must say so, unless it is configured as trusted regardless.
+        $ev = $jid->email_verified ?? null;
+        if ($ev !== true
+            && $ev !== "true"
+            && !$authi->allow_unverified_email) {
             return [
                 MessageItem::error("<0>The {$authi->title()} authenticator hasn’t verified your email"),
                 MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
@@ -337,6 +345,7 @@ class OAuth_Page {
                 MessageItem::inform("<0>Its response must include an ‘auth_time’ claim no older than {$max_age}s.")
             ];
         }
+        $use->timestamp = min($auth_time, Conf::$now);
         $use->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Authentication confirmed")];
@@ -464,12 +473,30 @@ class OAuth_Page {
 
         $qs = $this->qreq->qsession();
         $qs->open_new_sid();  // prevent session fixation
-        UserSecurityEvent::session_user_add($qs, $user->email);
-        UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
-            ->set_subtype($authi->name)
-            ->store($this->qreq);
+        $xuser = $user->contactId ? $user : $user->cdb_user() ?? $user;
+        $xuser->mark_login();
+        $ui = UserSecurityEvent::session_user_add($qs, $user->email);
+        UpdateSession::apply_theme($qs, $ui, $xuser->theme());
+        $use = UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
+            ->set_subtype($authi->name);
+        $use->timestamp = self::provider_auth_time($tok, $jid);
+        $use->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Signed in")];
+    }
+
+    /** The time a provider says it authenticated the user. A sign-in is only
+     * as fresh as that; a provider asked for `auth_time` (via `max_age`) that
+     * gives none vouches for no time at all.
+     * @param TokenInfo $tok
+     * @param object $jid
+     * @return int */
+    static private function provider_auth_time($tok, $jid) {
+        $auth_time = $jid->auth_time ?? null;
+        if (is_int($auth_time)) {
+            return min($auth_time, Conf::$now);
+        }
+        return $tok->data("max_age") !== null ? 0 : Conf::$now;
     }
 
     private function resolve($ml) {

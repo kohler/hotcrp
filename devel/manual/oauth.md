@@ -47,6 +47,11 @@ authentication providers. Each `oAuthProviders` component should define:
   authorization requests to this provider. Defaults to true; set it only for a
   provider that rejects `code_challenge`.
 
+* `allow_unverified_email`: (Optional) If true, HotCRP accepts an ID token
+  whose `email_verified` claim is absent or not true. Defaults to false. See
+  [Verified email](#verified-email) below; set it only for a provider whose
+  `email` claims are trustworthy as reported.
+
 * `token_function`: (Optional) PHP callback to be called after a token is
   returned, but before HotCRP validates the token.
 
@@ -58,6 +63,20 @@ authentication providers. Each `oAuthProviders` component should define:
 * `button_html`: HTML contents of the signin button for this provider. If
   empty, then HotCRP does not display a signin button. Example: `"Sign in with
   Google"`
+
+### Verified email
+
+HotCRP signs a user in to the account named by the ID token’s `email` claim,
+so it must trust that the provider verified that address. HotCRP requires an
+`email_verified` claim of `true` (or `"true"`), and refuses sign-in
+otherwise, unless the provider’s configuration sets `allow_unverified_email`.
+
+Some providers let users report email addresses they don’t control, and do
+not send `email_verified`. Microsoft Entra ID, for example, does not verify the
+`email` claim unless the optional `xms_edov` claim is configured. Never set
+`allow_unverified_email` for such a provider. Instead, set `issuer` and use a
+`token_function` that checks verification by the provider’s own means and
+sets `email_verified` on the token.
 
 ### Example configuration for Google authentication
 

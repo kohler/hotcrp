@@ -84,6 +84,9 @@ HotCRP NEWS
     * Support OAuth Client ID Metadata Documents.
     * Fix usability of redirections through the `/authorize` endpoint.
     * Harden OAuth for best practices (RFC 9700).
+    * OAuth sign-in requires a positive `email_verified` claim. A provider
+      that verifies email but omits the claim must be configured with
+      `"allow_unverified_email": true`; see `devel/manual/oauth.md`.
 
 * API
 

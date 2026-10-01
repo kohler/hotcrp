@@ -279,6 +279,9 @@ class Signin_Page {
         $nav = $qreq->navigation();
         $param["success_redirect"] = $qreq->redirect;
         $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL);
+        if (ctype_digit($qreq->max_age ?? "")) {
+            $param["max_age"] = $qreq->max_age;
+        }
         if ($this->_oauth_hoturl_param) {
             $param += $this->_oauth_hoturl_param;
         }

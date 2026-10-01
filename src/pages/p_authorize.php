@@ -269,6 +269,18 @@ class Authorize_Page {
         return is_string($h) && validate_email($h) ? $h : null;
     }
 
+    /** The freshness window the request parameters ask for, or null if they
+     * ask for none: `prompt=login` asks for 0.
+     * @return ?int */
+    private function request_max_age() {
+        if (preg_match('/(?:\A|\s)login(?:\s|\z)/', $this->qreq->prompt ?? "")) {
+            return 0;
+        } else if (ctype_digit($this->qreq->max_age ?? "")) {
+            return intval($this->qreq->max_age);
+        }
+        return null;
+    }
+
     /** The freshness window this request asks for, or null if it asks for none.
      * @return ?int */
     private function required_max_age() {
@@ -310,7 +322,12 @@ class Authorize_Page {
             // they must pick
             $this->redirect_error("account_selection_required");
         }
-        assert($this->sole_authorized_user() === $this->viewer);
+        if ($this->sole_authorized_user() !== $this->viewer) {
+            // the session's one account is at another slot (this one is empty)
+            $nav = $this->qreq->navigation();
+            $uindex = array_key_first($emails);
+            throw new Redirection("{$nav->base_path}u/{$uindex}/authorize{$nav->php_suffix}{$nav->query}");
+        }
 
         if (($ac = $this->make_authentication_checker($this->viewer, $token_params["max_age"]))
             && !$ac->test()) {
@@ -403,6 +420,12 @@ class Authorize_Page {
         ];
         if (($hint = $this->login_hint()) !== null) {
             $sparam["email"] = $hint;
+        }
+        // a requested freshness window passes to the sign-in, which passes it
+        // to any external provider
+        $max_age = $this->token ? $this->required_max_age() : $this->request_max_age();
+        if ($max_age !== null) {
+            $sparam["max_age"] = $max_age;
         }
         return $this->conf->hoturl("signin", $sparam);
     }
@@ -851,12 +874,17 @@ class Authorize_Page {
         // A client that registered itself chose its own `redirect_uri`, so an
         // automatic bounce there makes this endpoint an open redirector for
         // anyone willing to register (RFC 9700 §4.11.2). Redirect only when
-        // this site vouched for the destination, or when the user did by
-        // posting the consent form; otherwise offer the destination as a link,
-        // which shows where it goes and takes a click. Every error reachable
-        // before that post is a malformed request, so no working client loses
-        // an automatic error response.
-        if ($this->client->self_registered && !$this->authconfirmed) {
+        // this site vouched for the destination, or when the user did, by
+        // posting the consent form now or by consenting to this client at this
+        // `redirect_uri` earlier in this session; otherwise offer the
+        // destination as a link, which shows where it goes and takes a click.
+        // A `prompt=none` request from a session that never consented gets the
+        // link rather than its error.
+        if ($this->client->self_registered
+            && !$this->authconfirmed
+            && !UserSecurityEvent::session_has_oauth_redirect($this->qreq->qsession(),
+                    $this->client->client_id, $this->qreq->redirect_uri,
+                    $this->client->is_cdb ? null : $this->conf->dbname)) {
             $t = $error_description ?? "Authorization request failed";
             $host = parse_url($this->qreq->redirect_uri, PHP_URL_HOST)
                 ? : $this->qreq->redirect_uri;
@@ -1440,7 +1468,10 @@ class Authorize_Page {
             || $user->is_disabled()
             // `allow_if` limits who may hold this client's tokens; rotation
             // would otherwise renew a grant forever past the role that
-            // justified it. A cdb client cannot have one (`OAuthClient::list`).
+            // justified it. A cdb client's `$user` is a contact-database
+            // account, which has no conference roles: `allow_if` terms about
+            // conference settings work, but user-specific terms such as
+            // `admin` fail.
             || !(new XtParams($this->conf, $user))->checkf($this->client)
             // and a client narrowed to OpenID Connect since has no API grant
             // left to refresh

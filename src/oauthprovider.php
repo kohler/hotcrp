@@ -28,6 +28,10 @@ class OAuthProvider {
      * provider that rejects the extra parameters.
      * @var bool */
     public $pkce = true;
+    /** Accept an email whose `email_verified` claim is absent or not true.
+     * Set only for a provider whose email claims are trustworthy as reported.
+     * @var bool */
+    public $allow_unverified_email = false;
     /** @var string */
     public $auth_uri;
     /** @var string */
@@ -75,7 +79,7 @@ class OAuthProvider {
     static function find($conf, $name) {
         $authinfo = self::list($conf);
         // null `$name` means find first match
-        $name = (array_keys($authinfo))[0] ?? null;
+        $name = $name ?? (array_keys($authinfo))[0] ?? null;
         if ($name === null
             || !($authdata = $authinfo[$name] ?? null)) {
             return null;
@@ -96,6 +100,7 @@ class OAuthProvider {
         $instance->group_roles = $authdata->group_roles ?? $authdata->group_mappings /* XXX */ ?? null;
         $instance->reset_roles = $authdata->reset_roles ?? $authdata->remove_groups /* XXX */ ?? false;
         $instance->pkce = $authdata->pkce ?? true;
+        $instance->allow_unverified_email = ($authdata->allow_unverified_email ?? false) === true;
         foreach (["title", "issuer", "scope"] as $k) {
             if ($instance->$k !== null && !is_string($instance->$k))
                 return null;

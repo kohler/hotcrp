@@ -1512,6 +1512,18 @@ class Authorize_Tester {
         xassert_eqq($this->redirect_error($detail), null);
         xassert_str_contains($detail ?? "", "code=");
 
+        // a grant mixing general rights with a submission selector answers a
+        // silent request for the same scope
+        $ms = ["scope" => "read paper:write#5"] + $param;
+        [$how, $code] = $this->authorize_run($ms, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs, ["scope" => "read paper:write#5"]);
+        xassert_eqq($how, "redirect");
+        [$how, $detail] = $this->authorize_run($ms + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), null);
+        xassert_str_contains($detail ?? "", "code=");
+
         // a recorded `openid all` grant answers a silent `openid all` request,
         // and the code it returns still carries `openid`
         $oa = ["scope" => "openid all"] + $param;
@@ -2370,6 +2382,24 @@ class Authorize_Tester {
         }
         xassert_str_starts_with($url ?? "", "https://dro.com/");
         xassert_eqq($this->redirect_error($url ?? ""), "access_denied");
+
+        // once this session has consented to the client at this redirect URI,
+        // the user has vouched for the destination, so a silent request's
+        // error goes back to the client
+        $qs = new MemoryQsession;
+        unset($param["prompt"]);
+        [$how, $code] = $this->authorize_run($param, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs);
+        xassert_eqq($how, "redirect");
+        [$how, $detail] = $this->authorize_run(["scope" => "read paper:write", "prompt" => "none"] + $param, $qs);
+        xassert_eqq($how, "redirect");
+        xassert_str_starts_with($detail ?? "", "https://dro.com/");
+        xassert_eqq($this->redirect_error($detail ?? ""), "consent_required");
+        // ...but not for another self-registered client
+        $client_id = $this->register_client("https://dall.com/");
+        [$how, ] = $this->authorize_run(["client_id" => $client_id, "redirect_uri" => "https://dall.com/", "prompt" => "none"] + $param, $qs);
+        xassert_eqq($how, "page");
     }
 
     /** An authorization code is a database row, so an anonymous request must
@@ -3299,6 +3329,264 @@ class Authorize_Tester {
             xassert(!$ok);
         } finally {
             HotCRP\OAuth_Page::$fetch_function = $old;
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A signed-out user asked for a fresh sign-in (`prompt=login`, `max_age`)
+     * carries that request to the sign-in page, whose provider buttons pass it
+     * to the provider. */
+    function test_signin_carries_requested_freshness() {
+        $param = [
+            "client_id" => "confclient", "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read"
+        ];
+        $signin_max_age = function ($param) {
+            [$how, $url] = $this->authorize_outcome($param, $this->u_empty);
+            xassert_eqq($how, "redirect");
+            xassert_str_contains($url ?? "", "signin");
+            parse_str(parse_url($url ?? "", PHP_URL_QUERY) ?? "", $q);
+            return $q["max_age"] ?? null;
+        };
+        xassert_eqq($signin_max_age($param + ["prompt" => "login"]), "0");
+        xassert_eqq($signin_max_age($param + ["max_age" => "600"]), "600");
+        xassert_eqq($signin_max_age($param), null);
+
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com", "button_html" => "Provider",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        try {
+            $qreq = TestQreq::user_get($this->u_empty, ["max_age" => "0"])->set_page("signin");
+            ob_start();
+            (new Signin_Page)->print_signin_form_oauth($this->u_empty, $qreq);
+            $html = ob_get_clean();
+            xassert_str_contains($html, "max_age=0");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Sign in through a test OAuth provider "p" as `$email`, in session `$qs`
+     * (a new one if null).
+     * @param string $email
+     * @param array<string,string> $startargs
+     * @param ?int $auth_time
+     * @param ?Qsession $qs
+     * @param array<string,mixed> $claims ID token claims to add (null removes)
+     * @return array{bool,array,Qsession,MessageItem|list<MessageItem>|null} */
+    private function oauth_signin($email, $startargs, $auth_time, $qs = null, $claims = []) {
+        $q1 = TestQreq::user_get($this->u_empty, $startargs + ["authtype" => "p"], $qs)
+            ->set_page("oauth");
+        $qs = $q1->qsession();
+        Qrequest::set_main_request($q1);
+        $auth = null;
+        try {
+            (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+        } catch (Redirection $redir) {
+            $auth = $redir->url;
+        }
+        parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+        $old = HotCRP\OAuth_Page::$fetch_function;
+        HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $auth_time, $email, $claims) {
+            $c = ["iss" => "https://idp.example.com", "aud" => "C",
+                  "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                  "nonce" => $ap["nonce"], "sub" => "u1",
+                  "email" => $email, "email_verified" => true];
+            if ($auth_time !== null) {
+                $c["auth_time"] = $auth_time;
+            }
+            foreach ($claims as $k => $v) {
+                if ($v === null) {
+                    unset($c[$k]);
+                } else {
+                    $c[$k] = $v;
+                }
+            }
+            return [200, json_encode(["id_token" => HotCRP\JWTParser::make_plaintext((object) $c)])];
+        };
+        $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+        try {
+            $q2 = TestQreq::user_get($this->u_empty, ["code" => "C", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q2);
+            $ml = $oap->response();
+        } finally {
+            unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
+            HotCRP\OAuth_Page::$fetch_function = $old;
+        }
+        return [$oap->success, $ap, $qs, $ml];
+    }
+
+    /** @param array<string,mixed> $extra */
+    private function set_test_oauth_provider($extra = []) {
+        $this->conf->set_opt("oAuthProviders", [(object) ([
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ] + $extra)]);
+        $this->conf->refresh_settings();
+    }
+
+    /** A silent request at an empty session slot goes to the slot holding the
+     * session's one account. */
+    function test_prompt_none_at_empty_slot() {
+        $param = [
+            "client_id" => "confclient", "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "read", "prompt" => "none"
+        ];
+        $qs = new MemoryQsession("emptyslot", ["us" => ["", $this->u_chair->email], "u" => $this->u_chair->email]);
+        [$how, $url] = $this->authorize_outcome($param, $this->u_empty, $qs);
+        xassert_eqq($how, "redirect");
+        xassert_str_ends_with(parse_url($url ?? "", PHP_URL_PATH) ?? "", "u/1/authorize");
+    }
+
+    /** A provider's email claim names the account, so it must come with a
+     * positive `email_verified`, unless the provider is configured with
+     * `allow_unverified_email`. */
+    function test_oauth_signin_requires_verified_email() {
+        $email = "verify@hotcrp-oauth.org";
+        $run = function ($ev) use ($email) {
+            [$ok, , , $ml] = $this->oauth_signin($email, [], null, null, ["email_verified" => $ev]);
+            $this->conf->qe("delete from ContactInfo where email=?", $email);
+            return $ok;
+        };
+        try {
+            $this->set_test_oauth_provider();
+            xassert($run(true));
+            xassert($run("true"));
+            foreach ([false, "false", 0, "yes", 1] as $ev) {
+                xassert(!$run($ev), json_encode($ev));
+            }
+            [$ok, , , $ml] = $this->oauth_signin($email, [], null, null, ["email_verified" => null]);
+            xassert(!$ok);
+            xassert_str_contains(json_encode($ml), "verified");
+
+            $this->set_test_oauth_provider(["allow_unverified_email" => true]);
+            xassert($run(null));
+            xassert($run(true));
+            xassert($run(false));
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+            $this->conf->qe("delete from ContactInfo where email=?", $email);
+        }
+    }
+
+    /** With several providers configured, each sign-in button uses its own. */
+    function test_oauth_provider_by_name() {
+        $mk = function ($name, $host) {
+            return (object) [
+                "name" => $name, "client_id" => "C{$name}", "client_secret" => "S",
+                "issuer" => "https://{$host}", "auth_uri" => "https://{$host}/auth",
+                "token_uri" => "https://{$host}/token", "redirect_uri" => "https://conf.example.com/oauth"
+            ];
+        };
+        $this->conf->set_opt("oAuthProviders", [$mk("a", "idp-a.example.com"), $mk("b", "idp-b.example.com")]);
+        $this->conf->refresh_settings();
+        try {
+            foreach (["a" => "idp-a.example.com", "b" => "idp-b.example.com"] as $name => $host) {
+                $authi = HotCRP\OAuthProvider::find($this->conf, $name);
+                xassert_eqq($authi ? $authi->name : null, $name);
+                xassert_eqq($authi ? $authi->auth_uri : null, "https://{$host}/auth");
+            }
+            // no name picks the first provider
+            xassert_eqq(HotCRP\OAuthProvider::find($this->conf, null)->name ?? null, "a");
+            xassert_eqq(HotCRP\OAuthProvider::find($this->conf, "c"), null);
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A provider sign-in counts as fresh only as of the provider's own
+     * `auth_time`; a provider that silently reuses its session doesn't
+     * satisfy `prompt=login` or `max_age`. */
+    function test_signin_records_provider_auth_time() {
+        $this->set_test_oauth_provider();
+        $email = "freshy@hotcrp-oauth.org";
+        $run = function ($startargs, $auth_time) use ($email) {
+            [$ok, $ap, $qs] = $this->oauth_signin($email, $startargs, $auth_time);
+            $use = UserSecurityEvent::session_latest_signin_by_email($qs, $email);
+            return [$ok, $ap, $use ? $use->timestamp : null];
+        };
+
+        try {
+            // a fresh sign-in asks the provider to authenticate again
+            [$ok, $ap, $ts] = $run(["max_age" => "0"], Conf::$now);
+            xassert($ok);
+            xassert_eqq($ap["prompt"] ?? null, "login");
+            xassert_eqq($ap["max_age"] ?? null, "0");
+            xassert_eqq($ts, Conf::$now);
+
+            // a provider that reused an old session signs the user in, but
+            // the sign-in is as old as the provider says
+            [$ok, , $ts] = $run(["max_age" => "0"], Conf::$now - 4000);
+            xassert($ok);
+            xassert_eqq($ts, Conf::$now - 4000);
+
+            // asked for `auth_time` and given none, the sign-in isn't fresh
+            [$ok, , $ts] = $run(["max_age" => "0"], null);
+            xassert($ok);
+            xassert_eqq($ts, 0);
+
+            // an ordinary sign-in: no prompt; the provider's time is kept
+            [$ok, $ap, $ts] = $run([], null);
+            xassert($ok);
+            xassert_eqq($ap["prompt"] ?? null, null);
+            xassert_eqq($ts, Conf::$now);
+            [$ok, , $ts] = $run([], Conf::$now - 100);
+            xassert_eqq($ts, Conf::$now - 100);
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+            $this->conf->qe("delete from ContactInfo where email=?", $email);
+        }
+    }
+
+    /** A provider sign-in applies the account's saved theme to its session
+     * slot, as a password sign-in does. */
+    function test_oauth_signin_applies_theme() {
+        $this->set_test_oauth_provider();
+        $u = $this->conf->checked_user_by_email($this->u_mgbaker->email);
+        $old_theme = $u->data("theme");
+        $u->save_data("theme", "dark");
+        try {
+            [$ok, , $qs] = $this->oauth_signin($u->email, [], null);
+            xassert($ok);
+            $ui = Contact::session_index_by_email($qs, $u->email);
+            xassert_ge($ui, 0);
+            xassert_eqq(($qs->get("themes") ?? [])[$ui] ?? null, "dark");
+        } finally {
+            $u->save_data("theme", $old_theme);
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A provider sign-in is a sign-in: it marks the account active. */
+    function test_oauth_signin_marks_login() {
+        $this->set_test_oauth_provider();
+        $email = $this->u_mgbaker->email;
+        $old = $this->conf->fetch_ivalue("select lastLogin from ContactInfo where email=?", $email);
+        $this->conf->qe("update ContactInfo set lastLogin=? where email=?", Conf::$now - 40 * 86400, $email);
+        $this->conf->invalidate_caches("users");
+        try {
+            [$ok, , ] = $this->oauth_signin($email, [], null);
+            xassert($ok);
+            xassert_eqq($this->conf->fetch_ivalue("select lastLogin from ContactInfo where email=?", $email), Conf::$now);
+        } finally {
+            $this->conf->qe("update ContactInfo set lastLogin=? where email=?", $old, $email);
+            $this->conf->invalidate_caches("users");
             $this->conf->set_opt("oAuthProviders", null);
             $this->conf->refresh_settings();
         }

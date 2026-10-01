@@ -387,6 +387,19 @@ class UserSecurity_Tester {
         xassert_eqq($qs->get("us"), ["chair@_.com", "floyd@ee.lbl.gov"]);
     }
 
+    function test_session_user_remove_clears_theme() {
+        $qs = $this->make_qsession(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
+        UpdateSession::apply_theme($qs, 0, "dark");
+        UpdateSession::apply_theme($qs, 1, "light");
+        UserSecurityEvent::session_user_remove($qs, "estrin@usc.edu");
+        xassert_eqq($qs->get("themes"), [null, "light"]);
+        // a user who reuses the slot doesn't inherit the old theme
+        xassert_eqq(UserSecurityEvent::session_user_add($qs, "chair@_.com"), 0);
+        xassert_eqq(($qs->get("themes") ?? [])[0] ?? null, null);
+        UserSecurityEvent::session_user_remove($qs, "floyd@ee.lbl.gov");
+        xassert_eqq($qs->get("themes"), null);
+    }
+
     function test_session_user_remove_trims_trailing_blanks() {
         $qs = $this->make_qsession(["estrin@usc.edu", "floyd@ee.lbl.gov"]);
         UserSecurityEvent::session_user_remove($qs, "floyd@ee.lbl.gov");

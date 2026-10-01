@@ -313,6 +313,26 @@ class UserSecurityEvent {
         return null;
     }
 
+    /** Return true if some account in this session has consented to
+     * `$client_id` at `$redirect_uri`, for any scope.
+     * @param string $client_id
+     * @param string $redirect_uri
+     * @param ?string $dbname
+     * @return bool */
+    static function session_has_oauth_redirect(Qsession $qs, $client_id,
+                                               $redirect_uri, $dbname) {
+        foreach (self::session_list($qs) as $use) {
+            if ($use->reason === self::REASON_OAUTH_CONFIRM
+                && $use->success
+                && $use->client_id === $client_id
+                && $use->redirect_uri === $redirect_uri
+                && $use->dbname === $dbname) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     /** @param Qsession $qs
      * @param list<string> $us */
@@ -365,6 +385,8 @@ class UserSecurityEvent {
         for ($ui = 0; $ui !== count($us); ++$ui) {
             if (strcasecmp($us[$ui], $email) === 0) {
                 $us[$ui] = "";
+                // the slot's next user mustn't inherit this user's theme
+                UpdateSession::apply_theme($qs, $ui, null);
                 break;
             }
         }
