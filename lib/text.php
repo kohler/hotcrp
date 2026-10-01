@@ -45,6 +45,16 @@ class TextPregexes {
         return $this->preg_utf8 === '(?!)';
     }
 
+    /** Return true if the patterns compile. A merge of many patterns can
+     * exceed PCRE's limits.
+     * @return bool */
+    function compiles() {
+        $s = "";
+        return @preg_match("{{$this->preg_utf8}}ui", $s) !== false
+            && ($this->preg_raw === null
+                || @preg_match("{{$this->preg_raw}}i", $s) !== false);
+    }
+
     /** @return ?string */
     function preg_raw() {
         return $this->preg_raw;

@@ -6491,13 +6491,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $this->_aucollab_matchers;
     }
 
-    /** @return TextPregexes */
+    /** Return a prefilter for `aucollab_matchers`: text that some matcher
+     * matches also matches this. Too many collaborators to merge into one
+     * pattern yields a prefilter that matches everything.
+     * @return TextPregexes */
     function aucollab_general_pregexes() {
         if ($this->_aucollab_general_pregexes === null) {
-            $this->_aucollab_general_pregexes = TextPregexes::make_empty();
+            $preg = TextPregexes::make_empty();
             foreach ($this->aucollab_matchers() as $matcher) {
-                $this->_aucollab_general_pregexes->merge_any($matcher->general_pregexes());
+                $preg->merge_any($matcher->general_pregexes());
             }
+            if (!$preg->compiles()) {
+                $preg = new TextPregexes("", "");
+            }
+            $this->_aucollab_general_pregexes = $preg;
         }
         return $this->_aucollab_general_pregexes;
     }

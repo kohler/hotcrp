@@ -608,7 +608,8 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
         $us = new UserStatus($this->conf->root_user());
         $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"],
-                                         "firstName" => "Unlisted", "lastName" => "Visitor"]);
+                                         "firstName" => "Unlisted", "lastName" => "Visitor",
+                                         "affiliation" => "Luleå University of Technology"]);
         xassert(!!$acct, $us->full_feedback_text());
         $this->conf->invalidate_caches("users", "pc");
         $uid = $acct->contactId;
@@ -1157,7 +1158,8 @@ class UserStatus_Tester {
 
     function test_long_collaborators() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
-        $cl = join("\n", array_fill(0, 950, "Judy Estrin (Packet Design, LLC)"));
+        $cl = join("\n", array_fill(0, 950, "Judy Estrin (Packet Design, LLC)"))
+            . "\nMikael Degermark (Luleå University of Technology)";
         xassert_lt(strlen($cl), 32768);
         $qreq->collaborators = $cl;
         $us = (new UserStatus($u))->set_qreq($qreq);
@@ -1165,6 +1167,11 @@ class UserStatus_Tester {
         $us->request_group("");
         xassert($us->execute_update());
         xassert_eqq($us->user->collaborators(), $cl);
+
+        // a long collaborator list still finds potential conflicts
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        $prow = $this->conf->checked_paper_by_id(2);
+        xassert(!!$prow->potential_conflict_list($u));
     }
 
     function test_collaborators_ifempty() {
