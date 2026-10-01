@@ -385,6 +385,31 @@ class Scope_Tester {
         return $e;
     }
 
+    function test_api_scope_gate_obeys_paper_selectors() {
+        // an endpoint's declared scope may be granted for a single paper
+        $this->u_chair->set_scope("paper:admin#1");
+        $jr = call_api("=paper", $this->u_chair, TestQreq::delete(["p" => 1, "dry_run" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["delete"]);
+        $jr = call_api("share", $this->u_chair, TestQreq::get(["p" => 1]));
+        xassert_eqq($jr->ok, true);
+
+        // ...but not for another
+        $this->u_chair->set_scope("paper:admin#2");
+        $resp = call_api_result("=paper", $this->u_chair, TestQreq::delete(["p" => 1, "dry_run" => 1]));
+        self::xassert_scope_error($resp, "paper:admin");
+        $resp = call_api_result("share", $this->u_chair, TestQreq::get(["p" => 1]));
+        self::xassert_scope_error($resp, "submeta:admin");
+
+        // a `p` parameter doesn't stretch a paper grant to an endpoint that
+        // isn't about a paper
+        $this->u_chair->set_scope("tag:read#1");
+        $resp = call_api_result("alltags", $this->u_chair, TestQreq::get(["p" => 1]));
+        self::xassert_scope_error($resp, "tag:read");
+        $this->u_chair->set_scope();
+        xassert(!!$this->conf->paper_by_id(1));
+    }
+
     function test_share_requires_admin_scope() {
         // The submission’s author-view share link is a bearer credential, so
         // obtaining, creating, rotating, or revoking it requires

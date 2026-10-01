@@ -6051,7 +6051,8 @@ class Conf {
             } else {
                 $bits = TokenScope::S_OTH_WRITE;
             }
-            if (!$scope->allows($bits)) {
+            $sprow = ($uf->paper ?? false) ? $qreq->paper() : null;
+            if (!$scope->allows($bits, $sprow)) {
                 return JsonResult::make_scope_error($qreq, $bits);
             }
         }
