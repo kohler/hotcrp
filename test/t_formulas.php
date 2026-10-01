@@ -2954,4 +2954,30 @@ class Formulas_Tester {
         $conf->save_refresh_setting("viewrevid", $save_viewrevid);
         Contact::update_rights();
     }
+
+    function test_pcconflict_hidden_reviewer_no_deprecation() {
+        // as for topicscore: a hidden reviewer's id is null, and must not be
+        // used as an array key
+        $conf = $this->conf;
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,mjh@isi.edu\n19,review,lixia@cs.ucla.edu");
+        save_review(19, $this->u_mjh, ["ovemer" => 3, "revexp" => 2, "ready" => true]);
+        save_review(19, $this->u_lixia, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+
+        $save_viewrevid = $conf->setting("viewrevid");
+        $conf->save_refresh_setting("viewrevid", -1);
+        $conf->set_opt("secretPC", true);
+        Contact::update_rights();
+
+        $viewer = $conf->checked_user_by_email("mjh@isi.edu");
+        xassert(!$viewer->can_view_pc());
+        $fg = new FormulaGraph($viewer, "scatter", "pid", "pcconflict");
+        $fg->add_dataset(new FormulaGraphDataset("19", "all", "", ""));
+        xassert($fg->prepare());
+        [$j, $warnings] = $this->graph_json_and_warnings($fg);
+        xassert_eqq($warnings, []);
+
+        $conf->set_opt("secretPC", null);
+        $conf->save_refresh_setting("viewrevid", $save_viewrevid);
+        Contact::update_rights();
+    }
 }

@@ -690,6 +690,94 @@ class Scope_Tester {
         }
     }
 
+    function test_token_scope_intersect() {
+        $u = $this->u_chair;
+        $isect = function ($a, $b) use ($u) {
+            return TokenScope::unparse(TokenScope::intersect(
+                $a === null ? null : TokenScope::parse($a, $u), $b));
+        };
+
+        // the same selector on both sides keeps the rights both grant there
+        xassert_eqq($isect("read#1", "write#1"), "read#1");
+        xassert_eqq($isect("tag:write#1", "tag:read#1 comment:read#1"), "tag:read#1");
+        // a selector on one side is bounded by the other side's general rights
+        xassert_eqq($isect("tag:write#1", "read"), "tag:read#1");
+        xassert_eqq($isect("read", "tag:write#1"), "tag:read#1");
+        xassert_eqq($isect("read write#1", "write"), "read write#1");
+        // ...and vanishes if those general rights add nothing
+        xassert_eqq($isect("read#1", "read#2"), "none");
+        xassert_eqq($isect("read write#1", "read"), "read");
+        // selectors of different kinds never match
+        xassert_eqq($isect("read#1", "read?q=1"), "none");
+        // a missing side is no limit
+        xassert_eqq($isect(null, "read#1"), "read#1");
+        xassert_eqq($isect("read#1", null), "read#1");
+        xassert_eqq($isect(null, null), "all");
+        xassert_eqq($isect("all", "tag:read#1"), "tag:read#1");
+
+        // the intersection never grants what either side withholds, on any
+        // paper; where both sides use the same selector it grants exactly
+        // what both grant
+        $scopes = ["read", "write", "tag:read", "tag:write#1", "read#1", "write#1",
+                   "read write#2", "submission:read#1 review:write#1",
+                   "paper:admin?q=1", "read?q=1-2", "none", "all"];
+        $bits = [TokenScope::S_SUB_READ, TokenScope::S_SUB_WRITE, TokenScope::S_TAG_READ,
+                 TokenScope::S_TAG_WRITE, TokenScope::S_REV_WRITE, TokenScope::S_REV_ADMIN];
+        foreach ($scopes as $a) {
+            $ta = TokenScope::parse($a, $u);
+            foreach ($scopes as $b) {
+                $tb = TokenScope::parse($b, $u);
+                $ti = TokenScope::intersect($ta, $tb);
+                foreach ([null, $this->p1, $this->p2] as $prow) {
+                    foreach ($bits as $bit) {
+                        $aok = !$ta || $ta->allows($bit, $prow);
+                        $bok = !$tb || $tb->allows($bit, $prow);
+                        $iok = !$ti || $ti->allows($bit, $prow);
+                        xassert(!$iok || ($aok && $bok), "{$a} ∩ {$b}");
+                        if (!str_contains($a . $b, "?q=")
+                            && ($a === "read#1" || $a === "write#1")
+                            && ($b === "read#1" || $b === "write#1")) {
+                            xassert_eqq($iok, $aok && $bok, "{$a} ∩ {$b}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function test_job_user_scope() {
+        // a job records the scope of the token that started it and runs with
+        // it, on a fresh user, so the shared cached user stays unscoped
+        $u = clone $this->u_chair;
+        $u->set_scope("submission:read#1 tag:write#1");
+        $tok = Job_Token::make($u, "Autoassign", [])->insert();
+        try {
+            $tok = Job_Token::find($tok->salt, $this->conf);
+            xassert_eqq($tok->input("scope"), "submission:read#1 tag:write#1");
+            $ju = $tok->job_user();
+            xassert_eqq($ju->contactId, $this->u_chair->contactId);
+            xassert_eqq(TokenScope::unparse($ju->scope()), "submission:read#1 tag:write#1");
+            xassert($ju->scope_allows(TokenScope::S_SUB_READ, $ju->checked_paper_by_id(1)));
+            xassert(!$ju->scope_allows(TokenScope::S_SUB_READ, $ju->checked_paper_by_id(2)));
+            xassert($ju->scope_allows(TokenScope::S_TAG_WRITE, $ju->checked_paper_by_id(1)));
+            xassert(!$ju->scope_allows(TokenScope::S_TAG_WRITE, $ju->checked_paper_by_id(2)));
+            xassert($ju !== $this->conf->user_by_id($this->u_chair->contactId));
+            xassert(!$this->conf->user_by_id($this->u_chair->contactId)->has_scope());
+        } finally {
+            $this->conf->qe("delete from Capability where salt=?", $tok->salt);
+        }
+
+        // an unscoped request records no scope, and runs unscoped
+        $tok = Job_Token::make($this->conf->user_by_id($this->u_chair->contactId), "Autoassign", [])->insert();
+        try {
+            $tok = Job_Token::find($tok->salt, $this->conf);
+            xassert_eqq($tok->input("scope"), null);
+            xassert(!$tok->job_user()->has_scope());
+        } finally {
+            $this->conf->qe("delete from Capability where salt=?", $tok->salt);
+        }
+    }
+
     function test_scope_str_split_openid() {
         xassert_array_eqq(TokenScope::scope_str_split_openid(null), ["", ""]);
         xassert_array_eqq(TokenScope::scope_str_split_openid("   "), ["", ""]);

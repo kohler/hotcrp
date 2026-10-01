@@ -991,6 +991,25 @@ class Authorize_Tester {
         xassert_eqq($payload->auth_time ?? null, $t);
     }
 
+    /** A sign-in moments ago, such as one made to answer this very request,
+     * satisfies `prompt=login`; an older one does not. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_authorize_prompt_login_accepts_recent_signin() {
+        $t = Conf::$now - 60;
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "prompt" => "login", "auth_time" => $t]);
+        xassert_neqq($jr, null);
+        if ($jr) {
+            $payload = (new HotCRP\JWTParser)->validate($jr->id_token);
+            xassert_eqq($payload->auth_time ?? null, $t);
+        }
+
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+            ["scope" => "openid read", "prompt" => "login", "auth_time" => Conf::$now - 600]);
+        xassert_eqq($jr, null);
+        xassert_str_contains($this->_failure ?? "", "login_required");
+    }
+
     /** `login_hint` names the account to authenticate, so the consent page
      * offers that account and no other. */
     #[RequireClass("Uri\\Rfc3986\\Uri")]
@@ -1365,6 +1384,44 @@ class Authorize_Tester {
         $this->delete_bot($bot);
     }
 
+    /** A consent interrupted by a freshness challenge resumes with the scope
+     * the person chose on the consent form, not the scope of whatever request
+     * lands the confirmation. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_confirmation_resumes_the_consented_scope() {
+        $qs = new MemoryQsession;
+        $param = [
+            "client_id" => "confclient",
+            "redirect_uri" => "https://conf1.example.com/cb",
+            "response_type" => "code", "state" => "S", "scope" => "openid read",
+            "max_age" => "600"
+        ];
+        [$how, $code] = $this->authorize_run($param, $qs);
+        xassert_eqq($how, "code");
+
+        // the chair narrows the scope, but nothing confirms this session yet
+        $vq = TestQreq::apply_user($this->u_chair, TestQreq::post([
+            "authconfirm" => 1, "code" => $code, "scope" => "tag:read"
+        ]), $qs)->set_page("authorize");
+        [$how, $detail] = $this->authorize_go($vq);
+        xassert_eqq($how, "code");
+        $tok = TokenInfo::find($code, $this->conf);
+        xassert_eqq($tok ? $tok->data("consented_scope") : null, "tag:read");
+        xassert_eqq($tok ? $tok->data("email") : null, null);
+
+        // the confirmation lands carrying a wider scope, which is ignored
+        $vq2 = TestQreq::user_get($this->u_chair, ["code" => $code, "scope" => "read"], $qs)
+            ->set_page("authorize");
+        UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_PASSWORD,
+            UserSecurityEvent::REASON_REAUTH)->store($vq2);
+        [$how, $detail] = $this->authorize_go($vq2);
+        xassert_eqq($how, "redirect");
+        xassert_str_starts_with($detail ?? "", "https://conf1.example.com/cb");
+        $tok = TokenInfo::find($code, $this->conf);
+        xassert_eqq($tok ? $tok->data("email") : null, $this->u_chair->email);
+        xassert_eqq($tok ? $tok->data("scope") : null, "openid tag:read");
+    }
+
     /** A remembered authorization is for the account that granted it. A silent
      * request must not be able to redirect it to another account by naming one:
      * `authbot` is a parameter of the consent form's post, and replaying a
@@ -1454,6 +1511,36 @@ class Authorize_Tester {
         xassert_eqq($how, "redirect");
         xassert_eqq($this->redirect_error($detail), null);
         xassert_str_contains($detail ?? "", "code=");
+
+        // a recorded `openid all` grant answers a silent `openid all` request,
+        // and the code it returns still carries `openid`
+        $oa = ["scope" => "openid all"] + $param;
+        [$how, $code] = $this->authorize_run($oa, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs, ["scope" => "all"]);
+        xassert_eqq($how, "redirect");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid all");
+        [$how, $detail] = $this->authorize_run($oa + ["prompt" => "none"], $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq($this->redirect_error($detail), null);
+        xassert(preg_match('/[?&]code=([^&]*)/', $detail ?? "", $m));
+        xassert_eqq(TokenInfo::find(urldecode($m[1]), $this->conf)->data("scope"), "openid all");
+
+        // a grant confirmed without a posted scope field is recorded
+        // canonically too, so a silent request that orders or repeats its
+        // OIDC scopes differently still matches it
+        $pr = ["scope" => "profile openid tag:read"] + $param;
+        [$how, $code] = $this->authorize_run($pr, $qs);
+        xassert_eqq($how, "code");
+        [$how, $detail] = $this->authorize_confirm($code, $qs);
+        xassert_eqq($how, "redirect");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid profile tag:read");
+        foreach (["openid profile tag:read", "tag:read profile openid profile"] as $sc) {
+            [$how, $detail] = $this->authorize_run(["scope" => $sc] + $param + ["prompt" => "none"], $qs);
+            xassert_eqq($how, "redirect");
+            xassert_eqq($this->redirect_error($detail), null, $sc);
+            xassert_str_contains($detail ?? "", "code=");
+        }
     }
 
     /** `prompt=none` forbids interaction, so each condition the consent page
@@ -1596,6 +1683,18 @@ class Authorize_Tester {
             $this->u_chair, ["scope" => "read", "client_id" => self::OIDC_CLIENT_ID]);
         xassert_eqq($jr, null);
         xassert_eqq($this->_last_error, "invalid_scope");
+
+        // other OpenID Connect scopes without `openid` are refused too...
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI,
+            $this->u_chair, ["scope" => "email profile", "client_id" => self::OIDC_CLIENT_ID]);
+        xassert_eqq($jr, null);
+        xassert_eqq($this->_last_error, "invalid_scope");
+
+        // ...but `openid` in any position, with others, signs in
+        $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI,
+            $this->u_chair, ["scope" => "profile email openid", "client_id" => self::OIDC_CLIENT_ID]);
+        xassert_neqq($jr, null);
+        xassert_neqq($jr->id_token ?? null, null);
     }
 
     #[RequireClass("Uri\\Rfc3986\\Uri")]
@@ -2572,6 +2671,42 @@ class Authorize_Tester {
         xassert(!TokenScope::scope_str_contains($scope, "write"));
         $jr = $this->redeem_code($rcode, $ruri);
         xassert_eqq($this->find_token($jr->access_token)->data("scope"), "read");
+
+        // full API scope keeps sign-in too, whichever word spells it
+        foreach (["openid all" => "all", "openid *" => "*", "openid admin" => "admin",
+                  "openid email profile all" => "all"] as $req => $field) {
+            $param["scope"] = $req;
+            [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+            xassert_eqq($how, "code");
+            $rcode = $this->confirm_code($code, $field);
+            $scope = TokenInfo::find($code, $this->conf)->data("scope");
+            xassert_eqq($scope, str_replace(" {$field}", " all", $req));
+            $jr = $this->redeem_code($rcode, $ruri);
+            xassert(isset($jr->id_token));
+            xassert_eqq($this->find_token($jr->access_token)->data("scope"), "all");
+        }
+
+        // ...and narrowing full scope keeps it as well
+        $param["scope"] = "openid all";
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rcode = $this->confirm_code($code, "read");
+        xassert_eqq(TokenInfo::find($code, $this->conf)->data("scope"), "openid read");
+        $jr = $this->redeem_code($rcode, $ruri);
+        xassert(isset($jr->id_token));
+        xassert_eqq($this->find_token($jr->access_token)->data("scope"), "read");
+
+        // the code exchange takes no `scope`: one sent cannot widen the grant
+        $param["scope"] = "openid read";
+        [$how, $code] = $this->authorize_outcome($param, $this->u_chair);
+        $rcode = $this->confirm_code($code, "read");
+        $jr = call_api("=oauthtoken", $this->u_empty, TestQreq::post([
+            "grant_type" => "authorization_code", "code" => $rcode,
+            "redirect_uri" => $ruri, "scope" => "all",
+            "client_id" => $this->_last_client_id,
+            "client_secret" => $this->_last_client_secret
+        ]));
+        xassert(isset($jr->access_token));
+        xassert_eqq($this->find_token($jr->access_token)->data("scope"), "read");
     }
 
     /** Users reload and go back. None of that may cost them a working grant.
@@ -2960,6 +3095,52 @@ class Authorize_Tester {
         xassert_eqq(TokenScope::unparse(TokenScope::parse("submission:admin#r1", null)), "submission:admin#r1");
         // an OIDC scope grants no API access, but is retained by the round-trip
         xassert_eqq(TokenScope::unparse(TokenScope::parse("openid read#3", null)), "openid read#3");
+    }
+
+    /** OpenID Connect scopes unparse in a fixed order, once each, so equal
+     * requests spelled differently compare equal. */
+    function test_oidc_scopes_are_canonical() {
+        $canon = function ($s) {
+            return TokenScope::unparse(TokenScope::parse($s, null));
+        };
+        xassert_eqq($canon("profile openid read"), "openid profile read");
+        xassert_eqq($canon("read profile openid"), "openid profile read");
+        xassert_eqq($canon("openid openid all"), "openid all");
+        xassert_eqq($canon("phone address profile email openid"),
+                    "openid email profile address phone");
+        xassert_eqq($canon("email profile email"), "email profile");
+        xassert_eqq($canon("email"), "email");
+        xassert_eqq($canon("openid none"), "openid");
+        xassert_eqq($canon("profile * openid"), "openid profile all");
+        xassert_eqq($canon("admin email"), "email all");
+        xassert_eqq($canon("profile openid read#3"), "openid profile read#3");
+
+        // full API scope with no OIDC scope is still null
+        xassert_eqq(TokenScope::parse("all", null), null);
+        xassert_eqq(TokenScope::parse("* admin", null), null);
+
+        // OIDC scopes grant no API access
+        $ts = TokenScope::parse("openid email profile address phone", null);
+        xassert(!$ts->allows_some(TokenScope::S_SUB_READ));
+        xassert_eqq($ts->any_bits(), 0);
+
+        // intersection takes OIDC scopes from the left operand, canonically
+        xassert_eqq(TokenScope::unparse(TokenScope::intersect(
+            TokenScope::parse("profile openid all", null), "read")), "openid profile read");
+        xassert_eqq(TokenScope::unparse(TokenScope::intersect(
+            TokenScope::parse("read", null), "openid email read")), "read");
+        // ...and removing them leaves the API scope
+        xassert_eqq(TokenScope::unparse(
+            TokenScope::parse("phone openid read", null)->without_oidc()), "read");
+        xassert_eqq(TokenScope::unparse(
+            TokenScope::parse("email openid", null)->without_oidc()), "none");
+
+        // every OIDC scope splits out as OIDC
+        xassert_eqq(TokenScope::scope_str_split_openid("read email openid profile address phone all"),
+                    ["email openid profile address phone", "read all"]);
+        xassert(TokenScope::scope_str_all_openid("openid email profile"));
+        xassert(TokenScope::scope_str_all_openid("phone"));
+        xassert(!TokenScope::scope_str_all_openid("openid read"));
     }
 
     /** A disabled provider hides its sign-in button. It must not still
@@ -3458,6 +3639,11 @@ class Authorize_Tester {
         xassert_eqq(substr_count($this->_last_page_html ?? "", "</form>"), 1);
         xassert_eqq($html("confclient", "https://conf1.example.com/cb", "openid"), "none");
         xassert_eqq(substr_count($this->_last_page_html ?? "", "</form>"), 1);
+        // every OIDC scope stays out of the box
+        xassert_eqq($html("confclient", "https://conf1.example.com/cb", "profile openid email read"),
+                    "read");
+        xassert_eqq($html("confclient", "https://conf1.example.com/cb", "openid email profile"),
+                    "none");
         // a dynamic client's registration scope is not this request's scope
         xassert_eqq($html($this->register_client("https://dall.com/"),
                           "https://dall.com/", "write"), "write");
@@ -3608,9 +3794,11 @@ class Authorize_Tester {
             ], $this->u_chair);
         };
 
-        // a scope naming no submission subset is fine
-        [$how, ] = $go("read");
-        xassert_eqq($how, "code");
+        // a scope naming no submission subset is fine, including full scope
+        foreach (["read", "all", "openid all", "openid"] as $scope) {
+            [$how, ] = $go($scope);
+            xassert_eqq($how, "code", $scope);
+        }
 
         // one that names a paper, a tag, or a search is not
         foreach (["submission:admin#12", "read submission:admin#hot",

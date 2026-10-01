@@ -1694,13 +1694,13 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         case "alladmin":
         case "actadmin":
-            if ($this->user->privChair) {
+            // null managed_track_tags: user administers the default track
+            if ($this->user->privChair
+                || ($mttl = $this->user->managed_track_tags()) === null) {
                 break;
             }
             $fx = ["Paper.managerContactId={$this->user->contactXid}"];
-            if (($mttl = $this->user->managed_track_tags()) === null) {
-                // do nothing
-            } else if (!empty($mttl)) {
+            if (!empty($mttl)) {
                 $tsm = (new TagSearchMatcher($this->user->conf->root_user()))->add_tag_list($mttl);
                 $fx[] = $tsm->exists_sqlexpr("Paper") ?? "false";
             }

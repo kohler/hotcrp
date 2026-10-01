@@ -39,6 +39,10 @@ class Authorize_Page {
 
     /** Minimum acceptable `max_age` parameter */
     const MAX_AGE_MIN_BOUND = 300;
+    /** Sign-ins at least this recent satisfy any `max_age`, including the
+     * zero of `prompt=login`: a sign-in made to answer this very request
+     * must count. */
+    const SIGNIN_MAX_AGE_MIN_BOUND = 120;
 
 
     function __construct(Contact $viewer, Qrequest $qreq, ?ComponentSet $cs = null) {
@@ -186,12 +190,14 @@ class Authorize_Page {
                 $scope .= " " . $rest;
             }
         }
+        $ts = TokenScope::parse($scope, null);
+        $scope = TokenScope::unparse($ts);
         if ($this->client->only_openid
-            && !TokenScope::scope_str_contains($scope, "openid")) {
+            && (!$ts || !$ts->allows_oidc(TokenScope::OIDC_OPENID))) {
             $this->redirect_error("invalid_scope", "Scope `openid` required");
         }
         if ($this->client->is_cdb
-            && ($ts = TokenScope::parse($scope, null))
+            && $ts
             && $ts->has_selector()) {
             // A token for a cdb client works at every conference on the contact
             // database, but a selector means whatever it means at the site
@@ -281,7 +287,7 @@ class Authorize_Page {
         }
         return $user->authentication_checker($this->qreq, "authorize")
             ->set_max_age(max($max_age, self::MAX_AGE_MIN_BOUND))
-            ->set_max_signin_age($max_age)
+            ->set_max_signin_age(max($max_age, self::SIGNIN_MAX_AGE_MIN_BOUND))
             ->set_quiet(true);
     }
 
@@ -312,15 +318,13 @@ class Authorize_Page {
             $this->redirect_error("login_required");
         }
 
-        // The stored consent scope is canonical (`store_code` unparses the
-        // granted intersection), so canonicalize this request’s scope the same
-        // way before looking it up.
-        $consent_scope = TokenScope::unparse(TokenScope::parse($token_params["scope"], null));
+        // `handle_request` canonicalized this request’s scope, and recorded
+        // consent scopes are canonical too, so they compare directly.
         if (!UserSecurityEvent::session_oauth_confirmation($this->qreq->qsession(),
                 $this->viewer->email,
                 $this->client->client_id,
                 $this->qreq->redirect_uri,
-                $consent_scope,
+                $token_params["scope"],
                 $this->client->is_cdb ? null : $this->conf->dbname)) {
             // no current authorization for exactly this client & scope
             $this->redirect_error("consent_required");

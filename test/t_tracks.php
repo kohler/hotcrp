@@ -168,6 +168,19 @@ class Tracks_Tester {
         xassert_assign($this->u_chair, "paper,tag\n1-3,-~~sys\n", true);
     }
 
+    function test_admin_search_default_track() {
+        $this->conf->save_refresh_setting("tracks", 1, '{"_":{"admin":"+red"}}');
+
+        $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        xassert($u_jon->is_track_manager());
+        $canadmin = array_keys(search_json($this->u_chair, "canadmin:jon@cs.ucl.ac.uk"));
+        xassert(!empty($canadmin));
+        xassert_search($u_jon, ["q" => "", "t" => "alladmin"], $canadmin);
+        xassert_search($u_jon, ["q" => "", "t" => "actadmin"], $canadmin);
+
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
     function test_admin_search() {
         $this->conf->save_refresh_setting("tracks", 1, '{"red":{"admin":"+red"}}');
 
