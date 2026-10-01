@@ -633,7 +633,14 @@ class DocumentInfo implements JsonSerializable {
     /** @return int */
     function size() {
         if ($this->size < 0) {
-            $this->size = $this->content_size();
+            // prefer local content; otherwise ask S3 without downloading
+            if (!$this->content_available_locally()
+                && !$this->load_database()) {
+                $this->check_s3();
+            }
+            if ($this->size < 0) {
+                $this->size = $this->content_size();
+            }
             if ($this->size >= 0 && $this->paperStorageId >= 1) {
                 $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size<0", $this->size, $this->paperId, $this->paperStorageId);
             }
@@ -1056,13 +1063,21 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
         while ($s3) {
-            $sz = $s3->head_size($s3k);
-            if ($sz < 0 && $this->s3_upgrade_extension($s3, $s3k)) {
-                $sz = $s3->head_size($s3k);
+            $r = $s3->start_head_size($s3k);
+            $sz = $r->finish();
+            if ($r->status === 404 && $this->s3_upgrade_extension($s3, $s3k)) {
+                $r = $s3->start_head_size($s3k);
+                $sz = $r->finish();
             }
             if ($sz >= 0) {
+                if ($this->size < 0) {
+                    $this->size = $sz;
+                }
                 $this->_dflags |= $sz === $this->size ? self::DF_S3_SIZE_MATCH : 0;
                 return true;
+            } else if ($r->status !== 404) {
+                // as in `load_s3`, only absence moves on to the next client
+                return false;
             }
             ++$this->_s3_index;
             $s3 = $this->conf->s3_client($this->_s3_index);

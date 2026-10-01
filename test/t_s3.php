@@ -31,7 +31,8 @@ class S3_Tester {
             "key" => "AKIAOFFLINETESTKEY", "secret" => "offlinetestsecret",
             "bucket" => "offlinetestbucket"
         ]);
-        return $s3->set_result_class("Offline_S3Result");
+        Offline_S3Result::$responder = null;
+        return $s3->set_result_class("Offline_S3Result")->set_curl(false);
     }
 
     /** @param S3Client|array ...$s3cs */
@@ -44,25 +45,32 @@ class S3_Tester {
     }
 }
 
-/** An `S3Result` that records its request and reports success without
- * contacting S3.
+/** An `S3Result` that records its request and, without contacting S3,
+ * reports success or whatever `$responder` returns.
  * @inherits S3Result<bool> */
 class Offline_S3Result extends S3Result {
     /** @var list<array{string,string,string}> */
     static public $requests = [];
+    /** Returns `[$status, $headers, $body]` for a method and key, or null
+     * for success.
+     * @var ?callable(string,string):(array{int,array<string,string>,string}|null) */
+    static public $responder;
+    /** @var string */
+    private $body = "";
 
     /** @return $this */
     function run() {
         if ($this->status === null) {
             self::$requests[] = [$this->method, $this->skey, $this->args["content"] ?? ""];
-            $this->status = 200;
-            $this->status_text = "OK";
+            $r = self::$responder ? call_user_func(self::$responder, $this->method, $this->skey) : null;
+            [$this->status, $this->response_headers, $this->body] = $r ?? [200, [], ""];
+            $this->status_text = $this->status === 200 ? "OK" : "Error";
         }
         return $this;
     }
 
     /** @return string */
     function response_body() {
-        return "";
+        return $this->body;
     }
 }

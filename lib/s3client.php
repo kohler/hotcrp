@@ -189,6 +189,14 @@ class S3Client {
         return $this;
     }
 
+    /** Enable or disable curl requests, which bypass `result_class`.
+     * @param bool $x
+     * @return $this */
+    function set_curl($x) {
+        $this->_has_curl = $x && function_exists("curl_init");
+        return $this;
+    }
+
     /** @param bool $x
      * @return $this */
     function set_verbose($x) {

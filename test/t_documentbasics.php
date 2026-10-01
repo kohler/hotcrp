@@ -793,6 +793,72 @@ class DocumentBasics_Tester {
         });
     }
 
+    function test_s3_size_without_download() {
+        // An S3-only document of unknown size learns its size from a HEAD
+        // request, rather than by downloading its content.
+        if (!$this->s3c) {
+            return;
+        }
+        $this->create_bucket();
+        $content = "size probe " . bin2hex(random_bytes(8)) . "\n";
+        $doc = DocumentInfo::make_content($this->conf, $content, "text/plain");
+        xassert($doc->store_s3());
+        $h = DocumentInfo::make_hash($this->conf, $doc->binary_hash(), "text/plain");
+        xassert(!$h->content_available());
+        xassert_eqq($h->size(), strlen($content));
+        xassert(!$h->content_available());
+    }
+
+    function test_s3_size_after_failed_head() {
+        // Asking S3 for a size must not stop a later download: a HEAD that
+        // fails for a reason other than absence leaves the GET to be tried.
+        $old_clients = $this->conf->opt("s3Clients");
+        S3_Tester::install($this->conf, S3_Tester::make_offline());
+        $this->conf->refresh_settings();
+        $content = "%PDF-1.4 head probe " . bin2hex(random_bytes(8)) . "\n";
+        $hash = DocumentInfo::make_content($this->conf, $content, "application/pdf")->binary_hash();
+        $methods = function () {
+            return array_column(Offline_S3Result::$requests, 0);
+        };
+        try {
+            foreach ([503, 403] as $head_status) {
+                Offline_S3Result::$requests = [];
+                Offline_S3Result::$responder = function ($method, $skey) use ($content, $head_status) {
+                    return $method === "HEAD" ? [$head_status, [], ""] : [200, [], $content];
+                };
+                $h = DocumentInfo::make_hash($this->conf, $hash, "application/pdf");
+                xassert_eqq($h->size(), strlen($content));
+                xassert_eqq($methods(), ["HEAD", "GET"]);
+                xassert_eqq($h->content(), $content);
+            }
+
+            // a successful HEAD supplies the size without a download
+            Offline_S3Result::$requests = [];
+            Offline_S3Result::$responder = function ($method, $skey) use ($content) {
+                return $method === "HEAD"
+                    ? [200, ["content-length" => (string) strlen($content)], ""]
+                    : [200, [], $content];
+            };
+            $h = DocumentInfo::make_hash($this->conf, $hash, "application/pdf");
+            xassert_eqq($h->size(), strlen($content));
+            xassert_eqq($methods(), ["HEAD"]);
+
+            // and an absent document is not fetched again
+            Offline_S3Result::$requests = [];
+            Offline_S3Result::$responder = function ($method, $skey) {
+                return [404, [], ""];
+            };
+            $h = DocumentInfo::make_hash($this->conf, $hash, "application/pdf");
+            xassert_eqq($h->size(), -1);
+            xassert_eqq($methods(), ["HEAD"]);
+        } finally {
+            Offline_S3Result::$responder = null;
+            $this->conf->set_opt("s3Clients", $old_clients);
+            $this->conf->refresh_settings();
+        }
+        xassert($this->conf->s3_client() === $this->s3c);
+    }
+
     function test_s3_requests() {
         if (!$this->s3c) {
             if ($this->verbose > 0) {
