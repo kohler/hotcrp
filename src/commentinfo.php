@@ -243,7 +243,7 @@ class CommentInfo {
 
 
     /** @param PaperInfo $prow
-     * @param ContactInfo $user
+     * @param Contact $user
      * @return string */
     static function script($prow, $user) {
         if (!Ht::mark_stash("papercomment")) {
@@ -272,7 +272,7 @@ class CommentInfo {
     }
 
     /** @param PaperInfo $prow
-     * @param ContactInfo $user */
+     * @param Contact $user */
     static function print_script($prow, $user) {
         echo self::script($prow, $user);
     }

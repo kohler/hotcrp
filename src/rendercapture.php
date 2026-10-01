@@ -10,16 +10,17 @@ class RenderCapture {
     /** @var string */
     public $content;
 
-    /** @return RenderCapture */
+    /** @return RenderCapture
+     * @suppress PhanAccessReadOnlyProperty */
     static function make(Qrequest $qreq) {
         $conf = $qreq->conf();
         $user = $qreq->user();
 
+        // render as `$user`, as a live request would, and restore afterwards
         Qrequest::set_main_request($qreq);
         $old_viewer = $conf->swap_viewer($user);
-        if (!Contact::$main_user) {
-            Contact::set_main_user($user);
-        }
+        $old_main_user = Contact::$main_user;
+        Contact::$main_user = $user;
         Navigation::headers_reset();
         $conf->_header_printed = false;
 
@@ -48,13 +49,15 @@ class RenderCapture {
         } catch (JsonCompletion $jc) {
             $jc->result->emit($qreq);
         } catch (PageCompletion $unused) {
+        } finally {
+            $conf->swap_viewer($old_viewer);
+            Contact::$main_user = $old_main_user;
         }
 
         $rc = new RenderCapture;
         $rc->status = Navigation::http_response_code();
         $rc->headers = Navigation::headers_list();
         $rc->content = ob_get_clean();
-        $conf->swap_viewer($old_viewer);
         return $rc;
     }
 

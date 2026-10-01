@@ -3399,6 +3399,29 @@ Phil Porras.");
         xassert_str_contains($html, "Rejected-field attempted title");
     }
 
+    function test_render_capture_restores_main_user() {
+        // a capture renders as its request's user, then puts back whatever
+        // main user was there before, so later renders and lookups are not
+        // made as the first user rendered
+        $saved = Contact::$main_user;
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        try {
+            foreach ([null, $this->u_chair] as $main) {
+                Contact::$main_user = $main;
+                foreach ([$this->u_estrin, $this->u_chair] as $u) {
+                    $qreq = TestQreq::get_page("paper", ["p" => 1])->set_user($u);
+                    $rc = RenderCapture::make($qreq);
+                    xassert($rc->ok());
+                    xassert(Contact::$main_user === $main);
+                }
+            }
+        } finally {
+            Navigation::$test_mode = $old_test_mode;
+            Contact::$main_user = $saved;
+        }
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
