@@ -96,6 +96,31 @@ class Login_Tester {
         }
     }
 
+    function test_reset_password_validation() {
+        $cases = [
+            ["ééééé", "Password too short"],
+            ["abcdefg\xff", "Invalid UTF-8"],
+            [str_repeat("a", 73), "Password too long"],
+            [str_repeat("密", 25), "Password too long"],
+            ["éééééé", null]
+        ];
+        $user = Contact::make_email($this->conf, "newuser@hotcrp.com");
+        foreach ($cases as $c) {
+            $qreq = TestQreq::post(["password" => $c[0], "password2" => $c[0]])
+                ->set_user($user)->set_page("resetpassword");
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = new Signin_Page;
+            $info = $signinp->reset_request_basic($user, $qreq, $cs, ["ok" => true]);
+            if ($c[1] === null) {
+                xassert_eqq($info["ok"], true);
+                xassert_eqq($info["newpassword"] ?? null, $c[0]);
+            } else {
+                xassert_eqq($info["ok"], false);
+                xassert_str_contains($signinp->ms()->feedback_text_at("password"), $c[1]);
+            }
+        }
+    }
+
     /** A request for an email with no local account builds its `Contact` out
      * of the POST body. A stored contactdb identity outranks those request
      * fields, just as it would once `Contact::store` ran. */

@@ -2822,7 +2822,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param string $input
      * @return bool */
     static function valid_password($input) {
-        return strlen($input) > 5 && trim($input) === $input;
+        return strlen($input) > 5
+            && trim($input) === $input
+            && strlen($input) <= 72;
     }
 
     /** @return array{string,string} */
@@ -2892,7 +2894,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return int|string */
     private function password_hash_method() {
-        return $this->conf->opt("passwordHashMethod") ?? PASSWORD_DEFAULT;
+        $phm = $this->conf->opt["passwordHashMethod"] ?? null;
+        if ($phm !== null && in_array($phm, password_algos(), true)) {
+            return $phm;
+        }
+        return PASSWORD_DEFAULT;
     }
 
     /** @param string $hash

@@ -710,12 +710,6 @@ class Conf {
         $this->opt["paperSite"] = $papersite;
         // NB only set assetUrl on global conf (see refresh_globals())
 
-        // check passwordHashMethod
-        if (isset($this->opt["passwordHashMethod"])
-            && !in_array($this->opt["passwordHashMethod"], password_algos(), true)) {
-            unset($this->opt["passwordHashMethod"]);
-        }
-
         // docstore, S3, dbNoPapers
         $this->_docstore = false;
         if (($this->opt["dbNoPapers"] ?? null)

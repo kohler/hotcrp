@@ -607,8 +607,16 @@ class Signin_Page {
             $this->ms()->error_at("password", "<0>Passwords cannot begin or end with spaces");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
-        } else if (strlen($p1) <= 5) {
-            $this->ms()->error_at("password", "<0>Passwords must be at least six characters long");
+        } else if (!is_valid_utf8($p1)) {
+            $this->ms()->error_at("password", "<0>Invalid UTF-8 in password");
+            $this->ms()->error_at("password2");
+            $info["ok"] = false;
+        } else if (UnicodeHelper::utf8_glyphlen($p1) <= 5) {
+            $this->ms()->error_at("password", "<0>Password too short");
+            $this->ms()->error_at("password2");
+            $info["ok"] = false;
+        } else if (strlen($p1) > 72) {
+            $this->ms()->error_at("password", "<0>Password too long");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
         } else if (!Contact::valid_password($p1)) {

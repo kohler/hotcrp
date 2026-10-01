@@ -897,6 +897,30 @@ class UserStatus_Tester {
         xassert($us->user->check_password($newpw));
     }
 
+    function test_edit_own_password_validation() {
+        $cases = [
+            ["ééééé", "Password too short"],
+            ["abcdefg\xff", "Invalid UTF-8"],
+            [str_repeat("a", 73), "Password too long"],
+            [str_repeat("密", 25), "Password too long"],
+            ["éééééé", null]
+        ];
+        foreach ($cases as $c) {
+            list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+            $qreq->upassword = $qreq->upassword2 = $c[0];
+            $us = (new UserStatus($u))->set_qreq($qreq);
+            $us->start_update()->set_user($u);
+            $us->request_group("");
+            if ($c[1] === null) {
+                xassert_eqq($us->jval->new_password ?? null, $c[0]);
+                xassert(!$us->has_problem_at("password"));
+            } else {
+                xassert_eqq($us->jval->new_password ?? null, null);
+                xassert_str_contains($us->feedback_text_at("password"), $c[1]);
+            }
+        }
+    }
+
     static function reauth_query($qreq, $email, $bound) {
         $x = false;
         foreach (UserSecurityEvent::session_list_by_email($qreq->qsession(), $email) as $use) {
