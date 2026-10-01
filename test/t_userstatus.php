@@ -649,6 +649,17 @@ class UserStatus_Tester {
             xassert_eqq($rh !== "", $sees, $viewer->email);
         }
 
+        // ...as does an author's potential-conflict list (the author's paper
+        // shares the unlisted member's affiliation)
+        $prow = $this->conf->checked_paper_by_id(2);
+        xassert($prow->has_author($au));
+        xassert(!!$prow->potential_conflict_list($acct));
+        $jr = call_api("potentialconflicts", $au, TestQreq::get(["p" => 2]));
+        xassert_eqq($jr->ok, true);
+        foreach ($jr->potential_conflicts as $pcj) {
+            xassert_neqq($pcj->email, $email);
+        }
+
         $this->conf->qe("delete from ContactInfo where email=?", $email);
         $this->conf->invalidate_caches("users", "pc");
     }

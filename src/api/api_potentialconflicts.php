@@ -80,7 +80,7 @@ class PotentialConflicts_API {
 
         // compute potential conflict list
         $potconfs = [];
-        foreach ($prow->conf->pc_members() as $pcm) {
+        foreach ($prow->conf->listed_pc_members() as $pcm) {
             if ($prow->has_author($pcm)) {
                 $potconfs[] = (object) [
                     "uid" => $pcm->contactId,
