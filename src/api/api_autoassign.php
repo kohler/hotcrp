@@ -38,7 +38,7 @@ class Autoassign_API {
                 $ls[] = (string) $elt;
             }
         } else if ($is_param && preg_match('/\A\s*\{/', $qreq->$name)) {
-            $map = (new JsonParser)->set_assoc(true)->set_user()->decode($qreq->$name);
+            $map = (new JsonParser($qreq->$name))->set_assoc(true)->set_user()->decode();
             if (!is_array($map)) {
                 return null;
             }

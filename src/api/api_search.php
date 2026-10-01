@@ -113,7 +113,7 @@ class Search_API {
             return;
         }
         if (str_starts_with($search, "{")) {
-            $param = (new JsonParser)->set_assoc(true)->set_user()->decode($search);
+            $param = (new JsonParser($search))->set_assoc(true)->set_user()->decode();
         } else {
             $pos = str_starts_with($search, "?") ? 1 : 0;
             preg_match_all('/([^&;=\s]*)=([^&;=\s]*)/', $search, $m, PREG_SET_ORDER, $pos);
