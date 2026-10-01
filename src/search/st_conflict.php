@@ -24,9 +24,8 @@ final class Conflict_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         [$usword, $op, $value] = $sword->pop_comparison();
-        $usrch = $usword
-            ? $srch->user_search(ContactSearch::F_USER | ($sword->kwdef->pc_only ? ContactSearch::F_PC : 0) | ContactSearch::F_REQUIRED, $usword)
-            : null;
+        // no user means the PC
+        $usrch = $srch->user_search(ContactSearch::F_USER | ($sword->kwdef->pc_only ? ContactSearch::F_PC : 0) | ($usword ? ContactSearch::F_REQUIRED : 0), $usword ?? SearchWord::make_simple(""));
         $ccm = new ContactCountMatcher(CountMatcher::unparse_comparison($op, $value), $usrch);
         if (($qr = SearchTerm::make_constant($ccm->tautology()))) {
             return $qr;

@@ -38,7 +38,7 @@ class Author_SearchTerm extends SearchTerm {
             }
         }
         $aust = new Author_SearchTerm($srch->user, $count, $cids);
-        if ($cids === null && $word !== "") {
+        if ($cids === null && $word !== null && $word !== "") {
             $aust->regex = Text::star_text_pregexes($word);
             $aust->set_float("fhl:au", $aust->regex);
         }

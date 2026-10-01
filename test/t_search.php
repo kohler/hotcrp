@@ -1207,6 +1207,46 @@ class Search_Tester {
         xassert_match($s->full_feedback_text(), '/PC .*not found/');
     }
 
+    function test_conflict_and_author_search_without_user() {
+        // `conflict:any`, `pcconf:N`, and friends count conflicts with any PC
+        // member; `au:any` matches any author
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        xassert_assign($chair, "paper,action,user\n5,conflict,marina@poema.ru\n");
+
+        $all = (new PaperSearch($chair, ["q" => "", "t" => "all"]))->paper_ids();
+        $npcconf = [];
+        $result = $conf->qe("select paperId, count(*) from PaperConflict where contactId?a and conflictType>? group by paperId", array_keys($conf->pc_members()), CONFLICT_MAXUNCONFLICTED);
+        while (($row = $result->fetch_row())) {
+            $npcconf[(int) $row[0]] = (int) $row[1];
+        }
+        $result->close();
+        $expect = function ($f) use ($all, $npcconf) {
+            return array_values(array_filter($all, function ($pid) use ($f, $npcconf) {
+                return $f($npcconf[$pid] ?? 0);
+            }));
+        };
+        xassert_in_eqq(5, $expect(function ($n) { return $n > 0; }));
+
+        $search = function ($q) use ($chair) {
+            return (new PaperSearch($chair, ["q" => $q, "t" => "all"]))->paper_ids();
+        };
+        foreach (["conflict:any", "conflict:yes", "has:pcconf", "pcconf:any"] as $q) {
+            xassert_eqq($search($q), $expect(function ($n) { return $n > 0; }), $q);
+        }
+        foreach (["conflict:none", "pcconf:none", "NOT has:pcconf"] as $q) {
+            xassert_eqq($search($q), $expect(function ($n) { return $n === 0; }), $q);
+        }
+        xassert_eqq($search("conflict:>1"), $expect(function ($n) { return $n > 1; }));
+        xassert_eqq($search("pcconf:<2"), $expect(function ($n) { return $n < 2; }));
+
+        xassert_eqq($search("au:any"), $all);
+        xassert_eqq($search("listedau:any"), $all);
+        xassert_eqq($search("au:none"), []);
+
+        xassert_assign($chair, "paper,action,user\n5,noconflict,marina@poema.ru\n");
+    }
+
     function test_desirability_column_respects_aggregate_pref_visibility() {
         // Regression: the Desirability column renders the signed reviewer-
         // preference aggregate. `prepare()` gates only on the global `is_manager()`
