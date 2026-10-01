@@ -3103,6 +3103,56 @@ class Permission_Tester {
         xassert_eqq($conf->checked_paper_by_id(1)->managerContactId, 0);
     }
 
+    function test_conflicted_chair_on_managed_paper() {
+        // A chair conflicted with a paper that another user manages sees it
+        // as a chair, whatever `pc_confpdf` says, and searches agree
+        $conf = $this->conf;
+        $old_confpdf = $conf->setting("pc_confpdf");
+        xassert($this->u_shenker->privChair);
+        xassert_assign($this->u_chair, "paper,action,user\n1,manager,{$this->u_marina->email}\n1,conflict,{$this->u_shenker->email}\n");
+        foreach ([1, 2] as $confpdf) {
+            $conf->save_refresh_setting("pc_confpdf", $confpdf);
+            Contact::update_rights();
+            $chair = $conf->checked_user_by_email($this->u_shenker->email);
+            $p1 = $conf->checked_paper_by_id(1, $chair);
+            xassert($p1->has_conflict($chair));
+            xassert(!$chair->allow_admin($p1));
+            xassert($chair->can_view_paper($p1));
+            xassert($chair->can_view_pdf($p1));
+            xassert($chair->can_view_all(true));
+            xassert_in_eqq(1, (new PaperSearch($chair, "has:submission"))->paper_ids());
+            xassert_not_in_eqq(1, (new PaperSearch($chair, "submission:none"))->paper_ids());
+            xassert_not_in_eqq(1, (new PaperSearch($chair, "NOT has:submission"))->paper_ids());
+        }
+        $conf->save_refresh_setting("pc_confpdf", $old_confpdf);
+
+        // ...but tracks that exclude the chair by tag still apply
+        $old_tracks = $conf->setting_data("tracks");
+        $chair = $conf->checked_user_by_email($this->u_shenker->email);
+        $old_tags = $chair->contactTags;
+        $chair->set_prop("contactTags", " red#0");
+        $chair->save_prop();
+        $conf->invalidate_caches("users", "pc");
+        foreach ([["viewpdf", true, false], ["view", false, false]] as $t) {
+            list($perm, $view, $pdf) = $t;
+            $conf->save_refresh_setting("tracks", 1, json_encode(["_" => [$perm => "-red"]]));
+            Contact::update_rights();
+            $chair = $conf->checked_user_by_email($this->u_shenker->email);
+            xassert($chair->has_tag("red"));
+            $p1 = $conf->checked_paper_by_id(1);
+            xassert(!$chair->allow_admin($p1));
+            xassert_eqq($chair->can_view_paper($p1), $view, $perm);
+            xassert_eqq($chair->can_view_pdf($p1), $pdf, $perm);
+        }
+        $conf->save_refresh_setting("tracks", $old_tracks === null ? null : 1, $old_tracks);
+        $chair->set_prop("contactTags", $old_tags);
+        $chair->save_prop();
+        $conf->invalidate_caches("users", "pc");
+
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearmanager\n1,noconflict,{$this->u_shenker->email}\n");
+        Contact::update_rights();
+    }
+
     function test_ambiguous_reviewer_name_requires_visible_identity() {
         // When two reviewers of a paper share a name, reviewer lists
         // append “ <email>” to tell them apart. That disambiguation must

@@ -3657,8 +3657,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return $this->_dangerous_track_mask;
         }
         $confpdf = 0;
-        if ($this->isPC
-            && (!$this->privChair || !$this->conf->has_any_explicit_manager())) {
+        if ($this->isPC && !$this->privChair) {
             $confpdf = $this->conf->setting("pc_confpdf") ?? 0;
         }
         $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
@@ -3780,6 +3779,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     || !$this->conf->check_track_view_sensitivity()
                     || $this->conf->check_tracks($prow, $this, Track::VIEW))
                 && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED
+                    || $this->privChair
                     || $this->conf->allow_conflicted_pc_view());
 
             // check whether PC privileges apply
@@ -3865,6 +3865,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                        || ($ci->review_status > PCI::CIRS_DECLINED
                            && $prow->timeSubmitted != 0)) {
                 $cif |= PCI::CIF_VIEW | $docbit;
+            } else if ($allow_pc_broad
+                       && $this->privChair) {
+                // `pc_confpdf` and PC view times don't apply to chairs
+                $cif |= PCI::CIF_VIEW;
+                if ($this->conf->check_tracks($prow, $this, Track::VIEWPDF)) {
+                    $cif |= $docbit;
+                }
             } else {
                 if ($allow_pc_broad
                     && $this->conf->time_pc_view($prow, false)) {
