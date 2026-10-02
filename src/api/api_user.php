@@ -35,7 +35,7 @@ class User_API {
             && (!$found || strcasecmp($found->email, $email) !== 0)) {
             $roles = "";
             if (!$user->is_track_manager() && !$broad_lookup) {
-                $roles = " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
+                $roles = " and roles!=0 and (roles&" . ($user->viewable_roles_mask() & Contact::ROLE_ANYPC) . ")!=0";
             }
             $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 1",
                 $email, "{$email}~", Contact::CFM_DISABLEMENT);

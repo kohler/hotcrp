@@ -515,7 +515,7 @@ class LogEntryGenerator {
         $rows = [];
         foreach ($xusers as $u1) {
             $u1e = $u1 ? $u1->email : "";
-            $u1r = $u1 ? self::$csv_role_map[$u1->roles & 7] : "";
+            $u1r = $u1 ? self::$csv_role_map[($u1->roles & 6) | ($u1->is_pc_member() ? 1 : 0)] : "";
             foreach ($xdest_users as $u2) {
                 $u2e = $u2 ? $u2->email : "";
                 foreach ($pids as $p) {

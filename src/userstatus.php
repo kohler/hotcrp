@@ -1289,7 +1289,7 @@ class UserStatus extends MessageSet {
             if (!$old_activity_at
                 || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
                     && ($roles & Contact::ROLE_PCLIKE) !== 0)) {
-                if (($roles & Contact::ROLE_PC) !== 0) {
+                if (($roles & Contact::ROLE_ANYPC) !== 0) {
                     $prep = $user->prepare_mail("@newaccount.pc");
                 } else if (($roles & Contact::ROLE_ADMIN) !== 0) {
                     $prep = $user->prepare_mail("@newaccount.admin");

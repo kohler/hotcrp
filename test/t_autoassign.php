@@ -504,6 +504,26 @@ class Autoassign_Tester {
         $conf->update_automatic_tags();
     }
 
+    function test_prefconflict_includes_unlisted_pc() {
+        $conf = $this->conf;
+        $email = "unlprefconf@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $uid = $acct->contactId;
+        $conf->qe("insert into PaperReviewPreference set paperId=3, contactId=?, preference=-100", $uid);
+
+        $aa = $this->autoassigner("prefconflict", null, [3], []);
+        $aa->run();
+        xassert_str_contains(join("", $aa->assignments()), $email);
+
+        $conf->qe("delete from PaperReviewPreference where contactId=?", $uid);
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     /** “Enabled” PC members are those not disabled; PC members who have never
      * signed in count. The autoassign page keeps an explicit `unlisted` choice. */
     function test_enabled_pc_includes_placeholders_not_disabled() {

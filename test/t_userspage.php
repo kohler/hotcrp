@@ -103,4 +103,61 @@ class UsersPage_Tester {
         xassert_assign($chair, "paper,action,user\n1,clearconflict,{$preffer->email}\n1,clearconflict,{$pc->email}\n");
         xassert(call_api("=revpref", $preffer, ["pref" => $pref1], $p1)->ok);
     }
+
+    function test_users_unlisted_pc_columns() {
+        // the collaborators and scores columns treat unlisted PC members
+        // like other PC members
+        $email = "unlisted-columns@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($this->conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "name" => "Ursula Unlisted",
+            "roles" => ["unlistedpc"], "collaborators" => "Zebulon Quixote (Nowhere U)"]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $this->conf->invalidate_caches("users", "pc");
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $old_rev_open = $this->conf->setting("rev_open");
+        $old_viewrev = $this->conf->setting("viewrev");
+        $this->conf->save_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $this->conf->save_refresh_setting("rev_open", 1);
+        xassert_assign($chair, "paper,action,user\n1,primary,{$email}\n");
+        $acct = $this->conf->checked_user_by_email($email);
+        save_review(1, $acct, ["ovemer" => 2, "revexp" => 1, "ready" => true]);
+
+        $viewer = $this->u_marina;
+        xassert($viewer->isPC && !$viewer->privChair);
+        $qreq = TestQreq::get(["t" => "fullpc"])
+            ->set_conf($this->conf)
+            ->set_user($viewer)
+            ->set_qsession(new MemoryQsession);
+        $ovemer = $this->conf->find_review_field("ovemer");
+        $qreq->set_csession("uldisplay", " collab {$ovemer->short_id} ");
+        $rfields = array_values(array_filter($this->conf->review_form()->viewable_fields($viewer),
+            function ($f) { return $f instanceof Discrete_ReviewField; }));
+        $ovemer_fid = ContactList::FIELD_SCORE + array_search($ovemer, $rfields, true);
+        $pl = new ContactList($viewer, false, $qreq);
+        $h = $pl->table_html("fullpc", "");
+        xassert_str_contains($h, "Ursula Unlisted");
+        xassert_str_contains($pl->content(ContactList::FIELD_COLLABORATORS, $acct), "Zebulon Quixote");
+        xassert_neqq($pl->content($ovemer_fid, $acct), "");
+
+        // but a viewer who may not see PC roles gets neither, even on a
+        // list that is not limited to the PC
+        $this->conf->set_opt("secretPC", true);
+        Contact::update_rights();
+        xassert_eqq($viewer->viewable_roles_mask(), 0);
+        xassert(ContactList::can_view_list($viewer, "re"));
+        $pl = new ContactList($viewer, false, $qreq);
+        $h = $pl->table_html("re", "");
+        xassert_str_contains($h, "Ursula Unlisted");
+        xassert_eqq($pl->content(ContactList::FIELD_COLLABORATORS, $acct), "");
+        xassert_eqq($pl->content($ovemer_fid, $acct), "");
+        $this->conf->set_opt("secretPC", null);
+        Contact::update_rights();
+
+        $this->conf->qe("delete from PaperReview where contactId=?", $acct->contactId);
+        $this->conf->save_setting("viewrev", $old_viewrev);
+        $this->conf->save_refresh_setting("rev_open", $old_rev_open);
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+    }
 }

@@ -91,6 +91,23 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    function test_unlistedpc_new_account_mail() {
+        $email = "unlisted-welcome@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+        $npreps = count(MailChecker::$preps);
+
+        $us = (new UserStatus($this->conf->root_user()))->set_notify(true);
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $preps = array_splice(MailChecker::$preps, $npreps);
+        xassert_eqq(count($preps), 1);
+        xassert_str_contains($preps[0]->subject, "Welcome to the program committee");
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
     // The address rule is the invariant everything else rests on, so the
     // boundary cases matter: a domain that merely ends in the reserved one is
     // not the reserved one.

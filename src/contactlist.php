@@ -1047,7 +1047,8 @@ class ContactList {
                 return "";
             }
         case self::FIELD_COLLABORATORS:
-            if ($this->user->isPC && ($row->roles & Contact::ROLE_PC)) {
+            if ($this->user->isPC
+                && ($row->roles & $this->_viewable_roles & Contact::ROLE_ANYPC) !== 0) {
                 $t = [];
                 foreach ($row->collaborator_generator() as $co) {
                     $t[] = (empty($t) ? '' : ';</span> ') . '<span class="nw">' . $co->name_h(NAME_A);
@@ -1057,7 +1058,7 @@ class ContactList {
                 return "";
             }
         default:
-            if (($row->roles & Contact::ROLE_PC)
+            if (($row->roles & $this->_viewable_roles & Contact::ROLE_ANYPC) !== 0
                 || $this->user->privChair
                 || $this->limit === "req") {
                 $f = $this->_rfields[$fieldId - self::FIELD_SCORE];

@@ -304,6 +304,30 @@ class LogEntry_Tester {
         $conf->qe("delete from ActionLog where logId>?", $maxlog);
     }
 
+    function test_csv_role_unlisted_pc() {
+        $conf = $this->conf;
+        $email = "unlisted-log@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        $maxlog = $conf->fetch_ivalue("select max(logId) from ActionLog");
+        $roles = [];
+        foreach ([["unlistedpc"], ["unlistedpc", "sysadmin"], ["pc"]] as $rj) {
+            $u = $us->save_user((object) ["email" => $email, "roles" => $rj]);
+            xassert(!!$u, $us->full_feedback_text());
+            $conf->invalidate_caches("users", "pc");
+            $conf->log_for($u, null, "Unlisted role entry");
+            $leg = new LogEntryGenerator($this->u_chair, 50);
+            $row = $leg->page_rows(1)[0];
+            xassert_eqq($row->action, "Unlisted role entry");
+            $roles[] = $leg->narrow_csv_data_list($row)[0][3];
+        }
+        xassert_eqq($roles, ["pc", "pc sysadmin", "pc"]);
+
+        $conf->qe("delete from ActionLog where logId>?", $maxlog);
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function finalize() {
         $this->conf->qe("delete from ActionLog");
         $this->conf->qe("alter table ActionLog AUTO_INCREMENT = 1");

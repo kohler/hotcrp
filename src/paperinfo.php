@@ -396,7 +396,7 @@ final class PaperContactInfo {
         $user_set = [$user->contactXid => $user];
         if ($user->contactXid > 0
             && !$rev_tokens
-            && ($user->roles & Contact::ROLE_PC) !== 0) {
+            && ($user->roles & Contact::ROLE_ANYPC) !== 0) {
             $viewer = Contact::$main_user;
             if ($viewer !== $user
                 && (!$viewer || $viewer->privChair || $viewer->contactXid === $prow->managerContactId)

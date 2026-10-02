@@ -22,7 +22,7 @@ class PrefConflict_Autoassigner extends Autoassigner {
         $qsuffix = $exists_submitted ? " and P.timeSubmitted>0 limit 1" : "";
         return $conf->ql_raw("select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP
-                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
+                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_ANYPC . ")!=0)
                 join Paper P on (P.paperId=PRP.paperId)
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED . "
