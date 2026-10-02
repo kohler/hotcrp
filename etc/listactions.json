@@ -32,6 +32,12 @@
         "function": "+GetJsonRQC_ListAction"
     },
     {
+        "name": "get/whovaxlsx", "get": true,
+        "title": "Paper information/Excel for Whova Session List (whova.com)",
+        "order": 10093,
+        "function": "+WhovaXlsx_ListAction"
+    },
+    {
         "name": "get/pcassignments", "get": true,
         "title": "Review assignments/PC assignments",
         "order": 20099,
