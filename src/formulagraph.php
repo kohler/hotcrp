@@ -467,6 +467,8 @@ class FormulaGraph extends MessageSet {
     private $_fx_type = 0;
     /** @var bool */
     private $_fx_combine = false;
+    /** @var bool */
+    private $_fx_mixed = false;
     /** @var list<string> */
     private $queries = [];
     /** @var list<string> */
@@ -798,6 +800,17 @@ class FormulaGraph extends MessageSet {
             }
         }
 
+        // CDF lines may count reviews or papers, each by its own formula, but
+        // a multicdf split is per review
+        $nindexed = 0;
+        foreach ($this->fxs as $f) {
+            $nindexed += $f->indexed() ? 1 : 0;
+        }
+        $this->_fx_mixed = $nindexed !== 0 && $nindexed !== count($this->fxs);
+        if ($this->_fx_mixed && $this->gtype === self::GTS_MULTICDF) {
+            $this->error_at("x", "<0>X axis formulas must all be per-review or all per-paper for this graph type");
+        }
+
         // mark blank if error
         if ($this->has_error()) {
             $this->gtype = self::GT_BLANK;
@@ -808,16 +821,19 @@ class FormulaGraph extends MessageSet {
         // From here on, the graph will succeed.
 
         // set index type
-        if ($this->fxs[0]->indexed()
+        if ($nindexed !== 0
             || $this->fy->indexed()
             || ($this->_fx_combine && $this->fy->extractor_indexed())) {
-            $fxorder = $this->fxorder && $this->fxorder->support_combiner() ? $this->fxorder : null;
-            $this->_index_type = Formula::combine_index_types(
-                $this->user,
-                $this->fxs[0]->index_type(),
-                $this->_fx_combine ? $this->fy->extractor_index_type() : $this->fy->index_type(),
-                $fxorder ? $fxorder->extractor_index_type() : 0
-            );
+            $its = [];
+            foreach ($this->fxs as $f) {
+                if ($f->indexed() || !$this->_fx_mixed)
+                    $its[] = $f->index_type();
+            }
+            $its[] = $this->_fx_combine ? $this->fy->extractor_index_type() : $this->fy->index_type();
+            if ($this->fxorder && $this->fxorder->support_combiner()) {
+                $its[] = $this->fxorder->extractor_index_type();
+            }
+            $this->_index_type = Formula::combine_index_types($this->user, ...$its);
         }
 
         // check X order
@@ -832,7 +848,8 @@ class FormulaGraph extends MessageSet {
         // apply index types and return
         if ($this->_index_type !== 0) {
             foreach ($this->fxs as $fx) {
-                $fx->set_external_index_type($this->_index_type);
+                if ($fx->indexed() || !$this->_fx_mixed)
+                    $fx->set_external_index_type($this->_index_type);
             }
             $this->fy->set_external_index_type($this->_index_type);
             if ($this->fxorder) {
@@ -925,7 +942,8 @@ class FormulaGraph extends MessageSet {
     /** @param Formula $fx
      * @return list<CDF_GraphData> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
-        $index_type = $this->_index_type;
+        // with mixed lines, a per-paper formula is evaluated per paper
+        $index_type = $this->_fx_mixed && !$fx->indexed() ? 0 : $this->_index_type;
         $fx->prepare_json();
         $index_type && $fx->prepare_indexer();
         $account_x = $this->_x_axis->accountant();
@@ -1449,9 +1467,13 @@ class FormulaGraph extends MessageSet {
     private function axis_json($ax) {
         $axis = $ax->orientation;
         if ($ax->label === null) {
-            $counttype = $this->fx && $this->fx->indexed()
-                ? "reviews"
-                : $this->conf->snouns[1];
+            if ($this->_fx_mixed) {
+                $counttype = null;
+            } else if ($this->fxs[0]->indexed()) {
+                $counttype = "reviews";
+            } else {
+                $counttype = $this->conf->snouns[1];
+            }
             if ($axis === "x") {
                 $ax->label = $this->fx_expression;
             } else if ($this->gtype === self::GTS_FBARCHART) {
@@ -1461,9 +1483,9 @@ class FormulaGraph extends MessageSet {
                        && $this->fy->expression === "sum(1)") {
                 $ax->label = "# {$counttype}";
             } else if ($this->gtype === self::GTS_OGIVE) {
-                $ax->label = "Cumulative count of {$counttype}";
+                $ax->label = $counttype ? "Cumulative count of {$counttype}" : "Cumulative count";
             } else if ($this->gtype & self::GT_CDF) {
-                $ax->label = "CDF of {$counttype}";
+                $ax->label = $counttype ? "CDF of {$counttype}" : "CDF";
                 $ax->fraction = true;
             } else {
                 $ax->label = $this->fy->expression;

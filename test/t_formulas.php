@@ -2048,6 +2048,62 @@ class Formulas_Tester {
         $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
     }
 
+    /** @return array{list<array{?string,list<float>}>,string} */
+    private function graph_cdf_lines($fx, $q, $gtype = "cdf") {
+        $fg = new FormulaGraph($this->u_chair, $gtype, $fx, "");
+        $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        xassert($fg->prepare(), $fg->full_feedback_text());
+        $j = $fg->graph_json([]);
+        $lines = [];
+        foreach ($j["data"] as $d) {
+            $vs = array_map("floatval", $d->d);
+            sort($vs);
+            $lines[] = [$d->label ?? null, $vs];
+        }
+        return [$lines, $j["y"]->label];
+    }
+
+    function test_graph_cdf_mixes_review_and_paper_formulas() {
+        // each CDF line is indexed by its own formula: per review for
+        // `ovemer`, per paper for `avg(ovemer)`, in either order
+        $f = $this->conf->find_review_field("ovemer");
+        $scores = $avgs = [];
+        foreach ($this->u_chair->paper_set(["paperId" => [19, 20]]) as $prow) {
+            $ps = [];
+            foreach ($prow->reviews_as_list() as $r) {
+                if ($r->reviewSubmitted > 0 && ($v = $r->fval($f)) !== null)
+                    $ps[] = (float) $v;
+            }
+            $scores = array_merge($scores, $ps);
+            if (!empty($ps)) {
+                $avgs[] = array_sum($ps) / count($ps);
+            }
+        }
+        sort($scores);
+        sort($avgs);
+        xassert_gt(count($scores), count($avgs));
+
+        [$lines, $ylabel] = $this->graph_cdf_lines("ovemer; avg(ovemer)", "19 20");
+        xassert_eqq($lines, [["ovemer", $scores], ["avg(ovemer)", $avgs]]);
+        xassert_eqq($ylabel, "CDF");
+        [$lines, $ylabel] = $this->graph_cdf_lines("avg(ovemer); ovemer", "19 20");
+        xassert_eqq($lines, [["avg(ovemer)", $avgs], ["ovemer", $scores]]);
+        xassert_eqq($ylabel, "CDF");
+        [$lines, $ylabel] = $this->graph_cdf_lines("avg(ovemer); ovemer", "19 20", "cumfreq");
+        xassert_eqq($ylabel, "Cumulative count");
+
+        // unmixed lines name what they count
+        xassert_eqq($this->graph_cdf_lines("ovemer", "19 20")[1], "CDF of reviews");
+        xassert_eqq($this->graph_cdf_lines("ovemer; ovemer", "19 20")[1], "CDF of reviews");
+        xassert_eqq($this->graph_cdf_lines("avg(ovemer)", "19 20")[1], "CDF of {$this->conf->snouns[1]}");
+
+        // a multicdf split is per review, so mixed lines are refused
+        $fg = new FormulaGraph($this->u_chair, null, "ovemer; avg(ovemer)", "multicdf reviewer");
+        $fg->add_dataset(new FormulaGraphDataset("19 20", "all", "", ""));
+        xassert(!$fg->prepare());
+        xassert($fg->has_error_at("x"));
+    }
+
     function test_graph_cdf_respects_review_visibility() {
         // The CDF path indexes by review just as the scatter path does. Whether
         // a review contributes its score must follow can_view_review, not
