@@ -216,9 +216,18 @@ class SearchQueryInfo {
      * @return ?string */
     function try_add_table($table, $joiner, $required = false) {
         // All added tables must match at most one Paper row each,
-        // except MyReviews.
+        // except MyReviews. A `_`-suffixed name is numbered, but reuses an
+        // existing table with the same definition.
         if (str_ends_with($table, "_")) {
+            $prefix = $table;
             $table .= count($this->tables);
+            foreach ($this->tables as $t => $tj) {
+                if (str_starts_with($t, $prefix)
+                    && array_slice($tj, 1) === array_slice($joiner, 1)) {
+                    $table = $t;
+                    break;
+                }
+            }
         }
         if (!isset($this->tables[$table])) {
             if (!$required && count($this->tables) > 32) {

@@ -112,6 +112,11 @@ attachment by `docid` or uploading a new one: inline via `content` (raw text) or
 an uploaded file field in a `json` form request. An omitted `docs` key keeps the
 comment’s current attachments.
 
+Changing a comment’s attachments requires `document:write` scope as well as
+`comment:write`. This covers adding, replacing, or removing an attachment, and
+deleting a comment that has attachments. Edits that leave the attachments
+unchanged need only `comment:write`.
+
 The API also supports form upload using the parameter conventions of the HotCRP
 web application (such as a `text` parameter for the comment body). These
 conventions are subject to change, and third-party applications should prefer
@@ -159,6 +164,8 @@ To upload a single new attachment:
 To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
+Changing attachments requires `document:write` scope (see
+[JSON upload](#tag-comments)).
 
 * scope comment:write
 * body application/json comment: A comment object supplied as a raw JSON body (see [JSON upload](#tag-comments)).

@@ -3544,7 +3544,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $this->u_chair->assign_review(17, $human, REVIEW_PC);
         save_review(17, $bot, ["ovemer" => 2, "revexp" => 1, "papsum" => "Bot summary",
                                "comaut" => "Bot comments"], null, ["quiet" => true]);
-        $conf->invalidate_caches("paper");
         $prow = $conf->checked_paper_by_id(17);
         $brow = fresh_review($prow, $bot);
         xassert(!!$brow);
@@ -3597,7 +3596,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
                                "comaut" => "Bot comments", "ready" => true], null, ["quiet" => true]);
         save_review(17, $human, ["ovemer" => 2, "revexp" => 1, "papsum" => "Human summary",
                                  "comaut" => "Human comments", "ready" => true], null, ["quiet" => true]);
-        $conf->invalidate_caches("paper");
         $prow = $conf->checked_paper_by_id(17);
         $brow = fresh_review($prow, $bot);
         $hrow = fresh_review($prow, $human);
@@ -3663,7 +3661,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from ContactInfo where email?a", [$bemail, $hemail]);
         $conf->save_refresh_setting("rev_open", $rev_open);
         $conf->save_refresh_setting("au_seerev", $au_seerev);
-        $conf->invalidate_caches("paper", "users", "pc");
+        $conf->invalidate_caches("users", "pc");
         Contact::update_rights();
     }
 

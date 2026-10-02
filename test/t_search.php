@@ -787,6 +787,28 @@ class Search_Tester {
         }
     }
 
+    /** @return list<string> */
+    private function comment_tables(PaperSearch $srch) {
+        $sqi = new SearchQueryInfo($srch);
+        $qe = $srch->main_term();
+        $qe->sqlexpr($sqi);
+        $qe->precise_sqlexpr($sqi);
+        return array_values(array_filter(array_keys($sqi->tables), function ($t) {
+            return str_starts_with($t, "Comments_");
+        }));
+    }
+
+    function test_comment_search_table_reuse() {
+        // a comment-count table is joined once per distinct definition,
+        // however many times a search asks for it
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert_eqq(count($this->comment_tables(new PaperSearch($pc, "cmt:>0"))), 1);
+        xassert_eqq(count($this->comment_tables(new PaperSearch($pc, "cmt:>0 OR cmt:>1"))), 1);
+        xassert_eqq(count($this->comment_tables(new PaperSearch($pc, "cmt:>0 OR aucmt:>0"))), 2);
+        $q = join(" OR ", array_map(function ($n) { return "cmt:>{$n}"; }, range(1, 20)));
+        xassert_eqq(count($this->comment_tables(new PaperSearch($pc, $q))), 1);
+    }
+
     function test_sensitive_search_rate_limit() {
         $u = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         xassert($u->contactId > 0);

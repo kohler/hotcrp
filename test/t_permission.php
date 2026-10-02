@@ -3005,7 +3005,7 @@ class Permission_Tester {
         $conf->qe("delete from ContactInfo where email=?", $email);
         $conf->invalidate_caches("users", "pc");
         xassert_assign($chair, "paper,action,email,name\n1,review,{$email},Ext Shepherd\n");
-        $conf->invalidate_caches("users", "pc", "paper");
+        $conf->invalidate_caches("users", "pc");
 
         $ext = $conf->checked_user_by_email($email);
         $marina = $this->u_marina;   // PC, not a reviewer of #1
@@ -3048,7 +3048,7 @@ class Permission_Tester {
         $conf->qe("delete from PaperReview where contactId=?", $ext->contactId);
         $conf->qe("delete from ContactInfo where contactId=?", $ext->contactId);
         $conf->save_refresh_setting("extrev_shepherd", $old_extrev);
-        $conf->invalidate_caches("users", "pc", "paper");
+        $conf->invalidate_caches("users", "pc");
     }
 
     function test_reviewers_only_uid_outside_reviewers_is_noop() {
@@ -3285,6 +3285,55 @@ class Permission_Tester {
         $conf->save_refresh_setting("rev_open", $old_revopen);
         $conf->save_refresh_setting("viewrevid", $old_viewrevid);
         Contact::update_rights();
+    }
+
+    function test_deadline_failure_names_failing_deadline() {
+        $conf = $this->conf;
+        $names = ["rev_open", "pcrev_hard", "extrev_hard", "pcrev_hard_1", "extrev_hard_1", "final_open", "final_done"];
+        $old = [];
+        foreach ($names as $n) {
+            $old[$n] = $conf->setting($n);
+        }
+        $conf->save_setting("rev_open", 1);
+        $conf->save_setting("pcrev_hard", Conf::$now - 100);
+        $conf->save_setting("extrev_hard", Conf::$now + 100);
+        $conf->save_setting("pcrev_hard_1", Conf::$now + 100);
+        $conf->save_setting("extrev_hard_1", Conf::$now - 100);
+        $conf->save_setting("final_open", Conf::$now - 200);
+        $conf->save_refresh_setting("final_done", Conf::$now - 100);
+
+        $text = function ($a) use ($conf) {
+            return (new FailureReason($conf, $a + ["paperId" => 1]))->unparse_text();
+        };
+        xassert_str_contains($text(["deadline" => "pcrev_hard", "reviewRound" => 0]), "deadline for this review has passed");
+        xassert_not_str_contains($text(["deadline" => "extrev_hard", "reviewRound" => 0]), "has passed");
+        xassert_not_str_contains($text(["deadline" => "pcrev_hard", "reviewRound" => 1]), "has passed");
+        xassert_str_contains($text(["deadline" => "extrev_hard", "reviewRound" => 1]), "deadline for this external review has passed");
+        xassert_str_contains($text(["deadline" => "extrev_chairreq", "reviewRound" => 1]), "deadline for requesting reviews has passed");
+        xassert_str_contains($text(["deadline" => "final_done"]), "deadline to update final versions has passed");
+
+        // the round comes from the failing review
+        $conf->save_setting("pcrev_hard", Conf::$now + 100);
+        $conf->save_refresh_setting("pcrev_hard_1", Conf::$now - 100);
+        $paper = $conf->checked_paper_by_id(1);
+        $rrow = null;
+        foreach ($paper->reviews_as_list() as $r) {
+            if ($r->reviewType >= REVIEW_PC) {
+                $rrow = $r;
+                break;
+            }
+        }
+        $conf->qe("update PaperReview set reviewRound=1 where paperId=1 and reviewId=?", $rrow->reviewId);
+        $paper = $conf->checked_paper_by_id(1);
+        $reviewer = $conf->user_by_id($rrow->contactId);
+        $fr = $reviewer->perm_edit_review($paper, $paper->review_by_id($rrow->reviewId));
+        xassert_str_contains($fr ? $fr->unparse_text() : "", "deadline for this review has passed");
+        $conf->qe("update PaperReview set reviewRound=? where paperId=1 and reviewId=?", $rrow->reviewRound, $rrow->reviewId);
+
+        foreach ($names as $n) {
+            $conf->save_setting($n, $old[$n]);
+        }
+        $conf->refresh_settings();
     }
 
     function test_reset_deadlines() {

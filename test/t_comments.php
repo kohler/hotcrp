@@ -2674,7 +2674,6 @@ class Comments_Tester {
     // is not a write.
     function test_comment_attachments_need_document_scope() {
         $fresh = function () {
-            $this->conf->invalidate_caches("paper");
             return $this->conf->checked_paper_by_id(1);
         };
         $post = function ($args, $file = null) use ($fresh) {
@@ -2722,7 +2721,6 @@ class Comments_Tester {
         xassert_eqq(count($crow->attachments()), 1);
 
         $this->conf->qe("delete from PaperComment where paperId=1");
-        $this->conf->invalidate_caches("paper");
         MailChecker::clear();
     }
 
@@ -2733,7 +2731,6 @@ class Comments_Tester {
     function test_response_attachments_follow_submission_pdf_permission() {
         $conf = $this->conf;
         $conf->qe("delete from PaperComment where paperId=1");
-        $conf->invalidate_caches("paper");
 
         // this test states its own preconditions rather than inheriting them
         // from class order: reviewing open, mgbaker's review submitted, and
@@ -2745,7 +2742,6 @@ class Comments_Tester {
         $this->ensure_paper1_review($conf->checked_paper_by_id(1));
         $attach = function ($user, $args, $name) {
             $conf = $this->conf;
-            $conf->invalidate_caches("paper");
             $qreq = new Qrequest("POST", $args + ["attachment:1" => "new"]);
             $qreq->approve_token();
             $qreq->set_file_content("attachment:1:file", "Body", $name, "text/plain");
@@ -2817,7 +2813,6 @@ class Comments_Tester {
         xassert_neqq($fetch($this->u_mgbaker, $ccid, "rev.txt"), null);
 
         $conf->qe("delete from PaperComment where paperId=1");
-        $conf->invalidate_caches("paper");
         MailChecker::clear();
     }
 
@@ -2828,7 +2823,6 @@ class Comments_Tester {
     function test_response_unparse_text_word_limits() {
         $conf = $this->conf;
         $conf->qe("delete from PaperComment where paperId=1");
-        $conf->invalidate_caches("paper");
         $rrd = $conf->response_round_list()[0];
         $old_wl = $rrd->wordlimit;
         $old_hwl = $rrd->hard_wordlimit;
@@ -2843,7 +2837,6 @@ class Comments_Tester {
         xassert($cs->prepare_save($tmpl, ["text" => join(" ", $words), "submit" => true]),
                 $cs->full_feedback_text());
         xassert($cs->execute_save(), $cs->full_feedback_text());
-        $conf->invalidate_caches("paper");
         $crow = ($conf->checked_paper_by_id(1)->all_comments())[0];
 
         $render = function ($wl, $hwl, $truncate) use ($crow, $rrd) {
@@ -2888,7 +2881,6 @@ class Comments_Tester {
         $rrd->wordlimit = $old_wl;
         $rrd->hard_wordlimit = $old_hwl;
         $conf->qe("delete from PaperComment where paperId=1");
-        $conf->invalidate_caches("paper");
         MailChecker::clear();
     }
 
@@ -2945,7 +2937,6 @@ class Comments_Tester {
     function test_comment_bot_provenance() {
         $conf = $this->conf;
         $conf->qe("delete from PaperComment where paperId=1");
-        $conf->invalidate_caches("paper");
 
         $conf->qe("insert into ContactInfo set email=?, firstName=?, lastName=?, password=?, cflags=?, roles=?",
                   "provenance@bot.invalid", "Provenance", "Bot", " unset",
@@ -2960,7 +2951,6 @@ class Comments_Tester {
                                               "docs" => $crow->attachments()->as_list()]),
                     $cs->full_feedback_text());
             xassert($cs->execute_save(), $cs->full_feedback_text());
-            $this->conf->invalidate_caches("paper");
             $cid = $crow->commentId;
             return $this->conf->checked_paper_by_id(1)->fetch_comments("commentId={$cid}")[0];
         };
@@ -2987,7 +2977,6 @@ class Comments_Tester {
         xassert_eqq($bits($crow), [true, true]);
 
         // and the bits survive the round trip through the database
-        $conf->invalidate_caches("paper");
         $fresh = $conf->checked_paper_by_id(1)->fetch_comments("commentId={$crow->commentId}")[0];
         xassert_eqq($bits($fresh), [true, true]);
 
@@ -3021,7 +3010,7 @@ class Comments_Tester {
 
         $conf->qe("delete from PaperComment where paperId=1");
         $conf->qe("delete from ContactInfo where email=?", "provenance@bot.invalid");
-        $conf->invalidate_caches("paper", "users", "pc");
+        $conf->invalidate_caches("users", "pc");
         MailChecker::clear();
     }
 

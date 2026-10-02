@@ -1228,7 +1228,9 @@ final class PaperStatus extends MessageSet {
         }
 
         // Fields
-        $want_final = $phase === "final"
+        $want_final = ($phase === "final"
+                       || ($phase === "contacts"
+                           && $this->prow->phase() === PaperInfo::PHASE_FINAL))
             && $this->user->can_view_decision($this->prow);
         foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))

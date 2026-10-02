@@ -20,6 +20,8 @@ class S3Transfer_Batch {
     public $verbose;
     /** @var ?list<int> */
     public $pids;
+    /** @var resource */
+    public $out = STDOUT;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -72,24 +74,25 @@ class S3Transfer_Batch {
                 error_log("{$front}: S3 upload canceled: data claims checksum {$doc->text_hash()}"
                           . ", has checksum " . HashAnalysis::hash_as_text($chash));
             } else {
+                // explicit user data: upload now, never via the work queue
                 $saved = $checked = $doc->check_s3();
                 if (!$saved) {
-                    $saved = $doc->store_s3() > 0;
+                    $saved = $doc->store_s3($doc->s3_user_data()) > 0;
                 }
                 if (!$saved) {
                     usleep(500000);
-                    $saved = $doc->store_s3() > 0;
+                    $saved = $doc->store_s3($doc->s3_user_data()) > 0;
                 }
             }
 
             if ($checked) {
                 if ($this->verbose) {
-                    fwrite(STDOUT, "{$front}: " . $s3->arn($doc->s3_key()) . " exists\n");
+                    fwrite($this->out, "{$front}: " . $s3->arn($doc->s3_key()) . " exists\n");
                 }
             } else if ($saved) {
-                fwrite(STDOUT, "{$front}: " . $s3->arn($doc->s3_key()) . " saved\n");
+                fwrite($this->out, "{$front}: " . $s3->arn($doc->s3_key()) . " saved\n");
             } else {
-                fwrite(STDOUT, "{$front}: SAVE FAILED\n");
+                fwrite($this->out, "{$front}: SAVE FAILED\n");
                 ++$failures;
             }
             if ($saved && $this->kill) {

@@ -168,6 +168,12 @@ class FailureReason extends Exception
             return ["response_open", $rrd->open, "response_done", $rrd->done, []];
         }
 
+        if ($dn === "final_done") {
+            $sr = $this->conf->submission_round_by_tag($this->_a["sclass"] ?? "")
+                ?? $this->conf->unnamed_submission_round();
+            return ["final_open", $sr->final_open, $dn, $sr->final_done, []];
+        }
+
         if (str_starts_with($dn, "rev_")
             || str_starts_with($dn, "extrev_")
             || str_starts_with($dn, "pcrev_")) {
@@ -178,14 +184,15 @@ class FailureReason extends Exception
             $start = 1;
         }
 
-        if ($dn !== "extrev_chairreq") {
-            $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
+        // `extrev_chairreq` keeps its name, but ends with the external
+        // review deadline
+        if (str_starts_with($dn, "pcrev_hard")
+            || str_starts_with($dn, "extrev_")) {
+            $end = $this->conf->review_deadline($this->_a["reviewRound"] ?? null, str_starts_with($dn, "pcrev_"), true);
+        } else {
+            $end = $this->conf->setting($dn) ?? -1;
         }
-        $end = $this->conf->setting($dn);
-        if ($end === null && str_starts_with($dn, "extrev_")) {
-            $end = $this->conf->setting("pcrev_" . substr($dn, 7));
-        }
-        return [$odn, $start, $dn, $end ?? -1, []];
+        return [$odn, $start, $dn, $end ?: -1, []];
     }
 
     /** @return array{string,int,string,int,list<FmtArg>} */

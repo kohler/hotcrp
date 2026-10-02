@@ -385,6 +385,37 @@ class Work_Tester {
         $this->conf->save_refresh_setting("opt.docstore", 1, $this->docstore);
     }
 
+    function test_s3transfer_uploads_directly() {
+        // s3transfer uploads documents itself, even when request-path uploads
+        // are deferred to the work queue
+        require_once(SiteLoader::find("batch/s3transfer.php"));
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", true);
+        $doc = $this->save_document("work tester: s3transfer\n");
+        $this->conf->qe("delete from WorkItem");
+        // content only in the docstore
+        $this->conf->qe("update PaperStorage set paper=null where paperStorageId=?", $doc->paperStorageId);
+        Offline_S3Result::$responder = function ($method, $skey) {
+            return $method === "HEAD" ? [404, [], ""] : null;
+        };
+        Offline_S3Result::$requests = [];
+
+        $st = new S3Transfer_Batch($this->conf, ["match" => $doc->text_hash()]);
+        $st->out = fopen("php://memory", "w+");
+        xassert_eqq($st->run(), 0);
+        rewind($st->out);
+        $out = stream_get_contents($st->out);
+        xassert_str_contains($out, "saved");
+        xassert_not_str_contains($out, "FAILED");
+
+        $methods = array_map(function ($r) { return $r[0]; }, Offline_S3Result::$requests);
+        xassert_in_eqq("PUT", $methods);
+        xassert_eqq($this->nrows(), 0);
+
+        Offline_S3Result::$responder = null;
+        $this->conf->set_opt("s3ProcessWork", null);
+    }
+
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }

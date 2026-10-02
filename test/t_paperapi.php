@@ -167,7 +167,7 @@ class PaperAPI_Tester {
         xassert_eqq(count_words($pj->Notes ?? ""), 20);
 
         TestRunner::reset_options();
-        $conf->invalidate_caches("options", "paper");
+        $conf->invalidate_caches("options");
     }
 
     /** A field the caller may see but not write is no longer dropped in
@@ -197,7 +197,6 @@ class PaperAPI_Tester {
         xassert_eqq([$jr->ok, $jr->paper->Locked ?? null], [true, 5]);
 
         $locked = function () use ($conf, $pid) {
-            $conf->invalidate_caches("paper");
             $ov = $conf->checked_paper_by_id($pid)->option(5);
             return $ov ? $ov->value : null;
         };
@@ -267,7 +266,7 @@ class PaperAPI_Tester {
         xassert_eqq($locked(), 5);
 
         TestRunner::reset_options();
-        $conf->invalidate_caches("options", "paper");
+        $conf->invalidate_caches("options");
     }
 
     function test_save_submit_new_paper() {
@@ -570,7 +569,6 @@ class PaperAPI_Tester {
         $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
         xassert_eqq($jr->dry_run, true);
         xassert_eqq($jr->paper ?? null, null);
-        $this->conf->invalidate_caches("paper");
         xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, $title);
 
         // with no errors, `if_error` commits
@@ -580,7 +578,6 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->dry_run ?? null, null);
         xassert_eqq($jr->change_list, ["title"]);
-        $this->conf->invalidate_caches("paper");
         xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, "Conditional dry run");
 
         // an unrecognized mode is a parameter error, not a silent live save
@@ -588,14 +585,12 @@ class PaperAPI_Tester {
             "title" => "Should not be saved"], ["dry_run" => "bogus"]);
         $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
         xassert_eqq($jr->ok, false);
-        $this->conf->invalidate_caches("paper");
         xassert_eqq($this->conf->checked_paper_by_id($prow->paperId)->title, "Conditional dry run");
 
         // restore
         $qreq = TestQreq::post_json((object) ["object" => "paper", "pid" => $prow->paperId,
             "title" => $title]);
         call_api("=paper", $this->u_estrin, $qreq, $prow);
-        $this->conf->invalidate_caches("paper");
     }
 
     /** @param array<string,mixed> $pj

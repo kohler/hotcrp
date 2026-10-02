@@ -847,6 +847,65 @@ class PaperStatus_Tester {
         $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
     }
 
+    function test_save_final_field_exempt_after_final_deadline() {
+        // A final-phase field with its own edit window can be saved after
+        // the final deadline, when the form offers only “Save changes”
+        $old_final_open = $this->conf->setting("final_open");
+        $old_final_done = $this->conf->setting("final_done");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Final video URL",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "text",
+            "sf/1/condition" => "phase:final",
+            "sf/1/edit_condition" => "before:2099-01-01"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Final video URL");
+        xassert($opt && $opt->is_final() && $opt->deadline_exempt());
+
+        $prow = $this->make_author_paper("Final field after final deadline");
+        $pid = $prow->paperId;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "accepted"]));
+        $this->conf->save_setting("final_open", Conf::$now - 86400 * 10);
+        $this->conf->save_setting("final_done", Conf::$now - 86400);
+        $this->conf->save_refresh_setting("au_seedec", 1);
+        $opt = $this->conf->checked_option_by_id($opt->id);
+
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        xassert($this->u_estrin->can_view_decision($prow));
+        xassert(!$this->u_estrin->can_edit_paper($prow));
+        xassert($this->u_estrin->can_edit_option($prow, $opt));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["status:phase" => "contacts", "has_{$opt->formid}" => 1, $opt->formid => "https://example.com/v"]), $prow));
+        xassert(!$ps->has_error_at($opt->field_key()));
+        xassert($ps->has_change_at($opt));
+        xassert($ps->execute_save());
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        xassert_eqq($prow->option($opt)->data(), "https://example.com/v");
+
+        // non-exempt final fields are still not saved
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", ["status:phase" => "contacts", "has_final" => 1]))->set_file_content("final:file", "%PDF-final\n", null, "application/pdf"), $prow));
+        xassert(!$ps->has_change_at("final"));
+        $ps->abort_save();
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $pid, "decision" => "unknown"]));
+        $this->conf->save_setting("final_open", $old_final_open);
+        $this->conf->save_setting("final_done", $old_final_done);
+        $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $opt->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_submission_document_with_final_version() {
         // A paper with a final version still has its submission document:
         // loaded alone, and batched across a list of papers.

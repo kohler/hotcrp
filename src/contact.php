@@ -5616,6 +5616,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $whyNot["notSubmitted"] = true;
             } else if (!$this->conf->time_review($round, $reviewer->isPC, true)) {
                 $whyNot["deadline"] = $reviewer->isPC ? "pcrev_hard" : "extrev_hard";
+                $whyNot["reviewRound"] = $round;
             }
             if ($rights->can_manage_reviews()
                 && ($prow->timeSubmitted <= 0 || isset($whyNot["deadline"]))) {
@@ -5659,6 +5660,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $whyNot["differentReviewer"] = true;
         } else if (!$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             $whyNot["deadline"] = $rrow->reviewType >= REVIEW_PC ? "pcrev_hard" : "extrev_hard";
+            $whyNot["reviewRound"] = $rrow->reviewRound;
             if ($rights->allow_admin()) {
                 $whyNot["override"] = true;
             }
