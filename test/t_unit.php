@@ -2052,6 +2052,14 @@ class Unit_Tester {
         xassert_eqq(CountMatcher::filter_using([10, 11, -10], "≤10"), [0 => 10, 2 => -10]);
     }
 
+    function test_client_option_file_quotes_password() {
+        $cp = new Dbl_ConnectionParams;
+        $cp->password = "pa#ss";
+        xassert_eqq($cp->client_option_file(), "[client]\npassword=\"pa#ss\"\n");
+        $cp->password = "a\"b\\c\nd ";
+        xassert_eqq($cp->client_option_file(), "[client]\npassword=\"a\\\"b\\\\c\\nd \"\n");
+    }
+
     function test_qrequest() {
         $q = new Qrequest("GET", ["a" => 1, "b" => 2]);
         xassert_eqq($q->a, 1);

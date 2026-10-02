@@ -482,11 +482,11 @@ class BackupDB_Batch {
                 $md = stream_get_meta_data($this->_pwtmp);
                 if (is_file($md["uri"] ?? "/nonexistent")) {
                     $this->_pwfile = $md["uri"];
-                    fwrite($this->_pwtmp, "[client]\npassword={$this->connp->password}\n");
+                    fwrite($this->_pwtmp, $this->connp->client_option_file());
                     fflush($this->_pwtmp);
                 } else if (($fn = tempnam("/tmp", "hcpx")) !== false) {
                     $this->_pwfile = $fn;
-                    file_put_contents($fn, "[client]\npassword={$this->connp->password}\n");
+                    file_put_contents($fn, $this->connp->client_option_file());
                     register_shutdown_function("unlink", $fn);
                 } else {
                     $this->throw_error("Cannot create temporary file");

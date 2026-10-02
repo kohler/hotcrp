@@ -162,6 +162,12 @@ class Dbl_ConnectionParams {
         return $t . urlencode($this->host ?? "localhost") . "/" . urlencode($this->name);
     }
 
+    /** @return string */
+    function client_option_file() {
+        $pw = addcslashes($this->password ?? "", "\\\"\n\r\t\x08");
+        return "[client]\npassword=\"{$pw}\"\n";
+    }
+
     function apply_defaults() {
         $this->host = $this->host ?? ini_get("mysqli.default_host");
         $this->port = $this->port ?? (int) ini_get("mysqli.default_port");
