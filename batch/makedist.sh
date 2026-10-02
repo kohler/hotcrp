@@ -579,6 +579,8 @@ src/search/st_revpref.php
 src/search/st_sclass.php
 src/search/st_tag.php
 src/search/st_topic.php
+src/search/sv_highlight.php
+src/search/sv_tags.php
 src/searchexample.php
 src/searchexpr.php
 src/searchoperator.php
@@ -586,6 +588,7 @@ src/searchoperatorset.php
 src/searchparser.php
 src/searchselection.php
 src/searchterm.php
+src/searchvisitor.php
 src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php
@@ -644,6 +647,7 @@ src/usersecurityevent.php
 src/userstatus.php
 src/valueformat.php
 src/viewcommand.php
+src/viewcommandlist.php
 src/viewoptionlist.php
 src/viewoptionschema.php
 src/viewoptiontype.php

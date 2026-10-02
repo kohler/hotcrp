@@ -78,14 +78,17 @@ abstract class SearchTerm {
      * @return $this */
     final function add_view_anno($command, $sword) {
         foreach (ViewCommand::parse($command, ViewCommand::ORIGIN_SEARCH, $sword) as $svc) {
-            $this->float["view"][] = $svc;
+            $this->float["view"] = $this->float["view"] ?? new ViewCommandList;
+            $this->float["view"]->append($svc);
         }
         return $this;
     }
 
     /** @return list<ViewCommand> */
     final function view_commands() {
-        return $this->float["view"] ?? [];
+        $vl = $this->float["view"] ?? null;
+        '@phan-var-force ?ViewCommandList $vl';
+        return $vl ? $vl->flatten() : [];
     }
 
     /** @return array<string,mixed> */
@@ -93,14 +96,21 @@ abstract class SearchTerm {
         return $this->float;
     }
 
-    /** @param string $k */
-    final function set_float($k, $v) {
-        $this->float[$k] = $v;
+    /** @param string $k
+     * @return bool */
+    final function has_float($k) {
+        return array_key_exists($k, $this->float);
+    }
+
+    /** @param string $k
+     * @return mixed */
+    final function get_float($k) {
+        return $this->float[$k] ?? null;
     }
 
     /** @param string $k */
-    final function get_float($k) {
-        return $this->float[$k] ?? null;
+    final function set_float($k, $v) {
+        $this->float[$k] = $v;
     }
 
     /** @param string $k */
@@ -149,7 +159,9 @@ abstract class SearchTerm {
         $this->pos1 = $term->pos1;
         $this->pos2 = $term->pos2;
         $this->string_context = $term->string_context;
-        $this->float = $term->float;
+        if (!empty($term->float)) {
+            $this->float = empty($this->float) ? $term->float : array_merge($this->float, $term->float);
+        }
         if ($clone_of !== null && ($this->float["ge"] ?? null) === $clone_of) {
             $this->float["ge"] = $this;
         }
@@ -434,40 +446,25 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         foreach ($term->float as $k => $v) {
             if ($k === "view") {
-                if ($this->type === "then") {
-                    $v = ViewCommand::strip_sorts($v);
+                // Then_SearchTerm::op_finish collects its children's views
+                if ($this->type !== "then") {
+                    $this->float[$k] = $this->float[$k] ?? new ViewCommandList;
+                    $this->float[$k]->append($v);
                 }
-                $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
-            } else if ($k === "tags") {
+            } else if ($k === "hl" || $k === "legend") {
                 if ($this->type !== "not") {
-                    $this->float["tags"] = array_merge($this->float["tags"] ?? [], $v);
-                }
-            } else if ($k === "hl") {
-                if ($this->type !== "not") {
-                    $this->float["hl"] = $v;
+                    $this->float[$k] = $v;
                 }
             } else if ($k === "ge") {
                 if (($this->type === "and" || $this->type === "space" || $this->type === "then")
-                    && !isset($this->float["ge"])) {
-                    $this->float["ge"] = $v;
-                }
-            } else if (str_starts_with($k, "fhl:")) {
-                '@phan-var-force TextPregexes $v';
-                if ($this->type !== "not" && !$v->is_empty()) {
-                    if (!isset($this->float[$k])) {
-                        $this->float[$k] = $v;
-                    } else {
-                        $this->float[$k] = $v2 = clone $this->float[$k];
-                        $v2->merge_any($v);
-                    }
+                    && !isset($this->float[$k])) {
+                    $this->float[$k] = $v;
                 }
             } else if ($k === "xlimit") {
                 if (($this->type === "and" || $this->type === "space")
                     && !isset($this->float[$k])) {
                     $this->float[$k] = $v;
                 }
-            } else {
-                $this->float[$k] = $v;
             }
         }
     }
@@ -528,17 +525,18 @@ abstract class Op_SearchTerm extends SearchTerm {
     }
     function visit($visitor) {
         $x = [];
-        foreach ($this->child as $ch) {
-            $x[] = $ch->visit($visitor);
+        if (!($visitor instanceof SearchVisitor)
+            || $visitor->visit_children($this)) {
+            foreach ($this->child as $ch) {
+                $x[] = $ch->visit($visitor);
+            }
         }
         return $visitor($this, ...$x);
     }
     function preorder() {
         yield $this;
         foreach ($this->child as $ch) {
-            foreach ($ch->preorder() as $chx) {
-                yield $chx;
-            }
+            yield from $ch->preorder();
         }
     }
     function about() {
@@ -1049,6 +1047,25 @@ class Then_SearchTerm extends Op_SearchTerm {
         } else {
             $this->unset_float("ge");
         }
+        // groups sort themselves, and highlights do not sort
+        $vl = null;
+        foreach ($this->child as $i => $ch) {
+            if (($cv = $ch->get_float("view"))) {
+                $vl = $vl ?? new ViewCommandList;
+                $vl->append($i >= $this->nthen || $this->nthen > 1 ? ViewCommandList::make_strip_sorts($cv) : $cv);
+            }
+        }
+        if ($vl) {
+            $this->set_float("view", $vl);
+        } else {
+            $this->unset_float("view");
+        }
+        if ($this->nthen === 1
+            && ($legend = $this->child[0]->get_float("legend")) !== null) {
+            $this->set_float("legend", $legend);
+        } else {
+            $this->unset_float("legend");
+        }
         if ($this->nthen < count($this->child)) {
             $this->set_float("hl", true);
         }
@@ -1061,8 +1078,18 @@ class Then_SearchTerm extends Op_SearchTerm {
     function visit($visitor) {
         // Only visit non-highlight terms
         $x = [];
-        for ($i = 0; $i !== $this->nthen; ++$i) {
-            $x[] = $this->child[$i]->visit($visitor);
+        if (!($visitor instanceof SearchVisitor)
+            || $visitor->visit_children($this)) {
+            for ($i = 0; $i !== $this->nthen; ++$i) {
+                $x[] = $this->child[$i]->visit($visitor);
+            }
+        }
+        if ($this->nthen !== count($this->child)
+            && $visitor instanceof SearchVisitor
+            && $visitor->visit_highlights($this)) {
+            for ($i = $this->nthen; $i !== count($this->child); ++$i) {
+                $x[] = $this->child[$i]->visit($visitor);
+            }
         }
         return $visitor($this, ...$x);
     }

@@ -63,6 +63,7 @@ class SiteLoader {
         "_reviewfield.php" => ["rf_", "src/reviewfields"],
         "_reviewfieldsearch.php" => ["rf_", "src/reviewfields"],
         "_searchterm.php" => ["st_", "src/search"],
+        "_searchvisitor.php" => ["sv_", "src/search"],
         "_setting.php" => ["s_", "src/settings"],
         "_settingrenderer.php" => ["s_", "src/settings"],
         "_settingparser.php" => ["s_", "src/settings"],

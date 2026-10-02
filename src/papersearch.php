@@ -1804,7 +1804,9 @@ class PaperSearch extends MessageSet {
 
     /** @return list<string> */
     function highlight_tags() {
-        $ht = $this->main_term()->get_float("tags") ?? [];
+        $hv = new Tags_SearchVisitor;
+        $this->main_term()->visit($hv);
+        $ht = $hv->list();
         $tagger = null;
         foreach ($this->sort_field_list() as $s) {
             if (preg_match('/\A(?:\#|tag:\s*|tagval:\s*)(\S+)\z/', $s, $m)) {
@@ -1818,27 +1820,32 @@ class PaperSearch extends MessageSet {
     }
 
 
+    /** @return Highlight_SearchVisitor */
+    private function highlighters(SearchTerm $t) {
+        $sv = $t->get_float("fhl");
+        if (!$sv) {
+            $sv = new Highlight_SearchVisitor;
+            $t->visit($sv);
+            $t->set_float("fhl", $sv);
+        }
+        return $sv;
+    }
+
     /** @return bool */
     function has_field_highlighter($field) {
-        return $this->main_term()->get_float("fhl:{$field}") !== null;
+        return $this->highlighters($this->main_term())->has($field);
     }
 
     /** @param ?int $group
      * @return array<string,TextPregexes> */
     function field_highlighters($group = null) {
-        $hl = [];
-        foreach ($this->group_slice_term($group)->float_map() as $k => $v) {
-            if (str_starts_with($k, "fhl:")) {
-                $hl[substr($k, 4)] = $v;
-            }
-        }
-        return $hl;
+        return $this->highlighters($this->group_slice_term($group))->map();
     }
 
     /** @param ?int $group
      * @return ?TextPregexes */
     function field_highlighter($field, $group = null) {
-        return $this->group_slice_term($group)->get_float("fhl:{$field}");
+        return $this->highlighters($this->group_slice_term($group))->get($field);
     }
 
 

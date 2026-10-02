@@ -133,6 +133,216 @@ class Search_Tester {
         xassert(!array_key_exists(11, $h ?? []));
     }
 
+    /** @return ?TextPregexes */
+    private function field_highlighter($q, $field = "ti") {
+        return (new PaperSearch($this->u_root, $q))->field_highlighter($field);
+    }
+
+    /** @return list<string> */
+    private function highlighted_words($q, $words, $field = "ti") {
+        $hl = $this->field_highlighter($q, $field);
+        $m = [];
+        foreach ($words as $w) {
+            if ($hl && $hl->match("x {$w} y"))
+                $m[] = $w;
+        }
+        return $m;
+    }
+
+    function test_field_highlighters() {
+        $w = ["alpha", "beta", "gamma"];
+        xassert_eqq($this->highlighted_words("ti:alpha", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("ti:alpha ti:beta", $w), ["alpha", "beta"]);
+        xassert_eqq($this->highlighted_words("ti:alpha OR ti:beta", $w), ["alpha", "beta"]);
+        xassert_eqq($this->highlighted_words("(ti:alpha (ti:beta (ti:gamma)))", $w), $w);
+        xassert_eqq($this->highlighted_words("ti:alpha au:beta", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("ti:alpha au:beta", $w, "au"), ["beta"]);
+        xassert((new PaperSearch($this->u_root, "ti:alpha"))->has_field_highlighter("ti"));
+        xassert(!(new PaperSearch($this->u_root, "ti:alpha"))->has_field_highlighter("au"));
+
+        // negated terms are not highlighted
+        xassert_eqq($this->highlighted_words("ti:alpha -ti:beta", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("ti:alpha NOT (ti:beta OR ti:gamma)", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("NOT (ti:alpha ti:beta)", $w), []);
+        xassert(!(new PaperSearch($this->u_root, "-ti:alpha"))->has_field_highlighter("ti"));
+
+        // annotations and double negation keep a term's highlighters
+        xassert_eqq($this->highlighted_words("ti:alpha show:abstract", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("ti:alpha sort:id", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("ti:alpha legend:Alpha", $w), ["alpha"]);
+        xassert_eqq($this->highlighted_words("NOT (NOT ti:alpha)", $w), ["alpha"]);
+    }
+
+    /** @return list<string> */
+    private function highlight_tags($q) {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        return (new PaperSearch($chair, $q))->highlight_tags();
+    }
+
+    function test_highlight_tags() {
+        xassert_eqq($this->highlight_tags("#red"), ["red"]);
+        xassert_eqq($this->highlight_tags("#red #blue"), ["red", "blue"]);
+        xassert_eqq($this->highlight_tags("#red OR #blue"), ["red", "blue"]);
+        xassert_eqq($this->highlight_tags("#red XOR #blue"), ["red", "blue"]);
+        xassert_eqq($this->highlight_tags("(#red (#blue (#green)))"), ["red", "blue", "green"]);
+        xassert_eqq($this->highlight_tags("#red THEN #blue"), ["red", "blue"]);
+        xassert_eqq($this->highlight_tags("#red #RED"), ["red"]);
+        xassert_eqq($this->highlight_tags("#r*"), ["r*"]);
+
+        // negated tags are not highlighted
+        xassert_eqq($this->highlight_tags("NOT #red"), []);
+        xassert_eqq($this->highlight_tags("-#red"), []);
+        xassert_eqq($this->highlight_tags("1-10 NOT (#red OR #blue)"), []);
+        xassert_eqq($this->highlight_tags("NOT (NOT #red)"), ["red"]);
+
+        // annotations keep a term's tags; sorting by a tag highlights it
+        xassert_eqq($this->highlight_tags("#red show:abstract"), ["red"]);
+        xassert_eqq($this->highlight_tags("#red legend:Red"), ["red"]);
+        xassert_eqq($this->highlight_tags("#red sort:#blue"), ["red", "blue"]);
+
+        // a highlight's tags are highlighted too (unlike its field highlighters)
+        xassert_eqq($this->highlight_tags("#red HIGHLIGHT #blue"), ["red", "blue"]);
+        xassert_eqq($this->highlight_tags("1-10 HIGHLIGHT:pink #blue"), ["blue"]);
+        xassert_eqq($this->highlight_tags("1-10 HIGHLIGHT:pink (#blue OR NOT #green)"), ["blue"]);
+        xassert_eqq($this->highlight_tags("#red THEN #blue HIGHLIGHT:pink #green"), ["red", "blue", "green"]);
+    }
+
+    /** @return list<string> */
+    private function legends($q) {
+        $tas = (new PaperSearch($this->u_root, $q))->group_anno_list();
+        return array_map(function ($ta) { return $ta->heading; }, $tas);
+    }
+
+    function test_legend() {
+        // a legend reaches the search or group it belongs to
+        xassert_eqq($this->legends("1-10"), []);
+        xassert_eqq($this->legends("legend:Main"), ["Main"]);
+        xassert_eqq($this->legends("1-10 legend:Main"), ["Main"]);
+        xassert_eqq($this->legends("legend:Main 1-10"), ["Main"]);
+        xassert_eqq($this->legends("1-10 (2-5 legend:Inner)"), ["Inner"]);
+        xassert_eqq($this->legends("1-10 OR (12 legend:Inner)"), ["Inner"]);
+        xassert_eqq($this->legends("1-5 legend:A THEN 6-10 legend:B"), ["A", "B"]);
+        xassert_eqq($this->legends("1-5 legend:A THEN 6-10"), ["A", "6-10"]);
+
+        // but not through NOT
+        xassert_eqq($this->legends("1-10 NOT (2 legend:Hidden)"), []);
+        xassert_eqq($this->legends("1-10 -legend:Hidden"), []);
+
+        // or from a highlight
+        xassert_eqq($this->legends("1-10 legend:Main HIGHLIGHT:pink 2 legend:Pink"), ["Main"]);
+        xassert_eqq($this->legends("1-10 HIGHLIGHT:pink 2 legend:Pink"), []);
+        xassert_eqq($this->legends("1-5 legend:A THEN 6-10 legend:B HIGHLIGHT:pink 7 legend:Pink"), ["A", "B"]);
+    }
+
+    /** @return list<string> */
+    private function view_texts($q) {
+        $srch = new PaperSearch($this->u_root, $q);
+        return array_map(function ($svc) { return $svc->unparse(); }, $srch->view_commands());
+    }
+
+    /** @return list<list<string>> */
+    private function group_view_texts($q) {
+        $srch = new PaperSearch($this->u_root, $q);
+        $gv = [];
+        foreach ($srch->then_term()->subset_terms() as $chrange) {
+            $gv[] = array_map(function ($svc) { return $svc->unparse(); }, $chrange[0]->view_commands());
+        }
+        return $gv;
+    }
+
+    function test_view_commands() {
+        // view commands survive simplification, in source order
+        xassert_eqq($this->view_texts("1-10"), []);
+        xassert_eqq($this->view_texts("show:au"), ["show:au"]);
+        xassert_eqq($this->view_texts("show:au show:abstract"), ["show:au", "show:abstract"]);
+        xassert_eqq($this->view_texts("show:au (1-10 OR show:abstract)"), ["show:au", "show:abstract"]);
+        xassert_eqq($this->view_texts("show:au sort:title"), ["show:au", "sort:title"]);
+        xassert_eqq($this->view_texts("ti:x show:au"), ["show:au"]);
+        xassert_eqq($this->view_texts("#red sort:#blue"), ["sort:#blue"]);
+        xassert_eqq($this->view_texts("NOT show:abstract"), ["show:abstract"]);
+        xassert_eqq($this->view_texts("1-10 NOT (2 show:abstract)"), ["show:abstract"]);
+        xassert_eqq($this->view_texts("1 AND NOT 1 show:au"), ["show:au"]);
+        // sort priority follows source order, including when a term with its
+        // own sort absorbs a dropped annotation
+        xassert_eqq($this->view_texts("sort:title order:red"), ["sort:title", "sort:#red"]);
+        xassert_eqq($this->view_texts("order:red sort:title"), ["sort:#red", "sort:title"]);
+        xassert_eqq($this->view_texts("sort:title (order:red show:au)"), ["sort:title", "sort:#red", "show:au"]);
+        xassert_eqq($this->view_texts("(show:au order:red) sort:title"), ["show:au", "sort:#red", "sort:title"]);
+
+        // groups sort themselves; the search keeps their other views
+        xassert_eqq($this->view_texts("1-5 sort:title THEN 6-10 sort:id"), []);
+        xassert_eqq($this->group_view_texts("1-5 sort:title THEN 6-10 sort:id"), [["sort:title"], ["sort:id"]]);
+        xassert_eqq($this->view_texts("(1-5 sort:title) THEN (6-10 sort:id show:abstract)"), ["show:abstract"]);
+        xassert_eqq($this->group_view_texts("(1-5 sort:title) THEN (6-10 sort:id show:abstract)"),
+                    [["sort:title"], ["sort:id", "show:abstract"]]);
+        xassert_eqq($this->view_texts("1-5 show:au THEN 6-10"), ["show:au"]);
+        xassert_eqq($this->view_texts("(1-5 THEN 6-10) sort:title"), ["sort:title"]);
+        xassert_eqq($this->legends("1-5 show:au THEN 6-10"), ["1-5", "6-10"]);
+
+        // a highlight's views apply, but not its sorts; a single group's
+        // sorts apply to the whole search
+        xassert_eqq($this->view_texts("1-10 HIGHLIGHT:pink 2 show:abstract"), ["show:abstract"]);
+        xassert_eqq($this->view_texts("1-10 HIGHLIGHT:pink 2 sort:title"), []);
+        xassert_eqq($this->view_texts("1-10 sort:title HIGHLIGHT:pink 2"), ["sort:title"]);
+    }
+
+    /** @return list<int> */
+    private function sorted_ids($q) {
+        return (new PaperList("empty", new PaperSearch($this->u_root, $q)))->paper_ids();
+    }
+
+    function test_highlight_keeps_sorts() {
+        // adding a highlight does not change how a search sorts
+        foreach (["1-10 sort:-id", "(1-5 THEN 6-10) sort:-id", "(1-5 sort:-id THEN 6-10)",
+                  "1-5 THEN 6-10 sort:-id"] as $q) {
+            xassert_eqq($this->sorted_ids("({$q}) HIGHLIGHT:pink 2"), $this->sorted_ids($q));
+        }
+        xassert_eqq($this->sorted_ids("(1-5 THEN 6-10) sort:-id"), [5, 4, 3, 2, 1, 10, 9, 8, 7, 6]);
+        xassert_eqq($this->sorted_ids("(1-5 sort:-id THEN 6-10)"), [5, 4, 3, 2, 1, 6, 7, 8, 9, 10]);
+        // a highlight's own sorts do not apply
+        xassert_eqq($this->sorted_ids("1-10 HIGHLIGHT:pink 2 sort:-id"), range(1, 10));
+    }
+
+    function test_view_commands_nesting_is_linear() {
+        // deeply nested annotations must not copy every view at every level
+        if (!function_exists("memory_reset_peak_usage")) {
+            return;
+        }
+        $n = 2000;
+        $q = "";
+        for ($i = 0; $i !== $n; ++$i) {
+            $q .= $i % 2 ? "show:au #red OR (" : "show:au #red (";
+        }
+        $q .= "#red" . str_repeat(")", $n);
+        gc_collect_cycles();
+        $m0 = memory_get_usage();
+        memory_reset_peak_usage();
+        $srch = new PaperSearch($this->u_root, $q);
+        xassert_eqq(count($srch->view_commands()), $n);
+        xassert_lt(memory_get_peak_usage() - $m0, 24 << 20);
+    }
+
+    function test_field_highlighter_size_is_linear() {
+        // each term contributes once, however deeply it is nested
+        $one = strlen($this->field_highlighter("ti:w000")->preg_utf8());
+        $n = 200;
+        $flat = $nested = $alt = "";
+        for ($i = 0; $i !== $n; ++$i) {
+            $t = sprintf("ti:w%03d", $i);
+            $flat .= " {$t}";
+            $nested .= "{$t} (";
+            $alt .= ($i % 2 ? "{$t} OR (" : "{$t} (");
+        }
+        $nested .= "#red" . str_repeat(")", $n);
+        $alt .= "#red" . str_repeat(")", $n);
+        foreach ([$flat, $nested, $alt] as $q) {
+            $hl = $this->field_highlighter($q);
+            xassert(!!$hl);
+            xassert_le(strlen($hl->preg_utf8()), $n * ($one + 1));
+            xassert($hl->match("x w000 y") && $hl->match(sprintf("x w%03d y", $n - 1)));
+        }
+    }
+
     function test_xor() {
         xassert_search($this->u_root, "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
     }
