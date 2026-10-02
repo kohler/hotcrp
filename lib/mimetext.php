@@ -498,7 +498,7 @@ class MimeText {
                     // control characters will not round-trip correctly; leave
                     // them quoted
                     $out .= substr($text, $pos0, $pos - $pos0);
-                } else if (preg_match('/\A(?!“|”)[^\x00-\x08\x0A-\x1F()\[\\]<>@,;:\\\\"\/?=]++\z/', $qout)) {
+                } else if ($qout !== "" && preg_match('/\A[^\x00-\x08\x0A-\x1F()\[\\]<>@,;:\\\\"\/?=\xE2]*+(?:(?!“|”)\xE2[^\x00-\x08\x0A-\x1F()\[\\]<>@,;:\\\\"\/?=\xE2]*+)*+\z/', $qout)) {
                     $out .= $qout;
                 } else {
                     $out .= mime_quote_string($qout);

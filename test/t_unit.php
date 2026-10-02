@@ -2037,6 +2037,12 @@ class Unit_Tester {
         };
         xassert_eqq($words("butt>2:foo:3"), ["butt", ">2", "foo", "3"]);
         xassert_eqq($words("butt>2:foo:3>=2"), ["butt", ">2", "foo", "3", ">=2"]);
+        xassert_eqq($words("lixia≥1"), ["lixia", "≥1"]);
+        xassert_eqq($words("ovemer:lixia≥1:5"), ["ovemer", "lixia", "≥1", "5"]);
+        xassert_eqq($words("Cal≠1040"), ["Cal", "≠1040"]);
+        xassert_eqq($words("Café≤2"), ["Café", "≤2"]);
+        xassert_eqq($words("“Lixia Zhang”≥1"), ["“Lixia Zhang”", "≥1"]);
+        xassert_eqq($words("a—b≤2"), ["a—b", "≤2"]);
         // components keep quotes, and positions point into the source string
         xassert_eqq($words("pri:\"Deborah Estrin\">2"), ["pri", "\"Deborah Estrin\"", ">2"]);
         $sw = SearchWord::make_kwarg("butt>2:foo", 0, 3, 13, null);
@@ -2677,6 +2683,19 @@ class Unit_Tester {
         xassert_eqq($dec("Re: 50=? =?x =?utf-8?q?y?="), "Re: 50=? =?x y");
         xassert_eqq($dec("x=?utf-8?q?y?="), "x=?utf-8?q?y?=");
         xassert_eqq($dec("\"unterminated <a@b.com>"), "\"unterminated <a@b.com>");
+
+        // decoded text containing a curly quote anywhere is quoted, since an
+        // unquoted curly quote would start a quoted-string on re-parse
+        xassert_eqq($dec("=?utf-8?q?Jane_=E2=80=9CJJ_Doe?= <j@x.com>"), "\"Jane “JJ Doe\" <j@x.com>");
+        xassert_eqq($dec("=?utf-8?q?Jane_JJ=E2=80=9D_Doe?= <j@x.com>"), "\"Jane JJ” Doe\" <j@x.com>");
+        xassert_eqq($dec("=?utf-8?q?=E2=80=9CJJ=E2=80=9D?= <j@x.com>"), "\"“JJ”\" <j@x.com>");
+        xassert_eqq($dec("=?utf-8?q?Jane_=E2=80=94_Doe?= <j@x.com>"), "Jane — Doe <j@x.com>");
+        xassert_eqq($dec("=?utf-8?q??= <j@x.com>"), "\"\" <j@x.com>");
+        foreach (["\"Jane “JJ Doe\" <j@x.com>", "\"Jane JJ” Doe\" <j@x.com>", "\"“JJ”\" <j@x.com>"] as $h) {
+            $dec1 = $dec(substr($mt->encode_email_header("Cc", $h), 4));
+            xassert_eqq($dec1, $h);
+            xassert_neqq($mt->encode_email_header("Cc", $dec1), false);
+        }
 
         // round trip through the address encoder
         foreach (["Kö <a@b.com>", "Kö <a@b.com>, " . str_repeat("Ünï ", 20) . "Jr <c@d.com>"] as $to) {

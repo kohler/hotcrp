@@ -143,6 +143,13 @@ class Search_Tester {
         xassert_search($this->u_root, "8-,7-,6-,5- XOR 10-100000", "5 6 7 8 9");
     }
 
+    function test_unicode_comparison_after_name() {
+        $ge = search_json($this->u_root, "re:mgbaker>=1");
+        xassert(!empty($ge));
+        xassert_eqq(search_json($this->u_root, "re:mgbaker≥1"), $ge);
+        xassert_eqq(search_json($this->u_root, "re:mgbaker≠0"), $ge);
+    }
+
     function test_tag_or_prefilter_is_superset() {
         $old = $this->conf->setting_data("tag_hidden");
         $this->conf->save_refresh_setting("tag_hidden", 1, "sekrit");

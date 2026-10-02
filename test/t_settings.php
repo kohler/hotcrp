@@ -3181,6 +3181,23 @@ class Settings_Tester {
         xassert_str_contains($sv2->full_feedback_text(), "Valid web address");
     }
 
+    function test_email_header_curly_quote_round_trip() {
+        $conf = $this->conf;
+        $old = $conf->setting_data("opt.emailCc");
+        foreach (["\"Jane “JJ Doe\" <j@x.com>", "\"Jane JJ” Doe\" <j@x.com>"] as $cc) {
+            $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $cc]);
+            xassert($sv->execute());
+            $stored = $conf->opt("emailCc");
+            xassert_eqq($stored, $cc);
+            $mt = new MimeText("\r\n");
+            xassert_neqq($mt->encode_email_header("Cc", $stored), false);
+            // re-saving the stored value succeeds
+            $sv = SettingValues::make_request($this->u_chair, ["email_default_cc" => $stored]);
+            xassert($sv->execute());
+        }
+        $conf->save_refresh_setting("opt.emailCc", $old === null ? null : 1, $old);
+    }
+
     function test_email_header_macros() {
         // Model a conference whose options.php sets `$Opt["emailCc"]` to a
         // value with macros. The settings UI and JSON show the expansion;
