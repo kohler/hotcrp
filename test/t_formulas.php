@@ -2900,6 +2900,54 @@ class Formulas_Tester {
         xassert(Formula::make($u, "sum.pc({$body})")->ok());
     }
 
+    function test_stddev_variance_population_default() {
+        // plain `stddev`/`var` are population statistics; `_samp`/`.s` are
+        // sample statistics
+        $f = $this->conf->find_review_field("ovemer");
+        $prow = $vs = null;
+        foreach ($this->conf->paper_set(["paperId" => range(1, 30)]) as $p) {
+            $vs = [];
+            foreach ($p->reviews_as_list() as $r) {
+                if ($r->reviewSubmitted > 0 && ($v = $r->fval($f)) !== null)
+                    $vs[] = $v;
+            }
+            if (count(array_unique($vs)) > 1) {
+                $prow = $this->conf->checked_paper_by_id($p->paperId, $this->u_chair);
+                break;
+            }
+        }
+        xassert(!!$prow);
+        $n = count($vs);
+        $mean = array_sum($vs) / $n;
+        $ss = 0.0;
+        foreach ($vs as $v) {
+            $ss += ($v - $mean) * ($v - $mean);
+        }
+        $pop = ["var" => $ss / $n, "std" => sqrt($ss / $n)];
+        $samp = ["var" => $ss / ($n - 1), "std" => sqrt($ss / ($n - 1))];
+        xassert_neqq($pop["var"], $samp["var"]);
+
+        foreach (["stddev" => $pop["std"], "std" => $pop["std"], "stdev" => $pop["std"],
+                  "stddev_pop" => $pop["std"], "stdev_pop" => $pop["std"],
+                  "stddev.p" => $pop["std"], "stddev.pop" => $pop["std"],
+                  "stddev_samp" => $samp["std"], "stdev_samp" => $samp["std"],
+                  "stddev.s" => $samp["std"], "stdev.samp" => $samp["std"],
+                  "variance" => $pop["var"], "var" => $pop["var"],
+                  "variance_pop" => $pop["var"], "var_pop" => $pop["var"],
+                  "var.p" => $pop["var"],
+                  "variance_samp" => $samp["var"], "var_samp" => $samp["var"],
+                  "var.s" => $samp["var"], "variance.samp" => $samp["var"]] as $fn => $want) {
+            $fm = $this->formula("{$fn}(OveMer)");
+            xassert($fm->ok(), $fn);
+            $got = $fm->eval($prow, null);
+            xassert(is_float($got) && abs($got - $want) < 1e-9,
+                    "{$fn}: expected {$want}, got " . json_encode($got));
+        }
+
+        // a modifier cannot follow an explicit suffix
+        xassert(!Formula::make($this->u_chair, "stddev_pop.s(OveMer)")->ok());
+    }
+
     function test_named_formula_depth_limit() {
         $conf = $this->conf;
         $u = $this->u_chair;

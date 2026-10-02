@@ -1056,9 +1056,8 @@ class Variance_Fexpr extends Aggregate_Fexpr {
             && strpos($ff->text, "_") === false
             && in_array($arg, [".p", ".pop", ".s", ".samp"], true)) {
             $ff->modifier = true;
-            if ($arg === ".p" || $arg === ".pop") {
-                $ff->name .= "_pop";
-            }
+            $ff->name = (str_starts_with($ff->name, "var") ? "variance" : "stddev")
+                . ($arg === ".p" || $arg === ".pop" ? "_pop" : "_samp");
             return true;
         } else {
             return parent::parse_modifier($ff, $arg);
@@ -1072,13 +1071,14 @@ class Variance_Fexpr extends Aggregate_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_compile_loop("[0.0, 0.0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
-        if ($this->op === "variance") {
+        if ($this->op === "variance_samp") {
             return "({$t}[2] > 1 ? {$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1)) : ({$t}[2] ? 0.0 : null))";
         } else if ($this->op === "variance_pop") {
             return "({$t}[2] ? {$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2]) : null)";
-        } else if ($this->op === "stddev") {
+        } else if ($this->op === "stddev_samp") {
             return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0.0 : null))";
         }
+        assert($this->op === "stddev_pop");
         return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
     }
 }
