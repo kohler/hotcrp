@@ -7,7 +7,7 @@ class GraphData_API {
         if (!isset($qreq->x)) {
             return JsonResult::make_missing_error("x");
         }
-        $fg = new FormulaGraph($user, $qreq->gtype ? : "scatter", $qreq->x, $qreq->y);
+        $fg = new FormulaGraph($user, $qreq->gtype, $qreq->x, $qreq->y);
         if ($qreq->xorder) {
             $fg->set_xorder($qreq->xorder);
         }

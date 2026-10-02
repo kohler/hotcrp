@@ -3111,7 +3111,7 @@
         "/graphdata": {
             "get": {
                 "summary": "Retrieve formula graph data",
-                "description": "Return the data behind a **formula graph** (HotCRP’s “Graphs” feature)—for\ninstance a scatter plot of one formula against another over a set of\nsubmissions. `x` (required) and `y` are formula expressions for the axes, and\n`gtype` selects the graph type (such as `scatter`). The submissions to plot come\nfrom a search: supply `q` (and optionally `t`). Several series can be overlaid by\nnumbering the searches `q1`, `q2`, … with optional labels `s1`, `s2`, ….\n\nThe response carries the graph in HotCRP’s internal plotting format—the axis\ndescriptions (`x`, `y`), a `data_format` code, and the `data` points—intended\nfor the HotCRP graphing UI rather than for general consumption.\n",
+                "description": "Return the data behind a **formula graph** (HotCRP’s “Graphs” feature)—for\ninstance a scatter plot of one formula against another over a set of\nsubmissions. Available to PC members only.\n\n`x` (required) and `y` are formula expressions for the axes. `gtype` selects\nthe graph type: `scatter` (the default), `dot`, `ldot`, `cdf`, `multicdf`,\n`cumfreq`, `bar`, `fraction`, or `box`; several synonyms are also accepted,\nsuch as `ogive` for `cumfreq` and `count` for `bar`. The graph type may instead\nlead the `y` expression, as in `y=cdf` or `y=count ovemer`; if `gtype` is also\ngiven and disagrees, `gtype` wins and the response warns. For `multicdf`,\n`y` is the formula that splits the data into lines, as in\n`y=multicdf reviewer`.\n\nThe submissions to plot come from a search: supply `q` (and optionally `t`).\nSeveral series can be overlaid by numbering the searches `q1`, `q2`, …, with\noptional labels `s1`, `s2`, … and per-series scopes `t1`, `t2`, … (which\noverride `t`).\n\nThe response carries the graph in HotCRP’s internal plotting format—the axis\ndescriptions (`x`, `y`), the resolved graph type `gtype`, a `data_format`\nstring, and the `data` points—intended for the HotCRP graphing UI rather than\nfor general consumption. If the graph cannot be drawn, the response has\n`ok: false` and `message_list` explains why.\n",
                 "operationId": "graphdata",
                 "x-order": 52,
                 "tags": [
@@ -3148,7 +3148,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Formula expression for the y-axis.",
+                        "description": "Formula expression for the y-axis, optionally preceded by a graph type.",
                         "x-order": 1
                     },
                     {
@@ -3158,7 +3158,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Graph type, such as `scatter`.",
+                        "description": "Graph type, such as `scatter` or `cdf`.",
                         "x-order": 2
                     },
                     {
@@ -3211,7 +3211,7 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
-                                        "type",
+                                        "gtype",
                                         "data_format",
                                         "data",
                                         "x",
@@ -3224,16 +3224,16 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "type": {
-                                            "type": "object",
-                                            "description": "Description of the graph type."
+                                        "gtype": {
+                                            "type": "string",
+                                            "description": "Graph type as drawn: `scatter`, `dot`, `ldot`, `cdf`, `cumfreq`, `bar`, `fraction`, or `box`. (`multicdf` graphs report `cdf`.)"
                                         },
                                         "data_format": {
-                                            "type": "integer",
-                                            "description": "Code identifying the encoding of `data`."
+                                            "type": "string",
+                                            "description": "Encoding of `data`: `cdf`, `xyis`, or `style_xyi`."
                                         },
                                         "data": {
-                                            "description": "The plotted data points; the exact shape depends on the graph type and `data_format`."
+                                            "description": "The plotted data points; the exact shape depends on `data_format`."
                                         },
                                         "x": {
                                             "type": "object",
@@ -3242,6 +3242,22 @@
                                         "y": {
                                             "type": "object",
                                             "description": "Y-axis description (scale, ticks, labels)."
+                                        },
+                                        "series": {
+                                            "type": "object",
+                                            "description": "Series-axis description, for graphs that split data into series."
+                                        },
+                                        "xorder": {
+                                            "type": "object",
+                                            "description": "Description of the `xorder` ordering."
+                                        },
+                                        "id_format": {
+                                            "type": "string",
+                                            "description": "Whether non-CDF data points identify submissions (`pid`) or reviews (`rid`)."
+                                        },
+                                        "mark_object_type": {
+                                            "type": "string",
+                                            "description": "Kind of object a data point represents for “find on graph”: `paper`, `review`, or `user`."
                                         }
                                     }
                                 }

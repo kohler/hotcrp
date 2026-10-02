@@ -999,7 +999,7 @@ class FormulaGraph extends MessageSet {
             if (($this->queries[$q] ?? null) && count($this->queries) > 1) {
                 $dlabel = $this->queries[$q];
             }
-            if ($dlabel && $fxlabel) {
+            if ($fxlabel !== "") {
                 $dlabel = rtrim("{$fxlabel} {$dlabel}");
             }
             if ($multi) {

@@ -1915,6 +1915,56 @@ class Formulas_Tester {
         xassert_eqq($this->graph_bar_buckets($u_suvo, "ovemer", "19"), []);
     }
 
+    function test_graphdata_api() {
+        $j = call_api("graphdata", $this->u_chair, ["x" => "pid", "y" => "pid", "q" => "1-5"]);
+        xassert($j->ok);
+        xassert_eqq($j->gtype, "scatter");
+        xassert_eqq($j->data_format, "style_xyi");
+        xassert_eqq($j->id_format, "pid");
+
+        // the graph type can lead the Y formula
+        $j = call_api("graphdata", $this->u_chair, ["x" => "pid", "y" => "cdf", "q" => "1-5"]);
+        xassert($j->ok);
+        xassert_eqq($j->gtype, "cdf");
+        xassert_eqq($j->data_format, "cdf");
+        xassert_eqq($j->message_list, []);
+
+        $j = call_api("graphdata", $this->u_chair, ["x" => "pid", "y" => "cdf", "gtype" => "bar"]);
+        xassert($j->ok);
+        xassert_eqq($j->gtype, "bar");
+        xassert_eqq($j->message_list[0]->field, "gtype");
+
+        $j = call_api("graphdata", $this->u_chair, ["y" => "cdf"]);
+        xassert(!$j->ok);
+        $j = call_api("graphdata", $this->u_chair, ["x" => "pid", "gtype" => "pie"]);
+        xassert(!$j->ok);
+        xassert_eqq($j->message_list[0]->field, "gtype");
+
+        $u_author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $j = call_api("graphdata", $u_author, ["x" => "pid", "y" => "cdf"]);
+        xassert(!$j->ok);
+    }
+
+    /** @param string $fx
+     * @param string ...$qs
+     * @return list<?string> */
+    private function graph_cdf_labels($fx, ...$qs) {
+        $fg = new FormulaGraph($this->u_chair, "cdf", $fx, "");
+        foreach ($qs as $q) {
+            $fg->add_dataset(new FormulaGraphDataset($q, "all", "", ""));
+        }
+        xassert($fg->prepare());
+        return array_map(function ($d) { return $d->label ?? null; }, $fg->graph_json([])["data"]);
+    }
+
+    function test_graph_cdf_line_labels() {
+        xassert_eqq($this->graph_cdf_labels("pid", "1-5"), [null]);
+        xassert_eqq($this->graph_cdf_labels("pid+1; pid+2", "1-5"), ["pid+1", "pid+2"]);
+        xassert_eqq($this->graph_cdf_labels("pid", "1-5", "6-9"), ["1-5", "6-9"]);
+        xassert_eqq($this->graph_cdf_labels("pid+1; pid+2", "1-5", "6-9"),
+                    ["pid+1 1-5", "pid+1 6-9", "pid+2 1-5", "pid+2 6-9"]);
+    }
+
     /** @param Contact $user
      * @param string $fx
      * @param string $q
