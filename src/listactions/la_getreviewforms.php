@@ -25,11 +25,19 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
         $ms = (new MessageSet)->set_ignore_duplicates(true)
             ->set_message_formatter($user->conf);
         foreach ($ssel->paper_set($user) as $prow) {
-            if (!$this->all || !$user->allow_admin($prow)) {
-                $rrows = $prow->full_reviews_by_user($user);
-            } else {
+            if ($this->all && $user->allow_admin($prow)) {
                 $prow->ensure_full_reviews();
                 $rrows = $prow->reviews_as_display();
+            } else if ($user->review_tokens() || $user->reviewer_capability($prow)) {
+                // include reviews held by token or reviewer link
+                $prow->ensure_full_reviews();
+                $rrows = [];
+                foreach ($prow->reviews_as_display() as $rrow) {
+                    if ($user->is_my_review($rrow))
+                        $rrows[] = $rrow;
+                }
+            } else {
+                $rrows = $prow->full_reviews_by_user($user);
             }
             $time = null;
             $t = "";

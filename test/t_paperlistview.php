@@ -176,6 +176,29 @@ class PaperListView_Tester {
         xassert_eqq($pl->search->paper_ids(), $this->make_list("pl", "", [])->search->paper_ids());
     }
 
+    function test_show_request_replaces_author_options() {
+        // an explicit `show=` replaces the session’s author options too, and
+        // there `aufull` sets an option without showing authors
+        $pl = $this->make_list("pl", "", [["session", "show:authors[full]"], ["qreq", ["show" => "au title"]]]);
+        xassert($pl->viewing("authors"));
+        xassert(!$pl->viewing("aufull"));
+        // ...back to the defaults, not to “off”
+        $plx = $this->make_list("pl", "", [["qreq", ["show" => "au title"]]]);
+        xassert_eqq(self::summary($pl)[4], self::summary($plx)[4]);
+        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false), ["show:authors"]);
+        $pl = $this->make_list("pl", "", [["session", "show:authors"], ["qreq", ["show" => "aufull title"]]]);
+        xassert(!$pl->viewing("authors"));
+        xassert($pl->viewing("aufull"));
+        foreach (["au aufull title", "aufull au title"] as $show) {
+            $pl = $this->make_list("pl", "", [["session", "show:authors[anon=no]"], ["qreq", ["show" => $show]]]);
+            xassert($pl->viewing("authors"), $show);
+            xassert($pl->viewing("aufull"), $show);
+        }
+        $pl = $this->make_list("pl", "", [["qreq", ["show" => "title"]]]);
+        xassert(!$pl->viewing("authors"));
+        xassert(!$pl->viewing("aufull"));
+    }
+
     function test_column_error_location() {
         // a column’s errors point at the command that created it, including
         // a sort command for the same field

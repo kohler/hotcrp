@@ -176,4 +176,25 @@ class AssignmentSet_Tester {
         xassert($this->too_complex($aset));
         xassert(!$aset->execute());
     }
+
+    function test_disallowed_user_error_names_matched_user() {
+        // the error names the user who matched, not the CSV's text, and
+        // does not call a non-PC user a PC member
+        $email = "nofollow@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($this->conf->root_user());
+        $u = $us->save_user((object) ["email" => $email, "name" => "Nora Follow"]);
+        xassert(!!$u, $us->full_feedback_text());
+        xassert(!$u->can_view_paper($this->conf->checked_paper_by_id(1)));
+
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,email,name\n1,follow,{$email},Someone Else\n");
+        $t = $aset->full_feedback_text();
+        xassert_str_contains($t, "Nora Follow <{$email}> cannot be assigned to #1");
+        xassert_not_str_contains($t, "Someone Else");
+        xassert_not_str_contains($t, "PC member");
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users");
+    }
 }

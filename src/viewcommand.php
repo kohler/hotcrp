@@ -65,16 +65,19 @@ class ViewCommand {
      * @param ViewCommand $b
      * @return ViewCommand */
     static function merge($a, $b) {
+        // a null option in `$b` removes that option
         $vol = $b->view_options;
-        if ($a && $a->view_options) {
-            if ($vol) {
-                $vol = clone $a->view_options;
-                foreach ($b->view_options as $n => $x) {
+        if ($vol) {
+            $vol = $a && $a->view_options ? clone $a->view_options : new ViewOptionList;
+            foreach ($b->view_options as $n => $x) {
+                if ($x === null) {
+                    $vol->remove($n);
+                } else {
                     $vol->add($n, $x);
                 }
-            } else {
-                $vol = $a->view_options;
             }
+        } else if ($a) {
+            $vol = $a->view_options;
         }
         $fm = self::FM_VISIBILITY | self::FM_ORIGIN;
         if (($b->flags & self::FM_VISIBILITY) !== 0) {

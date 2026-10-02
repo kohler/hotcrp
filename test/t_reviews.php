@@ -4150,4 +4150,45 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             $rrow->delete($this->u_chair);
         }
     }
+
+    function test_review_forms_for_token_and_capability_holders() {
+        // review-token and reviewer-link holders download the forms for the
+        // reviews they hold, as the review page lets them edit them
+        $conf = $this->conf;
+        $rrow = $conf->fetch_first_object("select paperId, reviewId, contactId from PaperReview where reviewType>0 and reviewSubmitted>0 and contactId!=? order by reviewId limit 1", $this->u_mgbaker->contactId);
+        xassert(!!$rrow);
+        $pid = (int) $rrow->paperId;
+        $reviewer = $conf->user_by_id((int) $rrow->contactId);
+        $conf->qe("update PaperReview set reviewToken=? where reviewId=?", 987654323, $rrow->reviewId);
+        $revform = function (Contact $u) use ($pid) {
+            $qreq = TestQreq::get(["p" => (string) $pid])->set_user($u);
+            $ssel = new SearchSelection([$pid]);
+            $la = ListAction::lookup("get/revform", $u, $qreq, $ssel);
+            $resp = $la instanceof ListAction ? $la->run($u, $qreq, $ssel) : $la;
+            return $resp instanceof Downloader ? $resp->content_string() : json_encode($resp->content);
+        };
+
+        $cap = Contact::make($conf);
+        $cap->set_capability("@ra{$pid}", $reviewer->contactId);
+        $pc = $conf->fresh_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($pc->contactId !== $reviewer->contactId);
+        $pc->change_review_token(987654323, true);
+        $email = "revformtoken@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        $nonpc = $us->save_user((object) ["email" => $email, "name" => "Rita Token"]);
+        xassert($nonpc && !$nonpc->isPC);
+        $nonpc->change_review_token(987654323, true);
+        foreach (["reviewer link" => $cap, "PC review token" => $pc,
+                  "non-PC review token" => $nonpc] as $what => $u) {
+            xassert($u->is_reviewer(), $what);
+            $t = $revform($u);
+            xassert_str_contains($t, "==+== Paper #{$pid}\n");
+            xassert_str_contains($t, "==+== Reviewer: " . Text::nameo($reviewer, NAME_EB));
+        }
+
+        $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rrow->reviewId);
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users");
+    }
 }

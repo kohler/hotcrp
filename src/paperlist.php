@@ -908,6 +908,14 @@ final class PaperList extends MessageSet {
         foreach ($ignores as $name) {
             $this->add_view(ViewCommand::make_visibility($name, false, ViewCommand::ORIGIN_REQUEST));
         }
+        // ...as are author options, which `aufull` and `anonau` set (a null
+        // option reverts to the default)
+        if (($vc = $this->_viewmap()["authors"] ?? null)
+            && $vc->view_options
+            && !$vc->view_options->is_empty()) {
+            $vol = (new ViewOptionList)->add("full", null)->add("anon", null);
+            $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "authors", $vol));
+        }
         // parse request parameters
         if ($qreq->has_a("show")) {
             $vcs = [];
@@ -918,8 +926,17 @@ final class PaperList extends MessageSet {
             $vcs = ViewCommand::split_parse($qreq->show, ViewCommand::ORIGIN_REQUEST);
         }
         foreach ($vcs as $vc) {
-            if (!$vc->is_sort())
-                $this->add_view($vc);
+            if ($vc->is_sort()) {
+                continue;
+            }
+            // here `aufull`/`anonau` set an option, as checkboxes beside
+            // the Authors checkbox; they do not show authors
+            $k = self::canonical_view_keyword($vc->keyword);
+            if (($k === "aufull" || $k === "anonau") && $vc->is_show()) {
+                $vol = (new ViewOptionList)->add($k === "aufull" ? "full" : "anon", true);
+                $vc = new ViewCommand(ViewCommand::ORIGIN_REQUEST, "authors", $vol, $vc->sword);
+            }
+            $this->add_view($vc);
         }
     }
 
