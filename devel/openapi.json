@@ -6121,7 +6121,7 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Administrators only: bypass deadline and other soft checks.",
+                        "description": "Submission administrators only: edit reviews whose editing deadline has passed.",
                         "x-order": 8
                     },
                     {
@@ -6565,7 +6565,7 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "Administrators only: bypass deadline and other soft checks.",
+                        "description": "Submission administrators only: edit reviews whose editing deadline has passed.",
                         "x-order": 5
                     },
                     {
@@ -10840,7 +10840,7 @@
         "/whoami": {
             "get": {
                 "summary": "Identify the current user",
-                "description": "Report which user the request authenticates as. This is the simplest way to\nconfirm that a set of credentials (a session cookie or an `Authorization:\nbearer` token) is valid and to learn whom it identifies.\n\nThe response includes the user’s `email`, `given_name`, `family_name`, and\n`affiliation`. When the user holds any conference roles, a `roles` array lists\nthem, drawn from:\n\n* `chair`—a conference chair\n* `pc`—a program committee member; this is also present for chairs\n* `sysadmin`—a system administrator\n* `manager`—an administrator of some submissions who is not a full chair\n* `author`—an author or contact of at least one submission\n* `reviewer`—assigned at least one review\n",
+                "description": "Report which user the request authenticates as. This is the simplest way to\nconfirm that a set of credentials (a session cookie or an `Authorization:\nbearer` token) is valid and to learn whom it identifies.\n\nThe response includes the user’s `email`, `given_name`, `family_name`, and\n`affiliation`. When the user holds any conference roles, a `roles` array lists\nthem, drawn from:\n\n* `chair`—a conference chair\n* `pc`—a program committee member; this is also present for chairs\n* `unlistedpc`—a program committee member who is left off PC lists, such as a\n  bot account; such a user has PC permissions but not `pc`\n* `sysadmin`—a system administrator\n* `manager`—an administrator of some submissions who is not a full chair\n* `author`—an author or contact of at least one submission\n* `reviewer`—assigned at least one review\n",
                 "operationId": "whoami",
                 "x-order": 54,
                 "tags": [
@@ -11997,12 +11997,13 @@
                 "enum": [
                     "chair",
                     "pc",
+                    "unlistedpc",
                     "sysadmin",
                     "manager",
                     "author",
                     "reviewer"
                 ],
-                "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
+                "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `unlistedpc` is a program committee member left off PC lists, such as a bot; `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
             },
             "potential_conflict": {
                 "type": "object",

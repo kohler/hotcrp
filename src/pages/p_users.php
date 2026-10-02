@@ -28,8 +28,7 @@ class Users_Page {
 
         $this->add_limit("pc", "Program committee");
         foreach ($this->conf->viewable_user_tags($viewer) as $t) {
-            if ($t !== "pc" && $t !== "listedpc" && $t !== "unlistedpc")
-                $this->add_limit("#{$t}", ["optgroup" => "PC tags", "label" => "#{$t} program committee"]);
+            $this->add_limit("#{$t}", ["optgroup" => "PC tags", "label" => "#{$t} program committee"]);
         }
         $this->add_limit("unlistedpc", ["label" => "Unlisted program committee", "exclude" => !$this->conf->has_unlisted_pc_members()]);
         $this->add_limit("fullpc", ["label" => "Listed and unlisted program committee", "exclude" => !$this->conf->has_unlisted_pc_members()]);

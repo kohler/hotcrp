@@ -227,7 +227,7 @@ withheld.
 
     * oneof body
 * param ?dry_run dry_run_mode: True checks input for errors, but does not save changes; `if_warning` saves only if there are no errors or warnings, `if_error` only if there are no errors.
-* param ?override boolean: Administrators only: bypass deadline and other soft checks.
+* param ?override boolean: Submission administrators only: edit reviews whose editing deadline has passed.
 * param ?if_vtag_match integer: Reject the modification unless the review’s
   current version tag equals this value. `0` matches only a review that does not
   yet exist, so `r=new` implies `if_vtag_match=0`.
@@ -410,7 +410,7 @@ particular, `if_vtag_match=0` requires that every saved review be newly created.
 
     * oneof body
 * param ?dry_run dry_run_mode: True checks every item for errors, but does not save changes; `if_warning` saves each item only if that item has no errors or warnings, `if_error` only if it has no errors.
-* param ?override boolean: Administrators only: bypass deadline and other soft checks.
+* param ?override boolean: Submission administrators only: edit reviews whose editing deadline has passed.
 * param ?if_vtag_match integer: Batch-wide default version-tag precondition,
   overridable by a review object’s own `if_vtag_match`. `if_vtag_match=0`
   requires that every saved review be newly created.

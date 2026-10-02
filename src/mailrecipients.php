@@ -246,11 +246,7 @@ class MailRecipients extends MessageSet {
 
         // PC
         $this->recipt_default_message = "pc";
-        $tags = [];
-        foreach ($this->conf->viewable_user_tags($this->user) as $t) {
-            if ($t !== "pc" && $t !== "listedpc" && $t !== "unlistedpc")
-                $tags[] = $t;
-        }
+        $tags = $this->conf->viewable_user_tags($this->user);
         $unlisted = $this->conf->has_unlisted_pc_members()
             && ($this->user->viewable_roles_mask() & Contact::ROLE_UNLISTEDPC) !== 0;
         if (empty($tags) && !$unlisted) {

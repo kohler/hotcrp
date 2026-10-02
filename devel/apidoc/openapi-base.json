@@ -414,12 +414,13 @@
                 "enum": [
                     "chair",
                     "pc",
+                    "unlistedpc",
                     "sysadmin",
                     "manager",
                     "author",
                     "reviewer"
                 ],
-                "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
+                "description": "A user’s standing in the conference. `chair` is a conference chair; `pc` is a program committee member (also present for chairs); `unlistedpc` is a program committee member left off PC lists, such as a bot; `sysadmin` is a system administrator; `manager` administers some submissions without being a full chair; `author` is an author or contact of some submission; `reviewer` has been assigned at least one review."
             },
             "potential_conflict": {
                 "type": "object",

@@ -2966,6 +2966,22 @@ class Settings_Tester {
         xassert(!array_key_exists("bluetrack", $this->all_jsonv_by("track", "tag")));
     }
 
+    function test_track_role_tag_permissions() {
+        // role tags are known PC tags; an unknown tag earns a warning
+        $old_tracks = $this->conf->setting_data("tracks");
+        $feedback = function ($perm) {
+            $this->conf->save_refresh_setting("tracks", 1, json_encode(["roletrack" => ["view" => $perm]]));
+            $sv = SettingValues::make_request($this->u_chair, []);
+            $sv->crosscheck();
+            return $sv->full_feedback_text();
+        };
+        foreach (["+pc", "+listedpc", "+unlistedpc", "+bot", "-bot"] as $perm) {
+            xassert_not_str_contains($feedback($perm), "No PC member has tag");
+        }
+        xassert_str_contains($feedback("+nosuchpctag"), "No PC member has tag");
+        $this->conf->save_refresh_setting("tracks", $old_tracks === null ? null : 1, $old_tracks);
+    }
+
     function test_format_checker() {
         $old_sub_banal = $this->conf->setting("sub_banal");
         $old_sub_banal_data = $this->conf->setting_data("sub_banal");

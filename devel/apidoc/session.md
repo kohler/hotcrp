@@ -47,6 +47,8 @@ them, drawn from:
 
 * `chair`—a conference chair
 * `pc`—a program committee member; this is also present for chairs
+* `unlistedpc`—a program committee member who is left off PC lists, such as a
+  bot account; such a user has PC permissions but not `pc`
 * `sysadmin`—a system administrator
 * `manager`—an administrator of some submissions who is not a full chair
 * `author`—an author or contact of at least one submission

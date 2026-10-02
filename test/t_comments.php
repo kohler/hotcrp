@@ -2931,6 +2931,52 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    /** @return object */
+    private function restored_edit_comment(PaperInfo $prow, $cid) {
+        $qreq = TestQreq::get(["p" => $prow->paperId, "c" => $cid, "editcomment" => 1])
+            ->set_user($this->u_chair);
+        $pp = new Paper_Page($this->u_chair, $qreq);
+        $pp->prow = $prow;
+        Ht::unstash();
+        (new ReflectionMethod($pp, "_stash_edit_comment"))->invoke($pp);
+        xassert(preg_match('/hotcrp\.edit_comment\((.*)\)/s', Ht::unstash(), $m));
+        return json_decode($m[1]);
+    }
+
+    function test_edit_comment_restore_ignores_soft_word_limit() {
+        // restoring a response into the editor keeps text over the soft
+        // limit, as the page's own comment display does
+        $conf = $this->conf;
+        $conf->qe("delete from PaperComment where paperId=1");
+        $rrd = $conf->response_round_list()[0];
+        $old_wl = $rrd->wordlimit;
+        $old_hwl = $rrd->hard_wordlimit;
+        $rrd->wordlimit = 10;
+        $rrd->hard_wordlimit = 20;
+
+        $words = [];
+        for ($i = 1; $i <= 30; ++$i) {
+            $words[] = "w{$i}";
+        }
+        foreach ([15 => 15, 30 => 20] as $n => $want) {
+            $conf->qe("delete from PaperComment where paperId=1");
+            $prow = $conf->checked_paper_by_id(1);
+            $cs = new CommentStatus($this->u_chair);
+            xassert($cs->prepare_save(CommentInfo::make_response_template($rrd, $prow),
+                                      ["text" => join(" ", array_slice($words, 0, $n)), "submit" => true]),
+                    $cs->full_feedback_text());
+            xassert($cs->execute_save(), $cs->full_feedback_text());
+            $prow = $conf->checked_paper_by_id(1);
+            $cj = $this->restored_edit_comment($prow, $prow->all_comments()[0]->commentId);
+            xassert_eqq(count_words($cj->text), $want);
+        }
+
+        $rrd->wordlimit = $old_wl;
+        $rrd->hard_wordlimit = $old_hwl;
+        $conf->qe("delete from PaperComment where paperId=1");
+        MailChecker::clear();
+    }
+
     // Comments keep no version history, so the type bits are the whole record
     // of who wrote what: `CT_BOT` describes the version you are reading,
     // `CT_BOT_PREVIOUS` remembers that an earlier one was a bot's.

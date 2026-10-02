@@ -255,7 +255,7 @@ class Profile_Page {
                     } else if (strpos($line[$i], " ") !== false
                                && array_search("name", $hdr) === false) {
                         $hdr[] = "name";
-                    } else if (preg_match('/\A(?:pc|chair|sysadmin|admin)\z/i', $line[$i])
+                    } else if (preg_match('/\A(?:pc|unlistedpc|chair|sysadmin|admin)\z/i', $line[$i])
                                && array_search("roles", $hdr) === false) {
                         $hdr[] = "roles";
                     } else if (array_search("name", $hdr) !== false

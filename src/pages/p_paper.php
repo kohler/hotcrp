@@ -395,13 +395,14 @@ class Paper_Page {
             $preferred_resp_round = $this->user->preferred_response_round($this->prow);
         }
         $j = null;
+        $pex = (new PaperExport($this->user))->set_ignore_soft_word_limits(true);
         foreach ($this->prow->viewable_comments($this->user) as $crow) {
             if ($crow->commentId == $cid
                 || ($cid === null
                     && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
                     && $preferred_resp_round
                     && $crow->commentRound === $preferred_resp_round->id)) {
-                $j = $crow->unparse_json($this->user, 0);
+                $j = $pex->comment_json($this->prow, $crow);
             }
         }
         if (!$j) {

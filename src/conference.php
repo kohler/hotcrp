@@ -2856,7 +2856,7 @@ class Conf {
         if ($this->_pc_tags_cache !== null) {
             return $this->_pc_tags_cache;
         }
-        $this->_pc_tags_cache = ["pc" => "pc", "listedpc" => "listedpc", "unlistedpc" => "unlistedpc"];
+        $this->_pc_tags_cache = [];
         foreach ($this->pc_users() as $u) {
             if ($u->contactTags !== null) {
                 foreach (explode(" ", $u->contactTags) as $tv) {
@@ -2871,25 +2871,31 @@ class Conf {
         return $this->_pc_tags_cache;
     }
 
-    /** @return list<string> */
+    /** User tags on PC members. Role tags like `pc` are not included.
+     * @return list<string> */
     function pc_tags() {
         return array_values($this->pc_tagmap());
     }
 
-    /** @param string $tag
+    /** Return true if `$tag` names a set of PC members: a role tag, or a user
+     * tag some PC member has.
+     * @param string $tag
      * @return bool */
     function pc_tag_exists($tag) {
-        return isset(($this->pc_tagmap())[strtolower($tag)]);
+        $ltag = strtolower($tag);
+        return in_array($ltag, Contact::ROLE_TAGS, true)
+            || isset(($this->pc_tagmap())[$ltag]);
     }
 
     /** @return list<string> */
     function viewable_user_tags(Contact $viewer) {
         if ($viewer->privChair) {
             return $this->pc_tags();
-        } else if ($viewer->can_view_user_tags()) {
-            $t = " " . join("#0 ", $this->pc_tags()) . "#0";
+        } else if ($viewer->can_view_user_tags()
+                   && ($tags = $this->pc_tags())) {
+            $t = " " . join("#0 ", $tags) . "#0";
             $t = $this->tags()->censor(TagMap::CENSOR_VIEW, $t, $viewer, null);
-            return explode("#0 ", substr($t, 1, -2));
+            return $t === "" ? [] : explode("#0 ", substr($t, 1, -2));
         }
         return [];
     }
@@ -5510,7 +5516,10 @@ class Conf {
             $rj["sort"] = "last";
         }
         if ($viewer->can_view_user_tags()) {
-            $rj["tags"] = $this->viewable_user_tags($viewer);
+            // the client filters role tags where they don't belong
+            $tags = array_merge($this->viewable_user_tags($viewer), ["pc", "listedpc", "unlistedpc"]);
+            $this->collator()->sort($tags);
+            $rj["tags"] = $tags;
         }
         $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
         if ($paper && $paper->conf === $this && $viewer->allow_admin($paper)) {

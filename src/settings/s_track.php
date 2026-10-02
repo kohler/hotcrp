@@ -234,7 +234,7 @@ class Track_SettingParser extends SettingParser {
             '<div class="entry">',
             Ht::select("{$pfx}/type", $permts, $reqtype, $sv->sjs("{$pfx}/type", ["class" => "uich js-foldup"])),
             " &nbsp;",
-            Ht::entry("{$pfx}/tag", $reqtag, $sv->sjs("{$pfx}/tag", ["class" => "fx need-suggest pc-tags", "spellcheck" => false, "autocomplete" => "off"]));
+            Ht::entry("{$pfx}/tag", $reqtag, $sv->sjs("{$pfx}/tag", ["class" => "fx need-suggest pc-tags", "data-suggest-role-tags" => true, "spellcheck" => false, "autocomplete" => "off"]));
         $sv->print_feedback_at($pfx);
         $sv->print_feedback_at("{$pfx}/type");
         $sv->print_feedback_at("{$pfx}/tag");

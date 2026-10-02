@@ -249,6 +249,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const ROLE_DBMASK = 0x004F;         // PCLIKE | HASAPP
     const ROLE_CDBMASK = 0x007F;        // DBMASK | AUTHOR | REVIEWER
 
+    // tags every account has by role, rather than by assignment
+    // (keep in sync with the "pc-tags" suggestion builder in script.js)
+    const ROLE_TAGS = ["pc", "listedpc", "unlistedpc", "bot"];
+
     /** @var bool */
     public $isPC = false;
     /** @var bool */

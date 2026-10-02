@@ -127,7 +127,7 @@
     {   "name": "__bulk/help/f/affiliation", "order": -83, "description_html": "Affiliation"   },
     {   "name": "__bulk/help/f/collaborators", "order": -82, "description_html": "Collaborators"   },
     {   "name": "__bulk/help/f/user_override", "order": -81, "description_html": "If “<code>yes</code>”, then override existing user profile information (name, affiliation, collaborators)"   },
-    {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "Roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "Roles: “<code>pc</code>”, “<code>unlistedpc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
     {   "name": "__bulk/help/f/tags", "order": -70, "description_html": "PC tags (space-separated)"   },
     {   "name": "__bulk/help/f/add_tags", "order": -65, "description_html": "PC tags to add"   },
     {   "name": "__bulk/help/f/remove_tags", "order": -65, "description_html": "PC tags to remove"   },

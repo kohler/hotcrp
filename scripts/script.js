@@ -9792,8 +9792,12 @@ hotcrp.suggest.add_builder("pc-tags", function (elt) {
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
+        const role_tags = elt.hasAttribute("data-suggest-role-tags");
         return cs.filterFrom(demand_load.pc().then(function (pc) {
-            return pc.tags || [];
+            return (pc.tags || []).filter(function (t) {
+                // keep in sync with Contact::ROLE_TAGS
+                return role_tags || !/^(?:pc|listedpc|unlistedpc|bot)$/i.test(t);
+            });
         }));
     }
 });

@@ -108,6 +108,33 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    function test_role_tags_recognized_but_not_listed() {
+        // role tags name PC subsets wherever a PC tag is expected, but they
+        // are not user tags, so tag lists omit them
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $roletags = ["pc", "listedpc", "unlistedpc", "bot"];
+        foreach ($roletags as $t) {
+            xassert($conf->pc_tag_exists($t), $t);
+            xassert($conf->pc_tag_exists(strtoupper($t)), $t);
+        }
+        xassert($conf->pc_tag_exists("red"));
+        xassert(!$conf->pc_tag_exists("nosuchpctag"));
+
+        $tags = array_map("strtolower", $conf->viewable_user_tags($chair));
+        xassert_in_eqq("red", $tags);
+        xassert_eqq(array_values(array_intersect($tags, $roletags)), []);
+        // the PC JSON still offers role tags; the client filters them by field
+        $pcj = $conf->hotcrp_pc_json($chair, 0);
+        $want = array_merge($conf->viewable_user_tags($chair), ["pc", "listedpc", "unlistedpc"]);
+        $conf->collator()->sort($want);
+        xassert_eqq($pcj->tags, $want);
+
+        // help examples use a real tag
+        $hth = new HelpRenderer(new ComponentSet($chair, ["etc/helptopics.json"]), $chair);
+        xassert_in_eqq(strtolower($hth->meaningful_pc_tag() ?? ""), $tags);
+    }
+
     // The address rule is the invariant everything else rests on, so the
     // boundary cases matter: a domain that merely ends in the reserved one is
     // not the reserved one.

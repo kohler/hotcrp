@@ -426,10 +426,8 @@ class Autoassign_Page {
             $this->print_pc_selection_link("unlisted", $this->_unlisted_pcids);
         }
         foreach ($this->conf->viewable_user_tags($this->user) as $pctag) {
-            $ltag = strtolower($pctag);
-            if ($ltag !== "pc"
-                && isset($this->_pcids_by_ltag[$ltag]))
-                $this->print_pc_selection_link("#{$pctag}", $this->_pcids_by_ltag[$ltag]);
+            if (($ids = $this->_pcids_by_ltag[strtolower($pctag)] ?? null))
+                $this->print_pc_selection_link("#{$pctag}", $ids);
         }
         $this->print_pc_selection_link("flip", ["flip"]);
         echo ")";

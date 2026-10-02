@@ -286,11 +286,7 @@ class HelpRenderer {
 
     /** @return ?string */
     function meaningful_pc_tag() {
-        foreach ($this->conf->viewable_user_tags($this->user) as $tag) {
-            if ($tag !== "pc")
-                return $tag;
-        }
-        return null;
+        return $this->conf->viewable_user_tags($this->user)[0] ?? null;
     }
 
     /** @return ?string */
