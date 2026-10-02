@@ -2325,6 +2325,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($value === "" && ($shape & self::PROP_NULL) !== 0) {
             $value = null;
         }
+        if ($prop === "roles") {
+            $value = self::normalize_roles($value);
+        }
         // save
         $this->_mod_undo = $this->_mod_undo ?? [];
         if (($shape & self::PROP_DATA) !== 0) {
@@ -2472,7 +2475,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             } else if ($prop === "roles" && $this->$idk > 0) {
                 $qf[] = "{$prop}=({$prop}&~?)|?";
                 $old_value = $this->_mod_undo[$prop] ?? 0;
-                $qv[] = $old_value & ~$value;
+                $qv[] = ($old_value & ~$value) | self::roles_displaced_by($value);
                 $qv[] = ~$old_value & $value;
             } else {
                 $qf[] = "{$prop}=?";
@@ -2580,6 +2583,28 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     }
 
 
+    /** Return `$roles` with implied roles added and conflicting roles
+     * removed: chair implies (listed) PC, and listed PC beats unlisted PC.
+     * @param int $roles
+     * @return int */
+    static function normalize_roles($roles) {
+        if (($roles & self::ROLE_CHAIR) !== 0) {
+            $roles |= self::ROLE_PC;
+        }
+        if (($roles & self::ROLE_PC) !== 0) {
+            $roles &= ~self::ROLE_UNLISTEDPC;
+        }
+        return $roles;
+    }
+
+    /** Return the roles that `$roles` excludes, which a relative update to
+     * `$roles` should clear even if they were set concurrently.
+     * @param int $roles
+     * @return int */
+    static function roles_displaced_by($roles) {
+        return ($roles & self::ROLE_PC) !== 0 ? self::ROLE_UNLISTEDPC : 0;
+    }
+
     /** @param int $new_roles
      * @param ?Contact $actor
      * @return int */
@@ -2588,9 +2613,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $new_roles &= self::ROLE_DBMASK;
             error_log("bad \$new_roles {$new_roles}: " . debug_string_backtrace());
         }
+        $new_roles = self::normalize_roles($new_roles);
         $old_roles = ($this->_mod_undo["roles"] ?? $this->roles) & self::ROLE_DBMASK;
         $remove_roles = $old_roles & ~$new_roles;
         $add_roles = ~$old_roles & $new_roles;
+        $clear_roles = $remove_roles | self::roles_displaced_by($new_roles);
         if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
             && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
             // ensure there's at least one chair or system administrator
@@ -2599,13 +2626,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 set c.roles=(c.roles&~?)|?
                 where c.contactId=? and d.contactId is not null",
                 self::ROLE_PC, self::ROLE_ADMIN | self::ROLE_CHAIR, $this->contactId,
-                $remove_roles, $add_roles, $this->contactId);
+                $clear_roles, $add_roles, $this->contactId);
             if ($result->affected_rows === 0) {
                 return $old_roles;
             }
         } else {
             $result = $this->conf->qe("update ContactInfo set roles=(roles&~?)|? where contactId=?",
-                $remove_roles, $add_roles, $this->contactId);
+                $clear_roles, $add_roles, $this->contactId);
         }
         unset($this->_mod_undo["roles"]);
         // save the roles bits

@@ -1302,6 +1302,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             || $this->conf->ql_ok("delete from PaperOption where optionId?a and paperId in (select paperId from Paper where timeWithdrawn>0)", $oids);
     }
 
+    /** Normalize roles: chair implies PC, and PC excludes unlisted PC.
+     * @return bool */
+    function v332_listed_unlisted_pc() {
+        return $this->conf->ql_ok("update ContactInfo set roles=roles|? where (roles&?)!=0 and (roles&?)=0",
+                Contact::ROLE_PC, Contact::ROLE_CHAIR, Contact::ROLE_PC)
+            && $this->conf->ql_ok("update ContactInfo set roles=roles&~? where (roles&?)!=0 and (roles&?)!=0",
+                Contact::ROLE_UNLISTEDPC, Contact::ROLE_PC, Contact::ROLE_UNLISTEDPC);
+    }
+
     /** @return bool */
     private function v331_reorder_tag_log_entries() {
         // Combined tag log entries used to append tag words after the paper
@@ -3384,6 +3393,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 331
             && $this->v331_reorder_tag_log_entries()) {
             $conf->update_schema_version(332);
+        }
+        if ($conf->sversion === 332
+            && $this->v332_listed_unlisted_pc()) {
+            $conf->update_schema_version(333);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

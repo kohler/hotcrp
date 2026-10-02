@@ -625,8 +625,9 @@ class ConfInvariants {
                 $this->invariant_error("user_nonascii", sprintf("user {$u->email}/{$u->contactId} has incorrect nonascii cflag %x", $u->cflags & Contact::CF_NEANONASCII));
             }
 
-            // roles have only expected bits
-            if (($u->roles & ~Contact::ROLE_DBMASK) !== 0) {
+            // roles have only expected bits, and are normalized
+            if (($u->roles & ~Contact::ROLE_DBMASK) !== 0
+                || Contact::normalize_roles($u->roles) !== $u->roles) {
                 $this->invariant_error("roles", "user {$u->email} has funky roles {$u->roles}");
             }
 

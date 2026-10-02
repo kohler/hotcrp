@@ -108,6 +108,82 @@ class UserStatus_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    function test_listed_and_unlisted_pc_is_listed() {
+        // an account is never both listed and unlisted PC; listed wins
+        $conf = $this->conf;
+        $root = $conf->root_user();
+        $email = "listedunlisted@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $us = new UserStatus($root);
+        xassert(!!$us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]));
+        $set_db = function ($roles) use ($conf, $email) {
+            $conf->qe("update ContactInfo set roles=? where email=?", $roles, $email);
+            $conf->invalidate_caches("users", "pc");
+            return $conf->checked_user_by_email($email);
+        };
+        $db = function () use ($conf, $email) {
+            return $conf->fetch_ivalue("select roles from ContactInfo where email=?", $email);
+        };
+        $PC = Contact::ROLE_PC;
+        $UPC = Contact::ROLE_UNLISTEDPC;
+        $ADMIN = Contact::ROLE_ADMIN;
+        $CHAIR = Contact::ROLE_CHAIR;
+
+        xassert_eqq(Contact::normalize_roles($PC | $UPC), $PC);
+        xassert_eqq(Contact::normalize_roles($CHAIR), $PC | $CHAIR);
+        xassert_eqq(Contact::normalize_roles($CHAIR | $UPC), $PC | $CHAIR);
+        xassert_eqq(Contact::normalize_roles($UPC | $ADMIN), $UPC | $ADMIN);
+
+        // a merge that keeps existing roles
+        $set_db($UPC);
+        $us = (new UserStatus($root))->set_if_empty(UserStatus::IF_EMPTY_MOST);
+        $u = $us->save_user((object) ["email" => $email, "roles" => ["pc"]]);
+        xassert_eqq($u->roles & Contact::ROLE_DBMASK, $PC);
+        xassert_eqq($db(), $PC);
+
+        // a sysadmin who can't drop their own privileges
+        $u = $set_db($UPC | $ADMIN);
+        $us = new UserStatus($u);
+        $us->no_deprivilege_self = true;
+        $u = $us->save_user((object) ["email" => $email, "roles" => ["pc"]]);
+        xassert_eqq($db(), $PC | $ADMIN);
+
+        // adding PC through a property change (e.g., OAuth role mapping)
+        $u = $set_db($UPC);
+        $u->set_prop("roles", $u->roles | $PC);
+        $u->save_prop();
+        xassert_eqq($u->roles & Contact::ROLE_DBMASK, $PC);
+        xassert_eqq($db(), $PC);
+
+        // ...even if the database changed underneath
+        $u = $set_db(0);
+        $conf->qe("update ContactInfo set roles=? where email=?", $UPC, $email);
+        $u->set_prop("roles", $PC);
+        $u->save_prop();
+        xassert_eqq($db(), $PC);
+
+        // saving roles directly (e.g., merging accounts)
+        $u = $set_db($UPC);
+        $u->save_roles($u->roles | $PC, $root);
+        xassert_eqq($u->roles & Contact::ROLE_DBMASK, $PC);
+        xassert_eqq($db(), $PC);
+        $u = $set_db(0);
+        $conf->qe("update ContactInfo set roles=? where email=?", $UPC, $email);
+        $u->save_roles($PC, $root);
+        xassert_eqq($db(), $PC);
+
+        // stored conflicts are invariant violations
+        $set_db($PC | $UPC);
+        $ci = new ConfInvariants($conf);
+        $ci->buffer_messages();
+        xassert(!$ci->check_users()->ok());
+        xassert_str_contains($ci->take_buffered_messages(), $email);
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_role_tags_recognized_but_not_listed() {
         // role tags name PC subsets wherever a PC tag is expected, but they
         // are not user tags, so tag lists omit them
