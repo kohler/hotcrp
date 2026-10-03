@@ -81,7 +81,7 @@ class UConverterShim {
             foreach (unpack($format, substr($s, $pos, $n)) as $c) {
                 if ($ch !== null) {
                     if ($c >= 0xDC00 && $c <= 0xDFFF) {
-                        $t .= UnicodeHelper::utf8_chr(0x10000 | (($ch - 0xD800) << 10) | ($c - 0xDC00));
+                        $t .= UnicodeHelper::utf8_chr(0x10000 + ((($ch - 0xD800) << 10) | ($c - 0xDC00)));
                         $ch = null;
                         continue;
                     }

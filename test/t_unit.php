@@ -1924,6 +1924,23 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE"), "ABC�");
     }
 
+    function test_uconverter_shim_utf16() {
+        require_once(SiteLoader::$root . "/lib/uconvertershim.php");
+        $t = function ($from, $s) {
+            return UConverterShim::transcode($s, "UTF-8", $from);
+        };
+        xassert_eqq($t("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE\x0A"), "ABC😊");
+        xassert_eqq($t("UTF-16LE", "A\x00=\xD8\x0A\xDE"), "A😊");
+        // surrogate pairs above plane 1
+        xassert_eqq($t("UTF-16BE", "\xD8\x40\xDC\x00"), "\u{20000}");
+        xassert_eqq($t("UTF-16BE", "\xD8\x7E\xDC\x01"), "\u{2F801}");
+        xassert_eqq($t("UTF-16BE", "\xDB\xFF\xDF\xFF"), "\u{10FFFF}");
+        // unpaired surrogates
+        xassert_eqq($t("UTF-16BE", "\x00A\xD8\x3D"), "A\u{FFFD}");
+        xassert_eqq($t("UTF-16BE", "\xDE\x0A\x00A"), "\u{FFFD}A");
+        xassert_eqq($t("UTF-16BE", "\xD8\x3D\x00A"), "\u{FFFD}A");
+    }
+
     function test_prefix_word_wrap() {
         xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10),
                     "+ This is\n- a thing\n- to be\n- wrapped.\n");
