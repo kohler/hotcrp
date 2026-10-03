@@ -5517,7 +5517,7 @@ class Conf {
         }
         if ($viewer->can_view_user_tags()) {
             // the client filters role tags where they don't belong
-            $tags = array_merge($this->viewable_user_tags($viewer), ["pc", "listedpc", "unlistedpc"]);
+            $tags = array_merge($this->viewable_user_tags($viewer), ["pc", "listedpc", "unlistedpc", "bot"]);
             $this->collator()->sort($tags);
             $rj["tags"] = $tags;
         }

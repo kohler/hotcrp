@@ -202,7 +202,7 @@ class UserStatus_Tester {
         xassert_eqq(array_values(array_intersect($tags, $roletags)), []);
         // the PC JSON still offers role tags; the client filters them by field
         $pcj = $conf->hotcrp_pc_json($chair, 0);
-        $want = array_merge($conf->viewable_user_tags($chair), ["pc", "listedpc", "unlistedpc"]);
+        $want = array_merge($conf->viewable_user_tags($chair), ["pc", "listedpc", "unlistedpc", "bot"]);
         $conf->collator()->sort($want);
         xassert_eqq($pcj->tags, $want);
 
