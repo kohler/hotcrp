@@ -4359,12 +4359,15 @@ class Conf {
     }
 
 
-    /** @param array{paperId?:list<int>|PaperIDSet|PaperID_SearchTerm,where?:string} $options
-     * @param bool $want_set
-     * @return \mysqli_result|Dbl_Result|PaperInfoSet */
-    private function _paper_result($options, ?Contact $user, $want_set) {
+    /** Yield the papers matching `$options`, or, if `$fill_set` is given,
+     * add them to it instead.
+     * @param array{paperId?:list<int>|PaperIDSet,where?:string} $options
+     * @param ?PaperInfoSet $fill_set
+     * @param bool $allow_cache
+     * @return \Generator<PaperInfo> */
+    private function fetch_papers($options, ?Contact $user, ?PaperInfoSet $fill_set, $allow_cache) {
         // Options:
-        //   "paperId" => $pids Only papers in list<int> $pids
+        //   "paperId" => $pids Only papers in list<int>|PaperIDSet $pids
         //   "finalized"        Only submitted papers
         //   "unsub"            Only unsubmitted papers
         //   "decision"         Only papers matching all specified decisions
@@ -4384,19 +4387,20 @@ class Conf {
         //   "assignments"
         //   "where" => $sql    SQL 'where' clause
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
-        //   "limit" => $sql    SQL 'limit' clause
+        //   "limit" => $sql    SQL 'limit' clause (not with a "paperId"
+        //                      set whose SQL predicate is imprecise)
 
         $cxid = $user ? $user->contactXid : -2;
         assert($cxid > 0 || $cxid < -1);
 
         // paper selection
         $paperset = null;
-        '@phan-var null|list<int>|PaperIDSet|PaperID_SearchTerm $paperset';
+        '@phan-var null|list<int>|PaperIDSet $paperset';
         if (isset($options["paperId"])) {
             $paperset = $options["paperId"];
         }
         if (isset($options["reviewId"]) || isset($options["commentId"])) {
-            throw new Exception("unexpected reviewId/commentId argument to Conf::paper_result");
+            throw new Exception("unexpected reviewId/commentId argument to Conf::fetch_papers");
         }
 
         // return known-empty result
@@ -4406,7 +4410,7 @@ class Conf {
                  || ($options["myWatching"] ?? false)
                  || ($options["myConflicts"] ?? false)))
             || $paperset === []) {
-            return Dbl_Result::make_empty();
+            return;
         }
 
         // prepare query: basic tables
@@ -4434,7 +4438,7 @@ class Conf {
         if ($aucondition) {
             $where[] = $aucondition;
         } else if ($author && $cxid < 0) {
-            return Dbl_Result::make_empty();
+            return;
         }
         if ($cxid > 0) {
             $j = $author && !$aucondition ? "join" : "left join";
@@ -4457,7 +4461,7 @@ class Conf {
                 $paperreview_is_my_reviews = false;
             }
             if ($cond === "false") {
-                return Dbl_Result::make_empty();
+                return;
             }
             if (!($options["myReviews"] ?? false)) {
                 $cond .= " and reviewNeedsSubmit!=0";
@@ -4548,20 +4552,23 @@ class Conf {
         }
 
         // conditions
-        if ($paperset !== null) {
-            if (!is_array($paperset)) {
-                $where[] = $paperset->sql_predicate("Paper.paperId");
-            } else if (count($paperset) > 2000) {
-                sort($paperset);
-                $ps = new PaperIDSet;
-                foreach ($paperset as $pid) {
-                    $ps->add($pid);
-                }
-                $where[] = $ps->sql_predicate("Paper.paperId");
-            } else {
-                $where[] = "Paper.paperId?a";
-                $qv[] = $paperset;
+        $paperset_precise = true;
+        if (is_array($paperset) && count($paperset) > 2000) {
+            sort($paperset);
+            $ps = new PaperIDSet;
+            foreach ($paperset as $pid) {
+                $ps->add($pid);
             }
+            $paperset = $ps;
+        }
+        if (is_array($paperset)) {
+            $where[] = "Paper.paperId?a";
+            $qv[] = $paperset;
+        } else if ($paperset) {
+            $where[] = $paperset->sql_predicate("Paper.paperId");
+            $paperset_precise = $paperset->is_sql_predicate_precise();
+            // filtering after a `limit` would return too few papers
+            assert($paperset_precise || !isset($options["limit"]));
         }
         if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";
@@ -4615,10 +4622,13 @@ class Conf {
         if ($author
             && empty($where)
             && $user->has_authored_papers()
-            && $want_set) {
+            && $allow_cache
+            && $fill_set) {
             // `authored_papers()` itself should be immutable
-            /** @phan-suppress-next-line PhanTypeMismatchReturn */
-            return clone $user->authored_papers();
+            foreach ($user->authored_papers() as $prow) {
+                $fill_set->add_paper($prow);
+            }
+            return;
         }
 
         $pq = "select " . join(",\n    ", $cols)
@@ -4637,32 +4647,49 @@ class Conf {
             . ($options["limit"] ?? "");
 
         //Conf::msg_debugt($pq);
-        return $this->qe_apply($pq, $qv);
+        $result = $this->qe_apply($pq, $qv);
+        while (($prow = PaperInfo::fetch($result, $user, $this, $fill_set))) {
+            if (!$paperset_precise && !$paperset->contains($prow->paperId)) {
+                if ($fill_set) {
+                    $fill_set->remove_last_paper($prow);
+                }
+            } else if (!$fill_set) {
+                yield $prow;
+            }
+        }
+        $result->close();
     }
 
-    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
-     * @return \mysqli_result|Dbl_Result */
-    function paper_result($options, ?Contact $user = null) {
-        return $this->_paper_result($options, $user, false);
+    /** @param array{paperId?:list<int>|PaperIDSet} $options
+     * @return \Generator<PaperInfo> */
+    function paper_stream($options, ?Contact $user = null) {
+        yield from $this->fetch_papers($options, $user, null, false);
     }
 
-    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
+    /** @param array{paperId?:list<int>|PaperIDSet} $options
+     * @return void */
+    function extend_paper_set(PaperInfoSet $prows, $options, ?Contact $user = null) {
+        foreach ($this->fetch_papers($options, $user, $prows, true) as $row) {
+        }
+    }
+
+    /** @param array{paperId?:list<int>|PaperIDSet} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options, ?Contact $user = null) {
-        $v = $this->_paper_result($options, $user, true);
-        if ($v instanceof PaperInfoSet) {
-            return $v;
+        $prows = new PaperInfoSet($this);
+        foreach ($this->fetch_papers($options, $user, $prows, true) as $row) {
         }
-        return PaperInfoSet::make_result($v, $user, $this);
+        return $prows;
     }
 
     /** @param int $pid
      * @return ?PaperInfo */
     function paper_by_id($pid, ?Contact $user = null, $options = []) {
         $options["paperId"] = [$pid];
-        $result = $this->paper_result($options, $user);
-        $prow = PaperInfo::fetch($result, $user, $this);
-        Dbl::free($result);
+        $prow = null;
+        foreach ($this->fetch_papers($options, $user, null, false) as $row) {
+            $prow = $prow ?? $row;
+        }
         return $prow;
     }
 

@@ -157,7 +157,7 @@ class PaperAPI_Tester {
         // bulk JSON exports are for reimport, so they carry the full text
         $u_chair = $conf->checked_user_by_email("chair@_.com");
         $qreq = TestQreq::get(["p" => (string) $pid]);
-        $ssel = SearchSelection::make($qreq, $u_chair);
+        $ssel = SearchSelection::make_papers($qreq, $u_chair);
         $la = ListAction::lookup("get/json", $u_chair, $qreq, $ssel);
         xassert($la instanceof ListAction);
         $dopt = $la->run($u_chair, $qreq, $ssel);

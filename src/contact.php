@@ -6926,7 +6926,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     // papers
 
-    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
+    /** @param array{paperId?:list<int>|PaperIDSet} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options) {
         return $this->conf->paper_set($options, $this);

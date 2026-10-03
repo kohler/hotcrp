@@ -2431,7 +2431,7 @@ class Formulas_Tester {
      * @return string */
     private function list_action_text(Contact $user, $name, $pids) {
         $qreq = TestQreq::get(["p" => $pids]);
-        $ssel = SearchSelection::make($qreq, $user);
+        $ssel = SearchSelection::make_papers($qreq, $user);
         $la = ListAction::lookup($name, $user, $qreq, $ssel);
         xassert($la instanceof ListAction);
         $csvg = $la->run($user, $qreq, $ssel);

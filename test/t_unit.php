@@ -1099,6 +1099,25 @@ class Unit_Tester {
         xassert_eqq(SessionList::decode_ids("1-100000000"), null);
     }
 
+    function test_session_list_decode_limit() {
+        // DECODE_LIMIT bounds the total, however the IDs are spelled
+        $lim = SessionList::DECODE_LIMIT;
+        xassert_eqq(count(SessionList::decode_ids("q{$lim}") ?? []), $lim);
+        xassert_eqq(SessionList::decode_ids("q" . ($lim + 1)), null);
+        xassert_eqq(SessionList::decode_ids("q{$lim}q1"), null);
+        xassert_eqq(SessionList::decode_ids("q{$lim}a"), null);
+        xassert_eqq(count(SessionList::decode_ids("q" . ($lim - 1) . "a") ?? []), $lim);
+        xassert_eqq(count(SessionList::decode_ids("1-{$lim}") ?? []), $lim);
+        xassert_eqq(SessionList::decode_ids("1-" . ($lim + 1)), null);
+        xassert_eqq(SessionList::decode_ids("1-{$lim} " . ($lim + 5)), null);
+        xassert_eqq(SessionList::decode_ids("5 1-{$lim}"), null);
+        xassert_eqq(count(SessionList::decode_ids(json_encode(range(1, $lim))) ?? []), $lim);
+        xassert_eqq(SessionList::decode_ids(json_encode(range(1, $lim + 1))), null);
+        // with ranges, a range is one entry
+        xassert_eqq(SessionList::decode_ids("1-99999999999 5", true), [[1, 99999999999], 5]);
+        xassert_eqq(SessionList::decode_ids("q99999999999", true), [[0, 99999999998]]);
+    }
+
     /** @return list<int> */
     function random_paper_ids() {
         $a = [];
@@ -1922,6 +1941,266 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C"), "ABC");
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE\x0A"), "ABC😊");
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE"), "ABC�");
+    }
+
+    function test_paperidset_empty() {
+        $set = new PaperIDSet;
+        xassert($set->is_empty());
+        xassert_eqq($set->count(), 0);
+        xassert_eqq($set->ids(), []);
+        xassert(!$set->contains(1));
+        xassert_eqq($set->sql_predicate("paperId"), "false");
+        xassert_eqq($set->unparse(), "");
+        xassert($set->equal_contents([]));
+        xassert($set->equal_contents(new PaperIDSet));
+    }
+
+    function test_paperidset_order() {
+        // sequential additions coalesce; `explicit` additions unparse as lists
+        $set = (new PaperIDSet)->add(1)->add(2)->add(3);
+        xassert_eqq($set->unparse(), "1-3");
+        xassert($set->is_sorted());
+        $set = (new PaperIDSet)->add_list([1, 2, 3], true);
+        xassert_eqq($set->unparse(), "1 2 3");
+        $set->add_range(4, 6)->add(9);
+        xassert($set->is_sorted());
+        xassert_eqq($set->unparse(), "1 2 3 4-6 9");
+        xassert_eqq($set->count(), 7);
+        xassert_eqq($set->ids(), [1, 2, 3, 4, 5, 6, 9]);
+        xassert_eqq($set->sql_predicate("paperId"), "paperId in (1, 2, 3, 4, 5, 6, 9)");
+        $set->add(10);
+        xassert_eqq($set->unparse(), "1 2 3 4-6 9-10");
+        xassert_eqq($set->count(), 8);
+        $set = (new PaperIDSet)->add(5)->add(4)->add(3);
+        xassert_eqq($set->unparse(), "5-3");
+        xassert(!$set->is_sorted());
+
+        // order of first addition
+        $set = (new PaperIDSet)->add_list([5, 3, 9, 1]);
+        xassert_eqq($set->ids(), [1, 3, 5, 9]);
+        xassert_eqq($set->unparse(), "5 3 9 1");
+        xassert(!$set->is_sorted());
+        xassert_eqq($set->compare(5, 3), -1);
+        xassert_eqq($set->compare(9, 1), -1);
+        xassert_eqq($set->compare(1, 5), 1);
+        xassert_eqq($set->compare(3, 3), 0);
+        // IDs not in the set sort last, by value
+        xassert_eqq($set->compare(1, 2), -1);
+        xassert_eqq($set->compare(7, 2), 1);
+        $ids = [9, 2, 1, 3, 7, 5];
+        usort($ids, [$set, "compare"]);
+        xassert_eqq($ids, [5, 3, 9, 1, 2, 7]);
+
+        // within a descending range, larger IDs come first
+        $set = (new PaperIDSet)->add_range(10, 1);
+        xassert_eqq($set->compare(10, 1), -1);
+        xassert_eqq($set->compare(2, 3), 1);
+        xassert_eqq($set->unparse(), "10-1");
+
+        // `sorted` forgets the order
+        $set = (new PaperIDSet)->add_list([5, 3, 9, 1])->sorted();
+        xassert($set->is_sorted());
+        xassert_eqq($set->unparse(), "1 3 5 9");
+        xassert_eqq($set->compare(5, 3), 1);
+    }
+
+    function test_paperidset_overlap() {
+        // an ascending range that overlaps the last one extends it
+        $set = (new PaperIDSet)->add_range(1, 10)->add_range(5, 15);
+        xassert_eqq($set->count(), 15);
+        xassert_eqq($set->unparse(), "1-15");
+        // otherwise, overlapping IDs belong to the range that added them first
+        $set = (new PaperIDSet)->add_range(1, 10)->add(20)->add_range(5, 15);
+        xassert_eqq($set->count(), 16);
+        xassert_eqq($set->unparse(), "1-10 20 11-15");
+        xassert_eqq($set->compare(7, 20), -1);
+        xassert_eqq($set->compare(12, 20), 1);
+        xassert_eqq($set->compare(12, 3), 1);
+        $set = (new PaperIDSet)->add_range(5, 15)->add_range(1, 10);
+        xassert_eqq($set->count(), 15);
+        xassert_eqq($set->unparse(), "5-15 1-4");
+        xassert_eqq($set->compare(7, 2), -1);
+
+        // duplicates count once
+        $set = (new PaperIDSet)->add_list([3, 1, 3, 2, 1]);
+        xassert_eqq($set->count(), 3);
+        xassert_eqq($set->ids(), [1, 2, 3]);
+        xassert_eqq($set->compare(3, 1), -1);
+        xassert_eqq($set->compare(1, 2), -1);
+    }
+
+    function test_paperidset_large_and_open() {
+        $set = (new PaperIDSet)->add_range(1, 2000);
+        xassert_eqq($set->count(), 2000);
+        xassert_eqq($set->ids(), null);
+        xassert_eqq(count($set->ids(2000)), 2000);
+        xassert($set->contains(2000));
+        xassert(!$set->contains(2001));
+
+        // ranges are never expanded
+        $set = (new PaperIDSet)->add_range(1, 99999999999);
+        xassert_eqq($set->count(), 99999999999);
+        xassert_eqq($set->ids(100000), null);
+        xassert($set->contains(99999999999));
+
+        $set = (new PaperIDSet)->add(3)->add_range(20, PHP_INT_MAX);
+        xassert_eqq($set->count(), PHP_INT_MAX);
+        xassert($set->contains(PHP_INT_MAX - 1));
+        xassert(!$set->contains(19));
+        xassert_eqq($set->unparse(), "3 20-");
+        xassert_eqq($set->encode_ids(), null);
+    }
+
+    function test_paperidset_sql_predicate() {
+        xassert_eqq((new PaperIDSet)->add(7)->sql_predicate("paperId"), "paperId=7");
+        xassert_eqq((new PaperIDSet)->add_list([5, 3, 9])->sql_predicate("paperId"),
+                    "paperId in (3, 5, 9)");
+        xassert_eqq((new PaperIDSet)->add_range(1, 100)->sql_predicate("paperId"),
+                    "paperId between 1 and 100");
+        // adjacent pieces merge, whatever their order
+        xassert_eqq((new PaperIDSet)->add_range(51, 100)->add_range(1, 50)->sql_predicate("paperId"),
+                    "paperId between 1 and 100");
+        xassert_eqq((new PaperIDSet)->add_range(1, 100)->add(200)->add(250)
+                        ->add_range(300, PHP_INT_MAX)->sql_predicate("paperId"),
+                    "(paperId between 1 and 100 or paperId>=300 or paperId in (200, 250))");
+        // IDs inside a later open range fold into it
+        xassert_eqq((new PaperIDSet)->add(400)->add_range(300, PHP_INT_MAX)->sql_predicate("paperId"),
+                    "paperId>=300");
+        xassert_eqq((new PaperIDSet)->add_range(1, 99999999999)->sql_predicate("contactId"),
+                    "contactId between 1 and 99999999999");
+    }
+
+    function test_paperidset_max_int() {
+        // PHP_INT_MAX can't be an ID: `last === PHP_INT_MAX` means open-ended
+        $set = (new PaperIDSet)->add_list([1, 2, 3])->add(PHP_INT_MAX);
+        xassert($set->is_sorted());
+        xassert_eqq($set->count(), 3);
+        xassert_eqq($set->ids(), [1, 2, 3]);
+        xassert_eqq($set->sql_predicate("x"), "x in (1, 2, 3)");
+        $set = (new PaperIDSet)->add_list([3, 1])->add(PHP_INT_MAX);
+        xassert(!$set->is_sorted());
+        xassert_eqq($set->count(), 2);
+        xassert_eqq($set->ids(), [1, 3]);
+        xassert((new PaperIDSet)->add(PHP_INT_MAX)->is_empty());
+
+        // an open-ended run is open-ended wherever it starts
+        $set = (new PaperIDSet)->add_range(PHP_INT_MAX - 1, PHP_INT_MAX);
+        xassert_eqq($set->sql_predicate("x"), "x>=" . (PHP_INT_MAX - 1));
+        $set = (new PaperIDSet)->add(1)->add_range(PHP_INT_MAX - 1, PHP_INT_MAX);
+        xassert_eqq($set->sql_predicate("x"), "(x>=" . (PHP_INT_MAX - 1) . " or x=1)");
+    }
+
+    function test_paperidset_imprecise_sql_predicate() {
+        $max = PaperIDSet::MAX_SQL_RANGES;
+        $count_in = function ($sql) {
+            return preg_match('/ in \(([^)]*)\)/', $sql, $m) ? count(explode(",", $m[1])) : 0;
+        };
+
+        // `$max` isolated IDs: one IN list
+        $set = (new PaperIDSet)->add_list(range(1, 2 * $max - 1, 2));
+        xassert($set->is_sql_predicate_precise());
+        $sql = $set->sql_predicate("paperId");
+        xassert_str_starts_with($sql, "paperId in (1, 3, 5,");
+        xassert_eqq($count_in($sql), $max);
+
+        // `$max` runs, mixed: ranges plus one IN list
+        $set = (new PaperIDSet)->add_list(range(1, 2 * $max - 3, 2))->add_range(100000, 100010);
+        xassert($set->is_sql_predicate_precise());
+        $sql = $set->sql_predicate("paperId");
+        xassert_str_starts_with($sql, "(paperId between 100000 and 100010 or paperId in (1, 3,");
+        xassert_eqq($count_in($sql), $max - 1);
+
+        // the IN list counts as one range
+        $set->add(200001);
+        xassert($set->is_sql_predicate_precise());
+        xassert_eqq($count_in($set->sql_predicate("paperId")), $max);
+
+        // too many isolated IDs: a superset
+        $set->add(200003);
+        xassert(!$set->is_sql_predicate_precise());
+        xassert_eqq($set->sql_predicate("paperId"), "paperId between 1 and 200003");
+        xassert($set->contains(1) && !$set->contains(2));
+        $set->add_range(300000, PHP_INT_MAX);
+        xassert(!$set->is_sql_predicate_precise());
+        xassert_eqq($set->sql_predicate("paperId"), "paperId>=1");
+
+        // too many ranges: a superset
+        $set = new PaperIDSet;
+        for ($i = 0; $i !== $max; ++$i) {
+            $set->add_range(3 * $i + 1, 3 * $i + 2);
+        }
+        xassert($set->is_sql_predicate_precise());
+        $set->add(100000);
+        xassert(!$set->is_sql_predicate_precise());
+        xassert_eqq($set->sql_predicate("paperId"), "paperId between 1 and 100000");
+
+        // runs are counted after adjacent pieces merge
+        $set = (new PaperIDSet)->add_list(range(1, 2 * $max + 1, 2))->add_range(1, 2 * $max + 1);
+        xassert($set->is_sql_predicate_precise());
+        xassert_eqq($set->sql_predicate("paperId"), "paperId between 1 and " . (2 * $max + 1));
+
+        // the count of runs decides, not the count of IDs
+        $set = (new PaperIDSet)->add_range(1, 99999999999)->add_range(200000000000, 300000000000);
+        xassert($set->is_sql_predicate_precise());
+        xassert_eqq($set->sql_predicate("paperId"),
+                    "(paperId between 1 and 99999999999 or paperId between 200000000000 and 300000000000)");
+    }
+
+    function test_paperidset_equal_contents() {
+        $set = (new PaperIDSet)->add_range(1, 5);
+        xassert($set->equal_contents([3, 1, 2, 5, 4]));
+        xassert(!$set->equal_contents([1, 2, 3, 4]));
+        xassert(!$set->equal_contents([1, 2, 3, 4, 6]));
+        xassert($set->equal_contents((new PaperIDSet)->add_list([5, 4, 3, 2, 1])));
+        xassert($set->equal_contents((new PaperIDSet)->add_range(4, 5)->add_range(1, 3)));
+        xassert(!$set->equal_contents((new PaperIDSet)->add_range(2, 6)));
+        xassert(!$set->equal_contents((new PaperIDSet)->add_list([1, 2, 3, 4, 6])));
+    }
+
+    function test_paperidset_merge() {
+        $a = (new PaperIDSet)->add_range(1, 3);
+        $b = (new PaperIDSet)->add(10)->add(2)->add_range(20, 15);
+        $a->merge($b);
+        xassert_eqq($a->count(), 10);
+        xassert_eqq($a->unparse(), "1-3 10 20-15");
+        xassert_eqq($a->compare(3, 10), -1);
+        xassert_eqq($a->compare(20, 15), -1);
+        // the merged-in set is unchanged
+        xassert_eqq($b->unparse(), "10 2 20-15");
+    }
+
+    function test_paperidset_encode_round_trip() {
+        foreach ([[1, 2, 3, 4, 5], [5, 3, 9, 1], [30, 29, 28, 27, 1, 2, 100],
+                  [7], range(100, 1, -1), array_merge(range(1, 50), [200], range(80, 60, -1))] as $ids) {
+            $set = (new PaperIDSet)->add_list($ids);
+            $enc = $set->encode_ids();
+            $dec = SessionList::decode_ids($enc, true);
+            $set2 = new PaperIDSet;
+            foreach ($dec as $x) {
+                is_array($x) ? $set2->add_range($x[0], $x[1]) : $set2->add($x);
+            }
+            xassert($set2->equal_contents($set));
+            xassert_eqq($set2->unparse(), $set->unparse());
+        }
+    }
+
+    function test_paperidset_clamped() {
+        $set = (new PaperIDSet)->add_range(10, 1)->add(50)->add_range(100, 200)
+            ->add_range(-5, 3)->add_range(5000, 6000);
+        xassert_eqq($set->clamped(1, 120)->unparse(), "10-1 50 100-120");
+        xassert_eqq($set->clamped(1, 120)->count(), 32);
+        xassert_eqq($set->clamped(4, 7)->unparse(), "7-4");
+        xassert_eqq($set->clamped(-2, 0)->count(), 3);
+        xassert($set->clamped(7000, 8000)->is_empty());
+        // order of first addition survives
+        $c = $set->clamped(1, 120);
+        xassert_eqq($c->compare(10, 1), -1);
+        xassert_eqq($c->compare(1, 50), -1);
+        xassert_eqq($c->compare(50, 100), -1);
+        // open-ended ranges are closed
+        $set = (new PaperIDSet)->add(3)->add_range(20, PHP_INT_MAX);
+        xassert_eqq($set->clamped(1, 25)->unparse(), "3 20-25");
+        xassert_eqq($set->clamped(1, 25)->count(), 7);
     }
 
     function test_uconverter_shim_utf16() {

@@ -471,7 +471,7 @@ class Search_Page {
         }
 
         // paper selection
-        $ssel = SearchSelection::make($qreq, $user);
+        $ssel = SearchSelection::make_papers($qreq, $user);
         SearchSelection::clear_request($qreq);
 
         // look for search action

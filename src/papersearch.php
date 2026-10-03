@@ -1150,7 +1150,7 @@ class PaperSearch extends MessageSet {
             }
         } else if ($qe->type === "pn") {
             assert($qe instanceof PaperID_SearchTerm);
-            foreach ($qe->paper_ids() ?? [] as $p) {
+            foreach ($qe->id_set()->ids(1000) ?? [] as $p) {
                 if (array_search($p, $this->_matches) === false)
                     $this->_matches[] = (int) $p;
             }
@@ -1167,7 +1167,7 @@ class PaperSearch extends MessageSet {
             }
         } else if ($qe->type === "pn") {
             assert($qe instanceof PaperID_SearchTerm);
-            foreach ($qe->ranges() as $r) {
+            foreach ($qe->id_set()->ranges() as $r) {
                 for ($p = $r->first; $p < $r->last && $r->explicit; ++$p) {
                     if (array_search($p, $this->_matches) === false) {
                         $ps[] = $p;

@@ -22,7 +22,8 @@ class SessionList {
      * @readonly */
     public $digest;
 
-    const DECODE_LIMIT = 500000;
+    /** Most IDs (or, with ranges, entries) `decode_ids` returns. */
+    const DECODE_LIMIT = 100000;
 
     /** @param string $listid
      * @param list<int> $ids
@@ -61,7 +62,7 @@ class SessionList {
         if (str_starts_with($s, "[")
             && strpos($s, "{") === false
             && ($a = json_decode($s)) !== null) {
-            return is_int_list($a) ? $a : null;
+            return is_int_list($a) && count($a) <= self::DECODE_LIMIT ? $a : null;
         }
 
         $a = [];
@@ -102,7 +103,7 @@ class SessionList {
                 if ($n2 - $n1 > 10 && $allow_ranges) {
                     $a[] = [$n1, $n2];
                     $n1 = $n2 + 1;
-                } else if ($n2 - $n1 > self::DECODE_LIMIT) {
+                } else if ($n2 - $n1 >= self::DECODE_LIMIT - count($a)) {
                     return null;
                 } else {
                     while ($n1 <= $n2) {
@@ -162,7 +163,7 @@ class SessionList {
             if ($add0 > 10 && $allow_ranges) {
                 $a[] = [$next, $next + $sign * $add0 - $sign];
                 $next += $add0 * $sign;
-            } else if ($add0 > self::DECODE_LIMIT || !is_int($add0)) {
+            } else if (!is_int($add0) || $add0 > self::DECODE_LIMIT - count($a)) {
                 return null;
             } else {
                 while ($add0 !== 0) {

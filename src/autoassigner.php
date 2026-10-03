@@ -945,8 +945,7 @@ abstract class Autoassigner extends MessageSet {
 
         // then load preferences
         $nloaded = 0;
-        $result = $this->conf->paper_result($this->review_query_options());
-        while (($row = PaperInfo::fetch($result, null, $this->conf))) {
+        foreach ($this->conf->paper_stream($this->review_query_options()) as $row) {
             $this->load_paper_reviews($row);
             $this->load_paper_preferences_and_conflicts($row);
             ++$nloaded;
@@ -954,7 +953,6 @@ abstract class Autoassigner extends MessageSet {
                 $this->mark_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nloaded * 100 / count($this->paper_ids()) + 0.5)));
             }
         }
-        Dbl::free($result);
         gc_collect_cycles();
 
         if (!$this->has_pref_index) {

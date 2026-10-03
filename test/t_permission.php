@@ -1196,7 +1196,7 @@ class Permission_Tester {
      * @return string */
     private function get_pcconf_csv($user, $pids = "1") {
         $qreq = TestQreq::get(["p" => $pids]);
-        $ssel = SearchSelection::make($qreq, $user);
+        $ssel = SearchSelection::make_papers($qreq, $user);
         $la = ListAction::lookup("get/pcconf", $user, $qreq, $ssel);
         xassert($la instanceof ListAction);
         $csvg = $la->run($user, $qreq, $ssel);

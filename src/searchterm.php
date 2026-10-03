@@ -1936,12 +1936,6 @@ class PaperID_SearchTerm extends SearchTerm {
         parent::__construct("pn");
         $this->pidset = new PaperIDSet;
     }
-    /** @param int $p0
-     * @param int $p1
-     * @param bool $explicit */
-    function add_range($p0, $p1, $explicit = false) {
-        $this->pidset->add_range($p0, $p1, $explicit);
-    }
     function merge(SearchTerm $st) {
         if (!($st instanceof PaperID_SearchTerm)) {
             return false;
@@ -1949,29 +1943,16 @@ class PaperID_SearchTerm extends SearchTerm {
         $this->pidset->merge($st->pidset);
         return true;
     }
-    /** @return ?list<int> */
-    function paper_ids() {
-        return $this->pidset->ids(1000);
-    }
-    /** @return list<PaperIDSetRange> */
-    function ranges() {
-        return $this->pidset->ranges();
-    }
-    /** @return bool */
-    function is_empty() {
-        return $this->pidset->is_empty();
-    }
-    /** @param string $field
-     * @return string */
-    function sql_predicate($field) {
-        return $this->pidset->sql_predicate($field);
+    /** @return PaperIDSet */
+    function id_set() {
+        return $this->pidset;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        return $this->sql_predicate("Paper.paperId");
+        return $this->pidset->sql_predicate("Paper.paperId");
     }
     function is_sqlexpr_precise() {
-        return true;
+        return $this->pidset->is_sql_predicate_precise();
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->pidset->contains($row->paperId);
@@ -1990,9 +1971,9 @@ class PaperID_SearchTerm extends SearchTerm {
         $st = new PaperID_SearchTerm;
         foreach ($ids as $id) {
             if (is_array($id)) {
-                $st->add_range($id[0], $id[1]);
+                $st->pidset->add_range($id[0], $id[1]);
             } else {
-                $st->add_range($id, $id);
+                $st->pidset->add($id);
             }
         }
         return $st;
@@ -2011,7 +1992,7 @@ class PaperID_SearchTerm extends SearchTerm {
             } else {
                 $p2 = intval($m[3]);
             }
-            $st->add_range($p1, $p2, $m[2] === "");
+            $st->pidset->add_range($p1, $p2, $m[2] === "");
             $pos += strlen($m[0]);
         }
         return $st;

@@ -112,15 +112,15 @@ class Autoassign_Page {
             "tsoft" => $this->user->privChair
         ]);
         if (isset($qreq->asel)) {
-            $this->asel = SearchSelection::make($qreq, $this->user, "asel");
+            $this->asel = SearchSelection::make_papers($qreq, $this->user, "asel");
         } else if (isset($qreq->has_pap) && !isset($qreq->saveassignment)) {
-            $this->asel = SearchSelection::make($qreq, $this->user, "pap");
+            $this->asel = SearchSelection::make_papers($qreq, $this->user, "pap");
         } else {
             $this->asel = new SearchSelection($search->paper_ids());
         }
         $this->asel->reset_default($search);
         if (isset($qreq->has_pap) && isset($qreq->saveassignment)) {
-            $this->ssel = SearchSelection::make($qreq, $this->user, "pap");
+            $this->ssel = SearchSelection::make_papers($qreq, $this->user, "pap");
         } else {
             $this->ssel = $this->asel;
         }

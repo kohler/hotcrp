@@ -225,7 +225,7 @@ class ReviewPrefs_Page {
         }
 
         // paper selection, search actions
-        $ssel = SearchSelection::make($qreq, $user);
+        $ssel = SearchSelection::make_papers($qreq, $user);
         SearchSelection::clear_request($qreq);
         $qreq->q = $qreq->q ?? "";
         $qreq->t = "editpref";

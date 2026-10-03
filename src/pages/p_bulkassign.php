@@ -131,7 +131,7 @@ class BulkAssign_Page {
         if (!$content) {
             return false;
         }
-        $ssel = SearchSelection::make($this->qreq, $this->user);
+        $ssel = SearchSelection::make_papers($this->qreq, $this->user);
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
         if (isset($this->qreq->t)) {

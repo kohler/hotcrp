@@ -11,8 +11,10 @@ class Users_Page {
     public $qreq;
     /** @var array<string,string|array{label:string}> */
     public $limits = [];
-    /** @var ?list<int> */
-    private $papersel;
+    /** @var ?PaperIDSet */
+    private $usersel;
+    /** @var list<int> */
+    private $selected_cids = [];
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
@@ -23,7 +25,7 @@ class Users_Page {
         $this->qreq = $qreq;
         $pap = $qreq->p ?? $qreq->pap;
         if (isset($pap) && $pap !== "all") {
-            $this->papersel = SearchSelection::make($qreq)->selection();
+            $this->usersel = SearchSelection::make_raw($qreq)->id_set();
         }
 
         $this->add_limit("pc", "Program committee");
@@ -58,11 +60,37 @@ class Users_Page {
 
     /** @return list<Contact> */
     function selected_users() {
-        // `papersel` is a raw client-supplied selection, so it must not bypass
+        // `usersel` is a raw client-supplied selection, so it must not bypass
         // the listing's visibility filter
         return (new ContactList($this->viewer, false, $this->qreq))
-            ->set_user_filter($this->papersel)
+            ->set_user_filter($this->usersel)
             ->sorted_users($this->qreq->t);
+    }
+
+    /** Set `selected_cids` to the selected accounts that listings can show
+     * (so not placeholders, deleted accounts, or anonymous review accounts).
+     * Return true if any remain; otherwise report that none are selected.
+     * @return bool */
+    private function restrict_selection() {
+        $this->selected_cids = [];
+        if ($this->usersel && !$this->usersel->is_empty()) {
+            $result = $this->conf->qe("select contactId, email from ContactInfo where "
+                . $this->usersel->sql_predicate("contactId")
+                . " and (cflags&?)=0 order by contactId", Contact::CFM_PLACEHOLDER);
+            while (($row = $result->fetch_row())) {
+                $cid = (int) $row[0];
+                if ($this->usersel->contains($cid)
+                    && !Contact::is_anonymous_email($row[1])) {
+                    $this->selected_cids[] = $cid;
+                }
+            }
+            $result->close();
+        }
+        if (empty($this->selected_cids)) {
+            $this->conf->feedback_msg(MessageItem::warning_note("<0>No users selected"));
+            return false;
+        }
+        return true;
     }
 
     /** @return bool */
@@ -203,15 +231,15 @@ class Users_Page {
         $list = $action = null;
 
         if ($modifyfn === "disable" || $modifyfn === "disableaccount") {
-            $ua->disable($this->papersel);
+            $ua->disable($this->selected_cids);
             $list = "disabled";
             $action = new FmtArg("action", "disabled", 0);
         } else if ($modifyfn === "enable" || $modifyfn === "enableaccount") {
-            $ua->enable($this->papersel);
+            $ua->enable($this->selected_cids);
             $list = "enabled";
             $action = new FmtArg("action", "enabled", 0);
         } else if ($modifyfn === "sendaccount") {
-            $ua->send_account_info($this->papersel);
+            $ua->send_account_info($this->selected_cids);
             if (!empty($ua->name_list("sent"))) {
                 $ua->success($this->conf->_("<0>Sent account information mail to {:list}", $ua->name_list("sent")));
             }
@@ -221,7 +249,7 @@ class Users_Page {
         } else if ($modifyfn === "add_pc"
                    || $modifyfn === "add_unlistedpc"
                    || $modifyfn === "remove_pc") {
-            $ua->$modifyfn($this->papersel);
+            $ua->$modifyfn($this->selected_cids);
             $list = $modifyfn;
             if ($modifyfn === "add_pc") {
                 $atext = "added to PC";
@@ -303,7 +331,8 @@ class Users_Page {
                 $tests[] = "contactTags like " . Dbl::utf8ci($this->conf->dblink, "'% {$x}#%'");
             }
         }
-        $result = $this->conf->qe("select * from ContactInfo where " . join(" or ", $tests), $this->papersel);
+        $result = $this->conf->qe("select * from ContactInfo where " . join(" or ", $tests), $this->selected_cids);
+        $selected = array_flip($this->selected_cids);
 
         // make changes
         $us = new UserStatus($this->viewer);
@@ -317,7 +346,7 @@ class Users_Page {
                     || $ptv[0] === "-") {
                     $us->jval->change_tags[] = "-" . $ptv[1];
                 }
-                if (($tagfn === "s" && in_array($u->contactId, $this->papersel, true))
+                if (($tagfn === "s" && isset($selected[$u->contactId]))
                     || ($tagfn === "a" && $ptv[0] !== "-")) {
                     $us->jval->change_tags[] = $ptv[1] . "#" . $ptv[2];
                 }
@@ -384,13 +413,13 @@ class Users_Page {
         if ($qreq->fn === "modify") {
             return $this->viewer->privChair
                 && $qreq->valid_post()
-                && !empty($this->papersel)
+                && $this->restrict_selection()
                 && $this->handle_modify();
         }
         if ($qreq->fn === "tag") {
             return $this->viewer->privChair
                 && $qreq->valid_post()
-                && !empty($this->papersel)
+                && $this->restrict_selection()
                 && in_array($qreq->tagfn, ["a", "d", "s"], true)
                 && $this->handle_tags();
         }

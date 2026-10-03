@@ -160,4 +160,129 @@ class UsersPage_Tester {
         $this->conf->qe("delete from ContactInfo where email=?", $email);
         $this->conf->invalidate_caches("users", "pc");
     }
+
+    /** @param array<string,string> $args
+     * @return list<string> */
+    private function selected_emails(Contact $viewer, $args) {
+        $qreq = TestQreq::get($args)->set_conf($this->conf);
+        $up = new Users_Page($viewer, $qreq);
+        return array_map(function ($u) { return $u->email; }, $up->selected_users());
+    }
+
+    /** @param array<string,string> $args
+     * @return string */
+    private function run_users_page(Contact $viewer, $args) {
+        $qreq = TestQreq::apply_user($viewer, TestQreq::post($args)->set_conf($this->conf))
+            ->set_page("users");
+        Qrequest::set_main_request($qreq);
+        // test_mode 2 routes feedback messages into the page
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        try {
+            Users_Page::go($viewer, $qreq);
+        } catch (Redirection $unused) {
+        }
+        Navigation::$test_mode = $old_test_mode;
+        return ob_get_clean();
+    }
+
+    function test_users_selection_is_an_id_set() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $all = $this->selected_emails($chair, ["t" => "all", "pap" => "all"]);
+        xassert_gt(count($all), 10);
+
+        // user selections are not limited to paper IDs or a fixed count
+        $huge = $this->selected_emails($chair, ["t" => "all", "pap" => "1-99999999999"]);
+        xassert_eqq($huge, $all);
+        $maxcid = max(array_map(function ($e) {
+            return $this->conf->checked_user_by_email($e)->contactId;
+        }, $all));
+        $top = $this->conf->user_by_id($maxcid);
+        xassert_eqq($this->selected_emails($chair, ["t" => "all", "pap" => "{$maxcid}-99999999999"]),
+                    [$top->email]);
+        xassert_eqq($this->selected_emails($chair, ["t" => "all", "p" => "{$maxcid}-99999999999"]),
+                    [$top->email]);
+
+        // a selection with too many pieces for exact SQL is still exact
+        $odd = join(" ", range(1, 2 * PaperIDSet::MAX_SQL_RANGES + 3, 2));
+        xassert(!SearchSelection::make_raw(TestQreq::get(["pap" => $odd]))->id_set()->is_sql_predicate_precise());
+        $odd_emails = array_values(array_filter($all, function ($e) {
+            return $this->conf->checked_user_by_email($e)->contactId % 2 === 1;
+        }));
+        xassert_gt(count($odd_emails), 0);
+        xassert_lt(count($odd_emails), count($all));
+        xassert_eqq($this->selected_emails($chair, ["t" => "all", "pap" => $odd]), $odd_emails);
+
+        // actions over an open-ended range touch listable accounts only,
+        // never placeholders
+        $email = "placeholder.sel@cs.hotcrp-test.edu";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $ph = Contact::make_keyed($this->conf, ["email" => $email, "firstName" => "Pla", "lastName" => "Ceholder"])->store();
+        $this->conf->qe("update ContactInfo set cflags=cflags|? where contactId=?", Contact::CF_PLACEHOLDER, $ph->contactId);
+        $ph = $this->conf->fresh_user_by_email($email);
+        xassert($ph->is_placeholder());
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "a",
+                                       "tag" => "hugerange", "pap" => "{$maxcid}-99999999999"]);
+        $tagged = Dbl::fetch_first_columns($this->conf->dblink, "select contactId from ContactInfo where contactTags like '% hugerange#%' order by contactId");
+        $listable_ids = function ($where) {
+            $ids = [];
+            foreach (Dbl::fetch_rows($this->conf->dblink, "select contactId, email from ContactInfo where {$where} and (cflags&?)=0 order by contactId", Contact::CFM_PLACEHOLDER) as $row) {
+                if (!Contact::is_anonymous_email($row[1]))
+                    $ids[] = $row[0];
+            }
+            return $ids;
+        };
+        $listable = $listable_ids("contactId>={$maxcid}");
+        xassert_eqq($tagged, $listable);
+        xassert_eqq($tagged[0] ?? null, (string) $maxcid);
+        xassert_not_in_eqq((string) $ph->contactId, $tagged);
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "d",
+                                       "tag" => "hugerange", "pap" => "1-99999999999"]);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo where contactTags like '% hugerange#%'"), 0);
+
+        // actions over an imprecise selection leave unselected accounts alone
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "a",
+                                       "tag" => "hugerange", "pap" => "1-99999999999"]);
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "d",
+                                       "tag" => "hugerange", "pap" => $odd]);
+        $tagged = Dbl::fetch_first_columns($this->conf->dblink, "select contactId from ContactInfo where contactTags like '% hugerange#%' order by contactId");
+        $even = $listable_ids("contactId%2=0");
+        xassert_gt(count($tagged), 0);
+        xassert_eqq($tagged, $even);
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "d",
+                                       "tag" => "hugerange", "pap" => "1-99999999999"]);
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from ContactInfo where contactTags like '% hugerange#%'"), 0);
+
+        MailChecker::clear();
+        $out = $this->run_users_page($chair, ["t" => "all", "fn" => "modify", "modifyfn" => "sendaccount",
+                                              "pap" => (string) $ph->contactId]);
+        xassert_eqq(count(MailChecker::$preps), 0);
+        xassert_str_contains($out, "No users selected");
+        $this->run_users_page($chair, ["t" => "all", "fn" => "modify", "modifyfn" => "add_pc",
+                                       "pap" => (string) $ph->contactId]);
+        xassert(!$this->conf->fresh_user_by_email($email)->isPC);
+        MailChecker::clear();
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users", "pc");
+
+        // anonymous review accounts aren't listed, so actions skip them too
+        $this->conf->qe("delete from ContactInfo where email='anonymous97'");
+        $this->conf->qe("insert into ContactInfo set email='anonymous97', firstName='Jane Q.', lastName='Public', affiliation='', password='', cflags=?", Contact::CF_UDISABLED);
+        $anon = $this->conf->user_by_id($this->conf->fetch_ivalue("select contactId from ContactInfo where email='anonymous97'"));
+        xassert($anon && $anon->is_anonymous_user());
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "a",
+                                       "tag" => "hugerange", "pap" => "{$anon->contactId} {$maxcid}"]);
+        $tagged = Dbl::fetch_first_columns($this->conf->dblink, "select contactId from ContactInfo where contactTags like '% hugerange#%'");
+        xassert_eqq($tagged, [(string) $maxcid]);
+        $this->run_users_page($chair, ["t" => "all", "fn" => "modify", "modifyfn" => "enable",
+                                       "pap" => (string) $anon->contactId]);
+        xassert_eqq($this->conf->fetch_ivalue("select cflags from ContactInfo where contactId=?", $anon->contactId),
+                    Contact::CF_UDISABLED);
+        $this->run_users_page($chair, ["t" => "all", "fn" => "tag", "tagfn" => "d",
+                                       "tag" => "hugerange", "pap" => (string) $maxcid]);
+        $this->conf->qe("delete from ContactInfo where email='anonymous97'");
+        $this->conf->invalidate_caches("users", "pc");
+    }
 }

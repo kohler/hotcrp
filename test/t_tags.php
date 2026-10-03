@@ -896,7 +896,7 @@ seqnexttag,6,altorder\n");
             $feedback[] = str_replace("#{$pt[0]}", "#N", $aset->full_feedback_text());
             $qreq = TestQreq::post_page("api/searchaction", ["p" => (string) $pt[0], "tag" => $pt[1]])
                 ->set_user($this->u_varghese);
-            $ssel = SearchSelection::make($qreq, $this->u_varghese);
+            $ssel = SearchSelection::make_papers($qreq, $this->u_varghese);
             $la = ListAction::lookup("tag/add", $this->u_varghese, $qreq, $ssel, ListAction::F_API);
             xassert($la instanceof ListAction);
             $jr = $la->run($this->u_varghese, $qreq, $ssel);
@@ -1391,7 +1391,7 @@ seqnexttag,6,altorder\n");
 
         $qreq = TestQreq::post_page("api/searchaction", ["p" => join(" ", $pids), "tag" => "crank"])
             ->set_user($this->u_chair);
-        $ssel = SearchSelection::make($qreq, $this->u_chair);
+        $ssel = SearchSelection::make_papers($qreq, $this->u_chair);
         $la = ListAction::lookup("tag/calculate_rank", $this->u_chair, $qreq, $ssel, ListAction::F_API);
         xassert($la instanceof ListAction);
         $jr = $la->run($this->u_chair, $qreq, $ssel);

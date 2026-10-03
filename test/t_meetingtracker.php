@@ -229,6 +229,22 @@ class MeetingTracker_Tester {
         $this->stop_tracker($tr_mtb);
     }
 
+    function test_permissionizer_large_list() {
+        // a list too large for exact SQL gives the same permissions
+        xassert(!empty($this->conf->track_tags()));
+        $pids = [6, 7, 8];
+        $big = $pids;
+        for ($i = 0; $i <= PaperIDSet::MAX_SQL_IN; ++$i) {
+            $big[] = 100000 + 2 * $i;
+        }
+        xassert(!(new PaperIDSet)->add_list($big)->is_sql_predicate_precise());
+        $small_perm = new MeetingTracker_Permissionizer($this->conf, $pids);
+        $big_perm = new MeetingTracker_Permissionizer($this->conf, $big);
+        xassert_eqq($big_perm->admin_perm(), $small_perm->admin_perm());
+        xassert_eqq($big_perm->default_visibility(), $small_perm->default_visibility());
+        xassert_neqq($small_perm->admin_perm(), null);
+    }
+
     /** @param int $trackerid
      * @return ?string */
     private function tracker_visibility($trackerid) {

@@ -146,7 +146,7 @@ class Search_API {
         if (!isset($qreq->p)) {
             $ssel = SearchSelection::make_default($qreq, $user);
         } else {
-            $ssel = SearchSelection::make($qreq, $user, "p");
+            $ssel = SearchSelection::make_papers($qreq, $user, "p");
         }
         $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::F_API);
         if ($action instanceof ListAction) {

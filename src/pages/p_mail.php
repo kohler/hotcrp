@@ -87,7 +87,7 @@ class Mail_Page {
         if (!isset($qreq->q) || strcasecmp(trim($qreq->q), "(All)") === 0) {
             $qreq->q = "";
         }
-        $ssel = SearchSelection::make($qreq, $this->viewer);
+        $ssel = SearchSelection::make_papers($qreq, $this->viewer);
         if (!$ssel->is_empty()) {
             $ssel->sort_selection();
             $qreq->set_a("p", $ssel->selection());

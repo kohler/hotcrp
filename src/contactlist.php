@@ -51,7 +51,7 @@ class ContactList {
     private $tagger;
     /** @var string */
     private $limit;
-    /** @var ?list<int> */
+    /** @var ?PaperIDSet */
     private $_user_filter;
     public $have_folds = [];
     private $qopt = [];
@@ -143,7 +143,7 @@ class ContactList {
         }
 
         if ($this->qreq->has_a("pap")) {
-            $this->_selection = SearchSelection::make($this->qreq);
+            $this->_selection = SearchSelection::make_raw($this->qreq, "pap");
         }
         if ($this->qreq->selectall) {
             $this->_select_all = true;
@@ -151,7 +151,7 @@ class ContactList {
         $this->_uldisplay = self::uldisplay($qreq);
     }
 
-    /** @param ?list<int> $uids
+    /** @param ?PaperIDSet $uids
      * @return $this */
     function set_user_filter($uids) {
         assert($this->limit === null);
@@ -1166,7 +1166,7 @@ class ContactList {
         }
         $this->qopt = [];
         if (isset($this->_user_filter)) {
-            $this->qopt["where"][] = "contactId" . sql_in_int_list($this->_user_filter);
+            $this->qopt["where"][] = $this->_user_filter->sql_predicate("contactId");
         }
         if (str_starts_with($listname, "#")) {
             if (strcasecmp($listname, "#pc") === 0) {
@@ -1304,7 +1304,8 @@ class ContactList {
         while (($row = Contact::fetch($result, $this->conf))) {
             if ($row->is_anonymous_user()
                 || $row->is_placeholder()
-                || $row->is_deleted()) {
+                || $row->is_deleted()
+                || ($this->_user_filter && !$this->_user_filter->contains($row->contactId))) {
                 continue;
             }
             $rows[] = $row;

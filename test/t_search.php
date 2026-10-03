@@ -1446,6 +1446,102 @@ class Search_Tester {
         xassert_match($s->full_feedback_text(), '/PC .*not found/');
     }
 
+    function test_selection_keeps_real_paper_ids() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $maxpid = $this->conf->fetch_ivalue("select max(paperId) from Paper");
+        // IDs below 1 are dropped, not passed on as "-N" (which reads as NOT N)
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "zq3"]), $chair);
+        xassert_eqq($ssel->selection(), []);
+        xassert($ssel->is_empty());
+        xassert_eqq($ssel->unparse_search(), "NONE");
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "1zq5"]), $chair);
+        xassert_eqq($ssel->selection(), [1, 2]);
+        xassert_eqq($ssel->unparse_search(), "1 2");
+        xassert(!$ssel->is_selected(0));
+        // ranges far beyond the papers are limited to the papers
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "1-99999"]), $chair);
+        xassert_eqq($ssel->selection(), range(1, $maxpid));
+        xassert_eqq($ssel->count(), $maxpid);
+        // ordinary selections are untouched
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "3 1 2"]), $chair);
+        xassert_eqq($ssel->selection(), [1, 2, 3]);
+        xassert_eqq($ssel->order_compare(3, 1), -1);
+    }
+
+    function test_paper_set_extension_with_duplicates() {
+        // extending a set with an imprecise selection that matches a paper
+        // already in the set leaves that paper in place
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $ps = $this->conf->paper_set(["paperId" => [9]], $chair);
+        $p9 = $ps->get(9);
+        $ids = (new PaperIDSet)->add_list([1, 3, 5, 7]);
+        for ($i = 0; $i <= PaperIDSet::MAX_SQL_IN; ++$i) {
+            $ids->add(100 + 2 * $i);
+        }
+        xassert(!$ids->is_sql_predicate_precise());
+        $this->conf->extend_paper_set($ps, ["paperId" => $ids], $chair);
+        xassert_eqq($ps->paper_ids(), [9, 1, 3, 5, 7]);
+        xassert($ps->get(9) === $p9);
+        xassert_eqq(count($ps->as_list()), 5);
+    }
+
+    function test_imprecise_paper_id_sets() {
+        // paper ID sets with too many pieces for exact SQL still match exactly
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $pc = $this->conf->checked_user_by_email("marina@poema.ru");
+        $maxpid = $this->conf->fetch_ivalue("select max(paperId) from Paper");
+        $odd = range(1, 2 * PaperIDSet::MAX_SQL_RANGES + 3, 2);
+        $odd_pids = range(1, $maxpid, 2);
+
+        $code = SessionList::encode_ids($odd);
+        foreach ([$chair, $pc] as $user) {
+            $all = (new PaperSearch($user, ["q" => "", "t" => "all"]))->paper_ids();
+            $srch = new PaperSearch($user, ["q" => "pidcode:{$code}", "t" => "all"]);
+            xassert_eqq($srch->paper_ids(), array_values(array_intersect($all, $odd_pids)));
+        }
+
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => join(" ", $odd)]), $chair);
+        xassert(!$ssel->id_set()->is_sql_predicate_precise());
+        $pids = [];
+        foreach ($ssel->paper_set($chair) as $prow) {
+            $pids[] = $prow->paperId;
+        }
+        xassert_eqq($pids, $odd_pids);
+    }
+
+    function test_selection_huge_range() {
+        // a range larger than the paper table still yields a list
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $maxpid = $this->conf->fetch_ivalue("select max(paperId) from Paper");
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "1-99999999999"]), $chair);
+        $sel = $ssel->selection();
+        xassert(is_array($sel));
+        xassert_eqq($sel[0] ?? null, 1);
+        xassert_eqq($sel[count($sel) - 1] ?? null, $maxpid);
+        xassert_eqq(count($sel), $maxpid);
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "3 99999000000-99999999999 5"]), $chair);
+        xassert_eqq($ssel->selection(), [3, 5]);
+        xassert_eqq($ssel->count(), 2);
+
+        // ranges that run below 1 keep the valid IDs they include
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "5zq200000"]), $chair);
+        xassert_eqq($ssel->selection(), [1, 2, 3, 4, 5, 6]);
+
+        // a descending range keeps its order
+        $ssel = SearchSelection::make_papers(TestQreq::get(["p" => "99999999999zq100000000000"]), $chair);
+        xassert_eqq(count($ssel->selection()), $maxpid);
+        $pids = [];
+        foreach ($ssel->paper_set($chair) as $prow) {
+            $pids[] = $prow->paperId;
+        }
+        xassert_eqq($pids, range($maxpid, 1, -1));
+
+        // `all` selects the search
+        $qreq = TestQreq::get(["p" => "all", "q" => "", "t" => "s"]);
+        $ssel = SearchSelection::make_papers($qreq, $chair);
+        xassert_eqq($ssel->selection(), (new PaperSearch($chair, ["q" => "", "t" => "s"]))->paper_ids());
+    }
+
     function test_conflict_and_author_search_without_user() {
         // `conflict:any`, `pcconf:N`, and friends count conflicts with any PC
         // member; `au:any` matches any author

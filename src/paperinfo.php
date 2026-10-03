@@ -524,6 +524,8 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $prows = [];
     /** @var array<int,PaperInfo> */
     private $by_pid = [];
+    /** @var bool */
+    private $duplicates = false;
     /** @var int */
     public $loaded_allprefs = 0;
     /** @var bool */
@@ -551,6 +553,13 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $set->add_result($result, $user);
         return $set;
     }
+    /** @param Dbl_Result $result
+     * @param ?Contact $user */
+    function add_result($result, $user) {
+        while (PaperInfo::fetch($result, $user, $this->conf, $this)) {
+        }
+        Dbl::free($result);
+    }
     /** @param PaperSearch|Contact $user_or_search
      * @param null|string|array $q
      * @return PaperInfoSet */
@@ -568,15 +577,23 @@ final class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $set;
     }
     function add_paper(PaperInfo $prow) {
+        if (isset($this->by_pid[$prow->paperId])) {
+            $this->duplicates = true;
+        }
         $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
         $this->prefetched_primary_documents = false;
     }
-    /** @param Dbl_Result $result
-     * @param ?Contact $user */
-    function add_result($result, $user) {
-        while (PaperInfo::fetch($result, $user, $this->conf, $this)) {
+    function remove_last_paper(PaperInfo $prow) {
+        assert($this->prows[count($this->prows) - 1] === $prow);
+        array_pop($this->prows);
+        // a duplicate may have replaced an earlier paper with the same ID
+        for ($i = $this->duplicates ? count($this->prows) - 1 : -1; $i >= 0; --$i) {
+            if ($this->prows[$i]->paperId === $prow->paperId) {
+                $this->by_pid[$prow->paperId] = $this->prows[$i];
+                return;
+            }
         }
-        Dbl::free($result);
+        unset($this->by_pid[$prow->paperId]);
     }
     /** @return list<PaperInfo> */
     function as_list() {

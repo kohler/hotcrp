@@ -919,9 +919,17 @@ class MeetingTracker_Permissionizer {
         }
         $this->track_tag_combinations = [];
         if ($this->conf->track_tags()) {
-            $result = $this->conf->qe("select distinct (select group_concat(tag) from PaperTag where paperId=Paper.paperId and tag?a) tags from Paper where paperId?a", $this->conf->track_tags(), $this->pids);
+            $pidset = (new PaperIDSet)->add_list($this->pids);
+            $precise = $pidset->is_sql_predicate_precise();
+            $result = $this->conf->qe("select paperId, (select group_concat(tag) from PaperTag where paperId=Paper.paperId and tag?a) tags from Paper where " . $pidset->sql_predicate("paperId"), $this->conf->track_tags());
+            $seen = [];
             while (($row = $result->fetch_row())) {
-                $this->track_tag_combinations[] = $row[0] ?? "";
+                $tags = $row[1] ?? "";
+                if (($precise || $pidset->contains((int) $row[0]))
+                    && !isset($seen[$tags])) {
+                    $seen[$tags] = true;
+                    $this->track_tag_combinations[] = $tags;
+                }
             }
             $result->close();
         } else if ($this->conf->has_tracks()) {

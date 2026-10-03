@@ -88,6 +88,13 @@ final class PaperIDSetRange {
  * coalesced.
  */
 final class PaperIDSet implements Countable {
+    /** Most runs `sql_predicate()` spells out exactly. Runs of one ID share
+     * a single `IN` list. */
+    const MAX_SQL_RANGES = 5000;
+    /** Most IDs acceptable in an `IN` list. Must be no less than
+     * `MAX_SQL_RANGES`, which `is_sql_predicate_precise()` assumes. */
+    const MAX_SQL_IN = 5000;
+
     /** @var list<PaperIDSetRange>
      * Segments in order of addition. */
     private $segs = [];
@@ -99,6 +106,8 @@ final class PaperIDSet implements Countable {
     private $n = 0;
     /** @var bool */
     private $sorted = true;
+    /** @var ?bool */
+    private $sqlexpr_precise;
 
     /** Add the IDs from `$p0` through `$p1`, inclusive. If `$p0 > $p1`,
      * the IDs are added in descending order. `$explicit` marks IDs the user
@@ -111,6 +120,10 @@ final class PaperIDSet implements Countable {
         $rev = $p0 > $p1;
         if ($rev) {
             [$p0, $p1] = [$p1, $p0];
+        }
+        if ($p0 === PHP_INT_MAX) {
+            // empty: a range ending at PHP_INT_MAX is open-ended
+            return $this;
         }
         $last = $p1 === PHP_INT_MAX ? PHP_INT_MAX : $p1 + 1;
         $mseg = null;
@@ -197,6 +210,20 @@ final class PaperIDSet implements Countable {
         if ($this->pieces !== null) {
             return;
         }
+        $this->sqlexpr_precise = null;
+
+        // sorted segments are ascending and disjoint: they are the pieces
+        if ($this->sorted) {
+            $n = 0;
+            foreach ($this->segs as $seg) {
+                $n += min($seg->length(), PHP_INT_MAX - $n);
+            }
+            $this->pieces = $this->segs;
+            $this->n = $n;
+            return;
+        }
+
+        // otherwise, need to construct pieces
         $firsts = [];
         foreach ($this->segs as $seg) {
             $firsts[] = $seg->first;
@@ -268,11 +295,13 @@ final class PaperIDSet implements Countable {
     /** @param int $p
      * @return ?PaperIDSetRange */
     private function piece($p) {
+        $pieces = $this->pieces;
+        '@phan-var-force list<PaperIDSetRange> $pieces';
         $l = 0;
-        $r = count($this->pieces);
+        $r = count($pieces);
         while ($l < $r) {
             $m = $l + (($r - $l) >> 1);
-            $pc = $this->pieces[$m];
+            $pc = $pieces[$m];
             if ($p < $pc->first) {
                 $r = $m;
             } else if ($p >= $pc->last) {
@@ -315,7 +344,8 @@ final class PaperIDSet implements Countable {
         return $this->n;
     }
 
-    /** The set as sorted, disjoint ranges.
+    /** The set as sorted, disjoint ranges. The ranges may be shared with the
+     * set, so don't keep them across changes to it.
      * @return list<PaperIDSetRange> */
     function ranges() {
         $this->finalize();
@@ -323,7 +353,8 @@ final class PaperIDSet implements Countable {
     }
 
     /** The set as disjoint ranges in order of first addition. A reversed
-     * range runs downward.
+     * range runs downward. As with `ranges()`, don't keep them across changes
+     * to the set.
      * @return list<PaperIDSetRange> */
     function ordered_ranges() {
         $this->finalize();
@@ -379,59 +410,98 @@ final class PaperIDSet implements Countable {
         } else if ($this->is_empty()) {
             return true;
         }
+        $apieces = $this->pieces;
+        $xpieces = $x->pieces;
+        '@phan-var-force list<PaperIDSetRange> $apieces';
+        '@phan-var-force list<PaperIDSetRange> $xpieces';
         $p = PHP_INT_MIN;
         $ai = $xi = 0;
-        $an = count($this->pieces);
+        $an = count($apieces);
         while ($ai !== $an) {
-            $ap = max($this->pieces[$ai]->first, $p);
-            $xp = max($x->pieces[$xi]->first, $p);
+            $ap = max($apieces[$ai]->first, $p);
+            $xp = max($xpieces[$xi]->first, $p);
             if ($ap !== $xp) {
                 return false;
             }
-            $p = min($this->pieces[$ai]->last, $x->pieces[$xi]->last);
-            if ($this->pieces[$ai]->last === $p) {
+            $p = min($apieces[$ai]->last, $xpieces[$xi]->last);
+            if ($apieces[$ai]->last === $p) {
                 ++$ai;
             }
-            if ($x->pieces[$xi]->last === $p) {
+            if ($xpieces[$xi]->last === $p) {
                 ++$xi;
             }
         }
         return true;
     }
 
-    /** An SQL expression true iff `$field` is in the set.
+    /** Return true iff `sql_predicate()` matches exactly the set. A set with
+     * more than `MAX_SQL_RANGES` runs of consecutive IDs, or more than
+     * `MAX_SQL_IN` isolated IDs, gets a superset predicate, whose matches
+     * must be checked with `contains()`.
+     * @return bool */
+    function is_sql_predicate_precise() {
+        assert(self::MAX_SQL_IN >= self::MAX_SQL_RANGES);
+        $this->finalize();
+        if ($this->n <= self::MAX_SQL_RANGES) {
+            return true;
+        }
+        if ($this->sqlexpr_precise === null) {
+            $this->sql_predicate("x");
+        }
+        return $this->sqlexpr_precise;
+    }
+
+    /** An SQL expression true for every `$field` in the set. It is exact
+     * iff `is_sql_predicate_precise()`.
      * @param string $field
      * @return string */
     function sql_predicate($field) {
         $this->finalize();
-        if (empty($this->pieces)) {
-            return "false";
+        if ($this->sqlexpr_precise === false) {
+            return $this->imprecise_sqlexpr($field);
         }
-        if ($this->n <= 8 * count($this->pieces)
-            && ($ids = $this->ids(1000)) !== null) {
+        $this->sqlexpr_precise = true;
+        if ($this->n === 0) {
+            return "false";
+        } else if ($this->n <= 8 * count($this->pieces)
+                   && ($ids = $this->ids(self::MAX_SQL_IN)) !== null) {
             return $field . sql_in_int_list($ids);
         }
-        $ids = $s = [];
-        $pi = 0;
-        $np = count($this->pieces);
-        while ($pi !== $np) {
-            $first = $this->pieces[$pi]->first;
-            $last = $this->pieces[$pi]->last;
-            for (++$pi; $pi !== $np && $this->pieces[$pi]->first === $last; ++$pi) {
-                $last = $this->pieces[$pi]->last;
+        $runs = $ids = [];
+        $n = count($this->pieces);
+        for ($i = 0; $i !== $n; $i = $j) {
+            $j = $i + 1;
+            while ($j !== $n && $this->pieces[$j - 1]->last === $this->pieces[$j]->first) {
+                ++$j;
             }
+            [$first, $last] = [$this->pieces[$i]->first, $this->pieces[$j - 1]->last];
             if ($last === PHP_INT_MAX) {
-                $s[] = "{$field}>={$first}";
+                $runs[] = "{$field}>={$first}";
             } else if ($last - $first === 1) {
                 $ids[] = $first;
             } else {
-                $s[] = "{$field} between {$first} and " . ($last - 1);
+                $runs[] = "{$field} between {$first} and " . ($last - 1);
+            }
+            if (count($ids) > self::MAX_SQL_IN
+                || count($runs) + (empty($ids) ? 0 : 1) > self::MAX_SQL_RANGES) {
+                $this->sqlexpr_precise = false;
+                return $this->imprecise_sqlexpr($field);
             }
         }
         if (!empty($ids)) {
-            $s[] = $field . sql_in_int_list($ids);
+            $runs[] = $field . sql_in_int_list($ids);
         }
-        return count($s) === 1 ? $s[0] : "(" . join(" or ", $s) . ")";
+        return count($runs) === 1 ? $runs[0] : "(" . join(" or ", $runs) . ")";
+    }
+
+    /** @param string $field
+     * @return string */
+    private function imprecise_sqlexpr($field) {
+        [$first, $last] = [$this->pieces[0]->first, $this->pieces[count($this->pieces) - 1]->last];
+        if ($last === PHP_INT_MAX) {
+            return "{$field}>={$first}";
+        }
+        return "{$field} between {$first} and " . ($last - 1);
     }
 
     /** The set as ranges in order of first addition, e.g. `10-1 12 15-`.
@@ -467,6 +537,32 @@ final class PaperIDSet implements Countable {
         $pidset = new PaperIDSet;
         foreach ($this->pieces as $p) {
             $pidset->add_range($p->first, $p->last_inclusive(), $p->explicit);
+        }
+        return $pidset;
+    }
+
+    /** Return the IDs in `[$lo, $hi]`, in the same order. Might return $this.
+     * @param int $lo
+     * @param int $hi
+     * @return PaperIDSet */
+    function clamped($lo, $hi) {
+        $this->finalize();
+        if (empty($this->pieces)
+            || ($lo <= $this->pieces[0]->first
+                && ($hi === PHP_INT_MAX || $hi + 1 >= $this->pieces[count($this->pieces) - 1]->last))) {
+            return $this;
+        }
+        $pidset = new PaperIDSet;
+        foreach ($this->ordered_ranges() as $p) {
+            $first = max($p->first, $lo);
+            $last = min($p->last_inclusive(), $hi);
+            if ($first > $last) {
+                continue;
+            } else if ($p->rev) {
+                $pidset->add_range($last, $first, $p->explicit);
+            } else {
+                $pidset->add_range($first, $last, $p->explicit);
+            }
         }
         return $pidset;
     }

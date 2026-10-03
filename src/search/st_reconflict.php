@@ -4,18 +4,18 @@
 
 abstract class Reconflict_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $st = new PaperID_SearchTerm;
+        $pidset = new PaperIDSet;
         $xword = $word;
         $pos = 0;
         while (preg_match('/\G\s*+\#?(\d++)(?:-\#?(\d++))?\s*+,?+\s*+/s', $xword, $m, 0, $pos)) {
             if (isset($m[2]) && $m[2]) {
-                $st->add_range((int) $m[1], (int) $m[2]);
+                $pidset->add_range((int) $m[1], (int) $m[2]);
             } else {
-                $st->add_range((int) $m[1], (int) $m[1]);
+                $pidset->add((int) $m[1]);
             }
             $pos += strlen($m[0]);
         }
-        if ($pos !== strlen($xword) || $st->is_empty()) {
+        if ($pos !== strlen($xword) || $pidset->is_empty()) {
             $srch->lwarning($sword, "<0>List of paper numbers expected");
             return new False_SearchTerm;
         }
@@ -23,7 +23,7 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
         $old_overrides = $srch->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $cids = [];
         foreach ($srch->user->paper_set([
-                "paperId" => $st,
+                "paperId" => $pidset,
                 "reviewSignatures" => true,
                 "finalized" => $srch->limit_term()->is_submitted()
             ]) as $prow) {
