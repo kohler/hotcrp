@@ -884,6 +884,99 @@ class Mailer_Tester {
         xassert($warn->can_send());
     }
 
+    /** Send the mail tool's `$body` to `$recipients` for `$pids`; return
+     * each sent message's recipient emails.
+     * @param list<int> $pids
+     * @return list<list<string>> */
+    private function send_mail_tool(Contact $user, $recipients, $pids, $body) {
+        $mr = (new MailRecipients($user))->set_recipients($recipients)->set_paper_ids($pids);
+        $qreq = (new Qrequest("POST", ["to" => $recipients, "subject" => "Grouping", "body" => $body]))
+            ->set_user($user)->approve_token();
+        MailSender::clean_request($qreq);
+        MailChecker::clear();
+        ob_start();
+        try {
+            $ms = new MailSender($mr, $qreq, MailSender::PHASE_SEND);
+            $ms->set_no_print(true)->set_send_all(true);
+            $ms->prepare_sending_mailid();
+            $ms->run();
+        } catch (PageCompletion $unused) {
+        }
+        ob_end_clean();
+        $sent = [];
+        foreach (MailChecker::$preps as $prep) {
+            $emails = array_map(function ($u) { return $u->email; }, $prep->recipients());
+            sort($emails);
+            $sent[] = $emails;
+        }
+        MailChecker::clear();
+        return $sent;
+    }
+
+    function test_mail_tool_grouping_respects_reviewer_anonymity() {
+        // The mail tool gathers a paper's reviewers into one message only if
+        // they may see each other's identities.
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $r1 = "mgbaker@cs.stanford.edu";
+        $r2 = "lixia@cs.ucla.edu";
+        $old = ["viewrevid" => $conf->setting("viewrevid"), "viewrevid_ext" => $conf->setting("viewrevid_ext"),
+                "rev_open" => $conf->setting("rev_open")];
+        $conf->save_setting("rev_open", 1);
+        xassert_assign($chair, "paper,action,user\n1,primary,{$r1}\n1,primary,{$r2}\n");
+        $together = function ($sent) use ($r1, $r2) {
+            foreach ($sent as $emails) {
+                if (in_array($r1, $emails, true) && in_array($r2, $emails, true))
+                    return true;
+            }
+            return false;
+        };
+        $body = "Dear reviewer,\n\nA note about {{TITLE}}.\n";
+        // notifications (review, comment, status) combine the same way
+        $notify = function () use ($conf, $r1, $r2, $together) {
+            $p1 = $conf->checked_paper_by_id(1);
+            $preps = [];
+            foreach ([$r1, $r2] as $email) {
+                $preps[] = HotCRPMailer::prepare_to($conf->checked_user_by_email($email),
+                    ["subject" => "Note", "body" => "A note about {{TITLE}}.\n"],
+                    ["prow" => $p1, "combination_type" => HotCRPMailer::COMBINE_PAPER]);
+            }
+            MailChecker::clear();
+            HotCRPMailer::send_combined_preparations($preps);
+            $sent = [];
+            foreach (MailChecker::$preps as $prep) {
+                $sent[] = array_map(function ($u) { return $u->email; }, $prep->recipients());
+            }
+            MailChecker::clear();
+            return $together($sent);
+        };
+
+        // reviewers who see each other's identities share one message
+        $conf->save_setting("viewrevid", 1);
+        $conf->save_setting("viewrevid_ext", 1);
+        $conf->refresh_settings();
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert($p1->can_view_review_identity_of($conf->checked_user_by_email($r2)->contactId, $conf->checked_user_by_email($r1)));
+        xassert($together($this->send_mail_tool($chair, "rev", [1], $body)));
+        xassert($notify());
+
+        // reviewers who may not see each other's identities get their own
+        $conf->save_setting("viewrevid", -1);
+        $conf->save_setting("viewrevid_ext", -1);
+        $conf->refresh_settings();
+        $p1 = $conf->checked_paper_by_id(1);
+        xassert(!$p1->can_view_review_identity_of($conf->checked_user_by_email($r2)->contactId, $conf->checked_user_by_email($r1)));
+        $sent = $this->send_mail_tool($chair, "rev", [1], $body);
+        xassert(!$together($sent));
+        xassert_ge(count($sent), 2);
+        xassert(!$notify());
+
+        foreach ($old as $k => $v) {
+            $conf->save_setting($k, $v);
+        }
+        $conf->refresh_settings();
+    }
+
     function test_unparseable_email_from_omits_header() {
         // an emailFrom setting that can't be encoded leaves out the From
         // header rather than breaking every message

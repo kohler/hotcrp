@@ -36,9 +36,30 @@ class HotCRPMailPreparation extends MailPreparation {
                     && ($this->recipient_class !== 0
                         || !$this->paper_expansions)
                     && $this->combination_type !== 0
-                    && $this->prow === $p->prow)
+                    && $this->prow === $p->prow
+                    && $this->mutually_visible_recipients($p))
                 || ($this->recipient_class === $p->recipient_class
                     && $this->has_same_recipients($p)));
+    }
+    /** Return true unless merging would show a paper's reviewers identities
+     * they may not see.
+     * @param HotCRPMailPreparation $p
+     * @return bool */
+    private function mutually_visible_recipients($p) {
+        if ($this->recipient_class !== HotCRPMailer::RCLASS_REVIEWER
+            || !$this->prow) {
+            return true;
+        }
+        foreach ($this->recipients() as $ui) {
+            foreach ($p->recipients() as $uj) {
+                if ($ui->contactId !== $uj->contactId
+                    && (!$this->prow->can_view_review_identity_of($uj->contactId, $ui)
+                        || !$this->prow->can_view_review_identity_of($ui->contactId, $uj))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     function finalize() {
         parent::finalize();
@@ -717,35 +738,5 @@ class HotCRPMailer extends Mailer {
             }
         }
         self::send_combined_preparations($preps);
-    }
-
-    /** @param list<MailPreparation> $preps */
-    static function send_combined_preparations($preps) {
-        /** @var list<HotCRPMailPreparation> $repreps */
-        $repreps = [];
-        foreach ($preps as $prep) {
-            if (!($prep instanceof HotCRPMailPreparation)
-                || $prep->recipient_class !== HotCRPMailer::RCLASS_REVIEWER
-                || !$prep->prow) {
-                continue;
-            }
-            $useri = $prep->single_recipient();
-            $prow = $prep->prow;
-            for ($j = 0; $j !== count($repreps); ++$j) {
-                if ($repreps[$j]->prow !== $prow) {
-                    continue;
-                }
-                $userj = $repreps[$j]->single_recipient();
-                if (!$prow->can_view_review_identity_of($userj->contactId, $useri)
-                    || !$prow->can_view_review_identity_of($useri->contactId, $userj)) {
-                    $prep->unique_preparation = true;
-                    break;
-                }
-            }
-            if (!$prep->unique_preparation) {
-                $repreps[] = $prep;
-            }
-        }
-        parent::send_combined_preparations($preps);
     }
 }
