@@ -977,6 +977,31 @@ class Mailer_Tester {
         $conf->refresh_settings();
     }
 
+    function test_mail_tool_groups_listed_and_unlisted_pc() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $email = "unlisted.mail@cs.hotcrp-test.edu";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct);
+        // placeholders get no mail
+        $conf->qe("update ContactInfo set cflags=cflags&~? where contactId=?", Contact::CF_PLACEHOLDER, $acct->contactId);
+        $conf->invalidate_caches("users", "pc");
+
+        $body = "Dear PC member,\n\nA general note.\n";
+        foreach (["pc", "listedpc", "unlistedpc"] as $recip) {
+            $sent = $this->send_mail_tool($chair, $recip, null, $body);
+            xassert_eqq(count($sent), 1);
+        }
+        $sent = $this->send_mail_tool($chair, "listedpc", null, $body);
+        xassert_eqq(count($sent[0]), count($conf->listed_pc_members()));
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_unparseable_email_from_omits_header() {
         // an emailFrom setting that can't be encoded leaves out the From
         // header rather than breaking every message
