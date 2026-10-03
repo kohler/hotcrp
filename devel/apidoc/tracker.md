@@ -50,7 +50,7 @@ Return a lightweight snapshot of the meeting tracker for change detection. This
 endpoint requires no authentication, so the poller (and read-only kiosk
 displays) can call it without a session.
 
-* scope other:read
+* scope none
 * response tracker_status string: Compact status token—`<trackerid>@<position>`, or `off` when no tracker is running.
 * response tracker_eventid integer: Counter that increases whenever the tracker changes.
 

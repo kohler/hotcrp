@@ -33,7 +33,10 @@ incompatible with the requested format (`output=string` but the output is not
 UTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but
 the job failed), then the response uses status code 409 Conflict.
 
-* scope other:read
+This endpoint requires no authentication: the job ID itself grants access to
+the job’s status and output.
+
+* scope none
 * badge featured
 * param job job_id
 * param ?output =string|json|body: Format for job output

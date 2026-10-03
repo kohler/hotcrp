@@ -4125,7 +4125,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "review:read"
+                            "preference:read"
                         ]
                     },
                     {
@@ -4210,7 +4210,7 @@
             },
             "post": {
                 "summary": "Set a review preference",
-                "description": "Set a PC member’s review preference for submission `p`, then return it as\n[`revpref` GET](#get-revpref) does. By default the change applies to the caller;\nadministrators may set another PC member’s preference with `u`.\n\nSupply the new preference in `pref`, in text form: a signed integer, optionally\nfollowed by an expertise letter (`X`, `Y`, or `Z`)—for example `10`, `-5`, or\n`20X`. An empty value clears the preference.\n",
+                "description": "Set a PC member’s review preference for submission `p`, then return it as\n[`revpref` GET](#get-revpref) does. By default the change applies to the caller;\nadministrators may set another PC member’s preference with `u`, which\nrequires `preference:admin` scope.\n\nSupply the new preference in `pref`, in text form: a signed integer, optionally\nfollowed by an expertise letter (`X`, `Y`, or `Z`)—for example `10`, `-5`, or\n`20X`. An empty value clears the preference.\n",
                 "operationId": "revpref-post",
                 "x-order": 42,
                 "tags": [
@@ -4224,7 +4224,7 @@
                 "security": [
                     {
                         "oauth2": [
-                            "review:write"
+                            "preference:write"
                         ]
                     },
                     {
@@ -8574,9 +8574,7 @@
                 ],
                 "security": [
                     {
-                        "oauth2": [
-                            "other:read"
-                        ]
+                        "oauth2": []
                     },
                     {
                         "apiToken": []
@@ -9704,7 +9702,7 @@
         "/job": {
             "get": {
                 "summary": "Monitor job",
-                "description": "The `/job` endpoint monitors the progress of long-running jobs and can return\ntheir output upon completion. Jobs represent HotCRP tasks that take too long for\na single API request; requests such as `/autoassign` may start a job and return\nits unique identifier.\n\nThe `status` response field is `\"wait\"` before the job starts, `\"run\"` while\nit is running, `\"done\"` after completion, and `\"failed\"` when it is known to\nhave failed. The `update_at` field gives the UNIX timestamp of the most\nrecent job update; if it’s far in the past but `status` is still `\"run\"`, the\njob has likely crashed. Specific jobs may return other response fields, such\nas a `progress` string that describes the current phase of job execution.\n\nSome jobs produce output when they complete. When `status` is `\"done\"` and\noutput is present, the response’s `output_mimetype` and `output_size` fields\ndescribe this output. To fetch the output itself, supply an `output` parameter.\nIf `output=string`, the `output` field contains the output as a string. If\n`output=json`, the `output` field contains the output as parsed JSON. If\n`output=body`, then the output is returned as the response body with the proper\nContent-Type header. `/job?output=body` understands range requests.\n\nA `/job` response uses HTTP response status code 202 Accepted for in-progress\njobs, and 200 OK for completed or failed jobs. However, if a job’s output is\nincompatible with the requested format (`output=string` but the output is not\nUTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but\nthe job failed), then the response uses status code 409 Conflict.\n",
+                "description": "The `/job` endpoint monitors the progress of long-running jobs and can return\ntheir output upon completion. Jobs represent HotCRP tasks that take too long for\na single API request; requests such as `/autoassign` may start a job and return\nits unique identifier.\n\nThe `status` response field is `\"wait\"` before the job starts, `\"run\"` while\nit is running, `\"done\"` after completion, and `\"failed\"` when it is known to\nhave failed. The `update_at` field gives the UNIX timestamp of the most\nrecent job update; if it’s far in the past but `status` is still `\"run\"`, the\njob has likely crashed. Specific jobs may return other response fields, such\nas a `progress` string that describes the current phase of job execution.\n\nSome jobs produce output when they complete. When `status` is `\"done\"` and\noutput is present, the response’s `output_mimetype` and `output_size` fields\ndescribe this output. To fetch the output itself, supply an `output` parameter.\nIf `output=string`, the `output` field contains the output as a string. If\n`output=json`, the `output` field contains the output as parsed JSON. If\n`output=body`, then the output is returned as the response body with the proper\nContent-Type header. `/job?output=body` understands range requests.\n\nA `/job` response uses HTTP response status code 202 Accepted for in-progress\njobs, and 200 OK for completed or failed jobs. However, if a job’s output is\nincompatible with the requested format (`output=string` but the output is not\nUTF-8 encoded, `output=json` but the output is not JSON, or `output=body` but\nthe job failed), then the response uses status code 409 Conflict.\n\nThis endpoint requires no authentication: the job ID itself grants access to\nthe job’s status and output.\n",
                 "operationId": "job",
                 "x-order": 105,
                 "tags": [
@@ -9717,9 +9715,7 @@
                 ],
                 "security": [
                     {
-                        "oauth2": [
-                            "other:read"
-                        ]
+                        "oauth2": []
                     },
                     {
                         "apiToken": []
