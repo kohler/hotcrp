@@ -1064,6 +1064,38 @@ In thee!
                     $ha->prefix() . hash($this->conf->content_hash_algorithm(), self::TEXT));
     }
 
+    function test_cleanup_releases_s3_state() {
+        // until the multipart upload completes (status 4), cleanup aborts
+        // it; after, it deletes the assembled temporary object
+        S3_Tester::install($this->conf, S3_Tester::make_offline());
+        $this->conf->refresh_settings();
+        $got = [];
+        foreach ([1, 2, 3, 4, 5] as $status) {
+            $tok = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
+                ->set_salt("hcupcleanup{$status}")
+                ->assign_data(["status" => $status, "s3_uploadid" => "UPID{$status}", "temp" => false]);
+            Offline_S3Result::$requests = [];
+            Upload_API::cleanup($tok);
+            $got[$status] = array_map(function ($r) { return "{$r[0]} {$r[1]}"; }, Offline_S3Result::$requests);
+        }
+        $key = function ($status) {
+            return "upload/hcupcleanup{$status}" . ($this->conf->confid ? "-{$this->conf->confid}" : "");
+        };
+        foreach ([1, 2, 3] as $status) {
+            xassert_eqq($got[$status], ["DELETE " . $key($status) . "?uploadId=UPID{$status}"]);
+        }
+        foreach ([4, 5] as $status) {
+            xassert_eqq($got[$status], ["DELETE " . $key($status)]);
+        }
+
+        if ($this->s3c) {
+            S3_Tester::install($this->conf, $this->s3c);
+        } else {
+            S3_Tester::install($this->conf);
+        }
+        $this->conf->refresh_settings();
+    }
+
     function finalize() {
         rm_rf_tempdir($this->tmpdir);
         $this->conf->set_opt("docstore", $this->old_docstore);

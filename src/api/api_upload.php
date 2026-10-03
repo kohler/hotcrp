@@ -237,11 +237,13 @@ class Upload_API {
             && isset($this->_capd->content_file)) {
             @unlink($this->_capd->content_file);
         }
+        // before status 4 the multipart upload is incomplete, so abort it;
+        // after, delete the assembled temporary object if it remains
         if ($this->_capd->s3_uploadid
             && ($s3d = $this->conf->s3_client())) {
-            if ($this->_capd->status < 3) {
+            if ($this->_capd->status < 4) {
                 $s3d->delete($this->s3_key() . "?uploadId=" . $this->_capd->s3_uploadid);
-            } else if ($this->_capd->status < 4) {
+            } else {
                 $s3d->delete($this->s3_key());
             }
         }
