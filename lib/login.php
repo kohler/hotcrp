@@ -320,6 +320,24 @@ class LoginHelper {
     }
 
 
+    /** Return an error message if `$input` can't be a new password.
+     * @param string $input
+     * @return ?string */
+    static function new_password_problem($input) {
+        if (trim($input) !== $input) {
+            return "<0>Passwords cannot begin or end with spaces";
+        } else if (!is_valid_utf8($input)) {
+            return "<0>Invalid UTF-8 in password";
+        } else if (UnicodeHelper::utf8_glyphlen($input) <= 5) {
+            return "<0>Password too short";
+        } else if (strlen($input) > 72) {
+            return "<0>Password too long";
+        } else if (!Contact::valid_password($input)) {
+            return "<0>Invalid password";
+        }
+        return null;
+    }
+
     /** @param bool $explicit
      * @return Contact */
     static function logout(Contact $user, Qrequest $qreq, $explicit) {

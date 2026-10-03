@@ -1041,6 +1041,35 @@ class UserStatus_Tester {
         }
     }
 
+    function test_json_new_password_validation() {
+        $email = "estrin@usc.edu";
+        $oldpw = "kwmdsfanq";
+        $this->conf->fresh_user_by_email($email)->change_password($oldpw);
+        list($u, $qreq) = $this->make_qreq_for($email);
+        $cases = [
+            [" lead", "spaces"],
+            ["trail ", "spaces"],
+            ["", "Password too short"],
+            ["ééééé", "Password too short"],
+            ["abcdefg\xff", "Invalid UTF-8"],
+            [str_repeat("a", 73), "Password too long"]
+        ];
+        foreach ($cases as $c) {
+            $us = (new UserStatus($u))->set_qreq($qreq);
+            $us->start_update((object) ["email" => $email, "new_password" => $c[0]])->set_user($u);
+            xassert(!$us->execute_update());
+            xassert_str_contains($us->feedback_text_at("password"), $c[1]);
+            $u2 = $this->conf->fresh_user_by_email($email);
+            xassert($u2->check_password($oldpw));
+        }
+
+        $newpw = "maksdfnqw";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["email" => $email, "new_password" => $newpw])->set_user($u);
+        xassert($us->execute_update());
+        xassert($this->conf->fresh_user_by_email($email)->check_password($newpw));
+    }
+
     static function reauth_query($qreq, $email, $bound) {
         $x = false;
         foreach (UserSecurityEvent::session_list_by_email($qreq->qsession(), $email) as $use) {

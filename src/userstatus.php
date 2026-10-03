@@ -621,6 +621,13 @@ class UserStatus extends MessageSet {
             }
         }
 
+        // New password
+        if (isset($cj->new_password)
+            && ($m = LoginHelper::new_password_problem($cj->new_password))) {
+            $this->error_at("password", $m);
+            unset($cj->new_password);
+        }
+
         // Email
         if (!isset($cj->email)) {
             if ($old_user) {

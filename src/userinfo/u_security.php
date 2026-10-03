@@ -59,14 +59,8 @@ class Security_UserInfo {
         if ($pw !== $pw2) {
             $us->error_at("password", "<0>Passwords do not match");
             $us->error_at("upassword2");
-        } else if (!is_valid_utf8($pw)) {
-            $us->error_at("password", "<0>Invalid UTF-8 in password");
-        } else if (UnicodeHelper::utf8_glyphlen($pw) <= 5) {
-            $us->error_at("password", "<0>Password too short");
-        } else if (strlen($pw) > 72) {
-            $us->error_at("password", "<0>Password too long");
-        } else if (!Contact::valid_password($pw)) {
-            $us->error_at("password", "<0>Invalid new password");
+        } else if (($m = LoginHelper::new_password_problem($pw))) {
+            $us->error_at("password", $m);
         } else {
             $us->jval->new_password = $pw;
         }
