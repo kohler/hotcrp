@@ -1099,6 +1099,162 @@ class Unit_Tester {
         xassert_eqq(SessionList::decode_ids("1-100000000"), null);
     }
 
+    /** @return array{int,string} */
+    private function call_fail_bad_database() {
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        $qreq = (new Qrequest("GET"))->set_page("api")->set_conf($this->conf);
+        $old_qreq = Qrequest::$main_request;
+        Qrequest::set_main_request($qreq);
+        $status = 0;
+        ob_start();
+        try {
+            Multiconference::fail_bad_database($this->conf);
+        } catch (PageCompletion $pc) {
+            $status = Navigation::http_response_code();
+        }
+        $out = ob_get_clean();
+        Navigation::$test_mode = $old_test_mode;
+        if ($old_qreq) {
+            Qrequest::set_main_request($old_qreq);
+        }
+        return [$status, $out];
+    }
+
+    function test_database_unavailable_is_not_nonexistence() {
+        global $Opt;
+        // an unreachable database server is temporary and logged; a missing
+        // database is a nonexistent conference
+        $cp = Dbl::parse_connection_params($Opt);
+        $down = clone $cp;
+        $down->host = "127.0.0.1";
+        $down->port = 9;
+        $down->socket = null;
+        // (failed connections warn; that's expected here)
+        xassert_eqq(@$down->connect(), null);
+        xassert($down->transient());
+        xassert_neqq($down->connect_error, "");
+        $missing = clone $cp;
+        $missing->name = "hotcrp_testdb_nonexistent";
+        xassert_eqq(@$missing->connect(), null);
+        xassert_neqq($missing->connect_errno, 0);
+        xassert(!$missing->transient());
+
+        // a nonexistent conference with its own (nonexistent) account
+        $noacct = clone $cp;
+        $noacct->name = $noacct->user = "hotcrp_testdb_nonexistent";
+        xassert_eqq(@$noacct->connect(), null);
+        xassert_eqq($noacct->connect_errno, 1045);
+        xassert($noacct->per_database_user());
+        // a broken shared account
+        $sharedacct = clone $cp;
+        $sharedacct->user = "hotcrp_nonexistent_user";
+        xassert_eqq(@$sharedacct->connect(), null);
+        xassert_eqq($sharedacct->connect_errno, 1045);
+        xassert(!$sharedacct->per_database_user());
+        xassert(!$down->missing());
+
+        // 1045 (bad account) means a missing database only for per-database
+        // users; a broken shared account is a server problem
+        $pcp = function ($opt) {
+            return Dbl::parse_connection_params($opt);
+        };
+        xassert($pcp(["dbName" => "x"])->per_database_user());
+        xassert(!$pcp(["dbName" => "x", "dbUser" => "shared"])->per_database_user());
+        xassert($pcp(["dbName" => "x", "dbUser" => "x"])->per_database_user());
+        xassert($pcp(["confid" => "c", "dbName" => "db_\${confid}", "dbUser" => "u_\${confid}"])->per_database_user());
+        xassert(!$pcp(["confid" => "c", "dbName" => "db_\${confid}", "dbUser" => "shared"])->per_database_user());
+        xassert(!$pcp(["dsn" => "mysql://shared:pw@localhost/x"])->per_database_user());
+        xassert($pcp(["confid" => "c", "dsn" => "mysql://u_\${confid}:pw@localhost/\${confid}"])->per_database_user());
+        $per = $pcp(["dbName" => "x"]);
+        $shared = $pcp(["dbName" => "x", "dbUser" => "shared"]);
+        foreach ([1044, 1049] as $errno) {
+            $per->connect_errno = $shared->connect_errno = $errno;
+            xassert($per->missing());
+            xassert($shared->missing());
+        }
+        $per->connect_errno = $shared->connect_errno = 1045;
+        xassert($per->missing());
+        xassert(!$shared->missing());
+        $per->connect_errno = 2002;
+        xassert(!$per->missing());
+        xassert($per->transient());
+
+        // `Conf` keeps its connection parameters, including a failed attempt
+        xassert($this->conf->dbparams instanceof Dbl_ConnectionParams);
+        xassert_eqq($this->conf->dbparams->connect_errno, 0);
+        $dconf = @new Conf(["dsn" => "mysql://nobody@127.0.0.1:9/hotcrp_testdb"], true);
+        xassert(!$dconf->dblink);
+        $dcp = $dconf->dbparams;
+        xassert($dcp instanceof Dbl_ConnectionParams);
+        xassert($dcp->transient());
+        xassert_neqq($dcp->connect_error, "");
+        // ...or null if there was nothing to try
+        $dconf = @new Conf(["dbName" => ""], true);
+        xassert(!$dconf->dblink);
+        xassert_eqq($dconf->dbparams, null);
+
+        $old = [$this->conf->opt("multiconference"), $this->conf->opt("confid"), $this->conf->dbparams];
+        $old_log = ini_get("error_log");
+        $logfn = tempnam(sys_get_temp_dir(), "hotcrp-errlog");
+        ini_set("error_log", $logfn);
+        $fail = function ($xcp) use ($logfn) {
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+            $this->conf->dbparams = $xcp;
+            file_put_contents($logfn, "");
+            [$status, $out] = $this->call_fail_bad_database();
+            return [$status, $out, file_get_contents($logfn)];
+        };
+
+        // multiconference: only a missing conference is 404, and unlogged
+        $this->conf->set_opt("multiconference", true);
+        $this->conf->set_opt("confid", "testconf");
+        [$status, $out, $log] = $fail($down);
+        xassert_eqq($status, 503);
+        xassert_str_contains($out, "temporarily unavailable");
+        xassert_str_contains($log, "Unable to connect to database");
+        foreach ([$missing, $noacct, null] as $xcp) {
+            [$status, $out, $log] = $fail($xcp);
+            xassert_eqq($status, 404);
+            xassert_str_contains($out, "“testconf” conference does not exist");
+            xassert_eqq($log, "");
+        }
+        // ...but with a shared user, a bad account breaks every conference
+        [$status, $out, $log] = $fail($sharedacct);
+        xassert_eqq($status, 503);
+        xassert_str_contains($out, "unable to connect to its database");
+        xassert_str_contains($log, "1045");
+        // ...an unexpected error is the administrator's problem
+        $blocked = clone $missing;
+        $blocked->connect_errno = 1129;
+        $blocked->connect_error = "Host is blocked";
+        [$status, $out, $log] = $fail($blocked);
+        xassert_eqq($status, 503);
+        xassert_str_contains($out, "unable to connect to its database");
+        xassert_str_contains($log, "1129 Host is blocked");
+
+        // single conference: always 503 and logged
+        $this->conf->set_opt("multiconference", null);
+        [$status, $out, $log] = $fail($missing);
+        xassert_eqq($status, 503);
+        xassert_str_contains($out, "unable to connect to its database");
+        xassert_str_contains($log, "Unable to connect to database");
+        [$status, $out, $log] = $fail(null);
+        xassert_eqq($status, 503);
+        xassert_str_contains($log, "no database configuration");
+
+        $this->conf->set_opt("multiconference", $old[0]);
+        $this->conf->set_opt("confid", $old[1]);
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+        $this->conf->dbparams = $old[2];
+        ini_set("error_log", $old_log);
+        @unlink($logfn);
+        $dblink = $cp->connect();
+        xassert(!!$dblink);
+        xassert_eqq($cp->connect_errno, 0);
+        $dblink->close();
+    }
+
     function test_session_list_decode_limit() {
         // DECODE_LIMIT bounds the total, however the IDs are spelled
         $lim = SessionList::DECODE_LIMIT;

@@ -131,6 +131,8 @@ class Dbl_ConnectionParams {
     public $port;
     /** @var ?string */
     public $user;
+    /** @var bool */
+    public $user_template = false;
     /** @var ?string */
     public $password;
     /** @var ?string */
@@ -152,6 +154,44 @@ class Dbl_ConnectionParams {
     public $ssl_cipher;
     /** @var ?bool */
     public $ssl_verify = true;
+    /** @var int
+     * Error number from the last `connect()` (0 on success). */
+    public $connect_errno = 0;
+    /** @var string */
+    public $connect_error = "";
+
+    /** Return true if the last `connect()` failed because the requested
+     * database doesn't exist, or this database's own account doesn't. (A
+     * missing database and one the account can't access look the same.)
+     * @return bool */
+    function missing() {
+        // 1044 access denied to database, 1049 unknown database;
+        // 1045 access denied for user, which means a missing database only if
+        // the user is per-database (otherwise the shared account is broken)
+        return $this->connect_errno === 1044
+            || $this->connect_errno === 1049
+            || ($this->connect_errno === 1045 && $this->per_database_user());
+    }
+
+    /** Return true if the user is specific to this database: it is named
+     * after the database (the default, and `lib/createdb.sh`'s convention)
+     * or configured with `${confid}`.
+     * @return bool */
+    function per_database_user() {
+        return $this->user !== null
+            && ($this->user === $this->name || $this->user_template);
+    }
+
+    /** Return true if the last `connect()` failed because the database
+     * server is unreachable or overloaded.
+     * @return bool */
+    function transient() {
+        // 2000–2999 are client errors (can't connect, server gone away, ...);
+        // 1040 too many connections, 1053 shutdown in progress,
+        // 1203 too many user connections
+        return ($this->connect_errno >= 2000 && $this->connect_errno < 3000)
+            || in_array($this->connect_errno, [1040, 1053, 1203], true);
+    }
 
     /** @return string */
     function sanitized_dsn() {
@@ -202,7 +242,9 @@ class Dbl_ConnectionParams {
             $client_flags
         );
 
-        if ($dblink->connect_errno || mysqli_connect_errno()) {
+        $this->connect_errno = $dblink->connect_errno;
+        $this->connect_error = $dblink->connect_error ?? "";
+        if ($this->connect_errno) {
             return null;
         }
 
@@ -293,7 +335,9 @@ class Dbl {
         if (isset($opt["confid"]) && is_string($opt["confid"])) {
             $cp->name = str_replace('${confid}', $opt["confid"], $cp->name);
             if ($cp->user !== null) {
-                $cp->user = str_replace('${confid}', $opt["confid"], $cp->user);
+                $user = $cp->user;
+                $cp->user = str_replace('${confid}', $opt["confid"], $user);
+                $cp->user_template = $user !== $cp->user;
             }
             if ($cp->password !== null) {
                 $cp->password = str_replace('${confid}', $opt["confid"], $cp->password);

@@ -182,7 +182,7 @@ function initialize_conf($config_file = null, $confid = null) {
             Conf::set_main_instance(new Conf($Opt, true));
         }
         if (!Conf::$main->dblink) {
-            Multiconference::fail_bad_database();
+            Multiconference::fail_bad_database(Conf::$main);
         }
     }
 

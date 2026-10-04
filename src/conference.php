@@ -9,6 +9,11 @@ class Conf {
     /** @var string
      * @readonly */
     public $dbname;
+    /** @var ?Dbl_ConnectionParams
+     * The parameters used to connect to `dblink`, or to try to; null if the
+     * options don't specify a database.
+     * @readonly */
+    public $dbparams;
     /** @var string
      * @readonly */
     public $confid;
@@ -285,9 +290,9 @@ class Conf {
         global $Opt;
         $this->opt = $options ?? $Opt ?? [];
         // unpack dsn, connect to database, load current settings
-        if (($cp = Dbl::parse_connection_params($this->opt))) {
-            $this->dblink = $connect ? $cp->connect() : null;
-            $this->dbname = $cp->name;
+        if (($this->dbparams = Dbl::parse_connection_params($this->opt))) {
+            $this->dblink = $connect ? $this->dbparams->connect() : null;
+            $this->dbname = $this->dbparams->name;
             $this->session_key = "@{$this->dbname}";
         }
         $this->confid = $this->opt["confid"] ?? $this->dbname ?? "";

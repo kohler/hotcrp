@@ -331,33 +331,46 @@ class Multiconference {
     }
 
     /** @return never */
-    static function fail_bad_database() {
-        global $Opt;
+    static function fail_bad_database(Conf $conf) {
         $qreq = null;
-        if (isset($Opt["multiconferenceFailureCallback"])
+        if (($mfc = $conf->opt("multiconferenceFailureCallback"))
             && PHP_SAPI !== "cli") {
             $qreq = Qrequest::make_minimal();
-            call_user_func($Opt["multiconferenceFailureCallback"], "database", $qreq);
+            call_user_func($mfc, "database", $qreq);
         }
+        $confid = $conf->opt("confid");
+        $multiconference = $conf->opt("multiconference");
+        $cp = $conf->dbparams;
+        // A missing conference is 404 and unremarkable; anything else is a
+        // server problem (503), and logged so someone notices
+        $nonexistent = $multiconference
+            && ($confid === "__unspecified__"
+                || !$cp
+                || $cp->missing());
         $errors = [];
-        $confid = $Opt["confid"] ?? null;
-        $multiconference = $Opt["multiconference"] ?? null;
-        if ($multiconference && $confid === "__unspecified__") {
-            $errors[] = self::nonexistence_error();
-        } else if ($multiconference) {
-            $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
+        if ($nonexistent) {
+            $status = 404;
+            $errors[] = $confid === "__unspecified__"
+                ? self::nonexistence_error()
+                : "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
         } else {
-            $errors[] = "HotCRP was unable to connect to its database. A system administrator must fix this problem.";
-            if (defined("HOTCRP_TESTHARNESS")) {
-                $errors[] = "You may need to run `lib/createdb.sh -c test/options.php` to create the database.";
-            }
-            if (($cp = Dbl::parse_connection_params($Opt))) {
-                error_log("Unable to connect to database " . $cp->sanitized_dsn());
+            $status = 503;
+            if ($cp && $cp->transient()) {
+                $errors[] = "The site is temporarily unavailable. Please try again in a few minutes.";
             } else {
-                error_log("Unable to connect to database");
+                $errors[] = "HotCRP was unable to connect to its database. A system administrator must fix this problem.";
+                if (defined("HOTCRP_TESTHARNESS")) {
+                    $errors[] = "You may need to run `lib/createdb.sh -c test/options.php` to create the database.";
+                }
+            }
+            if (!$cp) {
+                error_log("Unable to connect to database: no database configuration");
+            } else {
+                $error = $cp->connect_error !== "" ? $cp->connect_error : "(unknown)";
+                error_log("Unable to connect to database {$cp->sanitized_dsn()}: {$cp->connect_errno} {$error}");
             }
         }
-        Multiconference::fail($qreq, ["link" => false], ...$errors);
+        Multiconference::fail($qreq, $status, ["link" => false], ...$errors);
     }
 
     /** @param Throwable $ex
