@@ -281,10 +281,9 @@ class DocumentFileTree implements JsonSerializable {
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 === 0) {
                 $fm->fname .= $this->_components[$i];
-            } else {
-                $di = $this->_dirinfo[$fm->fname];
-                if (!$di->append_first_component($this, $i, $fm, $after))
-                    break;
+            } else if (($di = $this->_dirinfo[$fm->fname] ?? null)
+                       && !$di->append_first_component($this, $i, $fm, $after)) {
+                break;
             }
         }
         if ($this->_complete) {
@@ -301,10 +300,9 @@ class DocumentFileTree implements JsonSerializable {
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 === 0) {
                 $fm->fname .= $this->_components[$i];
-            } else {
-                $di = $this->_dirinfo[$fm->fname];
-                if (!$di->append_random_component($this, $i, $fm))
-                    break;
+            } else if (($di = $this->_dirinfo[$fm->fname] ?? null)
+                       && !$di->append_random_component($this, $i, $fm)) {
+                break;
             }
         }
         if ($this->_complete) {
