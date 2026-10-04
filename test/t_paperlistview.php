@@ -35,6 +35,8 @@ class PaperListView_Tester {
         foreach ($steps as $s) {
             if ($s[0] === "parse") {
                 $pl->parse_view($s[1], $s[2]);
+            } else if ($s[0] === "default") {
+                $pl->apply_view_report_default();
             } else if ($s[0] === "session") {
                 $qreq->set_csession("{$report}display", $s[1]);
                 $pl->apply_view_session($qreq);
@@ -57,6 +59,12 @@ class PaperListView_Tester {
         $pl->prepare_table_view();
         $cols = [];
         foreach ($pl->vcolumns() as $c) {
+            if ($c instanceof Authors_PaperColumn) {
+                // `full` and `anon` can come from `aufull` and `anonau`
+                $vo = array_keys(array_filter(["full" => $c->full, "anon" => $c->anon]));
+                $cols[] = $c->name . ($vo ? "[" . join(",", $vo) . "]" : "");
+                continue;
+            }
             $vo = $c->view_options();
             $cols[] = $c->name . ($vo && !$vo->is_empty() ? $vo->unparse() : "");
         }
@@ -99,10 +107,10 @@ class PaperListView_Tester {
         'default then session' => ["show:sel show:id show:title show:abstract show:status show:revtype","show:abstract hide:revstat","show:abstract hide:lead","","sel id title status revtype abstract"],
         'hide:all session' => ["hide:all show:title show:abstract show:id show:sel","hide:all show:title show:abstract show:id","hide:all show:title show:abstract show:id","","sel title id abstract"],
         'hide:all then search show' => ["hide:all show:title show:abstract show:sel show:lead","hide:all show:title show:abstract show:lead","hide:all show:title show:abstract show:lead","show:lead","sel title abstract lead"],
-        'search anonau/aufull' => ["show:sel show:id show:title show:authors[full] show:status show:revtype show:revstat","show:authors[full]","show:authors[full]","show:authors[full]","sel id title status revtype revstat authors[full,anon]"],
-        'session aufull' => ["show:sel show:id show:title view:authors[full] show:status show:revtype show:revstat","view:authors[full]","view:authors[full]","","sel id title status revtype revstat"],
-        'options: session vs search' => ["show:sel show:id show:title show:authors[full] show:status show:revtype show:revstat","show:authors[full]","show:authors[full]","","sel id title status revtype revstat authors[full,anon]"],
-        'options: session only' => ["show:sel show:id show:title show:authors[full] show:status show:revtype show:revstat","show:authors[full]","show:authors[full]","","sel id title status revtype revstat authors[full]"],
+        'search anonau/aufull' => ["show:sel show:id show:title show:authors show:aufull show:status show:revtype show:revstat","show:authors show:aufull","show:authors show:aufull","show:authors show:aufull","sel id title status revtype revstat authors[full,anon]"],
+        'session aufull' => ["show:sel show:id show:title show:aufull hide:authors show:status show:revtype show:revstat","show:aufull hide:authors","show:aufull hide:authors","","sel id title status revtype revstat"],
+        'options: session vs search' => ["show:sel show:id show:title show:authors show:aufull show:status show:revtype show:revstat","show:authors show:aufull","show:authors show:aufull","","sel id title status revtype revstat authors[full,anon]"],
+        'options: session only' => ["show:sel show:id show:title show:authors show:aufull show:status show:revtype show:revstat","show:authors show:aufull","show:authors show:aufull","","sel id title status revtype revstat authors[full]"],
         'force request' => ["show:sel show:id show:title show:force show:status show:revtype show:revstat","show:force","show:force","show:force","sel id title status revtype revstat"],
         'force session ignored' => ["show:sel show:id show:title show:status show:revtype show:revstat","","","","sel id title status revtype revstat"],
         'linkto request' => ["show:linkto[page=assign] show:sel show:id show:title show:status show:revtype show:revstat","show:linkto[page=assign]","show:linkto[page=assign]","show:linkto[page=assign]","sel id title status revtype revstat"],
@@ -126,8 +134,9 @@ class PaperListView_Tester {
     }
 
     function test_author_options() {
-        // `aufull` and `anonau` are `authors` options; shown in a search,
-        // they also show authors
+        // `aufull` and `anonau` are views of their own (`authors[full]` and
+        // `authors[anon]` mean them too); shown in a search, they also show
+        // authors
         $pl = $this->make_list("pl", "show:aufull", []);
         xassert($pl->viewing("authors"));
         xassert($pl->viewing("aufull"));
@@ -142,16 +151,22 @@ class PaperListView_Tester {
         // turned that off, but not if the search itself says not to
         $pl = $this->make_list("pl", "show:authors", [["session", "hide:anonau show:aufull"]]);
         xassert_str_contains(self::summary($pl)[4], "authors[full,anon]");
-        xassert($pl->viewing("anonau"));
+        xassert(!$pl->viewing("anonau"));
         xassert_eqq($pl->view_origin("aufull"), ViewCommand::ORIGIN_SESSION);
         xassert_eqq($pl->view_origin("authors"), ViewCommand::ORIGIN_SEARCH);
         $pl = $this->make_list("pl", "show:authors hide:anonau", []);
-        xassert_str_contains(self::summary($pl)[4], "authors[anon=no]");
+        xassert_str_ends_with(self::summary($pl)[4], " authors");
         xassert_eqq($pl->view_origin("anonau"), ViewCommand::ORIGIN_SEARCH);
-        // `view:aufull` means `show:aufull`
+        // `view:aufull` means `view:authors[full]`: it does not show authors,
+        // even in a search
         $pl = $this->make_list("pl", "view:aufull", []);
-        xassert($pl->viewing("authors"));
+        xassert(!$pl->viewing("authors"));
         xassert($pl->viewing("aufull"));
+        $pl = $this->make_list("pl", "view:anonau", []);
+        xassert(!$pl->viewing("authors"));
+        xassert($pl->viewing("anonau"));
+        $pl = $this->make_list("pl", "show:au view:aufull", []);
+        xassert_str_ends_with(self::summary($pl)[4], " authors[full,anon]");
         $pl = $this->make_list("pl", "", [["session", "view:aufull"]]);
         xassert(!$pl->viewing("authors"));
         xassert($pl->viewing("aufull"));
@@ -162,7 +177,7 @@ class PaperListView_Tester {
         $pl = $this->make_list("pl", "", [["session", "show:aufull hide:authors"]]);
         xassert(!$pl->viewing("authors"));
         xassert($pl->viewing("aufull"));
-        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false), ["view:authors[full]"]);
+        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false), ["show:aufull", "hide:authors"]);
         // `view:` (or the older `viewoptions:`) sets options only
         foreach (["view", "viewoptions"] as $kw) {
             $pl = $this->make_list("pl", "", [["session", "{$kw}:authors[full]"]]);
@@ -176,27 +191,53 @@ class PaperListView_Tester {
         xassert_eqq($pl->search->paper_ids(), $this->make_list("pl", "", [])->search->paper_ids());
     }
 
-    function test_show_request_replaces_author_options() {
-        // an explicit `show=` replaces the session’s author options too, and
-        // there `aufull` sets an option without showing authors
+    function test_show_request_author_boxes() {
+        // `show=` lists the checked boxes: unchecked author boxes are off, not
+        // the default, and `anonau` or `aufull` alone shows authors (in a
+        // blind conference, “Authors (deanonymized)” is the only Authors box)
         $pl = $this->make_list("pl", "", [["session", "show:authors[full]"], ["qreq", ["show" => "au title"]]]);
         xassert($pl->viewing("authors"));
         xassert(!$pl->viewing("aufull"));
-        // ...back to the defaults, not to “off”
-        $plx = $this->make_list("pl", "", [["qreq", ["show" => "au title"]]]);
-        xassert_eqq(self::summary($pl)[4], self::summary($plx)[4]);
-        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false), ["show:authors"]);
-        $pl = $this->make_list("pl", "", [["session", "show:authors"], ["qreq", ["show" => "aufull title"]]]);
-        xassert(!$pl->viewing("authors"));
+        $pl = $this->make_list("pl", "", [["qreq", ["show" => "anonau title"]]]);
+        xassert($pl->viewing("authors"));
+        xassert($pl->viewing("anonau"));
+        xassert(!$pl->viewing("aufull"));
+        xassert_str_ends_with(self::summary($pl)[4], " authors[anon]");
+        $pl = $this->make_list("pl", "", [["qreq", ["show" => "aufull title"]]]);
+        xassert($pl->viewing("authors"));
         xassert($pl->viewing("aufull"));
-        foreach (["au aufull title", "aufull au title"] as $show) {
-            $pl = $this->make_list("pl", "", [["session", "show:authors[anon=no]"], ["qreq", ["show" => $show]]]);
-            xassert($pl->viewing("authors"), $show);
-            xassert($pl->viewing("aufull"), $show);
-        }
-        $pl = $this->make_list("pl", "", [["qreq", ["show" => "title"]]]);
+        $pl = $this->make_list("pl", "", [["session", "show:authors show:aufull"], ["qreq", ["show" => "title"]]]);
         xassert(!$pl->viewing("authors"));
         xassert(!$pl->viewing("aufull"));
+
+        // a search's author views stay
+        foreach (["show:aufull", "show:au[full]"] as $q) {
+            $pl = $this->make_list("pl", $q, [["session", "show:authors[anon=no]"], ["qreq", ["show" => "au title"]]]);
+            xassert($pl->viewing("authors"), $q);
+            xassert($pl->viewing("aufull"), $q);
+            xassert_eqq($pl->view_origin("aufull"), ViewCommand::ORIGIN_SEARCH, $q);
+        }
+
+        // so do the boxes when the default display shows full,
+        // deanonymized authors
+        $old = $this->conf->setting_data("pldisplay_default");
+        $this->conf->save_refresh_setting("pldisplay_default", 1, "show:authors[anon,full]");
+        $pl = $this->make_list("pl", "", [["default"], ["qreq", ["show" => "title"]]]);
+        xassert(!$pl->viewing("authors"));
+        xassert(!$pl->viewing("anonau"));
+        xassert(!$pl->viewing("aufull"));
+        $pl = $this->make_list("pl", "", [["default"], ["qreq", ["show" => "au title"]]]);
+        xassert($pl->viewing("authors"));
+        xassert(!$pl->viewing("aufull"));
+        xassert_str_ends_with(self::summary($pl)[4], " authors");
+        $pl = $this->make_list("pl", "", [["default"], ["session", "show:authors"], ["qreq", ["show" => "anonau title"]]]);
+        xassert($pl->viewing("authors"));
+        xassert($pl->viewing("anonau"));
+        xassert(!$pl->viewing("aufull"));
+        $pl = $this->make_list("pl", "", [["default"], ["qreq", ["show" => "aufull title"]]]);
+        xassert($pl->viewing("authors"));
+        xassert($pl->viewing("aufull"));
+        $this->conf->save_refresh_setting("pldisplay_default", $old === null ? null : 1, $old);
     }
 
     function test_column_error_location() {
@@ -238,10 +279,10 @@ class PaperListView_Tester {
         foreach ([
             "pldisplay.abstract=0" => ["show:abstract", null],
             "pldisplay.status=1" => ["show:abstract hide:status", null],
-            "pldisplay.authors=0 pldisplay.aufull=0" => ["show:abstract show:authors[full] hide:status", null],
-            "pldisplay.abstract=1" => ["show:authors[full] hide:status", null],
-            "scoresort=V" => ["show:authors[full] hide:status sort:score[variance]", null],
-            "pfdisplay.lead=0" => ["show:authors[full] hide:status sort:score[variance]", "show:lead"]
+            "pldisplay.authors=0 pldisplay.aufull=0" => ["show:abstract show:authors show:aufull hide:status", null],
+            "pldisplay.abstract=1" => ["show:authors show:aufull hide:status", null],
+            "scoresort=V" => ["show:authors show:aufull hide:status sort:score[variance]", null],
+            "pfdisplay.lead=0" => ["show:authors show:aufull hide:status sort:score[variance]", "show:lead"]
         ] as $v => $want) {
             Session_API::change_session($qreq, $v);
             xassert_eqq([$qreq->csession("pldisplay"), $qreq->csession("pfdisplay")], $want);

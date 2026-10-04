@@ -544,7 +544,7 @@ final class AssignmentState extends MessageSet {
     }
     /** Papers the user couldn't view even with a wider token scope are
      * treated as missing, so errors don't reveal whether they exist.
-     * @return bool */
+     * @param array{paperId?:list<int>|PaperIDSet} $args */
     private function fetch_paper_set($args) {
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_SCOPE);
         foreach ($this->user->paper_set($args) as $prow) {

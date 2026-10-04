@@ -4535,6 +4535,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return false;
     }
 
+    /** @param bool $pdf
+     * @return bool */
+    private function can_view_paper_unscoped(PaperInfo $prow, $pdf) {
+        $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
+        $view = $this->can_view_paper($prow, $pdf);
+        $this->set_overrides($overrides);
+        return $view;
+    }
+
     /** @return ?FailureReason */
     function perm_view_paper(?PaperInfo $prow, $pdf = false, $pid = null) {
         if (!$prow) {
@@ -4547,19 +4556,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // blame the token's scope only if a wider scope would show the paper;
         // otherwise the answer would reveal that the paper exists
         $scope_bits = 0;
-        if ($pdf && !$rights->scope_allows(TS::S_DOC_READ)) {
+        if ($pdf
+            && !$rights->scope_allows(TS::S_DOC_READ)
+            && $this->can_view_paper_unscoped($prow, true)) {
             $scope_bits = TS::S_DOC_READ;
-        } else if (!$rights->scope_allows(TS::S_SUB_READ)) {
+        } else if (!$rights->scope_allows(TS::S_SUB_READ)
+                   && $this->can_view_paper_unscoped($prow, false)) {
+            // even if the documents are hidden, the paper's scope is missing
             $scope_bits = TS::S_SUB_READ;
         }
         if ($scope_bits !== 0) {
-            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
-            $view_unscoped = $this->can_view_paper($prow, $pdf);
-            $this->set_overrides($overrides);
-            if ($view_unscoped) {
-                $whyNot["scope"] = $scope_bits;
-                return $whyNot;
-            }
+            $whyNot["scope"] = $scope_bits;
+            return $whyNot;
         }
         if ($pdf
             && $this->can_view_paper($prow)) {

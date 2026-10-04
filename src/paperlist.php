@@ -415,7 +415,7 @@ final class PaperList extends MessageSet {
             $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "sel", $vol));
         }
 
-        $this->_columns_by_name = ["rownum" => [], "statistics" => []];
+        $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
     }
 
     /** @return ?bool */
@@ -546,7 +546,7 @@ final class PaperList extends MessageSet {
     }
 
     static private $view_fake = [
-        "force" => 180, "score" => 190,
+        "anonau" => 151, "aufull" => 151, "force" => 180, "score" => 190,
         "facets" => -2, "rownum" => -1, "statistics" => -1,
         "all" => -4, "linkto" => -4,
     ];
@@ -581,13 +581,6 @@ final class PaperList extends MessageSet {
     /** @param string $fname
      * @return bool */
     function viewing($fname) {
-        // `aufull` and `anonau` are `authors` options
-        if ($fname === "aufull" || $fname === "anonau") {
-            $vc = $this->_view_command("authors");
-            $opt = $fname === "aufull" ? "full" : "anon";
-            return $vc && $vc->view_options
-                && friendly_boolean($vc->view_options->get($opt));
-        }
         $vc = $this->_view_command($fname);
         return $vc && $vc->is_show();
     }
@@ -595,26 +588,8 @@ final class PaperList extends MessageSet {
     /** @param string $k
      * @return 0|1|2|3|4|5 */
     function view_origin($k) {
-        if ($k === "aufull" || $k === "anonau") {
-            return $this->_author_option_origin($k === "aufull" ? "full" : "anon");
-        }
         $vc = $this->_view_command($k);
         return $vc ? $vc->origin() : ViewCommand::ORIGIN_REPORT;
-    }
-
-    /** Return the highest origin of a command that set an `authors` option.
-     * @param 'full'|'anon' $opt
-     * @return 0|1|2|3|4|5 */
-    private function _author_option_origin($opt) {
-        $origin = ViewCommand::ORIGIN_REPORT;
-        foreach ($this->_viewlist as $vc) {
-            if ($vc->keyword === "authors"
-                && $vc->view_options
-                && $vc->view_options->has($opt)) {
-                $origin = max($origin, $vc->origin());
-            }
-        }
-        return $origin;
     }
 
     /** @param string $k
@@ -649,27 +624,53 @@ final class PaperList extends MessageSet {
     function add_view(ViewCommand $vc) {
         assert(!$vc->is_sort());
         assert($vc->origin() >= ViewCommand::ORIGIN_REPORT && $vc->origin() <= ViewCommand::ORIGIN_MAX);
-        $this->_viewlist[] = self::canonical_view_command($vc);
+        $vc = self::canonical_view_command($vc);
         $this->_viewmap = null;
+        $k = $vc->keyword;
+        $origin = $vc->origin();
+        // `authors[full]` and `authors[anon]` mean `aufull` and `anonau`
+        if ($k === "authors" && $vc->view_options) {
+            $vol = new ViewOptionList;
+            $aux = [];
+            foreach ($vc->view_options as $n => $v) {
+                if (($n === "full" || $n === "short" || $n === "anon")
+                    && ($b = friendly_boolean($v)) !== null) {
+                    $aux[$n === "anon" ? "anonau" : "aufull"] = $n === "short" ? !$b : $b;
+                } else {
+                    $vol->add($n, $v);
+                }
+            }
+            if (!empty($aux)) {
+                if (($vc->flags & ViewCommand::FM_VISIBILITY) !== 0 || !$vol->is_empty()) {
+                    $this->_viewlist[] = new ViewCommand($vc->flags, $k, $vol->is_empty() ? null : $vol, $vc->sword);
+                }
+                foreach ($aux as $ak => $show) {
+                    $this->_viewlist[] = new ViewCommand(($show ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | $origin, $ak, null, $vc->sword);
+                }
+                return;
+            }
+        }
+        // `view:aufull` turns on full author info, like `view:authors[full]`,
+        // without showing authors
+        if (($k === "anonau" || $k === "aufull")
+            && ($vc->flags & ViewCommand::FM_VISIBILITY) === 0) {
+            $this->_viewlist[] = new ViewCommand(ViewCommand::F_SHOW | $origin, $k, null, $vc->sword);
+            return;
+        }
+        $this->_viewlist[] = $vc;
+        // `anonau` and `aufull` shown by a search or request also show authors
+        if (($k === "anonau" || $k === "aufull")
+            && $vc->is_show()
+            && $origin >= ViewCommand::ORIGIN_SEARCH) {
+            $this->_viewlist[] = new ViewCommand(ViewCommand::F_SHOW | $origin, "authors", null, $vc->sword);
+        }
     }
 
-    /** Return `$vc` with a canonical keyword. `aufull` and `anonau` become
-     * `authors` options; shown in searches (or later origins), they also show
-     * authors.
+    /** Return `$vc` with a canonical keyword.
      * @return ViewCommand */
     static private function canonical_view_command(ViewCommand $vc) {
         $k = self::canonical_view_keyword($vc->keyword);
-        if ($k === "aufull" || $k === "anonau") {
-            // `view:aufull` means `show:aufull`
-            $vis = $vc->flags & ViewCommand::FM_VISIBILITY ? : ViewCommand::F_SHOW;
-            $flags = $vc->flags & ViewCommand::FM_ORIGIN;
-            if ($vis === ViewCommand::F_SHOW
-                && $vc->origin() >= ViewCommand::ORIGIN_SEARCH) {
-                $flags |= ViewCommand::F_SHOW;
-            }
-            $vol = (new ViewOptionList)->add($k === "aufull" ? "full" : "anon", $vis === ViewCommand::F_SHOW);
-            return new ViewCommand($flags, "authors", $vol, $vc->sword);
-        } else if ($k !== $vc->keyword) {
+        if ($k !== $vc->keyword) {
             return new ViewCommand($vc->flags, $k, $vc->view_options, $vc->sword);
         }
         return $vc;
@@ -908,14 +909,6 @@ final class PaperList extends MessageSet {
         foreach ($ignores as $name) {
             $this->add_view(ViewCommand::make_visibility($name, false, ViewCommand::ORIGIN_REQUEST));
         }
-        // ...as are author options, which `aufull` and `anonau` set (a null
-        // option reverts to the default)
-        if (($vc = $this->_viewmap()["authors"] ?? null)
-            && $vc->view_options
-            && !$vc->view_options->is_empty()) {
-            $vol = (new ViewOptionList)->add("full", null)->add("anon", null);
-            $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "authors", $vol));
-        }
         // parse request parameters
         if ($qreq->has_a("show")) {
             $vcs = [];
@@ -926,17 +919,9 @@ final class PaperList extends MessageSet {
             $vcs = ViewCommand::split_parse($qreq->show, ViewCommand::ORIGIN_REQUEST);
         }
         foreach ($vcs as $vc) {
-            if ($vc->is_sort()) {
-                continue;
+            if (!$vc->is_sort()) {
+                $this->add_view($vc);
             }
-            // here `aufull`/`anonau` set an option, as checkboxes beside
-            // the Authors checkbox; they do not show authors
-            $k = self::canonical_view_keyword($vc->keyword);
-            if (($k === "aufull" || $k === "anonau") && $vc->is_show()) {
-                $vol = (new ViewOptionList)->add($k === "aufull" ? "full" : "anon", true);
-                $vc = new ViewCommand(ViewCommand::ORIGIN_REQUEST, "authors", $vol, $vc->sword);
-            }
-            $this->add_view($vc);
         }
     }
 
@@ -998,6 +983,17 @@ final class PaperList extends MessageSet {
             } else {
                 $res["{$pos} {$name}"] = $vcs;
             }
+        }
+        // `anonau` and `aufull` imply authors when parsed by a search, so
+        // hidden authors are hidden after them
+        if (!($vm["authors"] ?? null)?->is_show()
+            && array_intersect(["show:anonau", "show:aufull"], array_merge($res, $ordered))) {
+            foreach (array_keys($res) as $key) {
+                if (str_ends_with($key, " authors")) {
+                    unset($res[$key]);
+                }
+            }
+            $res["152 authors"] = "hide:authors";
         }
         ksort($res, SORT_NATURAL);
         if ($hide_all) {
@@ -1552,7 +1548,7 @@ final class PaperList extends MessageSet {
         if ($auvc
             && $auvc->is_show()
             && $auvc->origin() >= ViewCommand::ORIGIN_SEARCH
-            && $this->_author_option_origin("anon") < ViewCommand::ORIGIN_SEARCH
+            && $this->view_origin("anonau") < ViewCommand::ORIGIN_SEARCH
             && !($auvc->view_options && $auvc->view_options->get("anon") === true)) {
             $this->_viewmap["authors"] = ViewCommand::merge($auvc,
                 new ViewCommand(0, "authors", (new ViewOptionList)->add("anon", true)));

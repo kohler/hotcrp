@@ -135,6 +135,9 @@ class Formula_PaperColumnFactory {
         if (str_starts_with($name, "formula")
             && ctype_digit(substr($name, 7))) {
             $nf = ($xtp->conf->named_formulas())[(int) substr($name, 7)] ?? null;
+            if ($nf && !$xtp->user->can_view_named_formula($nf)) {
+                $nf = null;
+            }
         }
 
         $prefix = "";

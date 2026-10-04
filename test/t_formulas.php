@@ -3103,6 +3103,15 @@ class Formulas_Tester {
         $pl->parse_view("\"OveMer.1\"", ViewCommand::ORIGIN_MAX);
         $pl->text_json();
         xassert_eqq($pl->vcolumns(), []);
+        // ...including by its `formula<ID>` column name
+        $pl = new PaperList("empty", new PaperSearch($root, ["q" => "1", "t" => "all"]));
+        $pl->parse_view("formula{$nf->formulaId}", ViewCommand::ORIGIN_MAX);
+        $pl->text_json();
+        xassert_eqq($pl->vcolumns(), []);
+        $pl = new PaperList("empty", new PaperSearch($u_pc, ["q" => "1", "t" => "s"]));
+        $pl->parse_view("formula{$nf->formulaId}", ViewCommand::ORIGIN_MAX);
+        $pl->text_json();
+        xassert_eqq(count($pl->vcolumns()), 1);
 
         // the author and the chair can still use it under its own keyword
         xassert(Formula::make($u_pc, "OveMer.1")->ok());

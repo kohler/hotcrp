@@ -413,6 +413,44 @@ class Scope_Tester {
         $u->set_scope();
     }
 
+    function test_document_scope_error_names_missing_scope() {
+        // a document request from a token without paper scope reports the
+        // missing scope when the user could see the paper, even if not its
+        // documents
+        $u = $this->conf->checked_user_by_email("marina@poema.ru");
+        $old_ctype = $this->conf->fetch_ivalue("select conflictType from PaperConflict where paperId=1 and contactId=?", $u->contactId);
+        $root = $this->conf->root_user();
+        $as = (new AssignmentSet($root))->set_override_conflicts(true);
+        $as->parse("paper,action,user\n1,conflict,marina@poema.ru\n");
+        xassert($as->execute());
+        $old_confpdf = $this->conf->setting("pc_confpdf");
+        $this->conf->save_refresh_setting("pc_confpdf", 1);
+        Contact::update_rights();
+
+        $prow = $this->conf->checked_paper_by_id(1, $u);
+        xassert($u->can_view_paper($prow));
+        xassert(!$u->can_view_pdf($prow));
+        $u->set_scope("settings:read");
+        $fr = $u->perm_view_paper($prow, false);
+        xassert_eqq([$fr->unparse_text(), $fr->response_code()], ["Action requires scope ‘submeta:read’", 403]);
+        $fr = $u->perm_view_paper($prow, true);
+        xassert_eqq([$fr->unparse_text(), $fr->response_code()], ["Action requires scope ‘submeta:read’", 403]);
+        // with paper scope, the documents themselves are refused
+        $u->set_scope("submission:read");
+        $fr = $u->perm_view_paper($prow, true);
+        xassert_eqq($fr->response_code(), 403);
+        xassert_str_contains($fr->unparse_text(), "documents");
+        $u->set_scope();
+
+        $this->conf->save_refresh_setting("pc_confpdf", $old_confpdf);
+        if ($old_ctype === null) {
+            $this->conf->qe("delete from PaperConflict where paperId=1 and contactId=?", $u->contactId);
+        } else {
+            $this->conf->qe("update PaperConflict set conflictType=? where paperId=1 and contactId=?", $old_ctype, $u->contactId);
+        }
+        Contact::update_rights();
+    }
+
     function test_api_scope_gate_obeys_paper_selectors() {
         // an endpoint's declared scope may be granted for a single paper
         $this->u_chair->set_scope("paper:admin#1");
