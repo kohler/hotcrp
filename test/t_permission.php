@@ -1484,6 +1484,24 @@ class Permission_Tester {
         }
     }
 
+    function test_pc_api_assignable_for_conflicted_chair() {
+        // A chair conflicted with a paper that has another administrator
+        // can still change its administrator, so the paper's PC selector
+        // must still get an assignable list.
+        xassert_assign($this->u_chair, "action,paper,user\nconflict,3,chair@_.com\nadministrator,3,marina@poema.ru\n");
+        try {
+            $paper3 = $this->conf->checked_paper_by_id(3);
+            xassert(!$this->u_chair->allow_admin($paper3));
+            $j = call_api("pc", $this->u_chair, ["p" => 3, "ui" => 1], $paper3);
+            xassert($j->ok);
+            $assignable = $j->p[3]["assignable"] ?? null;
+            xassert_eqq(is_array($assignable), true);
+            xassert_in_eqq($this->u_marina->contactId, $assignable);
+        } finally {
+            xassert_assign($this->conf->root_user(), "action,paper,user\nclearadministrator,3\nclearconflict,3,chair@_.com\n");
+        }
+    }
+
     function test_assign_conflicts() {
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ALL), "mgbaker@cs.stanford.edu nickm@ee.stanford.edu sclin@leland.stanford.edu");

@@ -5553,33 +5553,45 @@ class Conf {
             $this->collator()->sort($tags);
             $rj["tags"] = $tags;
         }
-        $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
-        if ($paper && $paper->conf === $this && $viewer->allow_admin($paper)) {
-            $assignable = [];
-            foreach ($pcm as $pc) {
-                if ($pc->pc_assignable($paper)) {
-                    $assignable[] = $pc->contactId;
-                }
-            }
-            $pj = ["assignable" => $assignable];
-            if ($this->setting("extrev_shepherd")) {
-                $paper->ensure_reviewer_names();
-                $erlist = $ercids = [];
-                foreach ($paper->reviews_as_display() as $rrow) {
-                    if ($rrow->reviewType === REVIEW_EXTERNAL
-                        && !$rrow->reviewToken
-                        && !in_array($rrow->contactId, $ercids, true)) {
-                        $erlist[] = $this->user_json(null, $rrow->reviewer(), $flags);
-                        $ercids[] = $rrow->contactId;
-                    }
-                }
-                if (!empty($erlist)) {
-                    $pj["extrev"] = $erlist;
-                }
-            }
-            $rj["p"] = [$paper->paperId => $pj];
+        if (($pj = $this->hotcrp_pc_assignable_json($viewer, $flags, $pcm))) {
+            $rj["p"] = $pj;
         }
         return (object) $rj;
+    }
+
+    private function hotcrp_pc_assignable_json(Contact $viewer, $flags, $pcm) {
+        $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
+        if (!$paper || $paper->conf !== $this) {
+            return null;
+        }
+        $admin = $viewer->allow_admin($paper);
+        if (!$admin && !$viewer->privChair) {
+            return null;
+        }
+        $m = $admin ? "pc_assignable" : "pc_track_assignable";
+        $assignable = [];
+        foreach ($pcm as $pc) {
+            if ($pc->$m($paper)) {
+                $assignable[] = $pc->contactId;
+            }
+        }
+        $pj = ["assignable" => $assignable];
+        if ($admin && $this->setting("extrev_shepherd")) {
+            $paper->ensure_reviewer_names();
+            $erlist = $ercids = [];
+            foreach ($paper->reviews_as_display() as $rrow) {
+                if ($rrow->reviewType === REVIEW_EXTERNAL
+                    && !$rrow->reviewToken
+                    && !in_array($rrow->contactId, $ercids, true)) {
+                    $erlist[] = $this->user_json(null, $rrow->reviewer(), $flags);
+                    $ercids[] = $rrow->contactId;
+                }
+            }
+            if (!empty($erlist)) {
+                $pj["extrev"] = $erlist;
+            }
+        }
+        return [$paper->paperId => $pj];
     }
 
     function stash_hotcrp_pc(Contact $viewer, $always = false) {
