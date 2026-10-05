@@ -3448,6 +3448,25 @@ class Authorize_Tester {
         [$how, $url] = $this->authorize_outcome($param, $this->u_empty, $qs);
         xassert_eqq($how, "redirect");
         xassert_str_ends_with(parse_url($url ?? "", PHP_URL_PATH) ?? "", "u/1/authorize");
+
+        // a POSTed request is redirected so the browser re-POSTs it
+        $qreq = TestQreq::apply_user($this->u_empty, TestQreq::post($param), $qs)->set_page("authorize");
+        Qrequest::set_main_request($qreq);
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
+        ob_start();
+        $redir = null;
+        try {
+            (new HotCRP\Authorize_Page($this->u_empty, $qreq))->go();
+        } catch (Redirection $redir) {
+        } catch (PageCompletion | JsonCompletion $unused) {
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
+        }
+        xassert($redir !== null);
+        xassert_eqq($redir ? $redir->status : null, 307);
+        xassert_str_ends_with(parse_url($redir ? $redir->url : "", PHP_URL_PATH) ?? "", "u/1/authorize");
     }
 
     /** A provider's email claim names the account, so it must come with a

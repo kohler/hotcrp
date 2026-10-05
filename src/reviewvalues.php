@@ -826,9 +826,14 @@ class ReviewValues extends MessageSet {
 
         // an unknown reviewer is created only where the caller allows it. With
         // an existing `$rrow` no account is needed: `_apply_req` checks the
-        // requested reviewer against the review instead.
+        // requested reviewer against the review instead. Others' reviews
+        // get the permission error whether or not the reviewer has an
+        // account, so that the error doesn't reveal which addresses do.
+        $manager = $user->can_manage_reviews($prow);
         if (!$rrow && !$reviewer->has_account_here() && !$this->create_users) {
-            if ($user->privChair) {
+            if (!$manager && strcasecmp($reviewer->email, $user->email ?? "") !== 0) {
+                $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
+            } else if ($user->privChair) {
                 $this->reviewer_error($this->conf->_("<0>User {} not found", $reviewer->email));
             } else {
                 $this->reviewer_error($this->conf->_("<0>Can’t edit a review for {}", $reviewer->email));
@@ -836,7 +841,6 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        $manager = $user->can_manage_reviews($prow);
         $req_rrow = $rrow;
 
         // look up review

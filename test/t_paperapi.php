@@ -138,6 +138,14 @@ class PaperAPI_Tester {
         xassert_not_in_eqq("Notes", $jr->change_list);
         $msgs = array_map(function ($mi) { return [$mi->field ?? null, $mi->status]; }, $jr->message_list);
         xassert_in_eqq(["Notes", 2], $msgs);
+        // ...but saves, with a warning, as a new submission
+        $pjn = clone $pj;
+        $pjn->pid = "new";
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pjn, ["p" => "new", "dry_run" => 1]));
+        xassert_in_eqq("Notes", $jr->change_list);
+        $msgs = array_map(function ($mi) { return [$mi->field ?? null, $mi->status]; }, $jr->message_list);
+        xassert_in_eqq(["Notes", 1], $msgs);
+        xassert_not_in_eqq(["Notes", 2], $msgs);
         // ...while text cut at the hard limit saves with a warning
         $pj = $get(["word_limit" => "hard"])->paper;
         $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj, ["p" => $pid, "dry_run" => 1]));

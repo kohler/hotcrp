@@ -62,15 +62,17 @@ class AssignmentSet_Tester {
         xassert($u->can_view_paper($p3) && !$u->can_manage($p3));
         $others = [$this->u_chair->contactId, $this->u_puneet->contactId];
         $this->conf->qe("delete from PaperWatch where paperId=3 and contactId?a", $others);
-        $answer = function () use ($u) {
+        // (a search paper field, like `#3`, reports differently from an ID)
+        $answer = function ($paper) use ($u) {
             $aset = new AssignmentSet($u);
-            $aset->parse("paper,action,user,following\n3,follow,any,clear\n");
+            $aset->parse("paper,action,user,following\n{$paper},follow,any,clear\n");
             return [$aset->has_error(), $aset->full_feedback_text()];
         };
-        $alone = $answer();
-        xassert(!$alone[0]);
+        $alone = [$answer("3"), $answer("#3")];
+        xassert(!$alone[0][0]);
+        xassert(!$alone[1][0]);
         $this->conf->qe("insert into PaperWatch (paperId,contactId,watch) values (3,?,3),(3,?,3)", ...$others);
-        xassert_eqq($answer(), $alone);
+        xassert_eqq([$answer("3"), $answer("#3")], $alone);
         $aset = new AssignmentSet($u);
         xassert($aset->parse("paper,action,user,following\n3,follow,any,clear\n") && $aset->execute());
         xassert_eqq($this->conf->fetch_ivalue("select count(*) from PaperWatch where paperId=3 and contactId?a and watch!=0", $others), 2);

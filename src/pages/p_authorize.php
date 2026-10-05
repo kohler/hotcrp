@@ -239,8 +239,9 @@ class Authorize_Page {
             && strcasecmp($chosen, $this->viewer->email ?? "") !== 0
             && ($uindex = Contact::session_index_by_email($this->qreq, $chosen)) >= 0
             && $uindex !== $this->viewer->session_index()) {
+            // (307 keeps a POSTed request's parameters)
             $nav = $this->qreq->navigation();
-            throw new Redirection("{$nav->base_path}u/{$uindex}/authorize{$nav->php_suffix}{$nav->query}");
+            throw new Redirection("{$nav->base_path}u/{$uindex}/authorize{$nav->php_suffix}{$nav->query}", 307);
         }
 
         // XXX prompt select_account vs. consent
@@ -323,10 +324,12 @@ class Authorize_Page {
             $this->redirect_error("account_selection_required");
         }
         if ($this->sole_authorized_user() !== $this->viewer) {
-            // the session's one account is at another slot (this one is empty)
+            // the session's one account is at another slot (this one is empty);
+            // 307 keeps a POSTed request's parameters (unlike the redirect to
+            // the client, this one stays on this site)
             $nav = $this->qreq->navigation();
             $uindex = array_key_first($emails);
-            throw new Redirection("{$nav->base_path}u/{$uindex}/authorize{$nav->php_suffix}{$nav->query}");
+            throw new Redirection("{$nav->base_path}u/{$uindex}/authorize{$nav->php_suffix}{$nav->query}", 307);
         }
 
         if (($ac = $this->make_authentication_checker($this->viewer, $token_params["max_age"]))

@@ -687,6 +687,17 @@ final class AssignmentState extends MessageSet {
         $this->has_user_error = false;
         return $this;
     }
+    /** @return object{n:int,nem:list<MessageItem>} */
+    function message_snapshot() {
+        return (object) [
+            "n" => $this->message_count(),
+            "nem" => $this->nonexact_msgs
+        ];
+    }
+    function restore_message_snapshot($snapshot) {
+        $this->clear_messages_since($snapshot->n);
+        $this->nonexact_msgs = $snapshot->nem;
+    }
 
     /** @param string $name
      * @return bool */
@@ -2112,7 +2123,7 @@ class AssignmentSet {
         foreach ($pusers as $auser) {
             $this->astate->charge();
             $mcount = $this->astate->cumulative_message_count();
-            $nmsg = $this->astate->message_count();
+            $msgsnap = $this->astate->message_snapshot();
             $allow = $aparser->allow_user($prow, $auser, $req, $this->astate);
             if ($allow !== true
                 && !$this->astate->user_explicit
@@ -2120,7 +2131,7 @@ class AssignmentSet {
                 && !$this->user->can_manage($prow)) {
                 // another implicit user (from `any` or `external`) that the
                 // user can't affect is skipped, not reported
-                $this->astate->clear_messages_since($nmsg);
+                $this->astate->restore_message_snapshot($msgsnap);
                 continue;
             }
             if ($allow !== true) {

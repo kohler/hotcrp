@@ -413,6 +413,8 @@ class PaperSearch extends MessageSet {
     private $_highlight_map;
     /** @var ?list<SearchTerm> */
     private $_group_slice_terms;
+    /** @var ?WeakMap<SearchTerm,Highlight_SearchVisitor> */
+    private $_highlighters;
 
     static private $search_type_descriptions = [
         "a" => "Your {submissions}",
@@ -1822,13 +1824,13 @@ class PaperSearch extends MessageSet {
 
     /** @return Highlight_SearchVisitor */
     private function highlighters(SearchTerm $t) {
-        $sv = $t->get_float("fhl");
-        if (!$sv) {
+        $this->_highlighters = $this->_highlighters ?? new WeakMap;
+        if (!isset($this->_highlighters[$t])) {
             $sv = new Highlight_SearchVisitor;
             $t->visit($sv);
-            $t->set_float("fhl", $sv);
+            $this->_highlighters[$t] = $sv;
         }
-        return $sv;
+        return $this->_highlighters[$t];
     }
 
     /** @return bool */

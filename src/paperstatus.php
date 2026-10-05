@@ -622,9 +622,11 @@ final class PaperStatus extends MessageSet {
             && ($oj === null || $this->ignore_unwritable_fields)) {
             return;
         }
-        // text cut at a word limit: the soft cut loses visible text
+        // text cut at a word limit: the soft cut loses visible text, so it
+        // can't replace a stored value (but a new submission has none)
         $band = $oj !== null ? $this->_truncated_fields[$opt->id] ?? null : null;
-        if ($band === "soft" || ($band !== null && !$editable)) {
+        if (($band === "soft" && !$this->prow->is_new())
+            || ($band !== null && !$editable)) {
             if ($editable) {
                 $this->error_at($this->option_key($opt), $this->_("<0>Refusing to save truncated field"));
                 $this->inform_at($this->option_key($opt), $this->_("<0>Request the paper with ‘word_limit=hard’ to edit it."));
@@ -632,6 +634,8 @@ final class PaperStatus extends MessageSet {
             return;
         } else if ($band === "hard") {
             $this->warning_at($this->option_key($opt), $this->_("<0>Text was cut at the hard word limit"));
+        } else if ($band === "soft") {
+            $this->warning_at($this->option_key($opt), $this->_("<0>Text was cut at the soft word limit"));
         }
         if ($oj === null) {
             $ov = null;

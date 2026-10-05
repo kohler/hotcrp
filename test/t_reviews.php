@@ -184,10 +184,17 @@ class Reviews_Tester {
     }
 
     function test_offline_review_different_reviewer() {
-        $tf = (new ReviewValues($this->u_mgbaker))->set_text(preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $this->review1A), "review1A-4.txt");
-        xassert($tf->parse_text());
-        xassert(!$tf->check_and_save(null));
-        xassert($tf->has_problem_at("reviewerEmail"));
+        // a non-administrator naming another reviewer is refused the same
+        // way whether or not that reviewer has an account
+        $refusal = function ($reviewer) {
+            $tf = (new ReviewValues($this->u_mgbaker))->set_text(preg_replace('/Reviewer: .*/m', "Reviewer: {$reviewer}", $this->review1A), "review1A-4.txt");
+            xassert($tf->parse_text());
+            xassert(!$tf->check_and_save(null));
+            return $tf->full_feedback_text();
+        };
+        $nobody = $refusal("butt@butt.com");
+        xassert_str_contains($nobody, "permission to edit this review");
+        xassert_eqq($nobody, $refusal($this->u_chair->email));
 
         $tf = (new ReviewValues($this->u_mgbaker))->set_text(preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $this->review1A)), "review1A-5.txt");
         xassert($tf->parse_text());
