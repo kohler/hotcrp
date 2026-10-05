@@ -3904,12 +3904,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                        || ($ci->review_status > PCI::CIRS_DECLINED
                            && $prow->timeSubmitted != 0)) {
                 $cif |= PCI::CIF_VIEW | $docbit;
-            } else if ($allow_pc_broad
-                       && $this->privChair) {
+            } else if ($this->privChair) {
                 // `pc_confpdf` and PC view times don't apply to chairs
-                $cif |= PCI::CIF_VIEW;
-                if ($this->conf->check_tracks($prow, $this, Track::VIEWPDF)) {
-                    $cif |= $docbit;
+                if ($allow_pc_broad
+                    || ($this->dangerous_track_mask() & Track::FM_VIEW) === 0
+                    || $this->conf->check_tracks($prow, $this, Track::VIEW)) {
+                    $cif |= PCI::CIF_VIEW;
+                    if ($docbit !== 0
+                        && (($this->dangerous_track_mask() & (1 << Track::VIEWPDF)) === 0
+                            || $this->conf->check_tracks($prow, $this, Track::VIEWPDF))) {
+                        $cif |= $docbit;
+                    }
                 }
             } else {
                 if ($allow_pc_broad
@@ -3921,7 +3926,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 if ($v < 2 || $ci->review_status > 0) {
                     $cif |= PCI::CIF_VIEW;
                 }
-                if ($v < 1
+                if ($docbit !== 0
+                    && $v < 1
                     && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
                     && $this->conf->time_pc_view($prow, true)) {
                     $cif |= $docbit;

@@ -3202,6 +3202,23 @@ class Permission_Tester {
             xassert_eqq($chair->can_view_paper($p1), $view, $perm);
             xassert_eqq($chair->can_view_pdf($p1), $pdf, $perm);
         }
+
+        // ...while tracks that include by tag do not restrict chairs
+        $chair->set_prop("contactTags", null);
+        $chair->save_prop();
+        $conf->invalidate_caches("users", "pc");
+        foreach (["view", "viewpdf"] as $perm) {
+            $conf->save_refresh_setting("tracks", 1, json_encode(["_" => [$perm => "+red"]]));
+            Contact::update_rights();
+            $chair = $conf->checked_user_by_email($this->u_shenker->email);
+            xassert(!$chair->has_tag("red"));
+            $p1 = $conf->checked_paper_by_id(1);
+            xassert(!$chair->allow_admin($p1));
+            xassert_eqq($chair->can_view_paper($p1), true, $perm);
+            xassert_eqq($chair->can_view_pdf($p1), true, $perm);
+            xassert($chair->can_view_all(true));
+            xassert_in_eqq(1, (new PaperSearch($chair, "has:submission"))->paper_ids());
+        }
         $conf->save_refresh_setting("tracks", $old_tracks === null ? null : 1, $old_tracks);
         $chair->set_prop("contactTags", $old_tags);
         $chair->save_prop();
