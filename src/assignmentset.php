@@ -1571,6 +1571,11 @@ class AssignmentSet {
             }
         }
 
+        if ($csv->header_truncated()) {
+            $this->append_item_near(MessageItem::error("<0>Too many fields in assignment"));
+            return false;
+        }
+
         foreach ([["action", "assignment", "type"],
                   ["paper", "pid", "paperid", "paper_id", "id", "search"],
                   ["uid", "userid", "user_id"],

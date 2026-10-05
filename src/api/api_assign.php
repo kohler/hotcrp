@@ -29,7 +29,8 @@ class Assign_API {
         }
 
         // parse CSV upload or get JSON string
-        $csvp = $jsonstr = $jsonfn = null;
+        $csvp = new CsvParser;
+        $jsonstr = $jsonfn = null;
         $errparam = null;
         if ($ct === "application/json") {
             if ($updoc) {
@@ -40,14 +41,12 @@ class Assign_API {
             }
         } else if ($ct === "text/csv" || $ct === "text/plain") {
             $fn = $updoc ? $updoc->content_file() : $qreq->body_file();
-            $csvp = new CsvParser;
             $csvp->set_content(fopen($fn, "rb"));
             $aset->set_csv_context(true);
         } else if (isset($qreq->assignments)) {
             if (preg_match('/\A\s*[\[\{]/s', $qreq->assignments)) {
                 $jsonstr = $qreq->assignments;
             } else {
-                $csvp = new CsvParser;
                 $csvp->set_content($qreq->assignments);
                 $aset->set_csv_context(true);
             }
@@ -55,11 +54,14 @@ class Assign_API {
         }
 
         // parse JSON string
-        if ($csvp === null) {
+        if (!$csvp->has_content()) {
             if ($jsonstr === null || $jsonstr === false) {
                 return JsonResult::make_missing_error("assignments");
             }
-            $jparser = (new JsonParser($jsonstr))->set_filename($jsonfn);
+            $jparser = (new JsonParser($jsonstr))->set_filename($jsonfn)->set_user();
+            if ($user->privChair) {
+                $jparser->set_complexity_scale(0);
+            }
             if (friendly_boolean($qreq->json5)) {
                 $jparser->set_flags(JsonParser::JSON5);
             }
@@ -72,7 +74,7 @@ class Assign_API {
             } else if (!is_array($j)) {
                 return JsonResult::make_message_list(MessageItem::error_at($errparam, "<0>Expected JSON array"));
             }
-            $csvp = CsvParser::make_json($j);
+            $csvp->set_content_json($j);
         }
 
         // parse assignments

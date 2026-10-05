@@ -199,4 +199,60 @@ class AssignmentSet_Tester {
         $this->conf->qe("delete from ContactInfo where email=?", $email);
         $this->conf->invalidate_caches("users");
     }
+
+    function test_api_assign_json() {
+        // a JSON body is parsed and applied
+        $j = call_api("=assign", $this->u_chair, TestQreq::post_json([
+            ["paper" => 1, "action" => "tag", "tag" => "jsonassign"],
+            ["paper" => 2, "action" => "tag", "tag" => "jsonassign#2"]
+        ]));
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->assignment_count ?? null, 2);
+        xassert_search($this->u_chair, "#jsonassign", "1 2");
+
+        // so is JSON in the `assignments` parameter
+        $j = call_api("=assign", $this->u_chair, TestQreq::post([
+            "assignments" => json_encode([["paper" => "1 2", "action" => "cleartag", "tag" => "jsonassign"]])
+        ]));
+        xassert_eqq($j->ok, true);
+        xassert_search($this->u_chair, "#jsonassign", "");
+    }
+
+    function test_api_assign_column_limit() {
+        // `/api/assign` refuses uploads with too many columns
+        $extra = [];
+        for ($i = 0; $i < 2046; ++$i) {
+            $extra[] = "column{$i}";
+        }
+
+        // CSV header
+        $csv = "paper,action,tag," . join(",", $extra) . "\n1,tag,columnlimit\n";
+        $j = call_api("=assign", $this->u_mgbaker, TestQreq::post(["assignments" => $csv]));
+        xassert_eqq($j->ok, false);
+        xassert_str_contains(json_encode($j->message_list ?? []), "Too many fields");
+
+        // JSON keys, in one object or spread across objects
+        $row = ["paper" => 1, "action" => "tag", "tag" => "columnlimit"];
+        foreach ($extra as $k) {
+            $row[$k] = "x";
+        }
+        $rows = [["paper" => 1, "action" => "tag", "tag" => "columnlimit"]];
+        foreach ($extra as $k) {
+            $rows[] = ["paper" => 1, "action" => "tag", "tag" => "columnlimit", $k => "x"];
+        }
+        foreach ([[$row], $rows] as $jlist) {
+            $j = call_api("=assign", $this->u_mgbaker, TestQreq::post_json($jlist));
+            xassert_eqq($j->ok, false);
+            xassert_str_contains(json_encode($j->message_list ?? []), "Too many fields");
+        }
+        xassert_search($this->u_chair, "#columnlimit", "");
+
+        // one fewer column is fine
+        array_pop($extra);
+        $csv = "paper,action,tag," . join(",", $extra) . "\n1,tag,columnlimit\n";
+        $j = call_api("=assign", $this->u_mgbaker, TestQreq::post(["assignments" => $csv]));
+        xassert_eqq($j->ok, true);
+        xassert_search($this->u_chair, "#columnlimit", "1");
+        xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag,columnlimit\n");
+    }
 }
