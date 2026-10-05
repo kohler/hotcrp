@@ -1882,6 +1882,64 @@ class Search_Tester {
         xassert(!$srch->query_is_re_me());
     }
 
+    function test_reviewer_respects_pc_visibility() {
+        // `reviewer` resolves only PC members the search user can see, so it
+        // does not reveal unlisted PC members (or, with `privatePC`, any PC
+        // member) to users outside the PC
+        $conf = $this->conf;
+        $email = "unlisted.reviewer@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $unlisted = $conf->checked_user_by_email($email);
+        xassert(!!$conf->pc_member_by_email($email));
+        xassert(!isset($conf->listed_pc_members()[$unlisted->contactId]));
+
+        $author = $conf->checked_user_by_email("micke@cdt.luth.se");
+        $pc = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $mgbaker = "mgbaker@cs.stanford.edu";
+        xassert(!$author->isPC && $author->can_view_pc());
+
+        $resolves = function (Contact $viewer, $reviewer) {
+            $srch = new PaperSearch($viewer, ["q" => "", "t" => $viewer->isPC ? "s" : "a", "reviewer" => $reviewer]);
+            $ok = $srch->reviewer_user() !== $viewer;
+            xassert_eqq(str_contains($srch->encoded_query_params(), "reviewer="), $ok);
+            xassert_eqq(str_contains($srch->url_site_relative_raw(), "reviewer="), $ok);
+            return $ok;
+        };
+
+        // an unlisted member looks like a nonexistent email to non-PC users
+        xassert(!$resolves($author, $email));
+        xassert(!$resolves($author, "nonexistent.reviewer@_.com"));
+        xassert($resolves($author, $mgbaker));
+        $jr = call_api("search", $author, TestQreq::get(["q" => "", "t" => "a", "reviewer" => $email]));
+        xassert_eqq($jr->ok, true);
+        xassert_not_str_contains($jr->search_params, "reviewer=");
+
+        // PC members and chairs see unlisted members
+        xassert($resolves($pc, $email));
+        xassert($resolves($chair, $email));
+
+        // `privatePC`: non-PC users resolve no PC members
+        $conf->set_opt("privatePC", true);
+        Contact::update_rights();
+        $author = $conf->checked_user_by_email("micke@cdt.luth.se");
+        xassert(!$author->can_view_pc());
+        xassert(!$resolves($author, $mgbaker));
+        xassert(!$resolves($author, $email));
+        $pc = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($resolves($pc, $mgbaker));
+        $conf->set_opt("privatePC", null);
+        Contact::update_rights();
+
+        // clean up
+        $conf->qe("delete from ContactInfo where contactId=?", $unlisted->contactId);
+        $conf->invalidate_caches("users", "pc");
+    }
+
     function test_nonpc_limits_restricted_to_own_papers() {
         // Non-PC users cannot search all papers: `Limit_SearchTerm::sqlexpr()`
         // ANDs an author-or-reviewer restriction into every base limit

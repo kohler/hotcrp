@@ -482,8 +482,10 @@ class PaperSearch extends MessageSet {
             if (is_string($reviewer)) {
                 if (strcasecmp($reviewer, $user->email) === 0) {
                     $ruser = $user;
-                } else if ($user->can_view_pc()) {
-                    $ruser = $this->conf->pc_member_by_email($reviewer);
+                } else if (($roles = $user->viewable_roles_mask()) !== 0
+                           && ($u = $this->conf->pc_member_by_email($reviewer))
+                           && ($u->roles & $roles) !== 0) {
+                    $ruser = $u;
                 }
             } else if (is_object($reviewer) && ($reviewer instanceof Contact)) {
                 $ruser = $reviewer;
