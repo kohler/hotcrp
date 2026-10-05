@@ -130,6 +130,7 @@ batch/hotcrp-daemonize
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/pcemails.php
+batch/processwork.php
 batch/render.php
 batch/reviewcsv.php
 batch/rewindreviews.php
@@ -578,6 +579,7 @@ src/search/st_reviewtoken.php
 src/search/st_revpref.php
 src/search/st_sclass.php
 src/search/st_tag.php
+src/search/st_time.php
 src/search/st_topic.php
 src/search/sv_highlight.php
 src/search/sv_tags.php
@@ -651,6 +653,7 @@ src/viewcommandlist.php
 src/viewoptionlist.php
 src/viewoptionschema.php
 src/viewoptiontype.php
+src/workitem.php
 src/xtparams.php
 
 devel/hotcrp.vim
