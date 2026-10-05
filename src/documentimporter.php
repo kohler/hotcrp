@@ -2,6 +2,139 @@
 // documentimporter.php -- HotCRP helper for importing paper-related documents
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
+final class DocumentImporter_Analysis {
+    /** @var ?string */
+    public $mimetype;
+    /** @var ?string */
+    public $filename;
+    /** @var ?string */
+    public $hash;
+    /** @var bool */
+    public $ha_trusted;
+    /** @var ?string */
+    public $content;
+    /** @var ?string */
+    public $content_file;
+    /** @var ?string */
+    public $crc32;
+    /** @var bool */
+    public $ok = false;
+
+    /** Analyze what `$docj` says about its document: its MIME type,
+     * sanitized filename, hash, content, content file, and CRC32, and whether
+     * its hash is trusted. `ok` is false (and `$di` has an error) if the
+     * document is corrupt.
+     * @param object $docj */
+    function __construct($docj, DocumentImporter $di) {
+        // extract mimetype
+        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
+            $this->mimetype = $docj->mimetype;
+        }
+
+        // extract filename
+        $filename = null;
+        if (isset($docj->filename)) {
+            if (is_string($docj->filename)) {
+                $filename = $docj->filename;
+            }
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            if (($slash = strrpos($docj->content_file, "/")) > 0) {
+                $filename = substr($docj->content_file, $slash + 1);
+            } else if (preg_match('/\A[A-Za-z]+:.*+\\\\(.*)\z/', $docj->content_file, $m)) {
+                $filename = $m[1];
+            } else {
+                $filename = $docj->content_file;
+            }
+        }
+        $this->filename = DocumentInfo::sanitize_filename($filename);
+
+        // extract requested hash
+        $ha = $want_algorithm = null;
+        if (isset($docj->hash) && is_string($docj->hash)) {
+            $ha = new HashAnalysis($docj->hash);
+        } else if (isset($docj->sha1) && is_string($docj->sha1)) {
+            $ha = new HashAnalysis($docj->sha1);
+            $want_algorithm = "sha1";
+        }
+        if ($ha && (!$ha->complete() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
+            $di->warning("<0>Invalid `hash` ignored");
+            $ha = null;
+        }
+        $this->ha_trusted = $ha && ($di->save_flags() & DocumentInfo::SAVEF_TRUST_METADATA) !== 0;
+
+        // extract content
+        if ($this->ha_trusted) {
+            /* skip content, use provided hash */
+        } else if (isset($docj->content) && is_string($docj->content)) {
+            $this->content = $docj->content;
+        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
+            $this->content = base64_decode($docj->content_base64);
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            if (is_readable($docj->content_file)) {
+                $this->content_file = $docj->content_file;
+            } else {
+                $di->error("<0>Could not access `content_file`");
+            }
+        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
+            if (!($this->content_file = $di->upload_content_stream($docj->content_file, $this->mimetype))) {
+                $di->warning("<0>Could not copy `content_file` to a temporary file");
+            }
+        }
+
+        // compute content hash
+        $content_ha = HashAnalysis::make_algorithm($di->conf, $ha ? $ha->algorithm() : null);
+        if ($this->ha_trusted) {
+            // do not compute content hash
+        } else if ($this->content !== null) {
+            $content_ha->set_hash($this->content);
+        } else if ($this->content_file !== null) {
+            $content_ha->set_hash_file($this->content_file);
+        }
+
+        // compare content hash with user-provided hash; error if different
+        if ($ha
+            && $content_ha->complete()
+            && $ha->binary() !== $content_ha->binary()) {
+            $di->error("<0>Document corrupt (its content did not match the provided hash)");
+            return;
+        }
+
+        // also check CRC32 if provided
+        if (isset($docj->crc32) && is_string($docj->crc32)) {
+            if (strlen($docj->crc32) === 8 && ctype_xdigit($docj->crc32)) {
+                $this->crc32 = hex2bin($docj->crc32);
+            } else if (strlen($docj->crc32) === 4 && $docj->crc32 !== "\0\0\0\0") {
+                $this->crc32 = $docj->crc32;
+            } else {
+                $di->warning("<0>Invalid `crc32` ignored");
+            }
+        }
+        if ($this->crc32 !== null) {
+            $content_crc32 = false;
+            if ($this->ha_trusted) {
+                // assume provided crc32 was correct
+            } else if ($this->content !== null) {
+                $content_crc32 = hash("crc32b", $this->content, true);
+            } else if ($this->content_file !== null) {
+                $content_crc32 = hash_file("crc32b", $this->content_file, true);
+            }
+            if ($content_crc32 !== false
+                && $this->crc32 !== $content_crc32) {
+                $di->error("<0>Document corrupt (its content did not match the provided checksum)");
+                return;
+            }
+        }
+
+        // choose a hash
+        if ($ha) {
+            $this->hash = $ha->binary();
+        } else if ($content_ha->complete()) {
+            $this->hash = $content_ha->binary();
+        }
+        $this->ok = true;
+    }
+}
+
 final class DocumentImporter {
     // bound on stored documents indexed by hash (see `_load_hash_index`)
     const HASH_INDEX_LIMIT = 4000;
@@ -39,6 +172,11 @@ final class DocumentImporter {
         $this->doc_savef = $doc_savef;
         $this->ms = $ms;
         $this->field = $field;
+    }
+
+    /** @return int */
+    function save_flags() {
+        return $this->doc_savef;
     }
 
     /** Maximum accepted size for an imported document, in bytes. Uses the
@@ -269,120 +407,11 @@ final class DocumentImporter {
         return false;
     }
 
-    /** @param object $docj
+    /** Return the stored document `$docj` names, given its analysis `$dj`.
+     * @param object $docj
+     * @param object $dj
      * @return ?DocumentInfo */
-    private function _upload_json_document($docj) {
-        // extract mimetype
-        $mimetype = null;
-        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
-            $mimetype = $docj->mimetype;
-        }
-
-        // extract filename
-        $filename = null;
-        if (isset($docj->filename)) {
-            if (is_string($docj->filename)) {
-                $filename = $docj->filename;
-            }
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            if (($slash = strrpos($docj->content_file, "/")) > 0) {
-                $filename = substr($docj->content_file, $slash + 1);
-            } else if (preg_match('/\A[A-Za-z]+:.*+\\\\(.*)\z/', $docj->content_file, $m)) {
-                $filename = $m[1];
-            } else {
-                $filename = $docj->content_file;
-            }
-        }
-        $safe_filename = DocumentInfo::sanitize_filename($filename);
-
-        // extract requested hash
-        $ha = $want_algorithm = null;
-        if (isset($docj->hash) && is_string($docj->hash)) {
-            $ha = new HashAnalysis($docj->hash);
-        } else if (isset($docj->sha1) && is_string($docj->sha1)) {
-            $ha = new HashAnalysis($docj->sha1);
-            $want_algorithm = "sha1";
-        }
-        if ($ha && (!$ha->complete() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
-            $this->warning("<0>Invalid `hash` ignored");
-            $ha = null;
-        }
-        $ha_trusted = $ha && ($this->doc_savef & DocumentInfo::SAVEF_TRUST_METADATA) !== 0;
-
-        // extract content
-        $content = $content_file = null;
-        if ($ha_trusted) {
-            /* skip content, use provided hash */
-        } else if (isset($docj->content) && is_string($docj->content)) {
-            $content = $docj->content;
-        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
-            $content = base64_decode($docj->content_base64);
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            if (is_readable($docj->content_file)) {
-                $content_file = $docj->content_file;
-            } else {
-                $this->error("<0>Could not access `content_file`");
-            }
-        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
-            if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype))) {
-                $this->warning("<0>Could not copy `content_file` to a temporary file");
-            }
-        }
-
-        // compute content hash
-        $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
-        if ($ha_trusted) {
-            // do not compute content hash
-        } else if ($content !== null) {
-            $content_ha->set_hash($content);
-        } else if ($content_file !== null) {
-            $content_ha->set_hash_file($content_file);
-        }
-
-        // compare content hash with user-provided hash; error if different
-        if ($ha
-            && $content_ha->complete()
-            && $ha->binary() !== $content_ha->binary()) {
-            $this->error("<0>Document corrupt (its content did not match the provided hash)");
-            return null;
-        }
-
-        // also check CRC32 if provided
-        $crc32 = null;
-        if (isset($docj->crc32) && is_string($docj->crc32)) {
-            if (strlen($docj->crc32) === 8 && ctype_xdigit($docj->crc32)) {
-                $crc32 = hex2bin($docj->crc32);
-            } else if (strlen($docj->crc32) === 4 && $docj->crc32 !== "\0\0\0\0") {
-                $crc32 = $docj->crc32;
-            } else {
-                $this->warning("<0>Invalid `crc32` ignored");
-            }
-        }
-        if ($crc32 !== null) {
-            $content_crc32 = false;
-            if ($ha_trusted) {
-                // assume provided crc32 was correct
-            } else if ($content !== null) {
-                $content_crc32 = hash("crc32b", $content, true);
-            } else if ($content_file !== null) {
-                $content_crc32 = hash_file("crc32b", $content_file, true);
-            }
-            if ($content_crc32 !== false
-                && $crc32 !== $content_crc32) {
-                $this->error("<0>Document corrupt (its content did not match the provided checksum)");
-                return null;
-            }
-        }
-
-        // choose a hash
-        if ($ha) {
-            $hash = $ha->binary();
-        } else if ($content_ha->complete()) {
-            $hash = $content_ha->binary();
-        } else {
-            $hash = null;
-        }
-
+    private function _find_json_document($docj, $dj) {
         // check for existing document. A caller-supplied allowlist bounds which
         // docids may be retained (docids are enumerable, so e.g. a comment may
         // retain only its own attachments; hash is a possession capability and
@@ -395,7 +424,38 @@ final class DocumentImporter {
                 || in_array($docj->docid, $this->allowed_docids, true))) {
             $docid = $docj->docid;
         }
-        if (($edoc = $this->_find_document($docid, $hash, $mimetype, $safe_filename))) {
+        return $this->_find_document($docid, $dj->hash, $dj->mimetype, $dj->filename);
+    }
+
+    /** Return the stored document of this field that `$docj` names -- the one
+     * an upload of `$docj` would reuse -- or null. Nothing is stored, and a
+     * document whose content is in a `content_file` is not looked up.
+     * @param object|DocumentInfo $docj
+     * @return ?DocumentInfo */
+    function find_stored($docj) {
+        if ($docj instanceof DocumentInfo) {
+            $hash = $docj->has_error() ? false : $docj->binary_hash();
+            return $hash !== false
+                ? $this->_find_document(-1, $hash, $docj->mimetype, $docj->filename)
+                : null;
+        } else if (!is_object($docj)
+                   || isset($docj->content_file)
+                   || ($docj->error ?? false)
+                   || ($docj->error_html ?? false)) {
+            return null;
+        }
+        $da = new DocumentImporter_Analysis($docj, $this);
+        return $da->ok ? $this->_find_json_document($docj, $da) : null;
+    }
+
+    /** @param object $docj
+     * @return ?DocumentInfo */
+    private function _upload_json_document($docj) {
+        $da = new DocumentImporter_Analysis($docj, $this);
+        if (!$da->ok) {
+            return null;
+        }
+        if (($edoc = $this->_find_json_document($docj, $da))) {
             if (($docj->inactive ?? null) === true) {
                 $edoc->set_prefer_inactive();
             }
@@ -403,11 +463,11 @@ final class DocumentImporter {
         }
 
         // content required from here on; fail if it's not available
-        if ($content === null
-            && $content_file === null
+        if ($da->content === null
+            && $da->content_file === null
             && (($this->doc_savef & DocumentInfo::SAVEF_ALLOW_HASH_WITHOUT_CONTENT) === 0
-                || $hash === null
-                || $mimetype === null)) {
+                || $da->hash === null
+                || $da->mimetype === null)) {
             $this->error("<0>Ignored attempt to upload document without any content");
             return null;
         }
@@ -416,29 +476,29 @@ final class DocumentImporter {
         $doc = DocumentInfo::make($this->conf)
             ->set_paper($this->prow)
             ->set_document_type($this->dt);
-        if ($mimetype !== null) {
-            $doc->set_mimetype($mimetype);
+        if ($da->mimetype !== null) {
+            $doc->set_mimetype($da->mimetype);
         }
         if (isset($docj->timestamp) && is_int($docj->timestamp)) {
             $doc->set_timestamp($docj->timestamp);
         }
-        if ($safe_filename !== null) {
-            $doc->set_filename($safe_filename);
+        if ($da->filename !== null) {
+            $doc->set_filename($da->filename);
         }
-        if ($content !== null) {
-            $doc->set_simple_content($content);
-        } else if ($content_file !== null) {
-            $doc->set_simple_content_file($content_file);
+        if ($da->content !== null) {
+            $doc->set_simple_content($da->content);
+        } else if ($da->content_file !== null) {
+            $doc->set_simple_content_file($da->content_file);
         }
-        if ($hash !== null) {
-            $doc->set_hash($hash);
+        if ($da->hash !== null) {
+            $doc->set_hash($da->hash);
         }
-        if ($crc32 !== null) {
-            $doc->set_crc32($crc32);
+        if ($da->crc32 !== null) {
+            $doc->set_crc32($da->crc32);
         }
         if (isset($docj->size)
             && is_int($docj->size)
-            && $ha_trusted) {
+            && $da->ha_trusted) {
             $doc->set_size($docj->size);
         }
         if (($docj->inactive ?? null) === true) {
@@ -446,7 +506,7 @@ final class DocumentImporter {
         }
 
         // analyze content, complain if not available
-        if ($ha_trusted) {
+        if ($da->ha_trusted) {
             // don't analyze content
         } else if ($doc->content_available() || $doc->ensure_content()) {
             $doc->analyze_content();
@@ -457,8 +517,12 @@ final class DocumentImporter {
         return $doc;
     }
 
-    /** @return ?string */
-    private function _upload_content_stream($f, $mimetype) {
+    /** Copy stream `$f` to a temporary file, returning its name, or null if
+     * the copy failed or exceeded the upload size limit. Closes `$f`.
+     * @param resource $f
+     * @param ?string $mimetype
+     * @return ?string */
+    function upload_content_stream($f, $mimetype) {
         $content_file = null;
         $template = "upf-%s" . Mimetype::extension($mimetype);
         if (($finfo = Filer::create_tempfile($this->conf->docstore_tempdir(), $template))) {

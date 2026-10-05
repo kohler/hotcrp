@@ -59,6 +59,12 @@ class Attachments_PaperOption extends PaperOption {
                 $dids[] = $doc->paperStorageId;
             }
         }
+        self::set_value_dids($ov, $dids);
+    }
+
+    /** Set `$ov` to the documents `$dids`, in order.
+     * @param list<int> $dids */
+    static private function set_value_dids(PaperValue $ov, $dids) {
         if (empty($dids)) {
             $ov->set_value_data([], []);
         } else if (count($dids) == 1) {
@@ -146,7 +152,7 @@ class Attachments_PaperOption extends PaperOption {
         if ($docs === null) {
             return $this->make_too_many_estop($prow, $max);
         }
-        $ov->set_anno("documents", $docs);
+        $this->resolve_current_documents($prow, $ov, $docs);
         return $ov;
     }
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
@@ -166,7 +172,6 @@ class Attachments_PaperOption extends PaperOption {
             }
         }
         $ov = PaperValue::make($prow, $this, -1);
-        $ov->set_anno("documents", $ja);
         foreach ($ja as $docj) {
             if (is_object($docj) && isset($docj->error_html)) {
                 $ov->error("<5>" . $docj->error_html);
@@ -174,8 +179,36 @@ class Attachments_PaperOption extends PaperOption {
                 $ov->estop("<0>Format error");
             }
         }
+        if ($ov->has_error()) {
+            $ov->set_anno("documents", $ja);
+        } else {
+            $this->resolve_current_documents($prow, $ov, $ja);
+        }
         return $ov;
     }
+    /** Record `$docs` as `$ov`'s documents, replacing each that names one of
+     * the current documents with its ID. If all of them do, `$ov` gets its
+     * final value now, so that a list that repeats the current documents
+     * equals the current value.
+     * @param list<int|object> $docs */
+    private function resolve_current_documents(PaperInfo $prow, PaperValue $ov, $docs) {
+        $cur = $prow->force_option($this);
+        $importer = new DocumentImporter($prow, $this->id, 0, new MessageSet);
+        $all_dids = true;
+        foreach ($docs as &$dj) {
+            if (!is_int($dj)
+                && ($did = Document_PaperOption::current_docid($cur, $dj, $importer))) {
+                $dj = $did;
+            }
+            $all_dids = $all_dids && is_int($dj);
+        }
+        unset($dj);
+        $ov->set_anno("documents", $docs);
+        if ($all_dids) {
+            self::set_value_dids($ov, $docs);
+        }
+    }
+
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
         $max_size = $this->max_size ?? $this->conf->upload_max_filesize(true);

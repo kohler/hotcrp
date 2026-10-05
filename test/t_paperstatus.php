@@ -168,6 +168,27 @@ class PaperStatus_Tester {
         $this->conf->set_opt("uploadMaxFilesize", $save_umf);
     }
 
+    function test_import_content_stream() {
+        // an import callback may replace `content_file` with a stream, as
+        // `DocumentLocator` does for large ZIP entries
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $doc = $paper1->document(DTYPE_SUBMISSION, 0, true);
+        $content = $doc->content();
+        xassert(is_string($content) && $content !== "");
+        $f = fopen("php://memory", "w+b");
+        fwrite($f, $content);
+        rewind($f);
+        $imp = (new DocumentImporter($paper1, DTYPE_SUBMISSION, 0, new MessageSet))
+            ->on_import(function ($docj) use ($f) {
+                $docj->content_file = $f;
+            });
+        // (the stored hash's algorithm hashes the stream)
+        $ndoc = $imp->upload_document((object) ["content_file" => "paper.pdf", "mimetype" => $doc->mimetype, "hash" => $doc->text_hash()]);
+        // the same content finds the stored copy
+        xassert($ndoc !== null);
+        xassert_eqq($ndoc ? $ndoc->paperStorageId : null, $doc->paperStorageId);
+    }
+
     function test_paper_replace_document() {
         $pex = new PaperExport($this->conf->root_user());
         $paper2a = $pex->paper_json(2);

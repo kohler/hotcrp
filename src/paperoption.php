@@ -1575,9 +1575,30 @@ class Document_PaperOption extends PaperOption {
         }
     }
 
+    /** Return the ID of the document in `$cur` that `$docj` names: the
+     * current document an upload of `$docj` would reuse. Pass the same
+     * `$importer` for a field's documents, so its stored documents are
+     * indexed once.
+     * @param object|DocumentInfo $docj
+     * @param ?DocumentImporter $importer
+     * @return ?int */
+    static function current_docid(PaperValue $cur, $docj, $importer = null) {
+        $dids = $cur->option->value_dids($cur);
+        if (empty($dids)) {
+            return null;
+        }
+        $importer = $importer ?? new DocumentImporter($cur->prow, $cur->option->id, 0, new MessageSet);
+        $doc = $importer->find_stored($docj);
+        return $doc && in_array($doc->paperStorageId, $dids, true) ? $doc->paperStorageId : null;
+    }
+
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $fk = $this->field_key();
         if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))) {
+            // a repeated upload of the current document is no change
+            if (($did = self::current_docid($prow->force_option($this), $doc))) {
+                return PaperValue::make($prow, $this, $did);
+            }
             $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
             $ov->set_anno("document", $doc);
             if ($doc->has_error()) {
@@ -1598,6 +1619,10 @@ class Document_PaperOption extends PaperOption {
             return null;
         } else if (!DocumentInfo::check_json_upload($j)) {
             return PaperValue::make_estop($prow, $this, "<0>Format error");
+        }
+        // naming the current document, as a GET returns it, is no change
+        if (($did = self::current_docid($prow->force_option($this), $j))) {
+            return PaperValue::make($prow, $this, $did);
         }
         $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
         $ov->set_anno("document", $j);

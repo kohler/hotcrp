@@ -170,6 +170,91 @@ class PaperAPI_Tester {
         $conf->invalidate_caches("options");
     }
 
+    /** Echoing a document field the caller can't edit, as GET /paper returned
+     * it, is not an attempt to change it: the field parses to its current
+     * value. */
+    function test_save_unwritable_document_echo() {
+        $conf = $this->conf;
+        $options = $conf->setting_json("options");
+        $options[] = (object) ["id" => 7, "name" => "Locked docs", "type" => "attachments",
+                               "order" => 9, "editable_if" => "NONE"];
+        $options[] = (object) ["id" => 8, "name" => "Locked file", "type" => "document",
+                               "order" => 10, "editable_if" => "NONE"];
+        $conf->save_setting("options", 1, json_encode($options));
+        $conf->invalidate_caches("options");
+
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => "new",
+                "title" => "Unwritable document paper", "abstract" => "Abstract",
+                "authors" => [["name" => "Puneet Sharma", "email" => "puneet@catarina.usc.edu"]],
+                "status" => "draft"]));
+        xassert_eqq($jr->ok, true);
+        $pid = $jr->paper->pid;
+        $jr = call_api("=paper", $this->u_chair,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => $pid,
+                "Locked docs" => [
+                    ["content" => "%PDF-locked-1", "mimetype" => "application/pdf", "filename" => "one.pdf"],
+                    ["content" => "%PDF-locked-2", "mimetype" => "application/pdf", "filename" => "two.pdf"]
+                ],
+                "Locked file" => ["content" => "%PDF-locked-3", "mimetype" => "application/pdf", "filename" => "three.pdf"]
+            ]));
+        xassert_eqq($jr->ok, true);
+        $refused = function ($jr) {
+            foreach ($jr->message_list ?? [] as $mi) {
+                if (str_contains($mi->message ?? "", "allowed to edit"))
+                    return true;
+            }
+            return false;
+        };
+
+        // the author echoes the paper back with a new title
+        $pj = call_api("paper", $this->u_estrin, TestQreq::get(["p" => $pid]))->paper;
+        xassert_eqq(count($pj->{"Locked docs"} ?? []), 2);
+        xassert(is_object($pj->{"Locked file"} ?? null));
+        $pj->title = "Echoed";
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj, ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert(!$refused($jr));
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Echoed");
+
+        // ...also when the documents carry their content
+        $pj3 = clone $pj;
+        $pj3->{"Locked docs"} = [
+            ["content_base64" => base64_encode("%PDF-locked-1"), "mimetype" => "application/pdf", "filename" => "one.pdf"],
+            ["content" => "%PDF-locked-2"]
+        ];
+        $pj3->{"Locked file"} = ["content_base64" => base64_encode("%PDF-locked-3"), "mimetype" => "application/pdf"];
+        $pj3->title = "Echoed with content";
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj3, ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert(!$refused($jr));
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Echoed with content");
+
+        // but a changed list or document is still refused
+        $pj2 = clone $pj;
+        $pj2->{"Locked docs"} = [$pj->{"Locked docs"}[1], $pj->{"Locked docs"}[0]];
+        $pj2->title = "Reordered";
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj2, ["p" => $pid]));
+        xassert($refused($jr));
+        $pj2->{"Locked docs"} = [$pj->{"Locked docs"}[0]];
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj2, ["p" => $pid]));
+        xassert($refused($jr));
+        $pj2->{"Locked docs"} = [$pj->{"Locked docs"}[0], ["content" => "%PDF-new", "mimetype" => "application/pdf"]];
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj2, ["p" => $pid]));
+        xassert($refused($jr));
+        $pj2->{"Locked docs"} = [$pj->{"Locked docs"}[0], ["content" => "%PDF-locked-2", "mimetype" => "application/pdf", "filename" => "renamed.pdf"]];
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj2, ["p" => $pid]));
+        xassert($refused($jr));
+        $pj2 = clone $pj;
+        $pj2->{"Locked file"} = ["content" => "%PDF-other", "mimetype" => "application/pdf"];
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj2, ["p" => $pid]));
+        xassert($refused($jr));
+        xassert_eqq($conf->checked_paper_by_id($pid)->title, "Echoed with content");
+
+        TestRunner::reset_options();
+        $conf->invalidate_caches("options");
+    }
+
     /** A field the caller may see but not write is no longer dropped in
      * silence: the API reports it, attributed to the field, and writes nothing
      * for it. A browser posts every field it rendered, including read-only
