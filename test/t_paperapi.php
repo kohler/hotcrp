@@ -1782,4 +1782,80 @@ class PaperAPI_Tester {
         // (c) the legitimate contact must be untouched by the unauthorized saves
         xassert(($prow->conflict_type($this->u_micke) & CONFLICT_CONTACTAUTHOR) !== 0);
     }
+
+    function test_author_pc_conflicts_keep_hidden_pc() {
+        // An author's `pc_conflicts` replace only the conflicts of PC members
+        // the author can see
+        $conf = $this->conf;
+        $pid = 1;
+        $email = "unlisted.pcconf@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        $acct = $us->save_user((object) ["email" => $email, "roles" => ["unlistedpc"]]);
+        xassert(!!$acct, $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $u_unlisted = $conf->checked_user_by_email($email);
+        $u_mjh = $conf->checked_user_by_email("mjh@isi.edu");
+        xassert(isset($conf->pc_members()[$u_unlisted->contactId]));
+        xassert(!isset($conf->listed_pc_members()[$u_unlisted->contactId]));
+        xassert(isset($conf->listed_pc_members()[$u_mjh->contactId]));
+
+        $prow = $conf->checked_paper_by_id($pid);
+        $old_mjh_ct = $prow->conflict_type($u_mjh);
+        $set_conflicts = function () use ($conf, $pid, $u_unlisted, $u_mjh) {
+            foreach ([$u_unlisted, $u_mjh] as $u) {
+                $conf->qe("delete from PaperConflict where paperId=? and contactId=?", $pid, $u->contactId);
+                $conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?", $pid, $u->contactId, Conflict::GENERAL);
+            }
+        };
+        $conflict_types = function () use ($conf, $pid, $u_unlisted, $u_mjh) {
+            $prow = $conf->checked_paper_by_id($pid);
+            return [$prow->conflict_type($u_unlisted), $prow->conflict_type($u_mjh)];
+        };
+
+        // unchanged round trip: the author doesn't see the unlisted member
+        $set_conflicts();
+        $this->allow_submission();
+        $author = $conf->checked_user_by_email($this->u_puneet->email);
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert($prow->has_author($author));
+        xassert($author->can_edit_paper($prow));
+        $jr = call_api("paper", $author, TestQreq::get(["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        $pj = $jr->paper;
+        xassert(isset($pj->pc_conflicts->{$u_mjh->email}));
+        xassert(!isset($pj->pc_conflicts->{$email}));
+        $pj->title .= " (round trip)";
+        $jr = call_api("=paper", $author, TestQreq::post_json($pj, ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_in_eqq("title", $jr->change_list);
+        xassert_not_in_eqq("pc_conflicts", $jr->change_list);
+        xassert_eqq($conflict_types(), [Conflict::GENERAL, Conflict::GENERAL]);
+
+        // explicit `pc_conflicts` still remove visible conflicts
+        $jr = call_api("=paper", $author, TestQreq::post_json(["pid" => $pid, "pc_conflicts" => (object) []], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($conflict_types(), [Conflict::GENERAL, 0]);
+
+        // with `privatePC`, the author can't see or change any PC conflict
+        $set_conflicts();
+        $conf->set_opt("privatePC", true);
+        Contact::update_rights();
+        $author = $conf->checked_user_by_email($this->u_puneet->email);
+        xassert(!$author->can_view_pc());
+        $jr = call_api("=paper", $author, TestQreq::post_json(["pid" => $pid, "pc_conflicts" => (object) []], ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($conflict_types(), [Conflict::GENERAL, Conflict::GENERAL]);
+        $conf->set_opt("privatePC", null);
+        Contact::update_rights();
+
+        // clean up
+        $conf->qe("delete from PaperConflict where paperId=? and contactId=?", $pid, $u_mjh->contactId);
+        if ($old_mjh_ct !== 0) {
+            $conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=?", $pid, $u_mjh->contactId, $old_mjh_ct);
+        }
+        $conf->qe("delete from PaperConflict where contactId=?", $u_unlisted->contactId);
+        $conf->qe("delete from ContactInfo where contactId=?", $u_unlisted->contactId);
+        $conf->invalidate_caches("users", "pc");
+    }
 }

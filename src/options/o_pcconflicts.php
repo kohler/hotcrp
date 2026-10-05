@@ -171,13 +171,16 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         // apply conflicts
+        $roles = $user->viewable_roles_mask();
         $vm = self::paper_value_map($prow);
-        foreach ($vm as &$v) {
-            $v &= ~Conflict::FM_PC;
+        foreach ($vm as $uid => &$v) {
+            if (($u = $prow->conf->pc_member_by_id($uid))
+                && ($u->roles & $roles) !== 0) {
+                $v &= ~Conflict::FM_PC;
+            }
         }
         unset($v);
 
-        $roles = $user->viewable_roles_mask();
         for ($i = 0; $i !== count($emails); ++$i) {
             $u = $prow->conf->user_by_email($emails[$i], USER_SLICE);
             if ($u && !$u->isPC && $u->primaryContactId > 0) {
