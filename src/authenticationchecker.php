@@ -221,7 +221,8 @@ class AuthenticationChecker {
             $path .= "u/{$uindex}/";
         }
         return $path . $this->conf->hoturl("oauth", [
-            "reauth" => 1, "max_age" => $this->max_age, "redirect" => $redirect,
+            "reauth" => 1, "authtype" => $use->subtype,
+            "max_age" => $this->max_age, "redirect" => $redirect,
             "quiet" => $this->quiet ? 1 : null
         ], Conf::HOTURL_SITEREL);
     }

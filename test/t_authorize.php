@@ -3627,6 +3627,57 @@ class Authorize_Tester {
         }
     }
 
+    /** Confirming an account goes to the provider the user signed in with,
+     * not the site's first provider. */
+    function test_oauth_reauth_uses_signin_provider() {
+        $provider = function ($name) {
+            return (object) [
+                "name" => $name, "client_id" => "C{$name}", "client_secret" => "S",
+                "issuer" => "https://id{$name}.example.com",
+                "auth_uri" => "https://id{$name}.example.com/auth",
+                "token_uri" => "https://id{$name}.example.com/token",
+                "redirect_uri" => "https://conf.example.com/oauth"
+            ];
+        };
+        $this->conf->set_opt("oAuthProviders", [$provider("p"), $provider("q")]);
+        $this->conf->refresh_settings();
+        $u = $this->u_chair;
+        try {
+            xassert(!$u->can_use_password());
+            $qs = new MemoryQsession;
+            UserSecurityEvent::session_user_add($qs, $u->email);
+            $qreq = TestQreq::user_get($u, [], $qs)->set_page("profile");
+            Qrequest::set_main_request($qreq);
+            $use = UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH)
+                ->set_subtype("q");
+            $use->timestamp = Conf::$now - 1000;
+            $use->store($qreq);
+
+            $ac = $u->authentication_checker($qreq, "profile_security");
+            $url = $ac->authenticator_url("/x") ?? "";
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? "", $param);
+            xassert_eqq($param["reauth"] ?? null, "1");
+            xassert_eqq($param["authtype"] ?? null, "q");
+            ob_start();
+            $ac->print();
+            xassert_str_contains(ob_get_clean(), "authtype=q");
+
+            // following that link starts sign-in at provider `q`
+            $oqreq = TestQreq::user_get($u, $param, $qs)->set_page("oauth");
+            Qrequest::set_main_request($oqreq);
+            $dest = null;
+            try {
+                (new HotCRP\OAuth_Page($u, $oqreq))->start();
+            } catch (Redirection $redir) {
+                $dest = $redir->url;
+            }
+            xassert_str_starts_with($dest ?? "", "https://idq.example.com/auth?");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
     /** Sign in through a test OAuth provider "p" as `$email`, in session `$qs`
      * (a new one if null).
      * @param string $email
