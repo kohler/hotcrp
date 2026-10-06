@@ -54,4 +54,21 @@ class UserAPI_Tester {
         $this->conf->qe("delete from ContactInfo where email=?", $email);
         $this->conf->invalidate_caches("users", "pc");
     }
+
+    function test_lookup_by_prefix() {
+        // a prefix finds the first matching account
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        foreach (["estrin@us", "estrin@usc", "ESTRIN@USC.e"] as $prefix) {
+            $j = call_api("user", $pc, ["email" => $prefix]);
+            xassert($j->ok, $prefix);
+            xassert_eqq($j->match ?? null, false, $prefix);
+            xassert_eqq($j->email ?? null, "estrin@usc.edu", $prefix);
+        }
+        // `match` means the whole address
+        $j = call_api("user", $pc, ["email" => "Estrin@USC.edu"]);
+        xassert_eqq($j->match ?? null, true);
+        xassert_eqq($j->email ?? null, "estrin@usc.edu");
+        $j = call_api("user", $pc, ["email" => "estrin@usx"]);
+        xassert_eqq($j->email ?? null, null);
+    }
 }

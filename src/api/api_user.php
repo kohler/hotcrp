@@ -26,8 +26,7 @@ class User_API {
         $broad_lookup = $user->conf->opt("allowLookupUser");
 
         $found = null;
-        if (strcasecmp($user->email, $email) >= 0
-            && strcasecmp($user->email, "{$email}~") < 0) {
+        if (strncasecmp($user->email, $email, strlen($email)) === 0) {
             $found = $user->populated_user();
         }
 
@@ -37,8 +36,8 @@ class User_API {
             if (!$user->is_track_manager() && !$broad_lookup) {
                 $roles = " and roles!=0 and (roles&" . ($user->viewable_roles_mask() & Contact::ROLE_ANYPC) . ")!=0";
             }
-            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 1",
-                $email, "{$email}~", Contact::CFM_DISABLEMENT);
+            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email like '?ls%' and (cflags&?)=0{$roles} order by email asc limit 1",
+                $email, Contact::CFM_DISABLEMENT);
             while (($u = Contact::fetch($result, $user->conf))) {
                 if (!$found || strcasecmp($found->email, $u->email) > 0)
                     $found = $u;
@@ -49,8 +48,8 @@ class User_API {
         if ($broad_lookup
             && ($db = $user->conf->contactdb())
             && (!$found || strcasecmp($found->email, $email) !== 0)) {
-            $result = Dbl::qe($db, "select " . $user->conf->contactdb_user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0 order by email asc limit 1",
-                $email, "{$email}~", Contact::CFM_DISABLEMENT);
+            $result = Dbl::qe($db, "select " . $user->conf->contactdb_user_query_fields($slice) . " from ContactInfo where email like '?ls%' and (cflags&?)=0 order by email asc limit 1",
+                $email, Contact::CFM_DISABLEMENT);
             $i = 0;
             while (($u = Contact::fetch($result, $user->conf))) {
                 if (!$found || strcasecmp($found->email, $u->email) > 0)
