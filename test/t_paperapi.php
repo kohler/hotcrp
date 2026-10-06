@@ -1909,4 +1909,47 @@ class PaperAPI_Tester {
             $conf->invalidate_caches("users", "pc");
         }
     }
+
+    function test_missing_conflict_warning_respects_pc_visibility() {
+        // the missing-conflicts warning names PC members, so authors who can't
+        // see the PC don't get it
+        $conf = $this->conf;
+        $this->allow_submission();
+        $ps = new PaperStatus($conf->root_user());
+        $pid = $ps->save_paper_json((object) [
+            "pid" => "new", "title" => "Missing conflict warning", "abstract" => "Abstract",
+            "authors" => [["name" => "Puneet Sharma", "email" => $this->u_puneet->email]],
+            "status" => "submitted", "submission" => (object) ["content" => "%PDF-missing-conflict"]
+        ]);
+        xassert($pid > 0, $ps->full_feedback_text());
+        $estrin = $this->u_estrin;
+        xassert($conf->checked_paper_by_id($pid)->potential_conflict($estrin));
+
+        $save = function ($title) use ($conf, $pid) {
+            $author = $conf->checked_user_by_email($this->u_puneet->email);
+            $jr = call_api("=paper", $author, TestQreq::post_json(["pid" => $pid, "title" => $title], ["p" => $pid]));
+            xassert_eqq($jr->ok, true);
+            return MessageSet::feedback_text($jr->message_list ?? []);
+        };
+        try {
+            // the PC is public: the author is warned
+            $t = $save("Missing conflict warning, public PC");
+            xassert_str_contains($t, "You may have missed conflicts of interest");
+            xassert_str_contains($t, $estrin->name());
+
+            // `privatePC`: the author can't see the PC, so no warning
+            $conf->set_opt("privatePC", true);
+            Contact::update_rights();
+            xassert(!$conf->checked_user_by_email($this->u_puneet->email)->can_view_pc());
+            $t = $save("Missing conflict warning, private PC");
+            xassert_not_str_contains($t, "missed conflicts");
+            xassert_not_str_contains($t, $estrin->name());
+        } finally {
+            $conf->set_opt("privatePC", null);
+            Contact::update_rights();
+            $conf->qe("delete from Paper where paperId=?", $pid);
+            $conf->qe("delete from PaperConflict where paperId=?", $pid);
+            $conf->qe("delete from PaperStorage where paperId=?", $pid);
+        }
+    }
 }

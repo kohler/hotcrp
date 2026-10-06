@@ -82,12 +82,10 @@ class PCConflicts_PaperOption extends PaperOption {
         return (object) $pcc;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($this->test_visible($ov->prow) && $this->warn_missing) {
-            $this->_warn_missing_conflicts($ov, $user);
-        }
-    }
-    private function _warn_missing_conflicts(PaperValue $ov, Contact $user) {
-        if ($ov->prow->outcome_sign > 0 && $user->can_view_decision($ov->prow)) {
+        if (!$this->test_visible($ov->prow)
+            || !$this->warn_missing
+            || !$user->can_view_pc()
+            || ($ov->prow->outcome_sign > 0 && $user->can_view_decision($ov->prow))) {
             return;
         }
         $vm = self::value_map($ov);
