@@ -1042,6 +1042,24 @@ class Formulas_Tester {
         }
     }
 
+    function test_graph_combined_variance_keeps_precision() {
+        // a per-review X axis combines Y values per X; variance is
+        // shift-invariant there too
+        foreach (["var", "var_samp", "stddev", "stddev_samp"] as $fn) {
+            $ys = [];
+            foreach (["OveMer", "OveMer + 1000000000.5"] as $arg) {
+                $fg = new FormulaGraph($this->u_chair, "scatter", "OveMer * 0", "{$fn}({$arg})");
+                $fg->add_dataset(new FormulaGraphDataset("", "s", "", ""));
+                xassert($fg->prepare(), "{$fn}({$arg})");
+                $data = json_decode(json_encode($fg->graph_json([])["data"]));
+                xassert_eqq(count($data), 1, "{$fn}({$arg})");
+                $ys[] = $data[0][1] ?? null;
+            }
+            xassert(is_numeric($ys[0]) && $ys[0] > 0, "{$fn}: " . json_encode($ys));
+            xassert(is_numeric($ys[1]) && abs($ys[1] - $ys[0]) < 1e-6, "{$fn}: " . json_encode($ys));
+        }
+    }
+
     function test_graph_ldot() {
         // `ldot` plots like `dot`; the JS labels each dot with its pid.
         // `numdot` is the old spelling and still works
@@ -3059,6 +3077,17 @@ class Formulas_Tester {
             $got = $fm->eval($prow, null);
             xassert(is_float($got) && abs($got - $want) < 1e-9,
                     "{$fn}: expected {$want}, got " . json_encode($got));
+        }
+
+        // large values don't lose precision
+        foreach (["stddev" => $pop["std"], "stddev_samp" => $samp["std"],
+                  "var" => $pop["var"], "var_samp" => $samp["var"]] as $fn => $want) {
+            $fm = $this->formula("{$fn}(OveMer + 1000000000.5)");
+            $got = $fm->eval($prow, null);
+            xassert(is_float($got) && abs($got - $want) < 1e-6,
+                    "{$fn} shifted: expected {$want}, got " . json_encode($got));
+            $fm = $this->formula("{$fn}(OveMer * 0 + 1000000000.1)");
+            xassert_eqq($fm->eval($prow, null), 0.0);
         }
 
         // a modifier cannot follow an explicit suffix

@@ -1070,16 +1070,21 @@ class Variance_Fexpr extends Aggregate_Fexpr {
         return $this->typecheck_aggregate($ftch, true);
     }
     function compile(FormulaCompiler $state) {
-        $t = $state->_compile_loop("[0.0, 0.0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
+        // Welford's method: [mean, sum of squared deviations, count]
+        $t = $state->_compile_loop("[0.0, 0.0, 0]", "if (~l~ !== null) {
+  ~r~[2] += 1;
+  ~r~[1] += (~l~ - ~r~[0]) * (~l~ - ~r~[0]) * (~r~[2] - 1) / ~r~[2];
+  ~r~[0] += (~l~ - ~r~[0]) / ~r~[2];
+}", $this);
         if ($this->op === "variance_samp") {
-            return "({$t}[2] > 1 ? {$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1)) : ({$t}[2] ? 0.0 : null))";
+            return "({$t}[2] > 1 ? {$t}[1] / ({$t}[2] - 1) : ({$t}[2] ? 0.0 : null))";
         } else if ($this->op === "variance_pop") {
-            return "({$t}[2] ? {$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2]) : null)";
+            return "({$t}[2] ? {$t}[1] / {$t}[2] : null)";
         } else if ($this->op === "stddev_samp") {
-            return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0.0 : null))";
+            return "({$t}[2] > 1 ? sqrt({$t}[1] / ({$t}[2] - 1)) : ({$t}[2] ? 0.0 : null))";
         }
         assert($this->op === "stddev_pop");
-        return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
+        return "({$t}[2] ? sqrt({$t}[1] / {$t}[2]) : null)";
     }
 }
 
