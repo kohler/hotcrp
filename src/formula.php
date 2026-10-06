@@ -1953,8 +1953,13 @@ class FormulaCompiler {
                 $prow = $this->_prow();
                 $prefs = $this->prow_preferences();
                 $vps = $this->prow_view_preference_state();
-                $this->gstmt[] = "if ({$vps} >= " . Contact::VIEWPREF_AGG . ") {";
+                $this->gstmt[] = "if ({$vps} >= " . Contact::VIEWPREF_ALL . ") {";
                 $this->gstmt[] = "  \$vpref = {$prefs};";
+                $this->gstmt[] = "} else if ({$vps} >= " . Contact::VIEWPREF_AGG . ") {";
+                // Aggregate rights cover the preference multiset, not whose
+                // preference is whose, so order by value rather than user
+                $this->gstmt[] = "  \$vpref = {$prefs};";
+                $this->gstmt[] = "  uasort(\$vpref, \"PaperReviewPreference::compare\");";
                 $this->gstmt[] = "} else if ({$vps} >= " . Contact::VIEWPREF_OWN . " && isset({$prefs}[{$this->user->contactId}])) {";
                 $this->gstmt[] = "  \$vpref = [{$this->user->contactId} => {$prefs}[{$this->user->contactId}]];";
                 $this->gstmt[] = "} else {";

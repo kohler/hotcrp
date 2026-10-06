@@ -2695,6 +2695,48 @@ class Formulas_Tester {
         $conf->qe("delete from PaperReviewPreference where paperId=1");
     }
 
+    function test_pref_graph_order_hides_membership() {
+        // Graphs over the preference collection list one point per
+        // preference. Viewers with only aggregate rights get them in value
+        // order, which says nothing about whose preference is whose.
+        $conf = $this->conf;
+        $prefs = $this->seed_paper1_preferences();
+        $u_marina = $conf->checked_user_by_email("marina@poema.ru");
+        $p1m = $conf->checked_paper_by_id(1, $u_marina);
+        xassert($u_marina->can_view_preference($p1m, true));
+        xassert(!$u_marina->can_view_preference($p1m, false));
+
+        $uid_order = [];
+        foreach ($prefs as $email => $pv) {
+            $uid_order[$conf->checked_user_by_email($email)->contactId] = $pv;
+        }
+        ksort($uid_order);
+        $value_order = array_values($prefs);
+        sort($value_order);
+        xassert_neqq(array_values($uid_order), $value_order);
+
+        $graph_xs = function (Contact $user) {
+            $fg = new FormulaGraph($user, "scatter", "pref", "pid");
+            $fg->add_dataset(new FormulaGraphDataset("1", "s", "", ""));
+            xassert($fg->prepare());
+            $j = json_decode(json_encode($fg->graph_json([])), true);
+            $xs = [];
+            foreach ($j["data"] as $points) {
+                foreach ($points as $pt) {
+                    $xs[] = $pt[0];
+                }
+            }
+            return $xs;
+        };
+        xassert_eqq($graph_xs($u_marina), $value_order);
+        // an administrator sees every preference
+        $chair_xs = $graph_xs($this->u_chair);
+        sort($chair_xs);
+        xassert_eqq($chair_xs, $value_order);
+
+        $conf->qe("delete from PaperReviewPreference where paperId=1");
+    }
+
     function test_pref_aggregate_pc_relaxes_when_pref_controls_null() {
         // `AGG.pc(body)` may iterate the preference collection instead of the
         // PC when a null preference nulls the whole body: the two populations
