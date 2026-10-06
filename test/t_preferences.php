@@ -176,4 +176,30 @@ class Preferences_Tester {
         $conf->qe("delete from ContactInfo where email=?", $email);
         $conf->invalidate_caches("users", "pc");
     }
+
+    function test_own_preference_download_marks_own_conflicts() {
+        // a PC member's own preference download marks their own conflicts,
+        // even where they can't see conflicts in general
+        require_once(SiteLoader::resolve("src/listactions/la_revpref.php"));
+        $conf = $this->conf;
+        $u = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $u->set_scope();
+        xassert_assign($conf->root_user(), "paper,action,user\n1,conflict,{$u->email}\n");
+        $old_pccv = $conf->setting("sub_pcconfvis");
+        $conf->save_refresh_setting("sub_pcconfvis", null);
+        try {
+            $u = $conf->checked_user_by_email($u->email);
+            $prow = $u->checked_paper_by_id(1);
+            xassert($prow->has_conflict($u));
+            xassert(!$u->can_view_conflicts($prow));
+            foreach (["get/revpref", "get/revprefx"] as $name) {
+                $la = new Revpref_ListAction($conf, (object) ["name" => $name]);
+                $csv = $la->run_get($u, TestQreq::get(), new SearchSelection([1]), $u, $name === "get/revprefx")->unparse();
+                xassert(preg_match('/^1,.*,conflict(?:,|$)/m', $csv), "{$name}: {$csv}");
+            }
+        } finally {
+            $conf->save_refresh_setting("sub_pcconfvis", $old_pccv);
+            xassert_assign($conf->root_user(), "paper,action,user\n1,clearconflict,{$u->email}\n");
+        }
+    }
 }

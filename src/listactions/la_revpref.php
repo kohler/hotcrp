@@ -74,7 +74,7 @@ class Revpref_ListAction extends ListAction {
             }
             $item["preference"] = $prow->preference($reviewer)->unparse();
             if ($prow->has_conflict($reviewer)
-                && $user->can_view_conflicts($prow)) {
+                && ($user === $reviewer || $user->can_view_conflicts($prow))) {
                 $item["notes"] = "conflict";
                 $fields["notes"] = true;
             }
