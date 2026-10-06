@@ -297,6 +297,11 @@ class Search_Tester {
                   "1-5 THEN 6-10 sort:-id"] as $q) {
             xassert_eqq($this->sorted_ids("({$q}) HIGHLIGHT:pink 2"), $this->sorted_ids($q));
         }
+        // ...including the order paper numbers give, as in `3-1`
+        xassert_eqq($this->sorted_ids("3-1"), [3, 2, 1]);
+        foreach (["3-1 HIGHLIGHT 2", "3-1 HIGHLIGHT:pink 2", "3-1 HIGHLIGHT:pink 2 HIGHLIGHT:green 1"] as $q) {
+            xassert_eqq($this->sorted_ids($q), [3, 2, 1]);
+        }
         xassert_eqq($this->sorted_ids("(1-5 THEN 6-10) sort:-id"), [5, 4, 3, 2, 1, 10, 9, 8, 7, 6]);
         xassert_eqq($this->sorted_ids("(1-5 sort:-id THEN 6-10)"), [5, 4, 3, 2, 1, 6, 7, 8, 9, 10]);
         // a highlight's own sorts do not apply

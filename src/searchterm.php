@@ -1100,6 +1100,14 @@ class Then_SearchTerm extends Op_SearchTerm {
         }
     }
 
+    function default_sort_column($top, $pl) {
+        // highlights don't change how a search sorts (groups sort themselves)
+        if ($this->nthen === 1) {
+            return $this->child[0]->default_sort_column($top, $pl);
+        }
+        return null;
+    }
+
     /** @return int */
     function ngroups() {
         return $this->_group_offsets[$this->nthen];
