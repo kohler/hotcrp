@@ -1858,4 +1858,26 @@ class PaperAPI_Tester {
         $conf->qe("delete from ContactInfo where contactId=?", $u_unlisted->contactId);
         $conf->invalidate_caches("users", "pc");
     }
+
+    function test_pc_conflicts_reject_non_pc_sysadmin() {
+        // a site administrator who isn't on the PC can't be given a PC conflict
+        $conf = $this->conf;
+        $email = "sysadmin.only@_.com";
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        $us = new UserStatus($conf->root_user());
+        xassert(!!$us->save_user((object) ["email" => $email, "roles" => ["sysadmin"]]), $us->full_feedback_text());
+        $conf->invalidate_caches("users", "pc");
+        $u = $conf->checked_user_by_email($email);
+        xassert($u->privChair);
+        xassert_eqq($u->roles & Contact::ROLE_ANYPC, 0);
+        try {
+            $jr = call_api("=paper", $this->u_chair, TestQreq::post_json(
+                ["pid" => 1, "pc_conflicts" => [$email => "collaborator"]], ["p" => 1, "dry_run" => 1]));
+            xassert_eqq($jr->ok, true);
+            xassert_str_contains(MessageSet::feedback_text($jr->message_list ?? []), "does not match a PC member");
+        } finally {
+            $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+            $conf->invalidate_caches("users", "pc");
+        }
+    }
 }

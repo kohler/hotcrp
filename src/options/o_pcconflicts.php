@@ -171,7 +171,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         // apply conflicts
-        $roles = $user->viewable_roles_mask();
+        $roles = $user->viewable_roles_mask() & Contact::ROLE_ANYPC;
         $vm = self::paper_value_map($prow);
         foreach ($vm as $uid => &$v) {
             if (($u = $prow->conf->pc_member_by_id($uid))
