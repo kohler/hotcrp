@@ -25,6 +25,8 @@ class AuthenticationChecker {
     protected $additional_actions;
     /** @var bool */
     protected $quiet = false;
+    /** @var bool */
+    protected $require_attested = false;
     /** @var ?int */
     protected $latest;
 
@@ -86,6 +88,16 @@ class AuthenticationChecker {
         return $this;
     }
 
+    /** Require authentications whose time a provider attested: a provider
+     * round trip that didn't say when the user authenticated won't count.
+     * @param bool $x
+     * @return $this */
+    function set_require_attested($x) {
+        $this->require_attested = $x;
+        $this->latest = null;
+        return $this;
+    }
+
 
     /** @return string */
     function actions_class() {
@@ -124,11 +136,44 @@ class AuthenticationChecker {
     /** @param UserSecurityEvent $use
      * @return bool */
     function include_security_event($use) {
+        if ($this->require_attested && $use->roundtrip_only) {
+            return false;
+        }
         // NB failed reauthentication events take precedence
         return $use->reason === UserSecurityEvent::REASON_REAUTH
             || ($use->reason === UserSecurityEvent::REASON_SIGNIN
                 && $this->max_signin_age > 0
                 && $use->timestamp >= Conf::$now - $this->max_signin_age);
+    }
+
+    /** Return true if this account's latest sign-in or confirmation, within
+     * the last `$bound` seconds, was a provider round trip whose time the
+     * provider did not attest; asking that provider again won't help.
+     * @param int $bound
+     * @return bool */
+    final function recently_unattested($bound) {
+        foreach ($this->security_events(true) as $use) {
+            if ($use->reason === UserSecurityEvent::REASON_SIGNIN
+                || $use->reason === UserSecurityEvent::REASON_REAUTH) {
+                return $use->success
+                    && $use->roundtrip_only
+                    && $use->timestamp >= Conf::$now - $bound;
+            }
+        }
+        return false;
+    }
+
+    /** Return true if this account's latest confirmation was a provider round
+     * trip that failed, so a password should be asked for instead.
+     * @return bool */
+    private function oauth_reauth_failed() {
+        foreach ($this->security_events(true) as $use) {
+            if ($use->reason === UserSecurityEvent::REASON_REAUTH) {
+                return !$use->success
+                    && $use->type === UserSecurityEvent::TYPE_OAUTH;
+            }
+        }
+        return false;
     }
 
     /** @return bool */
@@ -187,10 +232,19 @@ class AuthenticationChecker {
      * @return ?string */
     function authenticator_url($redirect) {
         if (($use = $this->signin_event())
-            && $use->type === UserSecurityEvent::TYPE_OAUTH) {
+            && $use->type === UserSecurityEvent::TYPE_OAUTH
+            && !($this->user->can_use_password() && $this->oauth_reauth_failed())) {
             return $this->oauth_url($use, $redirect);
         }
         return null;
+    }
+
+    private function print_password_entry() {
+        echo '<div class="f-i"><label for="k-reauth-password">Current password for ',
+            htmlspecialchars($this->user->email), '</label>',
+            Ht::entry("email", $this->user->email, ["autocomplete" => "username", "class" => "ignore-diff", "readonly" => true, "form" => "f-reauth", "hidden" => true]),
+            Ht::password("password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "k-reauth-password", "form" => "f-reauth", "required" => true]),
+            '</div>';
     }
 
     function print() {
@@ -199,11 +253,7 @@ class AuthenticationChecker {
         // password
         if ($use
             && $use->type === UserSecurityEvent::TYPE_PASSWORD) {
-            echo '<div class="f-i"><label for="k-reauth-password">Current password for ',
-                htmlspecialchars($this->user->email), '</label>',
-                Ht::entry("email", $this->user->email, ["autocomplete" => "username", "class" => "ignore-diff", "readonly" => true, "form" => "f-reauth", "hidden" => true]),
-                Ht::password("password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "k-reauth-password", "form" => "f-reauth", "required" => true]),
-                '</div>';
+            $this->print_password_entry();
             $this->print_actions(Ht::submit("Confirm account", [
                 "class" => "btn-success",
                 "form" => "f-reauth"
@@ -211,16 +261,27 @@ class AuthenticationChecker {
             return true;
         }
 
-        // OAuth
+        // OAuth, with the password as an alternative (the provider might be
+        // unable to confirm a recent sign-in)
         if ($use
             && $use->type === UserSecurityEvent::TYPE_OAUTH
             && ($url = $this->oauth_url($use, null))) {
-            $this->print_actions(Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
-                "class" => "btn-success",
+            $actions = [];
+            if ($this->user->can_use_password()) {
+                $this->print_password_entry();
+                $actions[] = Ht::submit("Confirm with password", [
+                    "class" => "btn-success",
+                    "form" => "f-reauth"
+                ]);
+            }
+            $actions[] = Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
+                "class" => empty($actions) ? "btn-success" : "",
                 "form" => "f-reauth",
                 "formaction" => $url,
-                "formmethod" => "post"
-            ]));
+                "formmethod" => "post",
+                "formnovalidate" => true
+            ]);
+            $this->print_actions(...$actions);
             return true;
         }
 

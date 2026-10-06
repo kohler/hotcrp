@@ -25,6 +25,11 @@ class UserSecurityEvent {
     public $success;
     /** @var int */
     public $timestamp;
+    /** @var bool
+     * True if a provider vouched for this event's account without saying when
+     * it authenticated the user, so `timestamp` is just when the vouching
+     * happened. */
+    public $roundtrip_only = false;
 
     const TYPE_PASSWORD = 0;
     const TYPE_OAUTH = 1;
@@ -118,6 +123,13 @@ class UserSecurityEvent {
         return $this;
     }
 
+    /** @param bool $x
+     * @return $this */
+    function set_roundtrip_only($x) {
+        $this->roundtrip_only = $x;
+        return $this;
+    }
+
     /** @param array $x
      * @return UserSecurityEvent */
     static function make_array($x) {
@@ -137,6 +149,7 @@ class UserSecurityEvent {
         $use->scope = $x["sc"] ?? null;
         $use->dbname = $x["db"] ?? null;
         $use->success = !($x["x"] ?? false);
+        $use->roundtrip_only = $x["rt"] ?? false;
         $use->timestamp = $x["a"];
         return $use;
     }
@@ -170,6 +183,9 @@ class UserSecurityEvent {
         }
         if ($this->dbname !== null) {
             $x["db"] = $this->dbname;
+        }
+        if ($this->roundtrip_only) {
+            $x["rt"] = true;
         }
         if (!$this->success) {
             $x["x"] = true;
@@ -250,11 +266,12 @@ class UserSecurityEvent {
                 && strcasecmp($use->email, $this->email) === 0) {
                 $use->uindex = $this->uindex;
             }
-            // success clears out previous matches
+            // success clears previous matches
             if ($this->success
                 && ($this->uindex >= 0
                     ? $this->uindex === $use->uindex
                     : $use->email !== null && strcasecmp($this->email, $use->email) === 0)
+                && (!$this->roundtrip_only || $use->roundtrip_only)
                 && $this->type === $use->type
                 && $this->subtype === $use->subtype
                 && $this->reason === $use->reason

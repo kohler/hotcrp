@@ -78,6 +78,22 @@ not send `email_verified`. Microsoft Entra ID, for example, does not verify the
 `token_function` that checks verification by the provider’s own means and
 sets `email_verified` on the token.
 
+### Fresh sign-ins
+
+Some actions need proof that the user signed in recently. These include
+changing account security settings, managing email addresses, and approving
+an OAuth client that asks for a fresh sign-in with `max_age` or
+`prompt=login`. For users who sign in through a provider, HotCRP sends them
+back to the provider with `prompt=login` and `max_age`.
+
+* If the provider reports a recent `auth_time`, the action proceeds.
+* If not, the provider relied on its existing session. If the user has a HotCRP
+  password, they are asked to provide it. Otherwise HotCRP proceeds anyway; the
+  identity provider is considered to have vouched for the user.
+* An OAuth client that asked for a fresh sign-in is satisfied only by a
+  provider’s recent `auth_time` (or a recent password sign-in). Otherwise it
+  receives the error `login_required`.
+
 ### Example configuration for Google authentication
 
 ```

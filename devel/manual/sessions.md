@@ -66,7 +66,8 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
     * `e` (optional string): Email address of the relevant account. At most
       one of `u` and `e` will be present.
     * `t` (optional integer, default 0): Type of security check. 0 is for
-      HotCRP passwords, 2 for TOTP MFA requests.
+      HotCRP passwords, 1 for OAuth providers, 2 for TOTP MFA requests.
+    * `s` (optional string): For OAuth events, the name of the provider.
     * `r` (optional integer, default 0): Reason for the security event. 0 is
       used for login attempts, 1 for security confirmations (e.g., preceding
       attempts to change password), 2 for authorizations granted to OAuth
@@ -79,6 +80,10 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
     * `db` (optional string): For reason 2, the conference the authorization
       was granted at. Absent for a contact-database client, whose grant is
       cross-conference by design.
+    * `rt` (optional boolean, default false): For OAuth events, true means
+      the provider vouched for the account without saying when it
+      authenticated the user, so `a` is only when the provider vouched. Such
+      an event doesn't answer an OAuth client's request for a fresh sign-in.
     * `x` (optional boolean, default false): Error status. False means the
       check succeeded, true means it failed.
     * `a` (integer timestamp): Time of the event.

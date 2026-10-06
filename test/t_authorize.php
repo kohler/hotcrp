@@ -730,9 +730,16 @@ class Authorize_Tester {
         $qreq = TestQreq::user_post($user, ["code" => $code, "authconfirm" => "1"], $qs)
             ->set_page("authorize");
         if (isset($rest["auth_time"])) {
-            $use = UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_PASSWORD,
+            // (`auth_roundtrip`: a provider round trip that didn't say when
+            // it authenticated the user)
+            $rt = $rest["auth_roundtrip"] ?? false;
+            $use = UserSecurityEvent::make($user->email,
+                $rt ? UserSecurityEvent::TYPE_OAUTH : UserSecurityEvent::TYPE_PASSWORD,
                 $rest["auth_reason"] ?? UserSecurityEvent::REASON_SIGNIN);
             $use->timestamp = $rest["auth_time"];
+            if ($rt) {
+                $use->set_subtype("p")->set_roundtrip_only(true);
+            }
             $use->store($qreq);
         }
         Qrequest::set_main_request($qreq);
@@ -1010,6 +1017,27 @@ class Authorize_Tester {
         xassert_str_contains($this->_failure ?? "", "login_required");
     }
 
+    /** A provider round trip that didn't say when the user authenticated
+     * doesn't answer a client's `max_age`. With no password to fall back on,
+     * the client hears `login_required` at once, rather than the user being
+     * sent around again. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_authorize_max_age_refuses_unattested_signin() {
+        xassert(!$this->u_chair->can_use_password());
+        foreach ([UserSecurityEvent::REASON_SIGNIN, UserSecurityEvent::REASON_REAUTH] as $reason) {
+            $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+                ["scope" => "openid read", "max_age" => "600", "auth_time" => Conf::$now - 10,
+                 "auth_reason" => $reason, "auth_roundtrip" => true]);
+            xassert_eqq($jr, null);
+            xassert_str_contains($this->_failure ?? "", "login_required");
+            // the same sign-in, attested, is enough
+            $jr = $this->metadata_document_result(self::MDOC_REDIRECT_URI, $this->u_chair,
+                ["scope" => "openid read", "max_age" => "600", "auth_time" => Conf::$now - 10,
+                 "auth_reason" => $reason]);
+            xassert_neqq($jr, null);
+        }
+    }
+
     /** `login_hint` names the account to authenticate, so the consent page
      * offers that account and no other. */
     #[RequireClass("Uri\\Rfc3986\\Uri")]
@@ -1237,6 +1265,118 @@ class Authorize_Tester {
             xassert_str_contains($url ?? "", "reauth=1");
             // the round trip returns to the code, so the consent can resume
             xassert_str_contains(urldecode($url ?? ""), "code={$code}");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** An account that signed in through a provider but also has a password
+     * may confirm with either; once the provider fails to confirm a recent
+     * sign-in, it is not sent back there automatically. */
+    function test_oauth_confirmation_offers_password() {
+        $this->set_test_oauth_provider();
+        $u = $this->u_chair;
+        try {
+            $u->change_password("confirm-test-password");
+            $u = $this->conf->fresh_user_by_email($u->email);
+            xassert($u->can_use_password());
+            $qs = new MemoryQsession;
+            UserSecurityEvent::session_user_add($qs, $u->email);
+            $qreq = TestQreq::user_get($u, [], $qs)->set_page("profile");
+            Qrequest::set_main_request($qreq);
+            $use = UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH)
+                ->set_subtype("p");
+            $use->timestamp = Conf::$now - 1000;
+            $use->store($qreq);
+
+            $ac = $u->authentication_checker($qreq, "profile_security");
+            ob_start();
+            $ac->print();
+            $html = ob_get_clean();
+            xassert_str_contains($html, "k-reauth-password");
+            xassert_str_contains($html, "reauth=1");
+            xassert_str_contains($ac->authenticator_url("/x") ?? "", "reauth=1");
+
+            UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH,
+                    UserSecurityEvent::REASON_REAUTH)
+                ->set_subtype("p")->set_success(false)->store($qreq);
+            $ac = $u->authentication_checker($qreq, "profile_security");
+            xassert_eqq($ac->authenticator_url("/x"), null);
+        } finally {
+            $this->u_chair->change_password("");
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+        xassert(!$this->conf->fresh_user_by_email($this->u_chair->email)->can_use_password());
+    }
+
+    /** A round trip doesn't replace a confirmation whose time a provider
+     * attested, so it can still answer a client's `max_age`. */
+    function test_roundtrip_does_not_replace_attested_event() {
+        $u = $this->u_chair;
+        $qs = new MemoryQsession;
+        UserSecurityEvent::session_user_add($qs, $u->email);
+        $qreq = TestQreq::user_get($u, [], $qs);
+        $use = UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH,
+                UserSecurityEvent::REASON_REAUTH)->set_subtype("p");
+        $use->timestamp = Conf::$now - 100;
+        $use->store($qreq);
+        UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH,
+                UserSecurityEvent::REASON_REAUTH)
+            ->set_subtype("p")->set_roundtrip_only(true)->store($qreq);
+        $rts = [];
+        foreach (UserSecurityEvent::session_list_by_email($qs, $u->email) as $usex) {
+            $rts[] = $usex->roundtrip_only;
+        }
+        xassert_eqq($rts, [false, true]);
+        $ac = $u->authentication_checker($qreq, "authorize")
+            ->set_max_age(600)->set_require_attested(true);
+        xassert($ac->test());
+
+        // an attested confirmation does replace a round trip
+        UserSecurityEvent::make($u->email, UserSecurityEvent::TYPE_OAUTH,
+                UserSecurityEvent::REASON_REAUTH)->set_subtype("p")->store($qreq);
+        $rts = [];
+        foreach (UserSecurityEvent::session_list_by_email($qs, $u->email) as $usex) {
+            $rts[] = $usex->roundtrip_only;
+        }
+        xassert_eqq($rts, [false]);
+    }
+
+    /** A provider that just vouched for an account without saying when it
+     * authenticated the user won't say on a second try. An account with no
+     * password can't confirm any other way, so the client is told
+     * `login_required` rather than the user being sent around again. */
+    #[RequireClass("Uri\\Rfc3986\\Uri")]
+    function test_unattested_confirmation_ends_with_login_required() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        try {
+            xassert(!$this->u_chair->can_use_password());
+            $qs = new MemoryQsession;
+            UserSecurityEvent::session_user_add($qs, $this->u_chair->email);
+            $code = $this->max_age_code($qs);
+            $sqreq = TestQreq::user_get($this->u_chair, [], $qs);
+            $use = UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_OAUTH)
+                ->set_subtype("p");
+            $use->timestamp = Conf::$now - 1000;
+            $use->store($sqreq);
+            UserSecurityEvent::make($this->u_chair->email, UserSecurityEvent::TYPE_OAUTH,
+                    UserSecurityEvent::REASON_REAUTH)
+                ->set_subtype("p")->set_roundtrip_only(true)->store($sqreq);
+
+            [$how, $url] = $this->authorize_confirm_with_cs($code, $qs);
+            xassert_eqq($how, "redirect");
+            xassert_str_starts_with($url ?? "", "https://conf1.example.com/cb");
+            parse_str(parse_url($url ?? "", PHP_URL_QUERY) ?? "", $q);
+            xassert_eqq($q["error"] ?? null, "login_required");
+            xassert(!str_contains($url ?? "", "reauth=1"));
         } finally {
             $this->conf->set_opt("oAuthProviders", null);
             $this->conf->refresh_settings();
@@ -3254,11 +3394,12 @@ class Authorize_Tester {
         }
     }
 
-    /** Confirming an account means the user proved it just now. The provider
-     * must say when it authenticated them, and the window must be fixed when
-     * the request starts — otherwise a silent SSO round trip, with a `max_age`
-     * of the attacker's choosing, satisfies the gate that guards email changes
-     * and password changes. */
+    /** Confirming an account means the user proved it just now. A provider
+     * that says it authenticated them recently confirms it; the window is
+     * fixed when the request starts, so a `max_age` of the attacker's choosing
+     * can't widen it. A provider that doesn't say when (some never sign users
+     * in again on request) still vouches for an account that has no password,
+     * as a round trip; an account with a password must use it instead. */
     function test_reauth_requires_a_fresh_auth_time() {
         $this->conf->set_opt("oAuthProviders", [(object) [
             "name" => "p", "client_id" => "C", "client_secret" => "S",
@@ -3270,7 +3411,7 @@ class Authorize_Tester {
         $this->conf->refresh_settings();
         $old = HotCRP\OAuth_Page::$fetch_function;
 
-        /** @return array{bool,array} */
+        /** @return array{bool,array,?bool} */
         $run = function ($startargs, $auth_time) {
             $q1 = TestQreq::user_get($this->u_chair, $startargs + ["reauth" => 1])
                 ->set_page("oauth");
@@ -3300,37 +3441,116 @@ class Authorize_Tester {
             $oap = new HotCRP\OAuth_Page($this->u_chair, $q2);
             $oap->response();
             unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
-            return [$oap->success, $ap];
+            $rt = null;
+            foreach (UserSecurityEvent::session_list_by_email($qs, "chair@_.com", true) as $use) {
+                if ($use->reason === UserSecurityEvent::REASON_REAUTH) {
+                    $rt = $use->roundtrip_only;
+                    break;
+                }
+            }
+            return [$oap->success, $ap, $rt];
         };
 
         try {
             // the request asks the provider to authenticate again and to say when
-            [$ok, $ap] = $run(["max_age" => "600"], Conf::$now);
+            [$ok, $ap, $rt] = $run(["max_age" => "600"], Conf::$now);
             xassert($ok);
+            xassert($rt === false);
             xassert_eqq($ap["prompt"] ?? null, "login");
             xassert_eqq($ap["max_age"] ?? null, "600");
 
-            // a provider that omits `auth_time` confirms nothing
-            [$ok, ] = $run(["max_age" => "600"], null);
-            xassert(!$ok);
+            // without a password, a provider that omits `auth_time`, or gives
+            // a stale one, confirms the account as a round trip
+            xassert(!$this->u_chair->can_use_password());
+            [$ok, , $rt] = $run(["max_age" => "600"], null);
+            xassert($ok);
+            xassert($rt === true);
+            [$ok, , $rt] = $run(["max_age" => "600"], Conf::$now - 4000);
+            xassert($ok);
+            xassert($rt === true);
 
-            // nor does a stale one
-            [$ok, ] = $run(["max_age" => "600"], Conf::$now - 4000);
-            xassert(!$ok);
-
-            // and the window cannot be widened from the request
-            [$ok, $ap] = $run(["max_age" => "999999"], Conf::$now - 100000);
+            // the window cannot be widened from the request
+            [, $ap, $rt] = $run(["max_age" => "999999"], Conf::$now - 100000);
             xassert_eqq($ap["max_age"] ?? null, "3600");
-            xassert(!$ok);
+            xassert($rt === true);
 
             // omitting `max_age` gives the tightest window, not the loosest
-            [$ok, $ap] = $run([], Conf::$now - 100000);
+            [, $ap, $rt] = $run([], Conf::$now - 100000);
             xassert_eqq($ap["max_age"] ?? null, "0");
+            xassert($rt === true);
+
+            // with a password, only a recent `auth_time` confirms
+            $this->u_chair->change_password("reauth-test-password");
+            xassert($this->conf->fresh_user_by_email("chair@_.com")->can_use_password());
+            [$ok, ] = $run(["max_age" => "600"], null);
             xassert(!$ok);
+            [$ok, ] = $run(["max_age" => "600"], Conf::$now - 4000);
+            xassert(!$ok);
+            [$ok, , $rt] = $run(["max_age" => "600"], Conf::$now - 60);
+            xassert($ok);
+            xassert($rt === false);
         } finally {
             HotCRP\OAuth_Page::$fetch_function = $old;
             $this->conf->set_opt("oAuthProviders", null);
             $this->conf->refresh_settings();
+            $this->u_chair->change_password("");
+        }
+    }
+
+    /** An account whose password is only in the contact database, as is
+     * typical, still has a password: a provider round trip that doesn't say
+     * when the user authenticated can't confirm it. */
+    function test_reauth_sees_contactdb_password() {
+        $cdb = $this->conf->contactdb();
+        if (!$cdb) {
+            return;
+        }
+        $email = "cdbonly.reauth@_.com";
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        Dbl::qe($cdb, "delete from ContactInfo where email=?", $email);
+        Dbl::qe($cdb, "insert into ContactInfo set email=?, firstName='Cdb', lastName='Only', password=''", $email);
+        $this->conf->invalidate_caches("cdb");
+        $this->set_test_oauth_provider();
+        $old = HotCRP\OAuth_Page::$fetch_function;
+        try {
+            $this->conf->cdb_user_by_email($email)->change_password("cdb-only-password");
+            $this->conf->invalidate_caches("cdb");
+            xassert(!$this->conf->user_by_email($email));
+            xassert($this->conf->cdb_user_by_email($email)->can_use_password());
+
+            $viewer = Contact::make_email($this->conf, $email);
+            $q1 = TestQreq::user_get($viewer, ["authtype" => "p", "reauth" => 1, "max_age" => "600"])
+                ->set_page("oauth");
+            $qs = $q1->qsession();
+            Qrequest::set_main_request($q1);
+            $auth = null;
+            try {
+                (new HotCRP\OAuth_Page($viewer, $q1))->start();
+            } catch (Redirection $redir) {
+                $auth = $redir->url;
+            }
+            parse_str(parse_url($auth ?? "", PHP_URL_QUERY) ?? "", $ap);
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $email) {
+                $c = ["iss" => "https://idp.example.com", "aud" => "C",
+                      "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                      "nonce" => $ap["nonce"], "sub" => "u1",
+                      "email" => $email, "email_verified" => true];
+                return [200, json_encode(["id_token" => HotCRP\JWTParser::make_plaintext((object) $c)])];
+            };
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $q2 = TestQreq::user_get($viewer, ["code" => "C", "state" => $ap["state"]], $qs)
+                ->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            $oap = new HotCRP\OAuth_Page($viewer, $q2);
+            $oap->response();
+            unset($_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]]);
+            xassert(!$oap->success);
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = $old;
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+            Dbl::qe($cdb, "delete from ContactInfo where email=?", $email);
+            $this->conf->invalidate_caches("cdb");
         }
     }
 
@@ -3367,6 +3587,40 @@ class Authorize_Tester {
             (new Signin_Page)->print_signin_form_oauth($this->u_empty, $qreq);
             $html = ob_get_clean();
             xassert_str_contains($html, "max_age=0");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** Every sign-in asks the provider for `auth_time` through the `claims`
+     * parameter, which some providers require. */
+    function test_oauth_requests_auth_time_claim() {
+        $this->set_test_oauth_provider();
+        $provider_params = function ($user, $startargs) {
+            $qreq = TestQreq::user_get($user, $startargs + ["authtype" => "p"])->set_page("oauth");
+            Qrequest::set_main_request($qreq);
+            $url = null;
+            try {
+                (new HotCRP\OAuth_Page($user, $qreq))->start();
+            } catch (Redirection $redir) {
+                $url = $redir->url;
+            }
+            parse_str(parse_url($url ?? "", PHP_URL_QUERY) ?? "", $ap);
+            return $ap;
+        };
+        try {
+            $want = ["id_token" => ["auth_time" => ["essential" => true]]];
+            // every sign-in asks, including an ordinary one
+            $ap = $provider_params($this->u_empty, []);
+            xassert_eqq(json_decode($ap["claims"] ?? "null", true), $want);
+            // as does a sign-in that must be fresh
+            $ap = $provider_params($this->u_empty, ["max_age" => "0"]);
+            xassert_eqq(json_decode($ap["claims"] ?? "null", true), $want);
+            // and so does a reauthentication
+            $ap = $provider_params($this->u_chair, ["reauth" => 1, "max_age" => "600"]);
+            xassert_eqq($ap["prompt"] ?? null, "login");
+            xassert_eqq(json_decode($ap["claims"] ?? "null", true), $want);
         } finally {
             $this->conf->set_opt("oAuthProviders", null);
             $this->conf->refresh_settings();
@@ -3536,7 +3790,7 @@ class Authorize_Tester {
         $run = function ($startargs, $auth_time) use ($email) {
             [$ok, $ap, $qs] = $this->oauth_signin($email, $startargs, $auth_time);
             $use = UserSecurityEvent::session_latest_signin_by_email($qs, $email);
-            return [$ok, $ap, $use ? $use->timestamp : null];
+            return [$ok, $ap, $use ? $use->timestamp : null, $use ? $use->roundtrip_only : null];
         };
 
         try {
@@ -3553,10 +3807,12 @@ class Authorize_Tester {
             xassert($ok);
             xassert_eqq($ts, Conf::$now - 4000);
 
-            // asked for `auth_time` and given none, the sign-in isn't fresh
-            [$ok, , $ts] = $run(["max_age" => "0"], null);
+            // asked for `auth_time` and given none, the sign-in is a round
+            // trip, which doesn't answer a client's `max_age`
+            [$ok, , $ts, $rt] = $run(["max_age" => "0"], null);
             xassert($ok);
-            xassert_eqq($ts, 0);
+            xassert_eqq($ts, Conf::$now);
+            xassert($rt === true);
 
             // an ordinary sign-in: no prompt; the provider's time is kept
             [$ok, $ap, $ts] = $run([], null);

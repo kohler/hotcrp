@@ -301,6 +301,7 @@ class Authorize_Page {
         return $user->authentication_checker($this->qreq, "authorize")
             ->set_max_age(max($max_age, self::MAX_AGE_MIN_BOUND))
             ->set_max_signin_age(max($max_age, self::SIGNIN_MAX_AGE_MIN_BOUND))
+            ->set_require_attested(true)
             ->set_quiet(true);
     }
 
@@ -940,6 +941,13 @@ class Authorize_Page {
                 "error" => "login_required",
                 "error_description" => "Reauthentication required"
             ])->complete();
+        }
+        // a provider that just vouched for the account without saying when
+        // it authenticated them won't say on a second try, and an account
+        // without a password has no other way to confirm
+        if ($ac->recently_unattested(self::SIGNIN_MAX_AGE_MIN_BOUND)
+            && !$this->viewer->can_use_password()) {
+            $this->redirect_error("login_required", "The sign-in provider could not confirm a recent sign-in");
         }
         $nav = $this->qreq->navigation();
         $back = $nav->site_path . "authorize{$nav->php_suffix}"

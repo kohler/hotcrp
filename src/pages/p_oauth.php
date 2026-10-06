@@ -135,6 +135,7 @@ class OAuth_Page {
                     . "&max_age=" . $tokdata["max_age"];
             }
         }
+        $params .= "&claims=" . rawurlencode('{"id_token":{"auth_time":{"essential":true}}}');
         throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
     }
 
@@ -330,22 +331,25 @@ class OAuth_Page {
                 MessageItem::inform("<0>You must provide reauthentication for {$reauth}.")
             ];
         }
-        // Confirming an account means the user proved it just now, so the
-        // provider must say when it authenticated them. OpenID Connect makes
-        // `auth_time` required in a response to a `max_age` request; without
-        // it, a provider that silently reuses its own session would turn this
-        // into no check at all.
+        // A confirmation is best when the provider says it authenticated the
+        // user just now, in `auth_time`. A provider that relied on its own
+        // session instead vouches for the account right now.
         $max_age = $tok->data("max_age") ?? 0;
         $auth_time = $jid->auth_time ?? null;
-        if (!is_int($auth_time)
-            || $auth_time < Conf::$now - max($max_age, 300)) {
+        if (is_int($auth_time)
+            && $auth_time >= Conf::$now - max($max_age, 300)) {
+            $use->timestamp = min($auth_time, Conf::$now);
+        } else if (($u = $this->conf->user_by_email($reauth)
+                         ?? $this->conf->cdb_user_by_email($reauth))
+                   && $u->can_use_password()) {
             $use->set_success(false)->store($this->qreq);
             return [
                 MessageItem::error("<0>The {$authi->title()} authenticator did not confirm a recent sign-in"),
-                MessageItem::inform("<0>Its response must include an ‘auth_time’ claim no older than {$max_age}s.")
+                MessageItem::inform("<0>Confirm your account with your password instead.")
             ];
+        } else {
+            $use->set_roundtrip_only(true);
         }
-        $use->timestamp = min($auth_time, Conf::$now);
         $use->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Authentication confirmed")];
@@ -479,24 +483,14 @@ class OAuth_Page {
         UpdateSession::apply_theme($qs, $ui, $xuser->theme());
         $use = UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
             ->set_subtype($authi->name);
-        $use->timestamp = self::provider_auth_time($tok, $jid);
+        if (is_int($jid->auth_time ?? null)) {
+            $use->timestamp = min($jid->auth_time, Conf::$now);
+        } else {
+            $use->set_roundtrip_only(true);
+        }
         $use->store($this->qreq);
         $this->success = true;
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Signed in")];
-    }
-
-    /** The time a provider says it authenticated the user. A sign-in is only
-     * as fresh as that; a provider asked for `auth_time` (via `max_age`) that
-     * gives none vouches for no time at all.
-     * @param TokenInfo $tok
-     * @param object $jid
-     * @return int */
-    static private function provider_auth_time($tok, $jid) {
-        $auth_time = $jid->auth_time ?? null;
-        if (is_int($auth_time)) {
-            return min($auth_time, Conf::$now);
-        }
-        return $tok->data("max_age") !== null ? 0 : Conf::$now;
     }
 
     private function resolve($ml) {
