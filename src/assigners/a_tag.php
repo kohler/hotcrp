@@ -57,7 +57,7 @@ class Tag_Assignable extends Assignable {
     static function load_tag(AssignmentState $astate, $ltag) {
         if ($astate->mark_stash("#{$ltag}")) {
             $known = $astate->paper_ids();
-            $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ") and exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')"];
+            $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ") and exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')", "where_safe" => true];
             $arg["tags"] = true;
             foreach ($astate->user->paper_set($arg) as $prow) {
                 $astate->add_prow($prow);

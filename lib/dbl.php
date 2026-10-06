@@ -596,6 +596,9 @@ class Dbl {
                     }
                     $arg = join(", ", $vs);
                 }
+            } else if ($nextch === "R") {
+                // raw interpolation (e.g., an already-formatted query fragment)
+                ++$qpos;
             } else {
                 if ($arg === null) {
                     $arg = "NULL";

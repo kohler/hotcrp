@@ -1664,7 +1664,7 @@ class PaperSearch extends MessageSet {
             if ($this->q[0] === "~") {
                 return "#{$this->q}";
             }
-            $pset = $this->conf->paper_set(["where" => "exists (select * from PaperTag where tag='" . sqlq($this->q) . "' and paperId=Paper.paperId)", "tags" => true, "limit" => "limit 30"], $this->user);
+            $pset = $this->conf->paper_set(["where" => "exists (select * from PaperTag where tag='" . sqlq($this->q) . "' and paperId=Paper.paperId)", "tags" => true, "limit" => "limit 30", "where_safe" => true], $this->user);
             foreach ($pset as $prow) {
                 if ($this->user->can_view_paper($prow)
                     && $this->user->can_view_tag($prow, $this->q))

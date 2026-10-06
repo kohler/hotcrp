@@ -4619,8 +4619,13 @@ class Conf {
             $where[] = "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED;
         }
         if (isset($options["where"]) && $options["where"]) {
-            assert(strpos($options["where"], "?") === false);
-            $where[] = "(" . $options["where"] . ")";
+            if (strpos($options["where"], "?") !== false
+                && !($options["where_safe"] ?? false)) {
+                error_log(debug_string_backtrace());
+                return;
+            }
+            $where[] = "(?R)";
+            $qv[] = $options["where"];
         }
 
         // use authored papers if already loaded
