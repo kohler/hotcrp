@@ -986,7 +986,7 @@ final class PaperList extends MessageSet {
         }
         // `anonau` and `aufull` imply authors when parsed by a search, so
         // hidden authors are hidden after them
-        if (!($vm["authors"] ?? null)?->is_show()
+        if ((!isset($vm["authors"]) || !$vm["authors"]->is_show())
             && array_intersect(["show:anonau", "show:aufull"], array_merge($res, $ordered))) {
             foreach (array_keys($res) as $key) {
                 if (str_ends_with($key, " authors")) {
