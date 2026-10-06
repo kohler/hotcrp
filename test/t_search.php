@@ -2310,4 +2310,12 @@ class Search_Tester {
         xassert($jr->content["ok"]);
         xassert(!isset($jr->content["message_list"]));
     }
+
+    function test_alternate_query_with_question_mark() {
+        // `re:me?` looks like a tag, so a search with no matches checks
+        // whether the tag exists
+        $srch = new PaperSearch($this->u_root, ["q" => "re:me?", "t" => "s"]);
+        xassert_eqq($srch->paper_ids(), []);
+        xassert_eqq($srch->alternate_query(), false);
+    }
 }

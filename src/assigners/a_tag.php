@@ -335,7 +335,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     /** @param CsvRow $req */
     private function add_piece($tag, $req, AssignmentState $state) {
         // parse tag into parts
-        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*+)(\z|#|#?+[=!<>]=?+|#?+≠|#?+≤|#?+≥)(.*)\z/', $tag, $m)
+        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9@*_:.\/]*+(?:\?|!(?!=))*+)(\z|#|#?+[=<>]=?+|#?+!=|#?+≠|#?+≤|#?+≥)(.*)\z/', $tag, $m)
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;

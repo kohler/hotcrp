@@ -46,7 +46,7 @@ const NAME_MAILQUOTE = 128; // quote name by RFC822
 const NAME_A = 256; // affiliation
 const NAME_PARSABLE = 512; // `last, first` if `first last` would be ambiguous
 
-const TAG_REGEX_NOTWIDDLE = '[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\/]*';
+const TAG_REGEX_NOTWIDDLE = '[a-zA-Z@*_:.][-+a-zA-Z0-9@*_:.\/]*+(?:\?|!(?!=))*+';
 const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
 const TAG_MAXLEN = 80;
 const TAG_INDEXBOUND = 2147483646.0;

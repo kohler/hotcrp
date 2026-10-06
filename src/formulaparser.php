@@ -297,7 +297,7 @@ class FormulaParser {
 
         if ($kwdef->parse_modifier_function ?? false) {
             $mpos = $name === "#" ? $pos1 : $this->pos;
-            while (preg_match('/\G[.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9_.@!*?~:\/#]+)/s', $this->str, $m, 0, $mpos)
+            while (preg_match('/\G[.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9_.@*~:\/#]++(?:\?|!(?!=))*+)/s', $this->str, $m, 0, $mpos)
                    && ($args !== false
                        || !preg_match('/\G\s*\(/', $this->str, $mx, 0, $mpos + strlen($m[0])))) {
                 $ff->pos2 = $mpos + strlen($m[0]);

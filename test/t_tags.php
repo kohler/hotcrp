@@ -1410,4 +1410,44 @@ seqnexttag,6,altorder\n");
         xassert_assign($this->u_varghese, "paper,action,tag\nall,cleartag,~crank\n");
         xassert_assign($this->u_floyd, "paper,action,tag\nall,cleartag,~crank\n");
     }
+
+    function test_question_and_exclamation_tags() {
+        // tags may end with `?` and `!`, but `!=` is an operator
+        xassert_assign($this->u_chair, "paper,tag\n1,huh?\n1,wow!#2\n2,wow!#5\n2,what?!\n");
+        $prow = $this->u_chair->checked_paper_by_id(1);
+        xassert_eqq($prow->tag_value("huh?"), 0.0);
+        xassert_eqq($prow->tag_value("wow!"), 2.0);
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,wow!=3\n");
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,wow!2\n");
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,a!b\n");
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,x?y\n");
+        $tagger = new Tagger($this->u_chair);
+        xassert_eqq($tagger->check_syntax("what?!"), "what?!");
+        xassert_eqq($tagger->check_syntax("a!b"), false);
+        xassert_eqq($tagger->check_syntax("x?y"), false);
+
+        xassert_search($this->u_chair, "#huh?", "1");
+        xassert_search($this->u_chair, "#wow!", "1 2");
+        xassert_search($this->u_chair, "#wow!>3", "2");
+        xassert_search($this->u_chair, "#wow!#2", "1");
+        xassert_search($this->u_chair, "#what?!", "2");
+        xassert_search($this->u_chair, "#wow!!=2", "2");
+        xassert_search($this->u_chair, "#wow!=2", "");
+
+        $f = Formula::make($this->u_chair, "#wow!");
+        xassert($f->ok());
+        $f->prepare();
+        xassert_eqq($f->eval($prow, null), 2.0);
+        $f = Formula::make($this->u_chair, "#wow!!=2");
+        xassert($f->ok());
+        $f->prepare();
+        xassert_eqq($f->eval($prow, null), false);
+
+        // a search with no matches suggests the tag
+        $srch = new PaperSearch($this->u_chair, ["q" => "huh?", "t" => "s"]);
+        xassert_eqq($srch->paper_ids(), []);
+        xassert_eqq($srch->alternate_query(), "#huh?");
+
+        xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,huh?\nall,cleartag,wow!\nall,cleartag,what?!\n");
+    }
 }
