@@ -1023,6 +1023,25 @@ class Formulas_Tester {
         xassert_eqq(FormulaGraph::graph_type_prefix("numdotty"), null);
     }
 
+    /** A formula that mixes review and PC data graphs per PC member, as two
+     * such formulas do together. */
+    function test_graph_mixed_index_formula() {
+        $mixed = Fexpr::IDX_PC | Fexpr::IDX_REVIEW;
+        xassert_eqq(Formula::combine_index_types($this->u_chair, $mixed), Fexpr::IDX_PC);
+        xassert_eqq(Formula::combine_index_types($this->u_chair, Fexpr::IDX_PC, Fexpr::IDX_REVIEW), Fexpr::IDX_PC);
+        foreach (["cdf", "scatter"] as $gt) {
+            foreach (["re + 0*pcconf", "re + pcconf"] as $fx) {
+                $fg = new FormulaGraph($this->u_chair, $gt, $fx, $gt === "scatter" ? "pid" : null);
+                $fg->add_dataset(new FormulaGraphDataset("", "s", "", ""));
+                xassert($fg->prepare(), "{$gt} {$fx}");
+                $j = $fg->graph_json([]);
+                $n = 0;
+                array_walk_recursive($j["data"], function () use (&$n) { ++$n; });
+                xassert($n > 0, "{$gt} {$fx}");
+            }
+        }
+    }
+
     function test_graph_ldot() {
         // `ldot` plots like `dot`; the JS labels each dot with its pid.
         // `numdot` is the old spelling and still works

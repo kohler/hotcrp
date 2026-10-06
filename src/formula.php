@@ -2573,6 +2573,13 @@ final class Formula implements JsonSerializable {
     static function combine_index_types(Contact $user, ...$index_types) {
         $rit = 0;
         foreach ($index_types as $it) {
+            // one formula can mix review and PC data; combine that as two
+            // formulas would be combined
+            $xit = $it & ~Fexpr::IDX_MY;
+            if (($xit & ($xit - 1)) !== 0
+                && ($xit & Fexpr::IDXM_REVIEW) !== $xit) {
+                $it = Fexpr::IDX_PC;
+            }
             if ($it === 0 || $it === Fexpr::IDX_MY || $it === $rit) {
                 // nothing
             } else if ($rit === 0) {
@@ -2730,8 +2737,10 @@ final class Formula implements JsonSerializable {
             $state = new FormulaCompiler($this);
             $state->queryOptions =& $queryOptions;
             $this->_fexpr->compile($state);
-            if ($this->_index_type > 0) {
-                $state->index_range($this->_index_type);
+            // (index the way `prepare_indexer` will)
+            $index_type = $this->_external_index_type ? : $this->_index_type;
+            if ($index_type > 0) {
+                $state->index_range($index_type);
             }
         }
     }
