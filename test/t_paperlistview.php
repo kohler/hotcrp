@@ -316,6 +316,27 @@ class PaperListView_Tester {
         xassert_eqq(self::summary($pl)[4], "sel id title status revtype mypref[edit,topics=no] lead");
     }
 
+    function test_session_hide_authors_with_author_options() {
+        // unchecking Authors sends the author options too; the authors stay
+        // hidden, and checking Authors shows them again
+        foreach (["aufull", "anonau"] as $opt) {
+            $qreq = (new Qrequest("POST", []))->set_user($this->u_chair)
+                ->set_qsession(new MemoryQsession)->approve_token();
+            $qreq->set_csession("pldisplay", "show:authors show:{$opt}");
+            Session_API::change_session($qreq, "pldisplay.authors=1 pldisplay.{$opt}=0");
+            $pl = $this->make_list("pl", "", [["default"], ["session", $qreq->csession("pldisplay")]]);
+            xassert(!$pl->viewing("authors"));
+            xassert($pl->viewing($opt));
+            $pl = $this->make_list("pl", "", [["default"], ["session", $qreq->csession("pldisplay")], ["parse", "", ViewCommand::ORIGIN_SEARCH]]);
+            xassert(!$pl->viewing("authors"));
+
+            Session_API::change_session($qreq, "pldisplay.authors=0 pldisplay.{$opt}=0");
+            $pl = $this->make_list("pl", "", [["default"], ["session", $qreq->csession("pldisplay")]]);
+            xassert($pl->viewing("authors"));
+            xassert($pl->viewing($opt));
+        }
+    }
+
     /** A bad column's error is reported once, however often the view is
      * unparsed before the list renders. */
     function test_column_error_reported_once() {

@@ -64,6 +64,12 @@ class Session_API {
             }
         }
         foreach ($view as $report => $viewlist) {
+            // apply author options first, so an explicit Authors state
+            // overrides the authors they imply
+            usort($viewlist, function ($a, $b) {
+                return (int) !preg_match('/:(?:anonau|aufull)\z/', $a)
+                    <=> (int) !preg_match('/:(?:anonau|aufull)\z/', $b);
+            });
             self::parse_view($qreq, $report, join(" ", $viewlist));
         }
         if (!empty($uldisplay)) {
