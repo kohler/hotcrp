@@ -234,6 +234,24 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", true), true);
     }
 
+    function test_author_keyed_round_trip() {
+        // the JSON form an export writes (`given_name`, `family_name`) reads
+        // back as the same author
+        foreach ([Author::make_string("Ada Lovelace (Analytical Engines Ltd.)"),
+                  Author::make_string("Grace Hopper <grace@navy.mil>"),
+                  Author::make_keyed(["firstName" => "Jean", "lastName" => "van der Berg"])] as $au) {
+            $j = Author::unparse_nea_json_for($au);
+            $au2 = Author::make_keyed($j);
+            xassert_eqq($au2->firstName, $au->firstName);
+            xassert_eqq($au2->lastName, $au->lastName);
+            xassert_eqq($au2->email, $au->email);
+            xassert_eqq($au2->affiliation, $au->affiliation);
+            $au3 = Author::make_keyed((object) $j);
+            xassert_eqq($au3->firstName, $au->firstName);
+            xassert_eqq($au3->lastName, $au->lastName);
+        }
+    }
+
     function test_author_parentheses() {
         $au = Author::make_string("G.-Y. (Ken) Lueh");
         xassert_eqq($au->firstName, "G.-Y. (Ken)");

@@ -372,6 +372,35 @@ class PaperAPI_Tester {
         $this->npid = $jr->paper->pid;
     }
 
+    /** An author's GET → POST round trip keeps the names of authors with no
+     * email address. */
+    function test_round_trip_keeps_authors_without_email() {
+        $jr = call_api("=paper", $this->u_estrin,
+            TestQreq::post_json((object) ["object" => "paper", "pid" => "new",
+                "title" => "Author round trip paper", "abstract" => "Abstract",
+                "authors" => [["name" => "Puneet Sharma", "email" => "puneet@catarina.usc.edu"],
+                              ["given_name" => "Nomail", "family_name" => "Author",
+                               "affiliation" => "Nowhere University"]],
+                "status" => "draft"]));
+        xassert_eqq($jr->ok, true);
+        $pid = $jr->paper->pid;
+        $names = function () use ($pid) {
+            $prow = $this->conf->checked_paper_by_id($pid);
+            return array_map(function ($au) {
+                return [$au->firstName, $au->lastName, $au->email, $au->affiliation];
+            }, $prow->author_list());
+        };
+        $before = $names();
+        xassert_eqq($before[1], ["Nomail", "Author", "", "Nowhere University"]);
+
+        $pj = call_api("paper", $this->u_estrin, TestQreq::get(["p" => $pid]))->paper;
+        $pj->title = "Author round trip paper, again";
+        $jr = call_api("=paper", $this->u_estrin, TestQreq::post_json($pj, ["p" => $pid]));
+        xassert_eqq($jr->ok, true);
+        xassert_not_in_eqq("authors", $jr->change_list ?? []);
+        xassert_eqq($names(), $before);
+    }
+
     function test_dry_run_then_save_document() {
         $content = "%PDF-2.0 dry run then save\n";
         $paper = [
