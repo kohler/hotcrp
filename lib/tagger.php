@@ -14,6 +14,8 @@ class TagInfo {
     /** @var int */
     public $flags = 0;
     /** @var int */
+    public $setting_flags = 0;
+    /** @var int */
     public $pattern_version = 0;
     /** @var ?list<TagAnno> */
     private $_order_anno_list;
@@ -90,11 +92,13 @@ class TagInfo {
     const TF_CONFLICT_FREE = 0x100;
 
     /** @param string $tag
-     * @param int $flags */
-    function __construct($tag, TagMap $tagmap, $flags = 0) {
+     * @param int $flags
+     * @param ?int $setting_flags */
+    function __construct($tag, TagMap $tagmap, $flags = 0, $setting_flags = null) {
         $this->conf = $tagmap->conf;
         $this->tag = $tag;
         $this->flags = $flags | $tagmap->all_flags;
+        $this->setting_flags = $setting_flags ?? $flags;
         if (($ks = $tagmap->known_style($tag)) !== null) {
             $this->styles[] = $ks;
             $this->flags |= self::TF_STYLE;
@@ -130,29 +134,30 @@ class TagInfo {
         }
         return $l1;
     }
-    /** @param int|TagInfo $ti */
+    /** @param TagInfo $ti */
     function merge($ti) {
         if (is_int($ti)) {
-            $this->flags |= $ti;
-        } else {
-            $this->flags |= $ti->flags & ~(self::TF_IS_PATTERN | self::TF_IS_SETTINGS);
-            if ($ti->autosearch !== null) {
-                $this->autosearch = $ti->autosearch;
-                $this->autosearch_value = $ti->autosearch_value;
-                $this->_autosearch_term = null;
-            }
-            if ($ti->allotment !== null) {
-                $this->allotment = $ti->allotment;
-            }
-            if ($ti->styles) {
-                $this->styles = self::merge_lists($this->styles, $ti->styles);
-            }
-            if ($ti->badge) {
-                $this->badge = $ti->badge;
-            }
-            if ($ti->emoji) {
-                $this->emoji = self::merge_lists($this->emoji, $ti->emoji);
-            }
+            error_log(debug_string_backtrace());
+            $ti = new TagInfo($this->tag, $this->conf->tags(), $ti);
+        }
+        $this->flags |= $ti->flags & ~(self::TF_IS_PATTERN | self::TF_IS_SETTINGS);
+        $this->setting_flags |= $ti->setting_flags;
+        if ($ti->autosearch !== null) {
+            $this->autosearch = $ti->autosearch;
+            $this->autosearch_value = $ti->autosearch_value;
+            $this->_autosearch_term = null;
+        }
+        if ($ti->allotment !== null) {
+            $this->allotment = $ti->allotment;
+        }
+        if ($ti->styles) {
+            $this->styles = self::merge_lists($this->styles, $ti->styles);
+        }
+        if ($ti->badge) {
+            $this->badge = $ti->badge;
+        }
+        if ($ti->emoji) {
+            $this->emoji = self::merge_lists($this->emoji, $ti->emoji);
         }
         if ($this->flags & self::TF_CHAIR_HIDDEN) {
             $this->flags &= ~self::TFM_NOT_CHAIR_HIDDEN;
@@ -775,14 +780,19 @@ class TagMap {
     }
 
     /** @param string $tag
-     * @param int|TagInfo $data */
-    private function ensure_setting($tag, $data) {
+     * @param int|TagInfo $data
+     * @param ?int $setting_flags */
+    private function ensure_setting($tag, $data, $setting_flags = null) {
         if (!Tagger::basic_check($tag)) {
             return;
         }
+        if (is_int($data)) {
+            $ti = new TagInfo($tag, $this, $data, $setting_flags);
+        } else {
+            $ti = $data;
+        }
         if (strpos($tag, "*") !== false
             || ($tag[0] === "~" && $tag[1] !== "~")) {
-            $ti = is_int($data) ? new TagInfo($tag, $this, $data) : $data;
             $ti->flags |= TagInfo::TF_IS_PATTERN | TagInfo::TF_IS_SETTINGS;
             $this->setting_storage[] = $ti;
             $this->pattern_storage[] = $ti;
@@ -793,10 +803,9 @@ class TagMap {
             $ltag = strtolower($tag);
             $tix = $this->storage[$ltag] ?? null;
             if ($tix && ($tix->flags & TagInfo::TF_IS_SETTINGS) !== 0) {
-                $tix->merge($data);
+                $tix->merge($ti);
                 $ti = $tix;
             } else {
-                $ti = is_int($data) ? new TagInfo($tag, $this, $data) : $data;
                 $this->setting_storage[] = $ti;
                 if ($tix) {
                     $tix->merge($ti);
@@ -822,9 +831,10 @@ class TagMap {
         }
     }
     /** @param string $tag
-     * @param int $flags */
-    function set($tag, $flags) {
-        $this->ensure_setting($tag, $flags);
+     * @param int $flags
+     * @param ?int $setting_flags */
+    function set($tag, $flags, $setting_flags = null) {
+        $this->ensure_setting($tag, $flags, $setting_flags);
     }
     /** @param TagInfo $ti */
     function merge($ti) {
@@ -869,21 +879,24 @@ class TagMap {
     }
 
     /** @param int $flags
+     * @param bool $explicit
      * @return list<TagInfo> */
-    function settings_having($flags) {
+    function settings_having($flags, $explicit = false) {
+        $flag_key = $explicit ? "setting_flags" : "flags";
         $tis = [];
         if (($this->flags & $flags) !== 0) {
             foreach ($this->setting_storage as $ti) {
-                if (($ti->flags & $flags) !== 0)
+                if (($ti->$flag_key & $flags) !== 0)
                     $tis[] = $ti;
             }
         }
         return $tis;
     }
     /** @param int $flags
+     * @param bool $explicit
      * @return list<TagInfo> */
-    function sorted_settings_having($flags) {
-        return $this->sorted($this->settings_having($flags));
+    function sorted_settings_having($flags, $explicit = false) {
+        return $this->sorted($this->settings_having($flags, $explicit));
     }
 
     /** @param string $tag
@@ -1366,12 +1379,12 @@ class TagMap {
             $this->setting_flags |= TagInfo::TF_PC_PUBLIC;
         }
         foreach ($conf->track_tags() as $tn) {
-            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TFM_ADMIN_PUBLIC | TagInfo::TF_CHAIR_READONLY);
+            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TFM_ADMIN_PUBLIC | TagInfo::TF_CHAIR_READONLY, TagInfo::TF_TRACK);
         }
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
                 if ($sr->tag !== "") {
-                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_PC_PUBLIC | TagInfo::TF_READONLY);
+                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_PC_PUBLIC | TagInfo::TF_READONLY, TagInfo::TF_SCLASS);
                 }
             }
         }
@@ -1396,17 +1409,17 @@ class TagMap {
         $ppuf = $ppu ? 0 : TagInfo::TF_PUBLIC_PERUSER;
         $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (Tagger::split_unpack($vt) as $tv) {
-            $ti = new TagInfo($tv[0], $this, TagInfo::TF_ALLOTMENT | TagInfo::TF_AUTOMATIC | $ppuf);
+            $ti = new TagInfo($tv[0], $this, TagInfo::TF_ALLOTMENT | TagInfo::TF_AUTOMATIC | $ppuf, TagInfo::TF_ALLOTMENT);
             $ti->allotment = ($tv[1] ?? 1.0);
             $this->merge($ti);
         }
         $vt = $conf->setting_data("tag_approval") ?? "";
         foreach (Tagger::split_unpack($vt) as $tv) {
-            $this->set($tv[0], TagInfo::TF_APPROVAL | TagInfo::TF_AUTOMATIC | $ppuf);
+            $this->set($tv[0], TagInfo::TF_APPROVAL | TagInfo::TF_AUTOMATIC | $ppuf, TagInfo::TF_APPROVAL);
         }
         $rt = $conf->setting_data("tag_rank") ?? "";
         foreach (Tagger::split_unpack($rt) as $tv) {
-            $this->set($tv[0], TagInfo::TF_RANK | TagInfo::TF_READONLY | $ppuf);
+            $this->set($tv[0], TagInfo::TF_RANK | TagInfo::TF_READONLY | $ppuf, TagInfo::TF_RANK);
         }
         $ct = $conf->setting_data("tag_color") ?? "";
         if ($ct !== "") {
@@ -1445,7 +1458,7 @@ class TagMap {
         $tx = $conf->setting_data("tag_autosearch") ?? "";
         if ($tx !== "") {
             foreach (json_decode($tx) ? : [] as $tag => $search) {
-                $ti = new TagInfo($tag, $this, TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH);
+                $ti = new TagInfo($tag, $this, TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH, TagInfo::TF_AUTOSEARCH);
                 $ti->autosearch = $search->q;
                 $ti->autosearch_value = $search->v ?? null;
                 $this->merge($ti);

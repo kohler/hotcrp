@@ -2937,6 +2937,44 @@ class Settings_Tester {
         xassert_search($this->u_chair, "#AutoDel", "");
     }
 
+    /** Tags that tracks and submission classes contribute to the tag
+     * settings round-trip through settings JSON without being written into
+     * those settings. */
+    function test_tag_settings_round_trip_with_derived_tags() {
+        $keys = ["tag_chair", "tag_sitewide", "tag_conflict_free", "tag_hidden"];
+        $data = function () use ($keys) {
+            $d = [];
+            foreach ($keys as $k) {
+                $d[$k] = $this->conf->setting_data($k);
+            }
+            return $d;
+        };
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1,
+            "track/1/id" => "new",
+            "track/1/tag" => "~~auditchairtrack",
+            "track/2/id" => "new",
+            "track/2/tag" => "audittrack",
+            "has_submission" => 1,
+            "submission/1/id" => "new",
+            "submission/1/tag" => "auditclass"
+        ]);
+        xassert($sv->execute(), $sv->full_feedback_text());
+        try {
+            $before = $data();
+            $sv = new SettingValues($this->u_chair);
+            $j = json_encode($sv->all_jsonv());
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string($j, "<roundtrip>");
+            xassert($sv->execute(), $sv->full_feedback_text());
+            xassert_eqq($data(), $before);
+        } finally {
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string('{"track":[{"id":"~~auditchairtrack","delete":true},{"id":"audittrack","delete":true}],"submission":[{"id":"auditclass","delete":true}]}');
+            xassert($sv->execute(), $sv->full_feedback_text());
+        }
+    }
+
     function test_track_anchor() {
         $sv = (new SettingValues($this->u_chair))->set_use_req(true);
         $sv->add_json_string('{"track":[{"tag":"redtrack","perm":{"view":"+red"}}]}');
@@ -2964,6 +3002,130 @@ class Settings_Tester {
         $sv->add_json_string('{"track":[{"id":"bluetrack","delete":true}]}');
         xassert($sv->execute());
         xassert(!array_key_exists("bluetrack", $this->all_jsonv_by("track", "tag")));
+    }
+
+    /** A tag listed explicitly in a tag setting stays listed there when a
+     * track or submission class also uses it. */
+    function test_tag_settings_keep_explicit_derived_tags() {
+        $old = [];
+        foreach (["tag_chair", "tag_sitewide"] as $k) {
+            $old[$k] = [$this->conf->setting($k), $this->conf->setting_data($k)];
+        }
+        try {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_track" => 1,
+                "track/1/id" => "new",
+                "track/1/tag" => "explicittrack",
+                "has_submission" => 1,
+                "submission/1/id" => "new",
+                "submission/1/tag" => "explicitclass",
+                "has_tag_readonly" => 1,
+                "tag_readonly" => "explicittrack explicitclass",
+                "has_tag_admin_open" => 1,
+                "tag_admin_open" => "explicittrack"
+            ]);
+            xassert($sv->execute(), $sv->full_feedback_text());
+
+            $sv = new SettingValues($this->u_chair);
+            xassert_str_contains(" " . $sv->oldv("tag_readonly") . " ", " explicittrack ");
+            xassert_str_contains(" " . $sv->oldv("tag_readonly") . " ", " explicitclass ");
+            xassert_str_contains(" " . $sv->oldv("tag_admin_open") . " ", " explicittrack ");
+
+            // a round trip keeps them
+            $j = json_encode($sv->all_jsonv());
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string($j, "<roundtrip>");
+            xassert($sv->execute(), $sv->full_feedback_text());
+            $sv = new SettingValues($this->u_chair);
+            xassert_str_contains(" " . $sv->oldv("tag_readonly") . " ", " explicittrack ");
+            xassert_str_contains(" " . $sv->oldv("tag_readonly") . " ", " explicitclass ");
+            xassert_str_contains(" " . $sv->oldv("tag_admin_open") . " ", " explicittrack ");
+        } finally {
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string('{"track":[{"id":"explicittrack","delete":true}],"submission":[{"id":"explicitclass","delete":true}]}');
+            xassert($sv->execute(), $sv->full_feedback_text());
+            foreach ($old as $k => $vd) {
+                $this->conf->save_refresh_setting($k, $vd[0], $vd[1]);
+            }
+        }
+    }
+
+    /** Tags that `$Opt["definedTags"]` presets give a flag are shown in that
+     * flag's setting, but not stored there. */
+    function test_tag_settings_strip_presets() {
+        $old = [];
+        foreach (["tag_chair", "tag_hidden"] as $k) {
+            $old[$k] = [$this->conf->setting($k), $this->conf->setting_data($k)];
+        }
+        $old_dt = $this->conf->opt("definedTags");
+        $this->conf->set_opt("definedTags", '{"rotag":{"readonly":true},"hid*":{"hidden":true}}');
+        $this->conf->invalidate_caches("tags");
+        try {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_tag_readonly" => 1,
+                "tag_readonly" => "RoTag keepme",
+                "has_tag_hidden" => 1,
+                "tag_hidden" => "hidfoo rotag"
+            ]);
+            xassert($sv->execute(), $sv->full_feedback_text());
+            // presets are stripped case-insensitively, and patterns strip
+            // the tags they match, but only from their own setting
+            xassert_eqq($this->conf->setting_data("tag_chair"), "keepme");
+            xassert_eqq($this->conf->setting_data("tag_hidden"), "rotag");
+
+            $sv = new SettingValues($this->u_chair);
+            xassert_eqq($sv->oldv("tag_readonly"), "keepme rotag");
+            xassert_eqq($sv->oldv("tag_hidden"), "hid* rotag");
+
+            // a round trip stores the same values
+            $j = json_encode($sv->all_jsonv());
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string($j, "<roundtrip>");
+            xassert($sv->execute(), $sv->full_feedback_text());
+            xassert_eqq($this->conf->setting_data("tag_chair"), "keepme");
+            xassert_eqq($this->conf->setting_data("tag_hidden"), "rotag");
+        } finally {
+            $this->conf->set_opt("definedTags", $old_dt);
+            foreach ($old as $k => $vd) {
+                $this->conf->save_refresh_setting($k, $vd[0], $vd[1]);
+            }
+            $this->conf->invalidate_caches("tags");
+        }
+    }
+
+    /** The read-only tags setting notes tags that are read-only for other
+     * reasons. */
+    function test_tag_readonly_notes_derived_tags() {
+        $old = [];
+        foreach (["tag_chair", "tag_rank"] as $k) {
+            $old[$k] = [$this->conf->setting($k), $this->conf->setting_data($k)];
+        }
+        $render = function () {
+            $sv = new SettingValues($this->u_chair);
+            ob_start();
+            $sv->print("tags/main/readonly");
+            $html = ob_get_clean();
+            return preg_match('/<div>([^<>]*) (?:is|are) also read-only\.<\/div>/', $html, $m) ? $m[1] : null;
+        };
+        xassert_eqq($render(), null);
+        try {
+            $sv = SettingValues::make_request($this->u_chair, [
+                "has_submission" => 1,
+                "submission/1/id" => "new",
+                "submission/1/tag" => "noteclass",
+                "has_tag_rank" => 1,
+                "tag_rank" => "noterank"
+            ]);
+            xassert($sv->execute(), $sv->full_feedback_text());
+            xassert_eqq($render(), "Submission class tags and rank tags");
+        } finally {
+            $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+            $sv->add_json_string('{"submission":[{"id":"noteclass","delete":true}]}');
+            xassert($sv->execute(), $sv->full_feedback_text());
+            foreach ($old as $k => $vd) {
+                $this->conf->save_refresh_setting($k, $vd[0], $vd[1]);
+            }
+        }
     }
 
     function test_track_role_tag_permissions() {

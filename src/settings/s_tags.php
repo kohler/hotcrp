@@ -36,7 +36,7 @@ class Tags_SettingParser extends SettingParser {
 
     /** @return list<TagInfo> */
     static function sorted_settings_for(TagMap $map, Si $si) {
-        return $map->sorted_settings_having(self::si_flag($si));
+        return $map->sorted_settings_having(self::si_flag($si), true);
     }
 
     function __construct(SettingValues $sv) {
@@ -51,7 +51,7 @@ class Tags_SettingParser extends SettingParser {
             $sv->set_oldv($si->name, self::render_tags(self::sorted_settings_for($sv->conf->tags(), $si)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];
-            foreach ($sv->conf->tags()->sorted_settings_having(TagInfo::TF_ALLOTMENT) as $t) {
+            foreach ($sv->conf->tags()->sorted_settings_having(TagInfo::TF_ALLOTMENT, true) as $t) {
                 $x[] = "{$t->tag}#{$t->allotment}";
             }
             $sv->set_oldv("tag_vote_allotment", join(" ", $x));
@@ -66,17 +66,38 @@ class Tags_SettingParser extends SettingParser {
         $last = null;
         $tx = [];
         foreach ($tl as $ti) {
-            if (!$last || $last->tag !== $ti->tag) {
+            if (!$last || strcasecmp($last->tag, $ti->tag) !== 0) {
                 $tx[] = $ti->tag;
                 $last = $ti;
             }
         }
         return join(" ", $tx);
     }
+    /** Return a note naming the other kinds of read-only tags, if any.
+     * @return string */
+    static private function readonly_note(TagMap $map) {
+        $kinds = [];
+        foreach ([[TagInfo::TF_TRACK, "track tags"],
+                  [TagInfo::TF_SCLASS, "submission class tags"],
+                  [TagInfo::TF_RANK, "rank tags"],
+                  [TagInfo::TF_AUTOSEARCH, "automatic search tags"]] as $fk) {
+            if (!empty($map->settings_having($fk[0]))) {
+                $kinds[] = $fk[1];
+            }
+        }
+        if (empty($kinds)) {
+            return "";
+        }
+        return ucfirst(commajoin($kinds)) . " are also read-only.";
+    }
     static function print_tag_chair(SettingValues $sv) {
+        $hint = "PC members can see these tags, but only administrators can change them.";
+        if (($note = self::readonly_note($sv->conf->tags())) !== "") {
+            $hint = "<div>{$hint}</div><div>{$note}</div>";
+        }
         $sv->print_entry_group("tag_readonly", null, [
             "class" => "need-suggest tags",
-            "hint" => "PC members can see these tags, but only administrators can change them.",
+            "hint" => $hint,
             "autocomplete" => "off"
         ]);
     }
@@ -114,13 +135,10 @@ class Tags_SettingParser extends SettingParser {
     }
 
     private function strip_presets($si, $v) {
-        $have = [];
-        foreach (self::sorted_settings_for($this->base_map, $si) as $ti) {
-            $have[$ti->tag] = true;
-        }
+        $sif = self::si_flag($si);
         $newv = [];
         foreach (Tagger::split_unpack($v) as $tv) {
-            if (!isset($have[$tv[0]])) {
+            if (!$this->base_map->find_having($tv[0], $sif)) {
                 $newv[] = $tv[1] === null ? $tv[0] : "{$tv[0]}#{$tv[1]}";
             }
         }
