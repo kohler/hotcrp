@@ -81,7 +81,8 @@
     {   "name": "trackerstatus", "get": true, "function": "MeetingTracker::trackerstatus_api", "auth": false   },
     {   "name": "upload", "post": true, "session": false, "function": "Upload_API::run"   },
     {   "name": "user", "get": true, "session": false, "function": "User_API::user", "scope": "other:read"   },
-    {   "name": "viewoptions", "get": true, "post": true, "function": "SearchConfig_API::viewoptions", "scope": "other:read"   },
+    {   "name": "viewoptions", "get": true, "function": "SearchConfig_API::viewoptions", "scope": "other:read"   },
+    {   "name": "viewoptions", "post": true, "function": "SearchConfig_API::viewoptions", "scope": "other:admin"   },
     {   "name": "votereport", "get": true, "paper": true, "function": "Tags_API::votereport_api"   },
     {   "name": "whoami", "get": true, "session": false, "function": "Session_API::whoami"   }
 ]
