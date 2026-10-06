@@ -797,7 +797,7 @@ class BackupDB_Batch {
     }
 
     private function run_pc_only_transfer() {
-        $pc = Dbl::fetch_first_columns($this->dblink(), "select contactId from ContactInfo where roles!=0 and (roles&7)!=0");
+        $pc = Dbl::fetch_first_columns($this->dblink(), "select contactId from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
         if (empty($pc)) {
             $pc[] = -1;
         }
