@@ -1688,6 +1688,14 @@
                             "comment:write": "Read and write comments and responses.",
                             "comment:admin": "Read and write comments with administrator privilege, including comments the caller does not own.",
 
+                            "preference:read": "Read review preferences.",
+                            "preference:write": "Read and set review preferences.",
+                            "preference:admin": "Read and set review preferences with administrator privilege, including other PC members’ preferences.",
+
+                            "reaction:read": "Read review ratings and other reactions.",
+                            "reaction:write": "Read and record the caller’s own review ratings and other reactions.",
+                            "reaction:admin": "Read and change review ratings and other reactions with administrator privilege, including clearing all ratings on a review.",
+
                             "other:read": "Read everything not covered by another family: users, search metadata, the meeting tracker, notifications, and session state.",
                             "other:write": "Read and modify everything not covered by another family.",
                             "other:admin": "Read and modify everything not covered by another family, with administrator privilege — including modifying accounts other than the caller’s.",
@@ -1696,9 +1704,9 @@
                             "settings:write": "Read site settings. Modifying settings requires `settings:admin`, since any settings change is an administrative act.",
                             "settings:admin": "Read and modify site settings.",
 
-                            "paper:read": "Read submissions, documents, reviews, tags, and comments. Equivalent to `submission:read review:read tag:read comment:read`.",
-                            "paper:write": "Read and write submissions, documents, reviews, tags, and comments.",
-                            "paper:admin": "Read and write submissions, documents, reviews, tags, and comments with administrator privilege.",
+                            "paper:read": "Read submissions, documents, reviews, tags, comments, preferences, and reactions. Equivalent to `submission:read review:read tag:read comment:read preference:read reaction:read`.",
+                            "paper:write": "Read and write submissions, documents, reviews, tags, comments, preferences, and reactions.",
+                            "paper:admin": "Read and write submissions, documents, reviews, tags, comments, preferences, and reactions with administrator privilege.",
 
                             "read": "Read access across every family, including settings.",
                             "write": "Read and write access across every family. Does not grant administrator privilege.",
