@@ -395,6 +395,51 @@ class RequestReviewAPI_Tester {
                              "aren’t allowed to request reviews");
     }
 
+    function test_review_link_refused_to_conflicted_user() {
+        // a review-accept link lends its reviewer’s role only to holders
+        // without a conflict on the submission
+        $conf = $this->conf;
+        $rrow = $conf->checked_paper_by_id($this->pid)->review_by_id($this->hidden_rid);
+        $tok = ReviewAccept_Capability::make($rrow, true);
+        $sibling = (new TokenInfo($conf, TokenInfo::REVIEWACCEPT))
+            ->set_review($rrow)
+            ->set_user_id($rrow->contactId)
+            ->set_expires_in(86400)
+            ->set_token_pattern("hcra{$rrow->reviewId}[16]")
+            ->insert();
+        try {
+            // a conflicted holder gets nothing from the link, and is told why
+            $author = $conf->fresh_user_by_email($this->u_author->email);
+            $old_test_mode = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            $conf->saved_messages_begin();
+            $author->apply_capability_text($tok->salt);
+            $msgs = json_encode($conf->claim_saved_messages(), JSON_UNESCAPED_UNICODE);
+            Navigation::$test_mode = $old_test_mode;
+            xassert_eqq($author->reviewer_capability($this->pid), null);
+            $prow = $conf->checked_paper_by_id($this->pid, $author);
+            xassert($prow->has_conflict($author));
+            xassert(!$author->can_view_review($prow, $prow->review_by_id($this->hidden_rid)));
+            xassert(!$author->can_request_review($prow, null, true));
+            xassert_str_contains($msgs, "conflict");
+            xassert_not_str_contains($msgs, $this->u_hidden->email);
+            // ...and doesn't use up the link or its siblings
+            xassert_eqq(TokenInfo::find($tok->salt, $conf)->timeUsed, 0);
+            xassert(TokenInfo::find($sibling->salt, $conf)->is_active());
+
+            // a holder without a conflict, signed in or not, acts as the reviewer
+            foreach ([$conf->fresh_user_by_email($this->u_control->email), Contact::make($conf)] as $u) {
+                $u->apply_capability_text($tok->salt);
+                xassert_eqq($u->reviewer_capability($this->pid), $this->u_hidden->contactId);
+                $prow = $conf->checked_paper_by_id($this->pid, $u);
+                xassert($u->can_view_review($prow, $prow->review_by_id($this->hidden_rid)));
+            }
+        } finally {
+            $conf->qe("delete from Capability where salt>=? and salt<?",
+                "hcra{$rrow->reviewId}@", "hcra{$rrow->reviewId}~");
+        }
+    }
+
     function test_requestreview_creates_nonplaceholder_reviewer() {
         $conf = $this->conf;
         $email = "newrev-req-probe@example.edu";

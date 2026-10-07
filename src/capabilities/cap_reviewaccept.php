@@ -48,6 +48,18 @@ class ReviewAccept_Capability {
         if (($tok = TokenInfo::find($uf->name, $user->conf))
             && $tok->capabilityType === TokenInfo::REVIEWACCEPT
             && $tok->is_active()) {
+            // the link lends its reviewer’s role only to holders without a
+            // conflict on the submission
+            if ($user->contactId > 0
+                && $user->contactId !== $tok->contactId
+                && ($prow = $user->conf->paper_by_id($tok->paperId, $user))
+                && $prow->has_conflict($user)) {
+                $user->conf->feedback_msg([
+                    MessageItem::error("<0>This review link can’t be used with your account"),
+                    MessageItem::inform("<0>Your {$user->email} account has a conflict with #{$tok->paperId}. If the review was meant for a different account, sign out and follow the link again.")
+                ]);
+                return;
+            }
             $user->set_capability("@ra{$tok->paperId}", $tok->contactId);
             $user->set_default_cap_param($uf->name, true);
             if ($tok->timeUsed === 0) {
