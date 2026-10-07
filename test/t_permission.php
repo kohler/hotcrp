@@ -2070,11 +2070,11 @@ class Permission_Tester {
             $author->set_scope("comment:read");
             xassert_eqq($author->new_comment_flags($prow), 0);
             $whyNot = $author->perm_edit_comment($prow, CommentInfo::make_new_template($author, $prow));
-            xassert_eqq($whyNot["scope"] ?? null, "comment:write");
+            xassert_eqq($whyNot["scope"] ?? null, TokenScope::S_CMT_WRITE);
             xassert(!($whyNot["differentReviewer"] ?? false));
             xassert_eqq($whyNot["permission"] ?? null, null);
             $whyNot = $author->perm_edit_comment($prow, $crow2);
-            xassert_eqq($whyNot["scope"] ?? null, "comment:write");
+            xassert_eqq($whyNot["scope"] ?? null, TokenScope::S_CMT_WRITE);
             xassert($whyNot["differentReviewer"] ?? false);
             $author->set_scope();
 

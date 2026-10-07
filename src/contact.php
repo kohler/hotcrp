@@ -3575,6 +3575,23 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             || $this->_scope->allows_some($scope);
     }
 
+    /** Return the reasons `$perm` would fail if the token's scope allowed
+     * it, plus a note that the scope requires `$bits`.
+     * @param int $bits
+     * @param callable():?FailureReason $permfunc
+     * @param ?array<string,mixed> $rest
+     * @return FailureReason */
+    private function scope_failure_reason(PaperInfo $prow, $bits, $permfunc, $rest = null) {
+        $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
+        try {
+            $fr = $permfunc() ?? $prow->failure_reason($rest);
+        } finally {
+            $this->set_overrides($overrides);
+        }
+        $fr["scope"] = $bits;
+        return $fr;
+    }
+
 
     // review tokens
 
@@ -5446,8 +5463,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->failure_reason();
-        $whyNot["reviewRound"] = $round;
+        $whyNot = $prow->failure_reason(["reviewRound" => $round]);
         $eknown = false;
         if (!$rights->allow_admin()) {
             if ($this->contactId <= 0
@@ -5659,11 +5675,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->failure_reason();
-        $whyNot["reviewRound"] = $round;
         if (!$rights->scope_allows(TS::S_REV_WRITE)) {
-            $whyNot["scope"] = "review:write";
+            return $this->scope_failure_reason($prow, TS::S_REV_WRITE,
+                fn () => $this->perm_create_review($prow, $reviewer, $round),
+                ["reviewRound" => $round]);
         }
+        $whyNot = $prow->failure_reason(["reviewRound" => $round]);
         if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
@@ -5730,6 +5747,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_REV_WRITE)) {
+            return $this->scope_failure_reason($prow, TS::S_REV_WRITE,
+                fn () => $this->perm_edit_review($prow, $rrow, $erflags));
+        }
         $whyNot = $prow->failure_reason();
         if (!$this->can_clickthrough("review", $prow)
             && ($erflags & self::EDIT_REVIEW_SUBMIT) !== 0
@@ -5989,12 +6010,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_CMT_WRITE)) {
-            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
-            $whyNot = $this->perm_edit_comment($prow, $crow, $newctype)
-                ?? $prow->failure_reason();
-            $this->set_overrides($overrides);
-            $whyNot["scope"] = "comment:write";
-            return $whyNot;
+            return $this->scope_failure_reason($prow, TS::S_CMT_WRITE,
+                fn () => $this->perm_edit_comment($prow, $crow, $newctype));
         }
         $whyNot = $prow->failure_reason();
         if ($crow->commentId !== 0
@@ -6054,12 +6071,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         if (!$rights->scope_allows(TS::S_CMT_WRITE)) {
-            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
-            $whyNot = $this->perm_edit_response($prow, $crow)
-                ?? $prow->failure_reason();
-            $this->set_overrides($overrides);
-            $whyNot["scope"] = "comment:write";
-            return $whyNot;
+            return $this->scope_failure_reason($prow, TS::S_CMT_WRITE,
+                fn () => $this->perm_edit_response($prow, $crow));
         }
         $whyNot = $prow->failure_reason();
         if (!$rights->allow_admin()
@@ -6507,11 +6520,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->failure_reason();
         if (!$rights->scope_allows(TS::S_TAG_WRITE)) {
-            $whyNot["scope"] = TS::S_TAG_WRITE;
-            return $whyNot;
+            return $this->scope_failure_reason($prow, TS::S_TAG_WRITE,
+                fn () => $this->perm_edit_some_tag($prow));
         }
+        $whyNot = $prow->failure_reason();
         if (!$this->isPC) {
             $whyNot["permission"] = "tag:edit";
         } else if ($rights->conflicted()) {
