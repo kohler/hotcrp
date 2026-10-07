@@ -5842,7 +5842,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $time = $this->conf->setting("cmt_always") > 0
             || $this->conf->time_review_open();
         if ((!$time && !$rights->is_admin())
-            || !$rights->scope_allows(TS::S_CMT_WRITE)) {
+            || !$rights->scope_allows(TS::S_CMT_WRITE)
+            || ($prow->outcome_sign < 0
+                && $rights->is_author()
+                && $rights->can_view_decision())) {
             return 0;
         }
         $ctype = 0;
@@ -5934,7 +5937,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($crow->commentId !== 0
             && !$rights->allow_admin()
             && !$this->is_my_comment($prow, $crow)
-            && (!$rights->is_author() || ($crow->commentType & CommentInfo::CT_BYAUTHOR) === 0)) {
+            && (!$rights->is_author()
+                || ($crow->commentType & CommentInfo::CT_BYAUTHOR) === 0)) {
             // cannot edit someone else's comment
             return false;
         }

@@ -2028,6 +2028,66 @@ class Permission_Tester {
         }
     }
 
+    function test_rejected_author_cannot_comment() {
+        $chair = $this->u_chair;
+        $author = $this->conf->checked_user_by_email("puneet@catarina.usc.edu"); // contact of #1
+
+        $old_seedec = $this->conf->setting("seedec");
+        $old_au_seedec = $this->conf->setting("au_seedec");
+        $old_cmt_author = $this->conf->setting("cmt_author");
+        $old_cmt_always = $this->conf->setting("cmt_always");
+
+        try {
+            $this->conf->save_refresh_setting("cmt_author", 2);
+            $this->conf->save_refresh_setting("cmt_always", 1);
+            $this->conf->save_refresh_setting("seedec", 0);
+            $this->conf->save_refresh_setting("au_seedec", null);
+
+            // undecided: author can initiate a comment
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert_neqq($author->new_comment_flags($prow), 0);
+            $j = call_api("=comment", $author, ["c" => "new", "text" => "Author comment"], $prow);
+            xassert($j->ok);
+            $cid = $j->comment->cid;
+
+            // hidden reject: author can still comment
+            xassert_assign($chair, "paper,action,decision\n1,decision,reject\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert(!$author->can_view_decision($prow));
+            xassert_neqq($author->new_comment_flags($prow), 0);
+
+            // visible reject: author cannot create or edit comments
+            $this->conf->save_refresh_setting("au_seedec", 2);
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert($author->can_view_decision($prow));
+            xassert_eqq($author->new_comment_flags($prow), 0);
+            $j = call_api("=comment", $author, ["c" => "new", "text" => "Another comment"], $prow);
+            xassert(!$j->ok);
+            $crow = $prow->fetch_comments("commentId={$cid}")[0];
+            xassert(!$author->can_edit_comment($prow, $crow));
+            $j = call_api("=comment", $author, ["c" => (string) $cid, "text" => "Edited comment"], $prow);
+            xassert(!$j->ok);
+
+            // visible accept: author can comment
+            xassert_assign($chair, "paper,action,decision\n1,decision,accept\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert($author->can_view_decision($prow));
+            xassert_neqq($author->new_comment_flags($prow), 0);
+            xassert($author->can_edit_comment($prow, $crow));
+        } finally {
+            if (isset($cid)) {
+                $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $cid);
+            }
+            xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
+            MailChecker::clear();
+            $this->conf->save_refresh_setting("seedec", $old_seedec);
+            $this->conf->save_refresh_setting("au_seedec", $old_au_seedec);
+            $this->conf->save_refresh_setting("cmt_author", $old_cmt_author);
+            $this->conf->save_refresh_setting("cmt_always", $old_cmt_always);
+        }
+    }
+
     function test_tracker_permissionizer() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
 
