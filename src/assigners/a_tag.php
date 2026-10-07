@@ -55,14 +55,15 @@ class Tag_Assignable extends Assignable {
         }
     }
     static function load_tag(AssignmentState $astate, $ltag) {
-        if ($astate->mark_stash("#{$ltag}")) {
-            $known = $astate->paper_ids();
-            $arg = empty($known) ? [] : ["where" => "Paper.paperId not in (" . join(",", $known) . ") and exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')", "where_safe" => true];
-            $arg["tags"] = true;
-            foreach ($astate->user->paper_set($arg) as $prow) {
-                $astate->add_prow($prow);
-                self::load_prow($astate, $prow);
-            }
+        if (!$astate->mark_stash("#{$ltag}")) {
+            return;
+        }
+        $where = "exists (select * from PaperTag where paperId=Paper.paperId and tag='" . sqlq($ltag) . "')";
+        if (($known = $astate->paper_ids())) {
+            $where = "Paper.paperId not in (" . join(",", $known) . ") and {$where}";
+        }
+        foreach ($astate->load_prows(["where" => $where, "where_safe" => true, "tags" => true]) as $prow) {
+            self::load_prow($astate, $prow);
         }
     }
     static function load_prow(AssignmentState $state, PaperInfo $prow) {

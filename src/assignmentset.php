@@ -542,6 +542,22 @@ final class AssignmentState extends MessageSet {
         $this->fetch_paper_set([]);
         $this->pid_attempts = [-1];
     }
+    /** @param array<string,mixed> $args
+     * @return list<PaperInfo> */
+    function load_prows($args) {
+        assert(!empty($this->pid_attempts));
+        $prows = [];
+        if ($this->pid_attempts !== [-1]) {
+            $overrides = $this->user->add_overrides(Contact::OVERRIDE_SCOPE);
+            foreach ($this->user->paper_set($args) as $prow) {
+                if (!isset($this->prows[$prow->paperId])
+                    && $this->user->can_view_paper($prow))
+                    $prows[] = $this->prows[$prow->paperId] = $prow;
+            }
+            $this->user->set_overrides($overrides);
+        }
+        return $prows;
+    }
     /** Papers the user couldn't view even with a wider token scope are
      * treated as missing, so errors don't reveal whether they exist.
      * @param array{paperId?:list<int>|PaperIDSet} $args */
