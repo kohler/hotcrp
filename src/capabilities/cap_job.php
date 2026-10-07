@@ -18,6 +18,10 @@ class Job_Token extends TokenInfo {
             ->set_input(["batch_class" => $batch_class, "argv" => $argv]);
         if (!$user->is_root_user()) {
             $tok->set_user_from($user, false);
+            // a job without a user runs as root (see `job_user`)
+            if ($tok->contactId <= 0) {
+                throw new Exception("Job_Token::make: user has no account");
+            }
         }
         if ($user->has_scope()) {
             // a job requested through a scoped token runs with that scope,

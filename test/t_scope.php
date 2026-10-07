@@ -875,6 +875,26 @@ class Scope_Tester {
         }
     }
 
+    function test_job_requires_account() {
+        // a job made by the root user runs as root...
+        $tok = Job_Token::make($this->conf->root_user(), "Autoassign", []);
+        xassert($tok->job_user()->is_root_user());
+
+        // ...but a user without an account can't make one, even with
+        // assertions off
+        $old_assertions = ini_get("zend.assertions");
+        ini_set("zend.assertions", "0");
+        try {
+            Job_Token::make(Contact::make($this->conf), "Autoassign", []);
+            $made = true;
+        } catch (Exception $ex) {
+            $made = false;
+        } finally {
+            ini_set("zend.assertions", $old_assertions);
+        }
+        xassert(!$made);
+    }
+
     function test_scope_str_split_openid() {
         xassert_array_eqq(TokenScope::scope_str_split_openid(null), ["", ""]);
         xassert_array_eqq(TokenScope::scope_str_split_openid("   "), ["", ""]);
