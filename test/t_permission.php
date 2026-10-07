@@ -2036,6 +2036,15 @@ class Permission_Tester {
         $old_au_seedec = $this->conf->setting("au_seedec");
         $old_cmt_author = $this->conf->setting("cmt_author");
         $old_cmt_always = $this->conf->setting("cmt_always");
+        $old_chair_ct = $this->conf->fetch_ivalue("select conflictType from PaperConflict where paperId=1 and contactId=?", $chair->contactId);
+        $restore_chair_conflict = function () use ($chair, $old_chair_ct) {
+            if ($old_chair_ct === null) {
+                $this->conf->qe("delete from PaperConflict where paperId=1 and contactId=?", $chair->contactId);
+            } else {
+                $this->conf->qe("update PaperConflict set conflictType=? where paperId=1 and contactId=?", $old_chair_ct, $chair->contactId);
+            }
+            Contact::update_rights();
+        };
 
         try {
             $this->conf->save_refresh_setting("cmt_author", 2);
@@ -2051,6 +2060,24 @@ class Permission_Tester {
             xassert($j->ok);
             $cid = $j->comment->cid;
 
+            $j = call_api("=comment", $chair, ["c" => "new", "text" => "Chair comment", "visibility" => "a"], $prow);
+            xassert($j->ok);
+            $cid2 = $j->comment->cid;
+            $crow2 = $prow->fetch_comments("commentId={$cid2}")[0];
+
+            // without comment:write scope, the failure names the scope,
+            // plus any other reasons
+            $author->set_scope("comment:read");
+            xassert_eqq($author->new_comment_flags($prow), 0);
+            $whyNot = $author->perm_edit_comment($prow, CommentInfo::make_new_template($author, $prow));
+            xassert_eqq($whyNot["scope"] ?? null, "comment:write");
+            xassert(!($whyNot["differentReviewer"] ?? false));
+            xassert_eqq($whyNot["permission"] ?? null, null);
+            $whyNot = $author->perm_edit_comment($prow, $crow2);
+            xassert_eqq($whyNot["scope"] ?? null, "comment:write");
+            xassert($whyNot["differentReviewer"] ?? false);
+            $author->set_scope();
+
             // hidden reject: author can still comment
             xassert_assign($chair, "paper,action,decision\n1,decision,reject\n");
             $prow = $this->conf->checked_paper_by_id(1);
@@ -2062,12 +2089,30 @@ class Permission_Tester {
             $prow = $this->conf->checked_paper_by_id(1);
             xassert($author->can_view_decision($prow));
             xassert_eqq($author->new_comment_flags($prow), 0);
+            $whyNot = $author->perm_edit_comment($prow, CommentInfo::make_new_template($author, $prow));
+            xassert_eqq($whyNot["permission"] ?? null, "comment:edit");
+            xassert(!($whyNot["differentReviewer"] ?? false));
             $j = call_api("=comment", $author, ["c" => "new", "text" => "Another comment"], $prow);
             xassert(!$j->ok);
             $crow = $prow->fetch_comments("commentId={$cid}")[0];
             xassert(!$author->can_edit_comment($prow, $crow));
             $j = call_api("=comment", $author, ["c" => (string) $cid, "text" => "Edited comment"], $prow);
             xassert(!$j->ok);
+
+            // visible reject, chair author: commenting requires a conflict override
+            xassert_assign($chair, "paper,action,user\n1,contact,chair@_.com\n");
+            $prow = $this->conf->checked_paper_by_id(1);
+            xassert($chair->can_view_decision($prow));
+            xassert_eqq($chair->new_comment_flags($prow), 0);
+            $whyNot = $chair->perm_edit_comment($prow, CommentInfo::make_new_template($chair, $prow));
+            xassert_eqq($whyNot["permission"] ?? null, "comment:edit");
+            xassert($whyNot["override"] ?? false);
+            $overrides = $chair->add_overrides(Contact::OVERRIDE_CONFLICT);
+            xassert_neqq($chair->new_comment_flags($prow), 0);
+            xassert_eqq($chair->perm_edit_comment($prow, CommentInfo::make_new_template($chair, $prow)), null);
+            $chair->set_overrides($overrides);
+            unset($overrides);
+            $restore_chair_conflict();
 
             // visible accept: author can comment
             xassert_assign($chair, "paper,action,decision\n1,decision,accept\n");
@@ -2076,9 +2121,17 @@ class Permission_Tester {
             xassert_neqq($author->new_comment_flags($prow), 0);
             xassert($author->can_edit_comment($prow, $crow));
         } finally {
+            $author->set_scope();
+            if (isset($overrides)) {
+                $chair->set_overrides($overrides);
+            }
             if (isset($cid)) {
                 $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $cid);
             }
+            if (isset($cid2)) {
+                $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $cid2);
+            }
+            $restore_chair_conflict();
             xassert_assign($chair, "paper,action,decision\n1,cleardecision,any\n");
             MailChecker::clear();
             $this->conf->save_refresh_setting("seedec", $old_seedec);

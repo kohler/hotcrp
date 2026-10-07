@@ -3716,8 +3716,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     /** @param PaperInfo $prow
      * @param PaperContactInfo $ci
      * @return bool */
-    private function _compute_allow_admin_0($prow, $ci) {
-        // Already checked isPC and hidden_papers
+    private function _compute_rights_allow_admin_0($prow, $ci) {
+        // Already checked isPC
+        if (isset($this->hidden_papers[$prow->paperId])) {
+            return false;
+        }
         return $this->_root_user
             || $prow->managerContactId === $this->contactXid
             || ($this->privChair
@@ -3730,6 +3733,187 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 && (!$prow->managerContactId
                     || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
                 && $this->conf->check_admin_tracks($prow, $this));
+    }
+
+    /** @param PaperInfo $prow
+     * @param PaperContactInfo $ci
+     * @param bool $forceShow
+     * @return int */
+    private function _compute_rights_set1($prow, $ci, $forceShow) {
+        assert(($ci->ciflags & ~PCI::CIFM_SET0) === 0);
+        $cif = $ci->ciflags | PCI::CIF_SET1;
+        $hidden = isset($this->hidden_papers[$prow->paperId]);
+
+        // check scope
+        if (($this->_overrides & self::OVERRIDE_SCOPE) !== 0) {
+            $ci->scope_bits = ~0;
+        } else if ($hidden) {
+            $ci->scope_bits = 0;
+        } else if ($this->_scope) {
+            $ci->scope_bits = $this->_scope->bits($prow);
+        } else {
+            $ci->scope_bits = ~0;
+        }
+
+        // hidden papers are always hidden from view
+        if ($hidden) {
+            return $cif;
+        }
+
+        $ci->ciflags |= PCI::CIF_RECURSION;
+
+        // check read scope
+        $sub_read_scope = ($ci->scope_bits & TS::S_SUB_READ) !== 0;
+        if (!$sub_read_scope) {
+            $ci->scope_bits &= ~TS::S_DOC_READ;
+        }
+        $allow_administer = $sub_read_scope
+            && ($cif & PCI::CIF_ALLOW_ADMIN_0) !== 0;
+        if ($allow_administer) {
+            $cif |= PCI::CIF_ALLOW_ADMIN;
+            if (($ci->scope_bits & TS::S_SUB_ADMIN) !== 0) {
+                $cif |= PCI::CIF_ALLOW_MANAGE;
+            }
+        }
+
+        // check current administration status
+        $can_administer = $allow_administer
+            && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED || $forceShow);
+        if ($can_administer) {
+            $cif |= PCI::CIF_IS_ADMIN;
+        }
+
+        // check PC tracking
+        // (see also pc_assignable*)
+        $tracks = $this->conf->has_tracks();
+        $am_lead = $this->isPC
+            && $prow->leadContactId === $this->contactXid;
+        $isPC = $this->isPC
+            && $sub_read_scope
+            && (!$tracks
+                || $ci->reviewType >= REVIEW_PC
+                || $am_lead
+                || !$this->conf->check_track_view_sensitivity()
+                || $this->conf->check_tracks($prow, $this, Track::VIEW))
+            && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED
+                || $this->privChair
+                || $this->conf->allow_conflicted_pc_view());
+
+        // check whether PC privileges apply
+        $allow_pc_broad = $allow_administer || $isPC;
+        if ($allow_pc_broad) {
+            $cif |= PCI::CIF_ALLOW_PC_BROAD;
+        }
+        $allow_pc = $can_administer
+            || ($isPC && $ci->conflictType <= CONFLICT_MAXUNCONFLICTED);
+        if ($allow_pc) {
+            $cif |= PCI::CIF_ALLOW_PC;
+        }
+
+        // check review accept capability
+        if ($ci->reviewType == 0
+            && $this->_capabilities !== null
+            && ($ru = $this->reviewer_capability_user($prow->paperId))
+            && ($rci = $prow->contact_info($ru))
+            && $rci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
+            if ($rci->review_status === 0) {
+                $rci->review_status = PCI::CIRS_DECLINED;
+            }
+            $ci->reviewType = $rci->reviewType;
+            $ci->reviewRound = $rci->reviewRound;
+            $ci->review_status = $rci->review_status;
+        }
+
+        // check author allowance
+        if (($allow_administer || $ci->conflictType >= CONFLICT_AUTHOR)
+            && ($ci->scope_bits & TS::S_SUB_WRITE) !== 0) {
+            $cif |= PCI::CIF_ALLOW_AUTHOR_EDIT;
+        }
+
+        // check author view state (includes capabilities)
+        // (Broad PC permission and reviewer status take precedence over
+        // an author-view capability.)
+        $av_active = false;
+        if ($ci->conflictType >= CONFLICT_AUTHOR) {
+            $cif |= PCI::CIF_AUTHOR_VIEW;
+        } else if ($this->_capabilities !== null
+                   && ($this->_capabilities["@av{$prow->paperId}"] ?? null)) {
+            $cif |= PCI::CIF_AUTHOR_VIEW;
+            if (!$allow_pc_broad && $ci->review_status === 0) {
+                $av_active = true;
+            }
+        }
+        if ($ci->conflictType > CONFLICT_MAXUNCONFLICTED
+            || $av_active) {
+            $cif |= PCI::CIF_CONFLICT_VIEW;
+        }
+        $act_author_view = $sub_read_scope
+            && !$forceShow
+            && ($ci->conflictType >= CONFLICT_AUTHOR || $av_active);
+        if ($allow_administer || $act_author_view) {
+            $cif |= PCI::CIF_ALLOW_AUTHOR_VIEW;
+        }
+        if ($act_author_view) {
+            $cif |= PCI::CIF_ACT_AUTHOR_VIEW;
+        }
+
+        // check decision visibility
+        if ($can_administer) {
+            $can_view_decision = true;
+        } else if ($act_author_view) {
+            $can_view_decision = $prow->can_author_view_decision();
+        } else if ($allow_pc_broad
+                   || ($ci->review_status > PCI::CIRS_UNSUBMITTED
+                       && ($this->conf->setting("viewrev_ext") ?? 0) >= 0)) {
+            $can_view_decision = $prow->can_author_view_decision()
+                || $this->conf->time_reviewer_view_decision($allow_pc_broad, ($cif & PCI::CIF_CONFLICT_VIEW) !== 0);
+        } else {
+            $can_view_decision = false;
+        }
+        if ($can_view_decision) {
+            $cif |= PCI::CIF_CAN_VIEW_DECISION;
+        }
+
+        // check paper & document visibility
+        $docbit = ($ci->scope_bits & TS::S_DOC_READ) !== 0 ? PCI::CIF_VIEW_DOC : 0;
+        if (!$sub_read_scope) {
+            // cannot view
+        } else if ($allow_administer
+                   || $act_author_view
+                   || ($ci->review_status > PCI::CIRS_DECLINED
+                       && $prow->timeSubmitted != 0)) {
+            $cif |= PCI::CIF_VIEW | $docbit;
+        } else if ($this->privChair) {
+            // `pc_confpdf` and PC view times don't apply to chairs
+            if ($allow_pc_broad
+                || ($this->dangerous_track_mask() & Track::FM_VIEW) === 0
+                || $this->conf->check_tracks($prow, $this, Track::VIEW)) {
+                $cif |= PCI::CIF_VIEW;
+                if ($docbit !== 0
+                    && (($this->dangerous_track_mask() & (1 << Track::VIEWPDF)) === 0
+                        || $this->conf->check_tracks($prow, $this, Track::VIEWPDF))) {
+                    $cif |= $docbit;
+                }
+            }
+        } else {
+            if ($allow_pc_broad
+                && $this->conf->time_pc_view($prow, false)) {
+                $v = $allow_pc ? 0 : $this->conf->setting("pc_confpdf") ?? 0;
+            } else {
+                $v = 2;
+            }
+            if ($v < 2 || $ci->review_status > 0) {
+                $cif |= PCI::CIF_VIEW;
+            }
+            if ($docbit !== 0
+                && $v < 1
+                && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
+                && $this->conf->time_pc_view($prow, true)) {
+                $cif |= $docbit;
+            }
+        }
+
+        return $cif;
     }
 
     /** @return PaperContactInfo */
@@ -3746,12 +3930,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // check first whether administration is allowed
         if (($ci->ciflags & PCI::CIF_SET0) === 0) {
             $ci->ciflags |= PCI::CIF_SET0;
-            if (isset($this->hidden_papers[$prow->paperId])) {
-                // totally invisible; this skips the main rights computation
-                $ci->ciflags |= PCI::CIF_SET1;
-                $ci->scope_bits = 0;
-            } else if ($this->isPC
-                       && $this->_compute_allow_admin_0($prow, $ci)) {
+            if ($this->isPC
+                && $this->_compute_rights_allow_admin_0($prow, $ci)) {
                 $ci->ciflags |= PCI::CIF_ALLOW_ADMIN_0;
             }
         }
@@ -3766,176 +3946,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (($this->_overrides & self::OVERRIDE_SCOPE) !== 0) {
             $linkflags |= PCI::CIF_OVERRIDE_SCOPE;
         }
-        // a hidden paper stays hidden under any override
-        if ($linkflags !== 0
-            && !isset($this->hidden_papers[$prow->paperId])) {
+        if ($linkflags !== 0) {
             $ci = $ci->get_linked_rights(($ci->ciflags & PCI::CIFM_SET0) | $linkflags);
         }
 
         // set main rights
         if (($ci->ciflags & PCI::CIF_SET1) === 0) {
-            assert(($ci->ciflags & ~PCI::CIFM_SET0) === 0);
-            $cif = $ci->ciflags | PCI::CIF_SET1;
-            $ci->ciflags |= PCI::CIF_RECURSION;
-            if (!$this->_scope
-                || ($this->_overrides & self::OVERRIDE_SCOPE) !== 0) {
-                $ci->scope_bits = ~0;
-            } else {
-                $ci->scope_bits = $this->_scope->bits($prow);
-            }
-
-            // check read scope
-            $sub_read_scope = ($ci->scope_bits & TS::S_SUB_READ) !== 0;
-            if (!$sub_read_scope) {
-                $ci->scope_bits &= ~TS::S_DOC_READ;
-            }
-            $allow_administer = $sub_read_scope
-                && ($cif & PCI::CIF_ALLOW_ADMIN_0) !== 0;
-            if ($allow_administer) {
-                $cif |= PCI::CIF_ALLOW_ADMIN;
-                if (($ci->scope_bits & TS::S_SUB_ADMIN) !== 0) {
-                    $cif |= PCI::CIF_ALLOW_MANAGE;
-                }
-            }
-
-            // check current administration status
-            $can_administer = $allow_administer
-                && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED || $forceShow);
-            if ($can_administer) {
-                $cif |= PCI::CIF_IS_ADMIN;
-            }
-
-            // check PC tracking
-            // (see also pc_assignable*)
-            $tracks = $this->conf->has_tracks();
-            $am_lead = $this->isPC
-                && $prow->leadContactId === $this->contactXid;
-            $isPC = $this->isPC
-                && $sub_read_scope
-                && (!$tracks
-                    || $ci->reviewType >= REVIEW_PC
-                    || $am_lead
-                    || !$this->conf->check_track_view_sensitivity()
-                    || $this->conf->check_tracks($prow, $this, Track::VIEW))
-                && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED
-                    || $this->privChair
-                    || $this->conf->allow_conflicted_pc_view());
-
-            // check whether PC privileges apply
-            $allow_pc_broad = $allow_administer || $isPC;
-            if ($allow_pc_broad) {
-                $cif |= PCI::CIF_ALLOW_PC_BROAD;
-            }
-            $allow_pc = $can_administer
-                || ($isPC && $ci->conflictType <= CONFLICT_MAXUNCONFLICTED);
-            if ($allow_pc) {
-                $cif |= PCI::CIF_ALLOW_PC;
-            }
-
-            // check review accept capability
-            if ($ci->reviewType == 0
-                && $this->_capabilities !== null
-                && ($ru = $this->reviewer_capability_user($prow->paperId))
-                && ($rci = $prow->contact_info($ru))
-                && $rci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
-                if ($rci->review_status === 0) {
-                    $rci->review_status = PCI::CIRS_DECLINED;
-                }
-                $ci->reviewType = $rci->reviewType;
-                $ci->reviewRound = $rci->reviewRound;
-                $ci->review_status = $rci->review_status;
-            }
-
-            // check author allowance
-            if (($allow_administer || $ci->conflictType >= CONFLICT_AUTHOR)
-                && ($ci->scope_bits & TS::S_SUB_WRITE) !== 0) {
-                $cif |= PCI::CIF_ALLOW_AUTHOR_EDIT;
-            }
-
-            // check author view state (includes capabilities)
-            // (Broad PC permission and reviewer status take precedence over
-            // an author-view capability.)
-            $av_active = false;
-            if ($ci->conflictType >= CONFLICT_AUTHOR) {
-                $cif |= PCI::CIF_AUTHOR_VIEW;
-            } else if ($this->_capabilities !== null
-                       && ($this->_capabilities["@av{$prow->paperId}"] ?? null)) {
-                $cif |= PCI::CIF_AUTHOR_VIEW;
-                if (!$allow_pc_broad && $ci->review_status === 0) {
-                    $av_active = true;
-                }
-            }
-            if ($ci->conflictType > CONFLICT_MAXUNCONFLICTED
-                || $av_active) {
-                $cif |= PCI::CIF_CONFLICT_VIEW;
-            }
-            $act_author_view = $sub_read_scope
-                && !$forceShow
-                && ($ci->conflictType >= CONFLICT_AUTHOR || $av_active);
-            if ($allow_administer || $act_author_view) {
-                $cif |= PCI::CIF_ALLOW_AUTHOR_VIEW;
-            }
-            if ($act_author_view) {
-                $cif |= PCI::CIF_ACT_AUTHOR_VIEW;
-            }
-
-            // check decision visibility
-            if ($can_administer) {
-                $can_view_decision = true;
-            } else if ($act_author_view) {
-                $can_view_decision = $prow->can_author_view_decision();
-            } else if ($allow_pc_broad
-                       || ($ci->review_status > PCI::CIRS_UNSUBMITTED
-                           && ($this->conf->setting("viewrev_ext") ?? 0) >= 0)) {
-                $can_view_decision = $prow->can_author_view_decision()
-                    || $this->conf->time_reviewer_view_decision($allow_pc_broad, ($cif & PCI::CIF_CONFLICT_VIEW) !== 0);
-            } else {
-                $can_view_decision = false;
-            }
-            if ($can_view_decision) {
-                $cif |= PCI::CIF_CAN_VIEW_DECISION;
-            }
-
-            // check paper & document visibility
-            $docbit = ($ci->scope_bits & TS::S_DOC_READ) !== 0 ? PCI::CIF_VIEW_DOC : 0;
-            if (!$sub_read_scope) {
-                // cannot view
-            } else if ($allow_administer
-                       || $act_author_view
-                       || ($ci->review_status > PCI::CIRS_DECLINED
-                           && $prow->timeSubmitted != 0)) {
-                $cif |= PCI::CIF_VIEW | $docbit;
-            } else if ($this->privChair) {
-                // `pc_confpdf` and PC view times don't apply to chairs
-                if ($allow_pc_broad
-                    || ($this->dangerous_track_mask() & Track::FM_VIEW) === 0
-                    || $this->conf->check_tracks($prow, $this, Track::VIEW)) {
-                    $cif |= PCI::CIF_VIEW;
-                    if ($docbit !== 0
-                        && (($this->dangerous_track_mask() & (1 << Track::VIEWPDF)) === 0
-                            || $this->conf->check_tracks($prow, $this, Track::VIEWPDF))) {
-                        $cif |= $docbit;
-                    }
-                }
-            } else {
-                if ($allow_pc_broad
-                    && $this->conf->time_pc_view($prow, false)) {
-                    $v = $allow_pc ? 0 : $this->conf->setting("pc_confpdf") ?? 0;
-                } else {
-                    $v = 2;
-                }
-                if ($v < 2 || $ci->review_status > 0) {
-                    $cif |= PCI::CIF_VIEW;
-                }
-                if ($docbit !== 0
-                    && $v < 1
-                    && $this->conf->check_tracks($prow, $this, Track::VIEWPDF)
-                    && $this->conf->time_pc_view($prow, true)) {
-                    $cif |= $docbit;
-                }
-            }
-
-            $ci->__set_ciflags($cif);
+            $ci->__set_ciflags($this->_compute_rights_set1($prow, $ci, $forceShow));
         }
 
         $this->_last_rights = $ci;
@@ -5841,11 +5858,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     private function new_comment_topics(PaperInfo $prow, PaperContactInfo $rights) {
         $time = $this->conf->setting("cmt_always") > 0
             || $this->conf->time_review_open();
-        if ((!$time && !$rights->is_admin())
-            || !$rights->scope_allows(TS::S_CMT_WRITE)
+        if (!$rights->scope_allows(TS::S_CMT_WRITE)
+            || (!$time
+                && !$rights->is_admin())
             || ($prow->outcome_sign < 0
                 && $rights->is_author()
-                && $rights->can_view_decision())) {
+                && $rights->can_view_decision()
+                && !$rights->can_manage())) {
             return 0;
         }
         $ctype = 0;
@@ -5969,9 +5988,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_CMT_WRITE)) {
+            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
+            $whyNot = $this->perm_edit_comment($prow, $crow, $newctype)
+                ?? $prow->failure_reason();
+            $this->set_overrides($overrides);
+            $whyNot["scope"] = "comment:write";
+            return $whyNot;
+        }
         $whyNot = $prow->failure_reason();
-        if ($crow->contactId !== $this->contactXid
-            && !$rights->allow_admin()) {
+        if ($crow->commentId !== 0
+            && !$rights->allow_admin()
+            && !$this->is_my_comment($prow, $crow)
+            && (!$rights->is_author()
+                || ($crow->commentType & CommentInfo::CT_BYAUTHOR) === 0)) {
             $whyNot["differentReviewer"] = true;
             $whyNot["commentId"] = $crow->commentId;
         } else if ($prow->timeWithdrawn > 0) {
@@ -5980,6 +6010,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $whyNot["notSubmitted"] = true;
         } else if ($this->new_comment_topics($prow, $rights) === 0) {
             $whyNot["permission"] = "comment:edit";
+            if ($rights->allow_manage() && !$rights->can_manage()) {
+                $whyNot["override"] = true;
+            }
         } else {
             if ($rights->conflicted()) {
                 $whyNot["conflict"] = true;
@@ -5989,7 +6022,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             if ($rights->allow_admin() && $rights->conflicted()) {
                 $whyNot["forceShow"] = true;
             }
-            if ($rights->allow_admin() && isset($whyNot['deadline'])) {
+            if ($rights->allow_admin() && isset($whyNot["deadline"])) {
                 $whyNot["override"] = true;
             }
         }
@@ -6020,6 +6053,14 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
+        if (!$rights->scope_allows(TS::S_CMT_WRITE)) {
+            $overrides = $this->add_overrides(self::OVERRIDE_SCOPE);
+            $whyNot = $this->perm_edit_response($prow, $crow)
+                ?? $prow->failure_reason();
+            $this->set_overrides($overrides);
+            $whyNot["scope"] = "comment:write";
+            return $whyNot;
+        }
         $whyNot = $prow->failure_reason();
         if (!$rights->allow_admin()
             && !$rights->is_author()) {

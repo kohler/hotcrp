@@ -129,7 +129,7 @@ class Comments_Tester {
 
         $j = call_api("=comment", $this->u_floyd, ["c" => "new", "text" => "Nope"], $paper1);
         xassert(!$j->ok);
-        xassert_match($j->message_list[0]->message, '/didn’t write this comment/');
+        xassert_match($j->message_list[0]->message, '/aren’t allowed to comment/');
 
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Yep"], $paper1);
         xassert($j->ok);
