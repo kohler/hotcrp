@@ -141,6 +141,7 @@ class TokenInfo {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     final function set_user_from(Contact $user, $is_cdb) {
+        assert(!$this->contactId);
         if ($this->is_cdb === null) {
             $this->is_cdb = $is_cdb ?? $user->is_cdb_user();
         }
@@ -148,7 +149,9 @@ class TokenInfo {
             $user->ensure_account_here();
         }
         $uid = $this->is_cdb ? $user->contactDbId : $user->contactId;
-        assert(!$this->contactId && $uid > 0);
+        if ($uid <= 0) {
+            throw new Exception("TokenInfo::set_user_from: Failed to create user");
+        }
         $this->contactId = $uid;
         $this->email = $user->email;
         $this->_user = $user;

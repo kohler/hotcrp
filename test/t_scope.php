@@ -880,17 +880,12 @@ class Scope_Tester {
         $tok = Job_Token::make($this->conf->root_user(), "Autoassign", []);
         xassert($tok->job_user()->is_root_user());
 
-        // ...but a user without an account can't make one, even with
-        // assertions off
-        $old_assertions = ini_get("zend.assertions");
-        ini_set("zend.assertions", "0");
+        // ...but a user whose account can't be created can't make one
         try {
-            Job_Token::make(Contact::make($this->conf), "Autoassign", []);
+            Job_Token::make(Contact::make_email($this->conf, "not-an-email"), "Autoassign", []);
             $made = true;
         } catch (Exception $ex) {
             $made = false;
-        } finally {
-            ini_set("zend.assertions", $old_assertions);
         }
         xassert(!$made);
     }
