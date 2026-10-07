@@ -308,7 +308,7 @@ class CsvParser implements Iterator {
                 continue;
             }
             foreach ($j as $k => $v) {
-                if (!is_scalar($v) && $v !== null) {
+                if (!$allow_mixed && !is_scalar($v) && $v !== null) {
                     continue;
                 }
                 $hs[$k] = true;

@@ -113,6 +113,33 @@ class Batch_Tester {
         $this->conf->invalidate_user($u);
     }
 
+    function test_saveusers_json_arrays() {
+        // JSON users may give list fields as arrays, mixed with strings
+        $this->delete_batch_users();
+        $su = new SaveUsers_Batch($this->conf->root_user(), [
+            "expression" => [json_encode([
+                ["email" => "csvbatchj1@_.com", "roles" => ["pc"], "tags" => ["red", "blue"],
+                 "given_name" => "Jay", "family_name" => "One"],
+                ["email" => "csvbatchj2@_.com", "roles" => "chair", "tags" => "green",
+                 "disabled" => true]
+            ])],
+            "quiet" => true
+        ]);
+        xassert_eqq($su->run(), 0);
+
+        $u1 = $this->conf->fresh_user_by_email("csvbatchj1@_.com");
+        xassert_eqq($u1->roles & Contact::ROLE_PCLIKE, Contact::ROLE_PC);
+        xassert($u1->has_tag("red") && $u1->has_tag("blue"));
+        xassert_eqq($u1->firstName, "Jay");
+        xassert_eqq($u1->lastName, "One");
+        xassert(!$u1->is_disabled());
+        $u2 = $this->conf->fresh_user_by_email("csvbatchj2@_.com");
+        xassert_eqq($u2->roles & Contact::ROLE_PCLIKE, Contact::ROLE_CHAIR | Contact::ROLE_PC);
+        xassert($u2->has_tag("green"));
+        xassert($u2->is_disabled());
+        $this->delete_batch_users();
+    }
+
     /** @param string $text
      * @return string */
     private function write_temp($text) {

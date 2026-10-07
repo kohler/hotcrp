@@ -573,6 +573,9 @@ class UserStatus extends MessageSet {
         foreach ($t0 as $t) {
             if ($t === "") {
                 continue;
+            } else if (!is_string($t)) {
+                $this->error_at($key, "<0>Format error [{$key}]");
+                continue;
             }
             $pfx = "";
             $flags = Tagger::NOPRIVATE;
@@ -590,6 +593,22 @@ class UserStatus extends MessageSet {
             }
         }
         return $t1;
+    }
+
+    /** Reject values of the wrong type before anything parses them.
+     * @param object $cj */
+    private function normalize_types($cj) {
+        foreach (["user", "name", "given_name", "family_name", "first", "last",
+                  "firstName", "lastName", "email", "preferred_email", "preferredEmail",
+                  "affiliation", "institution", "phone", "voicePhoneNumber", "new_password",
+                  "city", "state", "zip", "zipCode", "postal_code", "country", "orcid"] as $k) {
+            if (isset($cj->$k) && !is_string($cj->$k)) {
+                $this->error_at($k, "<0>Format error [{$k}]");
+                unset($cj->$k);
+            }
+        }
+        // computed by `normalize`
+        unset($cj->bad_follow, $cj->bad_topics);
     }
 
     /** @param ?Contact $old_user */
@@ -611,15 +630,6 @@ class UserStatus extends MessageSet {
             }
         }
 
-        // Stringiness
-        foreach (["firstName", "lastName", "email", "preferred_email",
-                  "affiliation", "phone", "new_password",
-                  "city", "state", "zip", "country"] as $k) {
-            if (isset($cj->$k) && !is_string($cj->$k)) {
-                $this->error_at($k, "<0>Format error [{$k}]");
-                unset($cj->$k);
-            }
-        }
 
         // New password
         if (isset($cj->new_password)
@@ -1072,6 +1082,7 @@ class UserStatus extends MessageSet {
         $cj = $this->jval;
 
         // normalize name, including email
+        $this->normalize_types($cj);
         self::normalize_name($cj);
 
         // obtain old users in this conference and contactdb
@@ -1212,7 +1223,7 @@ class UserStatus extends MessageSet {
                 $cf |= Contact::CF_BOT;
             }
             $create_cj = array_merge((array) $cj, [
-                "email" => $email, "disablement" => $cf
+                "contactId" => 0, "email" => $email, "disablement" => $cf
             ]);
             $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
             if ($user && $user->is_bot()) {
@@ -1602,13 +1613,25 @@ class UserStatus extends MessageSet {
         "disabled", "theme"
     ];
 
+    /** Trim a CSV value, leaving JSON non-strings as they are.
+     * @param mixed $v
+     * @return mixed */
+    static private function csv_trim($v) {
+        return is_string($v) ? trim($v) : $v ?? "";
+    }
+
     static function parse_csv_main(UserStatus $us, CsvRow $line) {
         $cj = $us->jval;
 
         // set keys
         foreach (self::$csv_keys as $k) {
             $v = $line[$k];
-            if ($v === null || $v === "" || ($v = trim($v)) === "") {
+            if ($v === null) {
+                // skip
+            } else if (!is_string($v)) {
+                // JSON values keep their types; `normalize` checks them
+                $cj->$k = $v;
+            } else if (($v = trim($v)) === "") {
                 // skip
             } else if ($v === "-" || $v === "–" || $v === "—") {
                 if ($k === "roles" || $k === "disabled") {
@@ -1624,7 +1647,7 @@ class UserStatus extends MessageSet {
         }
 
         // user override
-        $override = trim($line["user_override"] ?? "");
+        $override = self::csv_trim($line["user_override"]);
         if ($override !== "") {
             $cj->user_override = friendly_boolean($override); /* OK if null */
         }
@@ -1635,7 +1658,7 @@ class UserStatus extends MessageSet {
             foreach ($line as $k => $v) {
                 if (preg_match('/^topic[:\s]\s*(.*?)\s*$/i', $k, $m)) {
                     if (($tid = $us->conf->topic_set()->find1($m[1], TopicSet::MFLAG_TOPIC)) > 0) {
-                        $v = trim($v);
+                        $v = self::csv_trim($v);
                         $topics[$tid] = $v === "" ? 0 : $v;
                     } else {
                         $us->unknown_topics[$m[1]] = true;
@@ -1643,7 +1666,7 @@ class UserStatus extends MessageSet {
                 }
             }
             if (!empty($topics)) {
-                $override = trim($line["topic_override"] ?? "");
+                $override = self::csv_trim($line["topic_override"]);
                 if ($override !== "" && friendly_boolean($override) === false) {
                     $cj->default_topics = (object) $topics;
                 } else {

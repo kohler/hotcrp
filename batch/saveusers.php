@@ -79,7 +79,15 @@ class SaveUsers_Batch {
         } else {
             throw new CommandLineException("{$this->filename}: " . (Json::last_error_msg() ?? "JSON parse error"));
         }
+        foreach ($ja as $i => $jx) {
+            if (!is_object($jx)) {
+                fwrite(STDERR, "{$this->filename}: Item {$i}: Expected user object\n");
+                $this->exit_status = 1;
+            }
+        }
+        // JSON users are CSV rows whose values keep their JSON types
         $csv = CsvParser::make_json($ja, true);
+        $this->ustatus->add_csv_synonyms($csv);
         $this->parse_csvp($csv);
     }
 

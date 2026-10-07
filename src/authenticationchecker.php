@@ -178,6 +178,9 @@ class AuthenticationChecker {
 
     /** @return bool */
     function test() {
+        if ($this->user->is_root_user()) {
+            return true;
+        }
         // NB bearer tokens have no security events, so this will correctly return false
         return ($t = $this->latest()) > 0
             && $t >= Conf::$now - $this->max_age;

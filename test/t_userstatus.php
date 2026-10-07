@@ -2126,4 +2126,46 @@ class UserStatus_Tester {
 
         $this->delete_account($email);
     }
+
+    function test_json_save_ignores_contact_id() {
+        // a user object's `contactId` can't redirect creation to an existing account
+        $conf = $this->conf;
+        $victim = "jsonvictim@_.com";
+        $email = "jsonnew@_.com";
+        $this->delete_account($victim);
+        $this->delete_account($email);
+        $us = new UserStatus($conf->root_user());
+        $v = $us->save_user((object) ["email" => $victim, "given_name" => "Victim"]);
+        xassert(!!$v);
+
+        $us = new UserStatus($conf->root_user());
+        $u = $us->save_user((object) ["email" => $email, "given_name" => "Other", "contactId" => $v->contactId]);
+        xassert(!!$u);
+        xassert_neqq($u->contactId, $v->contactId);
+        $v = $conf->fresh_user_by_email($victim);
+        xassert_eqq($v->firstName, "Victim");
+        xassert_eqq($conf->fresh_user_by_email($email)->firstName, "Other");
+
+        $this->delete_account($victim);
+        $this->delete_account($email);
+    }
+
+    function test_json_save_rejects_wrong_types() {
+        // values of the wrong type are format errors, not crashes
+        $conf = $this->conf;
+        $email = "jsontypes@_.com";
+        foreach ([["given_name", ["a"]], ["affiliation", (object) []], ["name", [["x"]]],
+                  ["orcid", [1]], ["tags", ["a", 1]], ["change_tags", [["x"]]],
+                  ["bad_follow", 1]] as $kv) {
+            $this->delete_account($email);
+            $us = new UserStatus($conf->root_user());
+            $cj = (object) ["email" => $email];
+            $cj->{$kv[0]} = $kv[1];
+            $us->save_user($cj);
+            if ($kv[0] !== "bad_follow") {
+                xassert_str_contains($us->full_feedback_text(), "Format error", $kv[0]);
+            }
+        }
+        $this->delete_account($email);
+    }
 }
