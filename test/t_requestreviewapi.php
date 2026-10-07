@@ -395,6 +395,72 @@ class RequestReviewAPI_Tester {
                              "aren’t allowed to request reviews");
     }
 
+    function test_only_managers_choose_review_rounds() {
+        // a non-manager may name only the default round, or (when requesting)
+        // the round of their own review; other rounds’ deadlines may differ
+        $conf = $this->conf;
+        $keys = ["tag_rounds", "rev_roundtag", "pcrev_soft_1", "pcrev_hard_1"];
+        $old = [];
+        foreach ($keys as $k) {
+            $old[$k] = [$conf->setting($k), $conf->setting_data($k)];
+        }
+        $wrong_round = function ($whynot) {
+            return $whynot && ($whynot["wrongReviewRound"] ?? false);
+        };
+        try {
+            // R1, the assignment round, is closed; R2 and round 0 are open
+            $conf->save_setting("tag_rounds", 1, "R1 R2");
+            $conf->save_setting("rev_roundtag", 1, "R1");
+            $conf->save_setting("pcrev_soft_1", Conf::$now - 200);
+            $conf->save_refresh_setting("pcrev_hard_1", Conf::$now - 100);
+            xassert_eqq($conf->assignment_round(false), 1);
+            xassert_eqq($conf->round_number("R2"), 2);
+            $prow = $conf->checked_paper_by_id($this->pid);
+
+            // creating a review: only the default round
+            $u = $this->u_control;
+            xassert(!$prow->has_reviewer($u) && !$prow->has_conflict($u));
+            foreach ([null, 1, 0, 2] as $r) {
+                xassert(!$u->can_create_review($prow, $u, $r), "create round " . json_encode($r));
+            }
+            xassert($wrong_round($u->perm_create_review($prow, $u, 0)));
+            xassert($wrong_round($u->perm_create_review($prow, $u, 2)));
+            xassert($this->u_chair->can_create_review($prow, $u, 0));
+            xassert($this->u_chair->can_create_review($prow, $u, 2));
+
+            // requesting a review: the default round, or the requester’s own
+            $u = $this->u_prober;
+            xassert_eqq($prow->review_by_user($u)->reviewRound, 0);
+            xassert(!$u->can_request_review($prow, null, true));
+            xassert(!$u->can_request_review($prow, 2, true));
+            xassert($wrong_round($u->perm_request_review($prow, 2, true)));
+            xassert($u->can_request_review($prow, 0, true));
+            xassert($this->u_chair->can_request_review($prow, 2, true));
+
+            // a review-accept link lends its review’s round, not round 0
+            $conf->qe("update PaperReview set reviewRound=1 where reviewId=?", $this->hidden_rid);
+            $holder = $conf->fresh_user_by_email($this->u_control->email);
+            $holder->set_capability("@ra{$this->pid}", $this->u_hidden->contactId);
+            $hprow = $conf->checked_paper_by_id($this->pid, $holder);
+            xassert(!$holder->can_request_review($hprow, 0, true));
+            xassert($wrong_round($holder->perm_request_review($hprow, 0, true)));
+
+            // with the assignment round open, the default round works
+            $conf->save_refresh_setting("pcrev_hard_1", Conf::$now + 100);
+            $prow = $conf->checked_paper_by_id($this->pid);
+            xassert($this->u_control->can_create_review($prow, $this->u_control, null));
+            xassert($this->u_control->can_create_review($prow, $this->u_control, 1));
+            xassert($this->u_prober->can_request_review($prow, null, true));
+            xassert($this->u_prober->can_request_review($prow, 1, true));
+        } finally {
+            $conf->qe("update PaperReview set reviewRound=0 where reviewId=?", $this->hidden_rid);
+            foreach ($old as $k => $vd) {
+                $conf->save_setting($k, $vd[0], $vd[1]);
+            }
+            $conf->refresh_settings();
+        }
+    }
+
     function test_review_link_refused_to_conflicted_user() {
         // a review-accept link lends its reviewer’s role only to holders
         // without a conflict on the submission

@@ -333,6 +333,12 @@ class FailureReason extends Exception
         if ($this->_a["reviewNotComplete"] ?? false) {
             $ms[] = $this->conf->_("<0>Your own review for #{} is not complete, so you can’t view other people’s reviews", $paperId);
         }
+        if ($this->_a["reviewNotAssigned"] ?? false) {
+            $ms[] = $this->conf->_("<0>You aren’t allowed to self-assign a review for {submission} #{}", $paperId);
+        }
+        if ($this->_a["wrongReviewRound"] ?? false) {
+            $ms[] = $this->conf->_("<0>Review round ‘{}’ is not open for assignment", $this->conf->round_name($this->_a["reviewRound"]) ? : "unnamed");
+        }
         if ($this->_a["responseNonexistent"] ?? false) {
             $ms[] = $this->conf->_("<0>Response not allowed on {submission} #{}", $paperId);
         }
@@ -341,9 +347,6 @@ class FailureReason extends Exception
         }
         if ($this->_a["reviewsOutstanding"] ?? false) {
             $ms[] = $this->conf->_("<0>You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
-        }
-        if ($this->_a["reviewNotAssigned"] ?? false) {
-            $ms[] = $this->conf->_("<0>You aren’t allowed to self-assign a review for {submission} #{}", $paperId);
         }
         if (isset($this->_a["deadline"])) {
             list($odn, $start, $edn, $end, $args) = $this->deadline_info();

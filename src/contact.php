@@ -3842,6 +3842,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     $rci->review_status = PCI::CIRS_DECLINED;
                 }
                 $ci->reviewType = $rci->reviewType;
+                $ci->reviewRound = $rci->reviewRound;
                 $ci->review_status = $rci->review_status;
             }
 
@@ -5412,7 +5413,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                     && ($rights->reviewType >= REVIEW_PC
                         || ($this->isPC
                             && $prow->leadContactId === $this->contactXid))
-                    && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0))
+                    && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0)
+                    && ($round === null
+                        || $round === $this->conf->assignment_round(true)
+                        || ($rights->reviewType >= REVIEW_PC
+                            && $round === $rights->reviewRound)))
             && (!$check_time
                 || $rights->is_admin()
                 || $this->conf->time_review($round, false, true));
@@ -5425,16 +5430,26 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
-        if (!$rights->allow_admin()
-            && !($this->contactId > 0
-                 && ($rights->reviewType >= REVIEW_PC
-                     || ($this->isPC
-                         && $prow->leadContactId === $this->contactXid))
-                 && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0)) {
-            $whyNot["permission"] = "review:request";
-        } else {
+        $whyNot["reviewRound"] = $round;
+        $eknown = false;
+        if (!$rights->allow_admin()) {
+            if ($this->contactId <= 0
+                || ($rights->reviewType < REVIEW_PC
+                    && (!$this->isPC
+                        || $prow->leadContactId !== $this->contactXid))
+                || ($this->conf->setting("extrev_chairreq") ?? 0) < 0) {
+                $whyNot["permission"] = "review:request";
+                $eknown = true;
+            } else if ($round !== null
+                       && $round !== $this->conf->assignment_round(true)
+                       && ($rights->reviewType < REVIEW_PC
+                           || $round !== $rights->reviewRound)) {
+                $whyNot["wrongReviewRound"] = true;
+                $eknown = true;
+            }
+        }
+        if (!$eknown) {
             $whyNot["deadline"] = "extrev_chairreq";
-            $whyNot["reviewRound"] = $round;
             if ($rights->allow_admin()) {
                 $whyNot["override"] = true;
             }
@@ -5615,6 +5630,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && $this->pc_assignable($prow)
             && $this->conf->check_tracks($prow, $this, Track::SELFASSREV)
             && $this->conf->allow_self_assignment()
+            && ($round === null || $round === $this->conf->assignment_round(false))
             && $this->conf->time_review($round, $rights->allow_pc(), true)
             && $rights->scope_allows(TS::S_REV_WRITE);
     }
@@ -5627,13 +5643,27 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
+        $whyNot["reviewRound"] = $round;
         if (!$rights->scope_allows(TS::S_REV_WRITE)) {
             $whyNot["scope"] = "review:write";
+        }
+        if ($prow->timeWithdrawn > 0) {
+            $whyNot["withdrawn"] = true;
+        } else if ($prow->timeSubmitted <= 0) {
+            $whyNot["notSubmitted"] = true;
         }
         if ($rights->can_manage_reviews()) {
             if ($reviewer->isPC
                 && !$reviewer->pc_track_assignable($prow)) {
                 $whyNot["unacceptableReviewer"] = true;
+            } else {
+                if ($prow->timeSubmitted > 0
+                    && !$this->conf->time_review($round, $reviewer->isPC, true)) {
+                    $whyNot["deadline"] = $reviewer->isPC ? "pcrev_hard" : "extrev_hard";
+                }
+                if ($prow->timeSubmitted <= 0 || isset($whyNot["deadline"])) {
+                    $whyNot["override"] = true;
+                }
             }
         } else if ($rights->allow_admin()) {
             $whyNot["conflict"] = true;
@@ -5643,6 +5673,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 $whyNot["differentReviewer"] = true;
             } else if ($rights->is_reviewer()) {
                 $whyNot["alreadyReviewed"] = true;
+            } else if ($round !== null && $round !== $this->conf->assignment_round(false)) {
+                $whyNot["wrongReviewRound"] = true;
             } else {
                 $whyNot["permission"] = "review:edit";
                 if (!$this->conf->allow_self_assignment()
@@ -5652,20 +5684,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 if ($rights->conflicted()) {
                     $whyNot["conflict"] = true;
                 }
-            }
-        }
-        if (count($whyNot) === 0) {
-            if ($prow->timeWithdrawn > 0) {
-                $whyNot["withdrawn"] = true;
-            } else if ($prow->timeSubmitted <= 0) {
-                $whyNot["notSubmitted"] = true;
-            } else if (!$this->conf->time_review($round, $reviewer->isPC, true)) {
-                $whyNot["deadline"] = $reviewer->isPC ? "pcrev_hard" : "extrev_hard";
-                $whyNot["reviewRound"] = $round;
-            }
-            if ($rights->can_manage_reviews()
-                && ($prow->timeSubmitted <= 0 || isset($whyNot["deadline"]))) {
-                $whyNot["override"] = true;
             }
         }
         return $whyNot;

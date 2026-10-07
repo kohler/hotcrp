@@ -916,7 +916,12 @@ class ReviewValues extends MessageSet {
 
     /** @return ?ReviewInfo */
     private function prepare_create(PaperInfo $prow, Contact $reviewer, ?ReviewInfo $rrow, $reqtype) {
-        $round = isset($this->req["round"]) ? (int) $this->conf->round_number($this->req["round"]) : null;
+        $round = null;
+        if (isset($this->req["round"])
+            && ($round = $this->conf->round_number($this->req["round"])) === null) {
+            $this->rvmsg(self::ERROR, "round", "<0>Review round not found");
+            return null;
+        }
         if (($whynot = $this->user->perm_create_review($prow, $reviewer, $round))) {
             $whynot->append_to($this, null, self::ERROR);
             return null;

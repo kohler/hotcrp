@@ -11,8 +11,9 @@ class RequestReview_API {
         $conf = $user->conf;
         $round = null;
         if ((string) $qreq->round !== ""
-            && ($rname = $conf->sanitize_round_name($qreq->round)) !== false) {
-            $round = (int) $conf->round_number($rname);
+            && (($rname = $conf->sanitize_round_name($qreq->round)) === false
+                || ($round = $conf->round_number($rname)) === null)) {
+            return JsonResult::make_parameter_error("round", "<0>Review round not found");
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
