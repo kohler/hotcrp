@@ -2084,7 +2084,12 @@ class AssignmentSet {
             $this->astate->paper_error("<0>Email address ‘" . $req["email"] . "’ invalid");
         } else {
             $uname = $auser->name(NAME_E);
-            $problem = $prow->has_conflict($auser) ? "has a conflict with" : "cannot be assigned to";
+            if ($prow->has_conflict($auser)
+                && $this->astate->user->can_view_conflicts($prow)) {
+                $problem = "has a conflict with";
+            } else {
+                $problem = "cannot be assigned to";
+            }
             $this->astate->paper_error("<0>{$uname} {$problem} #{$prow->paperId}");
             return; // do not set poison_user
         }

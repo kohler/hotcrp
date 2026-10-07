@@ -571,10 +571,17 @@ class Comment_API extends MessageSet {
         if ($this->user->can_manage($this->prow)) {
             $this->status = 403;
             $this->error_at(null, "<0>You aren’t allowed to view that {$this->lccmttype}");
-        } else {
-            $this->status = 404;
-            $this->error_at(null, "<0>{$this->uccmttype} not found");
+            return null;
         }
+        // to a user who couldn't write it anyway, a hidden response
+        // addressed by round looks like no response
+        if ($rrd !== null
+            && !($cid > 0)
+            && !$this->user->can_edit_response($this->prow, $crow)) {
+            return CommentInfo::make_response_template($this->rrd, $this->prow);
+        }
+        $this->status = 404;
+        $this->error_at(null, "<0>{$this->uccmttype} not found");
         return null;
     }
 

@@ -3507,6 +3507,33 @@ class Comments_Tester {
         xassert_eqq($exists, $absent);
     }
 
+    function test_comment_api_post_hides_response_existence() {
+        // posting to a response round says nothing about whether a response
+        // the poster can't see exists
+        $conf = $this->conf;
+        $u = $this->u_mgbaker;
+        $p2 = $conf->checked_paper_by_id(2);
+        xassert(!$u->can_manage($p2));
+        $nresponses = function () use ($conf) {
+            return $conf->fetch_ivalue("select count(*) from PaperComment where paperId=2 and (commentType&?)!=0",
+                CommentInfo::CT_RESPONSE);
+        };
+
+        $this->add_draft_response(2);
+        $p2 = $conf->checked_paper_by_id(2);
+        $exists = $this->cmt_observable("=comment", $u, ["response" => "1", "text" => "x"], $p2);
+        xassert_eqq($nresponses(), 1);
+
+        $conf->qe("delete from PaperComment where paperId=2 and (commentType&?)!=0",
+            CommentInfo::CT_RESPONSE);
+        $p2 = $conf->checked_paper_by_id(2);
+        $absent = $this->cmt_observable("=comment", $u, ["response" => "1", "text" => "x"], $p2);
+        xassert_eqq($nresponses(), 0);
+
+        xassert_str_contains($exists, "allowed to respond");
+        xassert_eqq($exists, $absent);
+    }
+
     function test_comment_api_get_hides_comment_existence() {
         // the plain-comment branch already collapses both cases for a
         // non-administrator; this pins that it stays that way

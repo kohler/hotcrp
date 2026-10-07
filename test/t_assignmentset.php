@@ -255,4 +255,34 @@ class AssignmentSet_Tester {
         xassert_search($this->u_chair, "#columnlimit", "1");
         xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag,columnlimit\n");
     }
+
+    function test_user_error_hides_unviewable_conflict() {
+        // the generic "cannot be assigned" error names a conflict only to
+        // users who can see the paper's conflicts
+        $conf = $this->conf;
+        $pid = 30;
+        $u = $this->u_mgbaker;
+        $sub = $conf->fetch_ivalue("select timeSubmitted from Paper where paperId=?", $pid);
+        $old_seeall = $conf->setting("pc_seeall");
+        xassert_assign($this->u_chair, "paper,action,tag\n{$pid},tag,hiddenconflict\n");
+        $conf->qe("update Paper set timeSubmitted=0 where paperId=?", $pid);
+        $conf->save_refresh_setting("pc_seeall", null);
+        $conf->qe("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=?",
+            $pid, $u->contactId, Conflict::GENERAL, Conflict::GENERAL);
+        try {
+            $prow = $conf->checked_paper_by_id($pid);
+            xassert(!$u->can_view_paper($prow));
+            xassert(!$u->can_view_conflicts($prow));
+            // `nexttag` loads every paper carrying the tag
+            $aset = new AssignmentSet($u);
+            $aset->parse("paper,action,tag,following\n1,nexttag,hiddenconflict,\n{$pid},follow,,yes\n");
+            xassert(!$aset->execute());
+            xassert_not_str_contains($aset->full_feedback_text(), "conflict");
+        } finally {
+            $conf->qe("delete from PaperConflict where paperId=? and contactId=?", $pid, $u->contactId);
+            $conf->qe("update Paper set timeSubmitted=? where paperId=?", $sub, $pid);
+            $conf->save_refresh_setting("pc_seeall", $old_seeall);
+            xassert_assign($this->u_chair, "paper,action,tag\n{$pid},cleartag,hiddenconflict\n");
+        }
+    }
 }
