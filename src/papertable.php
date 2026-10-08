@@ -2152,7 +2152,7 @@ class PaperTable {
         }
 
         if (isset($whyNot["deadline"])) {
-            if ($sr->submit > 0 && Conf::$now <= $sr->submit) {
+            if ($sr->submit <= 0 || Conf::$now <= $sr->submit + $sr->grace) {
                 $this->_main_message(1, '<5>The site is not open for updates at the moment.' . $this->_deadline_override_message());
             } else {
                 $this->_main_message(1, "<5>The " . $this->conf->hotlink("submission deadline", "deadlines") . " has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_draft_exempt_message() . $this->_deadline_override_message());

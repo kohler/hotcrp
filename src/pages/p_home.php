@@ -590,8 +590,8 @@ class Home_Page {
             $d = $conf->unparse_time_with_local_span($dl);
             if (!$sr->time_edit_final(true)) {
                 $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> for submitting {$sr->prefix}final versions has passed.";
-            } else if ($d <= Conf::$now) {
-                if ($d === $sr->final_done) {
+            } else if ($dl <= Conf::$now) {
+                if ($dl === $sr->final_done) {
                     $dx = " They were required by {$d}.";
                 } else if ($sr->final_done > 0) {
                     $dx = " They were requested by {$d} and are required by " . $conf->unparse_time_with_local_span($sr->final_done) . ".";
@@ -614,10 +614,12 @@ class Home_Page {
         if (($srf & 2) !== 0
             && $sr->time_edit(true, true)) {
             if ($sr->time_edit(false, true)) {
-                $d = $conf->unparse_time_with_local_span($sr->submit);
-                $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
+                if ($sr->submit > 0) {
+                    $d = $conf->unparse_time_with_local_span($sr->submit);
+                    $deadlines[] = "You have until {$d} to update {$sr->prefix}{$conf->snouns[1]}.";
+                }
                 $srf = 2;
-            } else {
+            } else if ($sr->resubmit > 0) {
                 $d = $conf->unparse_time_with_local_span($sr->resubmit);
                 $deadlines[] = "You have until {$d} to revise {$sr->prefix}{$conf->snouns[1]}.";
             }
@@ -629,14 +631,16 @@ class Home_Page {
         }
         if (($srf & 1) !== 0
             && $sr->time_edit(false, true)) {
-            $d = $conf->unparse_time_with_local_span($sr->submit);
-            $deadlines[] = "You have until {$d} to complete {$sr->prefix}draft {$conf->snouns[1]}.";
+            if ($sr->submit > 0) {
+                $d = $conf->unparse_time_with_local_span($sr->submit);
+                $deadlines[] = "You have until {$d} to complete {$sr->prefix}draft {$conf->snouns[1]}.";
+            }
         } else if (($srf & 1) !== 0) {
-            if ($sr->time_submit(true)) {
+            if (!$sr->time_submit(true)) {
+                $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to complete {$sr->prefix}draft {$conf->snouns[1]} has passed.";
+            } else if ($sr->submit > 0) {
                 $d = $conf->unparse_time_with_local_span($sr->submit);
                 $deadlines[] = "You have until {$d} to mark {$sr->prefix}{$conf->snouns[1]} as ready for review.";
-            } else {
-                $deadlines[] = "The <a href=\"{$dlurl}\">deadline</a> to complete {$sr->prefix}draft {$conf->snouns[1]} has passed.";
             }
         }
     }

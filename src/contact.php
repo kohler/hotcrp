@@ -6864,6 +6864,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && !$disabled) {
             $dl->final = (object) ["open" => true];
             if (($t = $sr->final_deadline_for_display())) {
+                if ($t < Conf::$now && $sr->final_done > $t) {
+                    // soft deadline passed; report the hard deadline
+                    $t = $sr->final_done;
+                }
                 $dl->final->done = $t;
                 if ($t === $sr->final_done) {
                     $dl->final->ishard = true;
@@ -6885,11 +6889,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         if (isset($dl->rev)) {
             $dl->revs = [];
-            $k = $this->isPC ? "pcrev" : "extrev";
+            $rtype = $this->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
             foreach ($this->reportable_review_rounds() as $i => $round_name) {
-                $isuf = $i ? "_{$i}" : "";
-                $s = +$this->conf->setting("{$k}_soft{$isuf}");
-                $h = +$this->conf->setting("{$k}_hard{$isuf}");
+                $s = $this->conf->review_deadline($i, $rtype, false);
+                $h = $this->conf->review_deadline($i, $rtype, true);
                 $dl->revs[$round_name] = $dlround = (object) [];
                 if ($rev_open) {
                     $dlround->open = true;

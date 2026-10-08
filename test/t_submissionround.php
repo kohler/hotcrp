@@ -263,4 +263,148 @@ class SubmissionRound_Tester {
         $p_estrin = $this->conf->checked_paper_by_id($this->pid_estrin);
         xassert($p_estrin->submission_round()->unnamed);
     }
+
+    /** @param int $srf
+     * @return list<string> */
+    private function home_deadlines(Contact $user, $srf) {
+        $sr = $this->conf->unnamed_submission_round();
+        $home = new Home_Page($user);
+        $f = Closure::bind(function ($sr, $srf) {
+            $deadlines = [];
+            $this->submission_round_deadlines($deadlines, $sr, $srf);
+            return $deadlines;
+        }, $home, Home_Page::class);
+        return $f($sr, $srf);
+    }
+
+    /** @param ?int $soft
+     * @param ?int $done */
+    private function set_final_deadlines($soft, $done) {
+        $this->conf->save_setting("final_open", Conf::$now - 1000);
+        $this->conf->save_setting("final_soft", $soft);
+        $this->conf->save_setting("final_done", $done);
+        $this->conf->refresh_settings();
+    }
+
+    function test_final_deadline_display() {
+        $conf = $this->conf;
+        $soft = Conf::$now + 864000;
+        $hard = Conf::$now + 1728000;
+
+        // before the soft deadline, the soft deadline is shown
+        $this->set_final_deadlines($soft, $hard);
+        $sr = $conf->unnamed_submission_round();
+        xassert_eqq($sr->final_deadline_for_display(), $soft);
+        $dl = $this->home_deadlines($this->u_estrin, 4);
+        xassert_eqq(count($dl), 1);
+        xassert_str_contains($dl[0], "by " . $conf->unparse_time_with_local_span($soft));
+        $sj = $this->u_estrin->status_json();
+        xassert_eqq($sj->final->done, $soft);
+        xassert(!isset($sj->final->ishard));
+
+        // after the soft deadline, final versions are overdue
+        $soft = Conf::$now - 86400;
+        $this->set_final_deadlines($soft, $hard);
+        $sr = $conf->unnamed_submission_round();
+        xassert_eqq($sr->final_deadline_for_display(), $soft);
+        $dl = $this->home_deadlines($this->u_estrin, 4);
+        xassert_str_contains($dl[0], "overdue");
+        xassert_str_contains($dl[0], "requested by " . $conf->unparse_time_with_local_span($soft));
+        xassert_str_contains($dl[0], "required by " . $conf->unparse_time_with_local_span($hard));
+        $sj = $this->u_estrin->status_json();
+        xassert_eqq($sj->final->done, $hard);
+        xassert_eqq($sj->final->ishard ?? null, true);
+
+        // a passed soft deadline alone is overdue
+        $this->set_final_deadlines($soft, null);
+        $dl = $this->home_deadlines($this->u_estrin, 4);
+        xassert_str_contains($dl[0], "overdue");
+        xassert_str_contains($dl[0], "requested by " . $conf->unparse_time_with_local_span($soft));
+
+        // with soft = hard, the hard deadline is shown
+        $this->set_final_deadlines($hard, $hard);
+        $sr = $conf->unnamed_submission_round();
+        xassert_eqq($sr->final_deadline_for_display(), $hard);
+        $sj = $this->u_estrin->status_json();
+        xassert_eqq($sj->final->done, $hard);
+        xassert_eqq($sj->final->ishard ?? null, true);
+
+        $conf->save_setting("final_open", null);
+        $this->set_final_deadlines(null, null);
+        $conf->save_refresh_setting("final_open", null);
+    }
+
+    function test_submission_deadlines_without_deadline() {
+        $conf = $this->conf;
+        $sub_reg = $conf->setting("sub_reg");
+        $sub_sub = $conf->setting("sub_sub");
+        $conf->save_setting("sub_reg", null);
+        $conf->save_refresh_setting("sub_sub", null);
+        foreach ([1, 2, 3] as $srf) {
+            foreach ($this->home_deadlines($this->u_estrin, $srf) as $dl) {
+                xassert_not_str_contains($dl, "N/A");
+                xassert_not_str_contains($dl, "You have until");
+            }
+        }
+        $conf->save_setting("sub_reg", $sub_reg);
+        $conf->save_refresh_setting("sub_sub", $sub_sub);
+    }
+
+    function test_external_reviewer_status_review_deadlines() {
+        $conf = $this->conf;
+        $conf->save_setting("rev_open", 1);
+        $conf->save_setting("pcrev_soft", Conf::$now + 5000);
+        $conf->save_setting("pcrev_hard", Conf::$now + 6000);
+        $conf->save_setting("extrev_soft", null);
+        $conf->refresh_settings();
+        xassert($conf->time_review_open());
+        xassert_assign($this->u_chair, "paper,action,user\n1,review,sclin@leland.stanford.edu\n");
+        $u_ext = $conf->fresh_user_by_email("sclin@leland.stanford.edu");
+        xassert(!$u_ext->isPC && $u_ext->is_reviewer() && !$u_ext->is_disabled());
+        $sj = $u_ext->status_json();
+        xassert_eqq($sj->revs["unnamed"]->done ?? null, Conf::$now + 5000);
+
+        xassert_assign($this->u_chair, "paper,action,user\n1,clearreview,sclin@leland.stanford.edu\n");
+        $conf->save_setting("pcrev_soft", null);
+        $conf->save_setting("pcrev_hard", null);
+        $conf->save_setting("rev_open", null);
+        $conf->refresh_settings();
+    }
+
+    function test_closed_site_draft_message() {
+        $conf = $this->conf;
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) [
+            "id" => "new", "title" => "Estrin draft", "abstract" => "Draft abstract.\n",
+            "authors" => [["name" => "Deborah Estrin", "email" => "estrin@usc.edu"]],
+            "status" => ["submitted" => false]
+        ]));
+        xassert_paper_status($ps);
+        $pid = $ps->paperId;
+        $sub_open = $conf->setting("sub_open");
+        $sub_reg = $conf->setting("sub_reg");
+        $sub_sub = $conf->setting("sub_sub");
+        $conf->save_setting("sub_open", null);
+        $conf->save_setting("sub_reg", null);
+        $conf->save_refresh_setting("sub_sub", null);
+
+        $prow = $this->u_estrin->checked_paper_by_id($pid);
+        xassert($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0);
+        xassert(!$this->u_estrin->can_edit_paper($prow));
+        $qreq = TestQreq::get_page("paper/{$pid}", ["m" => "edit"])->set_user($this->u_estrin);
+        $pt = new PaperTable($this->u_estrin, $qreq, $prow);
+        $pt->set_edit_status(new PaperStatus($this->u_estrin), false);
+        $f = Closure::bind(function () {
+            ob_start();
+            $this->_print_edit_messages(false);
+            return ob_get_clean();
+        }, $pt, PaperTable::class);
+        $html = $f();
+        xassert_str_contains($html, "not open for updates");
+        xassert_not_str_contains($html, "submission deadline");
+
+        $conf->save_setting("sub_open", $sub_open);
+        $conf->save_setting("sub_reg", $sub_reg);
+        $conf->save_refresh_setting("sub_sub", $sub_sub);
+    }
 }

@@ -153,7 +153,7 @@ class SubmissionRound {
         if ($this->final_done > 0
             && ($this->final_soft <= 0
                 || $this->final_done + $this->final_grace < Conf::$now
-                || $this->final_soft + $this->final_grace < $this->final_done)) {
+                || $this->final_soft + $this->final_grace >= $this->final_done)) {
             return $this->final_done;
         }
         return $this->final_soft;
