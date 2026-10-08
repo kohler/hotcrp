@@ -295,7 +295,7 @@ class Mail_Page {
                 Ht::checkbox("plimit", 1, friendly_boolean($this->qreq->plimit) ?? false,
                     ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
-                '<label for="plimit">Search</span><span class="fx8">:</span></label>';
+                '<label for="plimit">Search<span class="fx8">:</span></label>';
         } else {
             echo '<div class="fx9">',
                 Ht::hidden("has_plimit", 1),

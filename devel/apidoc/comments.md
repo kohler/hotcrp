@@ -110,7 +110,7 @@ Attachments are given as a `docs` array, each entry either retaining an existing
 attachment by `docid` or uploading a new one: inline via `content` (raw text) or
 `content_base64`, or by `content_file`, which names a file in the ZIP archive or
 an uploaded file field in a `json` form request. An omitted `docs` key keeps the
-comment’s current attachments.
+comment’s current attachments, and an omitted `text` key keeps its current text.
 
 Changing a comment’s attachments requires `document:write` scope as well as
 `comment:write`. This covers adding, replacing, or removing an attachment, and

@@ -1981,6 +1981,38 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_comment_json_absent_text() {
+        $paper3 = $this->conf->checked_paper_by_id(3);
+
+        // a new comment needs text
+        $qreq = TestQreq::post_json(["visibility" => "rev", "topic" => "paper"]);
+        $jr = call_api_result("=comment", $this->u_chair, $qreq, $paper3);
+        xassert_eqq($jr->content["ok"], false);
+        xassert_eqq($jr->message_item(0)->field, "text");
+
+        // an edit without text keeps the existing text
+        $qreq = TestQreq::post_json(["text" => "Keep this text", "visibility" => "rev", "topic" => "paper"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        $qreq = TestQreq::post_json(["cid" => $cid, "visibility" => "pc"]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "Keep this text");
+        xassert_eqq($j->comment->visibility, "pc");
+        xassert_eqq($j->change_list, ["visibility"]);
+        xassert(!!$paper3->fetch_comments("commentId={$cid}"));
+
+        // explicitly empty text still deletes
+        $qreq = TestQreq::post_json(["cid" => $cid, "text" => ""]);
+        $j = call_api("=comment", $this->u_chair, $qreq, $paper3);
+        xassert($j->ok);
+        xassert_eqq($j->change_list, ["delete"]);
+        xassert(!$paper3->fetch_comments("commentId={$cid}"));
+
+        MailChecker::clear();
+    }
+
     function test_comment_json_and_upload_conflict() {
         $paper3 = $this->conf->checked_paper_by_id(3);
         // `json` and `upload` are alternative payload selectors; supplying both

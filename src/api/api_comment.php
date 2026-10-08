@@ -681,7 +681,8 @@ class Comment_API extends MessageSet {
             $req["docs"] = [];
             return $req;
         }
-        $req["text"] = isset($jp->text) ? rtrim(cleannl((string) $jp->text)) : "";
+        // absent text is resolved once the target comment is known
+        $req["text"] = isset($jp->text) ? rtrim(cleannl((string) $jp->text)) : null;
         // text cut at a word limit: the soft cut loses visible text
         $band = isset($jp->text) ? ((array) ($jp->truncated ?? []))["text"] ?? null : null;
         if ($band === "soft") {
@@ -826,6 +827,11 @@ class Comment_API extends MessageSet {
         if ($req["if_unmodified_since"] !== null
             && $req["if_unmodified_since"] < $xcrow->timeModified) {
             $this->stale = true;
+        }
+
+        // absent text: empty for a new comment, unchanged for an existing one
+        if ($req["text"] === null) {
+            $req["text"] = $xcrow->commentId ? $xcrow->raw_content() : "";
         }
 
         // import attachments
