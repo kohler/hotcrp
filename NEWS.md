@@ -25,11 +25,12 @@ HotCRP NEWS
       severity], GHSA-h778-cp46-448g [low severity, reported by Mingi Jung]).
     * Fix information exposure bugs associated with formula graphs.
 
-* Account types
+* Accounts
 
     * Introduce unlisted PC members, who can be assigned PC reviews but whose
       names aren’t shared with authors or the public.
     * Introduce bot accounts, which are associated with programmatic access.
+    * Limit passwords to 72 bytes.
 
 * Appearance
 
@@ -73,11 +74,14 @@ HotCRP NEWS
     * Warn when reviewers look like they’re saving a comment intended for the
       authors, but the authors can’t see it because of the comment’s
       visibility.
+    * Authors can’t comment on rejected submissions.
 
 * Formulas and formula graphs
 
-    * Support `percentile(e, 90)` and `p90(e)` formulas.
-    * Support pan, zoom, and autoresize.
+    * Formulas support `percentile(e, 90)` and `p90(e)`.
+    * Formula `var` and `stddev` functions compute population statistics as
+      claimed.
+    * Graphs support pan, zoom, and autoresize.
 
 * OAuth
 
@@ -120,6 +124,8 @@ HotCRP NEWS
     * A user’s last-activity time is updated at most once every two hours.
     * Removing a user from the PC also removes them as administrator of any
       submissions they managed.
+    * Tags can end in `?` or `!`.
+    * Transient database errors return 503 errors, not 404.
 
 
 ## Version 3.4 – 5.Aug.2026
