@@ -539,16 +539,20 @@ class Signin_Page {
         if ($resetcap === "" || $resetcap === "/") {
             return;
         }
-        if (strpos($resetcap, "@") !== false && $qreq->valid_post()) {
-            $nqreq = (new Qrequest("POST", ["email" => $resetcap] + self::redirect_param($qreq)))
-                ->set_conf($qreq->conf())
-                ->set_navigation($qreq->navigation())
-                ->set_annex("redirect", $user->conf->hoturl("resetpassword", null, Conf::HOTURL_SERVERREL))
-                ->approve_token();
-            $this->forgot_request($user, $nqreq); // may redirect
-            if ($this->problem_status_at("email")) {
-                $this->ms()->error_at("resetcap");
+        if (strpos($resetcap, "@") !== false) {
+            // an email, not a reset code
+            if ($qreq->valid_post()) {
+                $nqreq = (new Qrequest("POST", ["email" => $resetcap] + self::redirect_param($qreq)))
+                    ->set_conf($qreq->conf())
+                    ->set_navigation($qreq->navigation())
+                    ->set_annex("redirect", $user->conf->hoturl("resetpassword", null, Conf::HOTURL_SERVERREL))
+                    ->approve_token();
+                $this->forgot_request($user, $nqreq); // may redirect
+                if ($this->problem_status_at("email")) {
+                    $this->ms()->error_at("resetcap");
+                }
             }
+            return;
         }
 
         // look up token

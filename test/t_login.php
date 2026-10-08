@@ -268,6 +268,28 @@ class Login_Tester {
         xassert_str_contains($result->url, "resetpassword");
     }
 
+    function test_reset_request_with_unknown_email() {
+        // An email in the reset-code field is not a reset code: a failed
+        // forgot-password request reports only its own error
+        $email = "nobody-reset@_.com";
+        $user = Contact::make($this->conf);
+        foreach ([TestQreq::post([]), TestQreq::get([])] as $qreq) {
+            $qreq->set_user($user)->set_page("resetpassword")->set_req("resetcap", $email);
+            $old_status = Navigation::$http_response_code;
+            Navigation::$http_response_code = 200;
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
+            xassert_eqq(Navigation::$http_response_code, 200);
+            xassert_not_str_contains($signinp->ms()->full_feedback_text(), "reset code");
+            if ($qreq->is_post()) {
+                xassert($signinp->ms()->has_error_at("resetcap"));
+                xassert_str_contains($signinp->ms()->full_feedback_text(), $email);
+            }
+            Navigation::$http_response_code = $old_status;
+        }
+    }
+
     /** Return the newest password reset token belonging to `$email`, which is
      * the one a just-sent reset mail would carry.
      * @param string $email
