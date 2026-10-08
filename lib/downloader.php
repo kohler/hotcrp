@@ -422,21 +422,23 @@ class Downloader {
         return $this->_response_code;
     }
 
-    private function ensure_range_boundary() {
-        $this->_boundary = $this->_boundary ?? "hcmpb-" . base64_encode(random_bytes(32));
+    /** @return string */
+    private function range_boundary() {
+        $this->_boundary = $this->_boundary ?? "hcmpb-" . base48_encode(random_bytes(32));
+        return $this->_boundary;
     }
 
     /** @param ?int $index
      * @param ?array{int,int} $range
      * @return string */
     private function _range_separator($index, $range) {
-        assert($this->_boundary !== null);
         $pfx = $index === 0 ? "" : "\r\n";
+        $boundary = $this->range_boundary();
         if ($range === null) {
-            return "{$pfx}--{$this->_boundary}--\r\n";
+            return "{$pfx}--{$boundary}--\r\n";
         }
         $rb = $range[1] - 1;
-        return "{$pfx}--{$this->_boundary}\r\nContent-Type: {$this->mimetype}\r\nContent-Range: bytes {$range[0]}-{$rb}/{$this->content_length}\r\n\r\n";
+        return "{$pfx}--{$boundary}\r\nContent-Type: {$this->mimetype}\r\nContent-Range: bytes {$range[0]}-{$rb}/{$this->content_length}\r\n\r\n";
     }
 
     /** @return Generator<string> */
@@ -473,8 +475,7 @@ class Downloader {
             yield "Content-Type" => $this->mimetype;
             yield "Content-Range" => "bytes {$ra}-{$rb}/{$this->content_length}";
         } else {
-            $this->ensure_range_boundary();
-            yield "Content-Type" => "multipart/byteranges; boundary={$this->_boundary}";
+            yield "Content-Type" => "multipart/byteranges; boundary=" . $this->range_boundary();
         }
         if ($this->_filename !== null
             && !$this->_headers->has("Content-Disposition")) {
@@ -522,7 +523,6 @@ class Downloader {
         } else if (count($this->range) === 1) {
             yield $this->range[0];
         } else {
-            $this->ensure_range_boundary();
             foreach ($this->range as $i => $r) {
                 if ($outf) {
                     fwrite($outf, $this->_range_separator($i, $r));

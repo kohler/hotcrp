@@ -410,6 +410,25 @@ class DocumentBasics_Tester {
         xassert_eqq(DocumentInfo::s3_key_for($ha, "application/pdf"), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.pdf");
     }
 
+    function test_multirange_download() {
+        $qreq = new Qrequest("GET", []);
+        $qreq->set_header("Range", "bytes=0-1,4-5");
+        $dl = (new Downloader)->parse_qreq($qreq)
+            ->set_content("0123456789")->set_mimetype("text/plain");
+        // the length is available before the headers are generated
+        $clen = $dl->response_content_length();
+        xassert_eqq($dl->response_code(), 206);
+        $ct = $dl->header("Content-Type");
+        xassert_match($ct, '/\Amultipart\/byteranges; boundary=hcmpb-[A-Za-z]+\z/');
+        xassert_eqq($dl->header("Content-Length"), (string) $clen);
+        $boundary = substr($ct, strpos($ct, "boundary=") + 9);
+        $body = $dl->content_string();
+        xassert_eqq(strlen($body), $clen);
+        xassert_str_starts_with($body, "--{$boundary}\r\n");
+        xassert_str_contains($body, "Content-Range: bytes 0-1/10\r\n\r\n01\r\n--{$boundary}\r\n");
+        xassert_str_contains($body, "Content-Range: bytes 4-5/10\r\n\r\n45\r\n--{$boundary}--\r\n");
+    }
+
     function test_docstore_path() {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
