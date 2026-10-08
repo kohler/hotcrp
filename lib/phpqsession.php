@@ -4,15 +4,17 @@
 
 class PHPQsession extends Qsession {
     function start($sid) {
+        // Don’t re-send the current session cookie on first open
         if ($sid !== null
+            && ($sid !== ($_COOKIE[session_name()] ?? null) || session_id() !== "")
             && strlen($sid) >= 20
             && strlen($sid) <= 128
-            && (ctype_alnum($sid) || preg_match('/\A[-,0-9A-Za-z]+\z/', $sid))) {
+            && (ctype_alnum($sid) || preg_match('/\A[-,0-9A-Za-z]++\z/', $sid))) {
             session_id($sid);
         }
-        session_start();
-        $sid = session_id();
-        if ($sid !== "" && $sid !== false) {
+        if (session_start()
+            && ($sid = session_id()) !== ""
+            && $sid !== false) {
             $this->assign_open($sid, $_SESSION);
         }
     }

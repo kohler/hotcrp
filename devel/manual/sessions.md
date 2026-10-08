@@ -20,8 +20,8 @@ encoding](https://www.php.net/manual/en/function.session-encode.php).
 
 * `deletedat` (integer): Deletion state
 
-    Set when a session has been deleted (e.g., because the user has signed
-    out, or because the session ID was regenerated).
+    Set when the session ID has been regenerated (e.g., at sign-in). Requests
+    presenting the old ID are served from the old session for 30 seconds.
 
 ### Account information
 

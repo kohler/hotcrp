@@ -1989,3 +1989,75 @@ class TestQreq {
             ->set_body(null, "application/x-www-form-urlencoded");
     }
 }
+
+/** Test session handler: sessions persist across instances (“requests”)
+ * in a shared store keyed by ID, as with `PHPQsession` */
+class TestQsession extends Qsession {
+    /** @var array<string,array<string,mixed>> */
+    static public $store = [];
+    /** @var list<?string> */
+    static public $cookies = [];
+
+    /** @return void */
+    static function reset() {
+        self::$store = self::$cookies = [];
+        unset($_COOKIE[session_name()]);
+    }
+
+    /** @param ?string $cookie_sid
+     * @return TestQsession */
+    static function start_request($cookie_sid) {
+        if ($cookie_sid === null) {
+            unset($_COOKIE[session_name()]);
+        } else {
+            $_COOKIE[session_name()] = $cookie_sid;
+        }
+        self::$cookies = [];
+        return new TestQsession;
+    }
+
+    function start($sid) {
+        $sid = $sid ?? $this->new_sid();
+        $this->assign_open($sid, self::$store[$sid] ?? []);
+    }
+
+    function new_sid() {
+        return "sess_" . base64_encode(random_bytes(15));
+    }
+
+    function commit() {
+        if ($this->sopen) {
+            self::$store[$this->sid] = $this->sv;
+            $this->assign_commit();
+        }
+    }
+
+    function refresh() {
+        self::$cookies[] = $this->sid;
+    }
+
+    function set($key, $value) {
+        assert($this->sopen);
+        $this->sv[$key] = $value;
+    }
+
+    function unset($key) {
+        assert($this->sopen);
+        unset($this->sv[$key]);
+    }
+
+    function set2($key1, $key2, $value) {
+        assert($this->sopen);
+        $this->sv[$key1][$key2] = $value;
+    }
+
+    function unset2($key1, $key2) {
+        assert($this->sopen);
+        if (isset($this->sv[$key1])) {
+            unset($this->sv[$key1][$key2]);
+            if (empty($this->sv[$key1])) {
+                unset($this->sv[$key1]);
+            }
+        }
+    }
+}

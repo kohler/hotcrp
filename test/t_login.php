@@ -22,7 +22,7 @@ class Login_Tester {
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
 
-        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -94,6 +94,66 @@ class Login_Tester {
             xassert_eqq($user->contactDbId, 0);
             xassert(!$user->is_unconfirmed());
         }
+    }
+
+    function test_reset_changes_sid() {
+        // A password reset leaves the new password in the session for the
+        // sign-in form, so it must change the session ID: others might
+        // know the old one [session fixation]
+        $email = "resetsid@hotcrp.com";
+        $this->conf->invalidate_caches("users");
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
+        $info = LoginHelper::new_account_info($this->conf, $qreq);
+        xassert_eqq($info["ok"], true);
+        $prep = (new Signin_Page)->mail_user($this->conf, $info);
+        xassert(is_string($prep->reset_capability));
+        TestQsession::reset();
+
+        // request 1: a visitor obtains anonymous session S
+        $qs = TestQsession::start_request(null);
+        $qs->open();
+        $sid_s = $qs->sid;
+        xassert(is_string($sid_s));
+        $qs->commit();
+
+        // request 2: a browser carrying S resets the password and gets new
+        // ID R, which holds the password for the sign-in form
+        $this->conf->invalidate_caches("users");
+        $user = Contact::make_email($this->conf, $email);
+        $qs = TestQsession::start_request($sid_s);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword")->set_qsession($qs);
+        $qreq->set_req("resetcap", $prep->reset_capability);
+        $qreq->set_req("password", "newuserpassword?");
+        $qreq->set_req("password2", "newuserpassword?");
+        $result = null;
+        try {
+            $cs = $this->conf->page_components($user, $qreq);
+            $cs->callable("Signin_Page")->reset_request($user, $qreq, $cs);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        xassert(!!$result);
+        xassert(user($email)->check_password("newuserpassword?"));
+        $sid_r = $qs->sid;
+        xassert(is_string($sid_r));
+        xassert_neqq($sid_r, $sid_s);
+        xassert_eqq(TestQsession::$cookies, [$sid_r]);
+        $pwr = $qreq->csession("password_reset");
+        xassert_eqq($pwr ? $pwr->password : null, "newuserpassword?");
+        $qs->commit();
+
+        // request 3: another holder of S does not see the password
+        $qs = TestQsession::start_request($sid_s);
+        $qreq = TestQreq::get()->set_user(Contact::make($this->conf))->set_page("signin")->set_qsession($qs);
+        $qs->maybe_open();
+        xassert_eqq($qs->sid, $sid_s);
+        xassert(!!$qs->get("deletedat"));
+        xassert_eqq($qreq->csession("password_reset"), null);
+        $qs->commit();
+        xassert_eqq(TestQsession::$cookies, []);
+
+        TestQsession::reset();
     }
 
     function test_reset_password_validation() {

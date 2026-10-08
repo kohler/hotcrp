@@ -61,7 +61,8 @@ class Qsession {
             }
         }
 
-        // reset session while reopened, empty [session fixation], or deleted
+        // reset session while reopened, empty [session fixation], or long
+        // deleted
         if ($this->sid === $cookie_sid
             && !$this->check_reopen()) {
             $this->assign_fail();
@@ -76,7 +77,8 @@ class Qsession {
                 UpdateSession::run($this);
             }
         }
-        if ($this->get("u") || $this->sid !== $cookie_sid) {
+        if (!$this->has("deletedat")
+            && ($this->get("u") || $this->sid !== $cookie_sid)) {
             $this->refresh();
         }
     }
@@ -93,23 +95,20 @@ class Qsession {
             }
             ++$tries;
 
-            $nsid = null;
             if (isset($curv["deletedat"])) {
-                $transfer = false;
+                // recently deleted: serve as is
                 if ($curv["deletedat"] >= Conf::$now - 30
-                    && isset($curv["new_sid"])
-                    && is_string($curv["new_sid"])
-                    && $tries < 10) {
-                    $nsid = $curv["new_sid"];
+                    && $this->opentype !== 1) {
+                    return true;
                 }
+                $transfer = false;
             } else {
                 $transfer = !empty($curv);
             }
 
-            $nsid = $nsid ?? $this->new_sid();
+            $nsid = $this->new_sid();
             if ($transfer) {
                 $this->set("deletedat", Conf::$now);
-                $this->set("new_sid", $nsid);
             }
             $this->commit();
 
@@ -119,9 +118,6 @@ class Qsession {
             }
 
             if ($transfer) {
-                // `unset` should be a no-op, because we never transfer data
-                // from a deleted session:
-                unset($curv["deletedat"], $curv["new_sid"]);
                 foreach ($curv as $k => $v) {
                     $this->set($k, $v);
                 }
@@ -130,21 +126,11 @@ class Qsession {
     }
 
 
-    /** @param ?string $sid */
+    /** Open session `$sid` (or a new session, if `$sid` is null), replacing
+     * all session state via `assign_open()`. On failure, leave the session
+     * closed.
+     * @param ?string $sid */
     protected function start($sid) {
-    }
-
-    /** @param ?string $sid
-     * @suppress PhanAccessReadOnlyProperty */
-    protected function set_start_sid($sid) {
-        assert(!$this->sopen || $sid === $this->sid);
-        if ($sid !== null && $sid !== "") {
-            $this->sid = $sid;
-            $this->sopen = true;
-        } else {
-            $this->sid = null;
-            $this->sv = [];
-        }
     }
 
     /** @param ?string $sid

@@ -626,6 +626,8 @@ class Signin_Page {
         $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 12) . "...");
         $user->conf->success_msg("<0>Password changed. Use the new password to sign in below.");
         $this->_reset_token->delete();
+        // others might know the current session ID [session fixation]
+        $qreq->qsession()->open_new_sid();
         $qreq->set_csession("password_reset", (object) [
             "time" => Conf::$now,
             "email" => $this->_reset_user->email,
