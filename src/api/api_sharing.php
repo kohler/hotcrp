@@ -20,10 +20,10 @@ class Sharing_API extends MessageSet {
             } else if (($share = friendly_boolean($qreq->share)) === null) {
                 return JsonResult::make_parameter_error("share");
             }
-            if (!isset($qreq->expires_in)) {
+            if (($qreq->expires_in ?? "") === "") {
                 $invalid_at = 0;
             } else if (($ei = SettingParser::parse_duration($qreq->expires_in)) !== null) {
-                $invalid_at = $ei < 0 ? 0 : Conf::$now + (int) round($ei);
+                $invalid_at = $ei <= 0 ? 0 : Conf::$now + (int) round($ei);
             } else {
                 return JsonResult::make_parameter_error("expires_in");
             }

@@ -2577,6 +2577,34 @@ class Permission_Tester {
         xassert_array_eqq($pset->paper_ids(), [12, 16]);
     }
 
+    function test_share_link_without_expiration() {
+        // `expires_in` values meaning "no expiration" create a link that
+        // never expires
+        foreach (["0", "none", "never", ""] as $ei) {
+            $jr = call_api("=share", $this->u_chair, TestQreq::post(["p" => 19, "share" => "new", "expires_in" => $ei]));
+            xassert_eqq($jr->ok, true);
+            xassert(is_string($jr->token ?? null));
+            xassert(!isset($jr->expires_at));
+            $tok = AuthorView_Capability::find($this->conf->checked_paper_by_id(19));
+            xassert($tok && $tok->salt === $jr->token);
+            xassert_eqq($tok->timeInvalid, 0);
+        }
+        foreach (["0", "none"] as $ei) {
+            xassert_assign($this->u_chair, "action,paper,share,expires_in\nshare,19,new,{$ei}\n");
+            $tok = AuthorView_Capability::find($this->conf->checked_paper_by_id(19));
+            xassert($tok && $tok->timeInvalid === 0);
+        }
+
+        // a positive duration still expires
+        $jr = call_api("=share", $this->u_chair, TestQreq::post(["p" => 19, "share" => "new", "expires_in" => "3600"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->expires_at ?? null, Conf::$now + 3600);
+
+        $jr = call_api("=share", $this->u_chair, TestQreq::post(["p" => 19, "share" => "no"]));
+        xassert_eqq($jr->ok, true);
+        xassert(!AuthorView_Capability::find($this->conf->checked_paper_by_id(19)));
+    }
+
     function test_make_anonymous_user_nologin() {
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_keyed($this->conf, [

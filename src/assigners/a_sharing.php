@@ -91,7 +91,7 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
                 if (($x = SettingParser::parse_duration($req["expires_in"])) === null) {
                     return new AssignmentError("<0>Parameter error on ‘expires_in’");
                 }
-                $ia = $x >= 0 ? Conf::$now + (int) round($x) : 0;
+                $ia = $x > 0 ? Conf::$now + (int) round($x) : 0;
                 $has_ia = true;
             }
         }
