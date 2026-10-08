@@ -860,6 +860,45 @@ class Comments_Tester {
         xassert($sv->execute());
     }
 
+    /** @return string */
+    private function last_paper_log_action(PaperInfo $prow) {
+        return $this->conf->fetch_value("select action from ActionLog where paperId=? order by logId desc limit 1", $prow->paperId);
+    }
+
+    function test_comment_log_verbs() {
+        $paper1 = $this->open_clean_response_round();
+
+        // new comment, then an edit
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Log verb comment", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        $cid = (int) $j->comment->cid;
+        xassert_eqq($this->last_paper_log_action($paper1), "Comment {$cid} submitted");
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "text" => "Log verb comment 2", "visibility" => "rev"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($this->last_paper_log_action($paper1), "Comment {$cid} edited: text");
+
+        // new draft response, an edit, then submission
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Draft body", "draft" => 1], $paper1);
+        xassert($j->ok);
+        $rid = (int) $j->comment->cid;
+        xassert_eqq($this->last_paper_log_action($paper1), "Response {$rid} started draft");
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "text" => "Draft body 2", "draft" => 1], $paper1);
+        xassert($j->ok);
+        xassert_eqq($this->last_paper_log_action($paper1), "Response {$rid} edited draft: text");
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "text" => "Draft body 2"], $paper1);
+        xassert($j->ok);
+        xassert_str_starts_with($this->last_paper_log_action($paper1), "Response {$rid} submitted");
+
+        MailChecker::clear();
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "delete" => 1], $paper1);
+        call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+        MailChecker::clear();
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1", "response_active" => "0", "response/1/id" => "1"
+        ]);
+        xassert($sv->execute());
+    }
+
     /** Open response round 1 on paper 1 and drop any response it already has.
      * @return PaperInfo */
     private function open_clean_response_round() {

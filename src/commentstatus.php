@@ -310,12 +310,13 @@ final class CommentStatus extends MessageSet {
     private function _log_save() {
         $crow = $this->crow;
         $ctype = $crow->commentType;
+        $creating = ($this->_status & self::SSF_CREATE) !== 0;
         $log = $crow->logid();
         if (($ctype & CommentInfo::CT_DRAFT) === 0
-            && (!$crow->commentId || ($ctype & CommentInfo::CT_DRAFT) !== 0)) {
+            && ($creating || ($crow->base_prop("commentType") & CommentInfo::CT_DRAFT) !== 0)) {
             $log .= " submitted";
         } else {
-            $log .= $crow->commentId ? " edited" : " started";
+            $log .= $creating ? " started" : " edited";
             if (($ctype & CommentInfo::CT_DRAFT) !== 0) {
                 $log .= " draft";
             }
