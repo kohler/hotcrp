@@ -396,15 +396,14 @@ class BackupDB_Batch {
             } else {
                 $ans[] = $key;
             }
-            if ($count > 0 && count($ans) >= $count) {
-                break;
-            }
         }
 
         krsort($ans);
         $ans = array_values($ans);
         if ($count <= 0) {
             $this->_s3_list = $ans;
+        } else {
+            $ans = array_slice($ans, 0, $count);
         }
         return $ans;
     }
@@ -987,7 +986,7 @@ class BackupDB_Batch {
             "s3-tag[] =TAGPAIR !s3 Add S3 tag",
             "before: =DATE !s3 Include S3 backups before DATE",
             "after: =DATE !s3 Include S3 backups after DATE",
-            "count: {n} =N !s3 Fetch N backups (--s3-get only)",
+            "count: {n} =N !s3 Fetch or list the N most recent backups",
             "V,verbose Be verbose",
             "help::,h:: Print help"
         )->description("Back up HotCRP database or restore from backup.

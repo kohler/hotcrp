@@ -395,6 +395,21 @@ class DocumentBasics_Tester {
         xassert_eqq($doc->content_binary_hash(), "sha2-" . hex2bin("66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"));
     }
 
+    function test_s3_key_for_partial_hash() {
+        $ha = HashAnalysis::make_partial("sha2-66A045b452");
+        xassert(!$ha->complete());
+        xassert_eqq($ha->partial_text_data(), "66a045b452");
+        xassert_eqq(DocumentInfo::s3_key_for($ha, "application/pdf"), "doc/66a/sha2-66a045b452");
+
+        $ha = HashAnalysis::make_partial("1d229271928d");
+        xassert_eqq($ha->partial_text_data(), "1d229271928d");
+        xassert_eqq(DocumentInfo::s3_key_for($ha, "application/pdf"), "doc/1d/1d229271928d");
+
+        $ha = HashAnalysis::make_partial("sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
+        xassert($ha->complete());
+        xassert_eqq(DocumentInfo::s3_key_for($ha, "application/pdf"), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.pdf");
+    }
+
     function test_docstore_path() {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");

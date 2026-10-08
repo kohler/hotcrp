@@ -192,7 +192,7 @@ class HashAnalysis {
     /** @return non-empty-string */
     function partial_text_data() {
         $h = $this->hash ?? $this->shorthash;
-        return $this->binary ? bin2hex($this->hash) : strtolower($this->hash);
+        return $this->binary ? bin2hex($h) : strtolower($h);
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
