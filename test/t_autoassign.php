@@ -635,4 +635,44 @@ class Autoassign_Tester {
         xassert_eqq($vot->parse("2000000000"), null);  // a pathological cost
         xassert_eqq($vot->parse("-1"), null);          // below the min
     }
+
+    function test_assign_list_action_auto_redirect() {
+        // Search > Assign > Automatic assignments preserves the selection
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $qreq = TestQreq::post_page("search", ["p" => "1 2 3", "assignfn" => "auto", "t" => "s"])
+            ->set_user($chair);
+        $ssel = SearchSelection::make_papers($qreq, $chair);
+        $la = ListAction::lookup("assign", $chair, $qreq, $ssel);
+        xassert($la instanceof ListAction);
+        $url = null;
+        try {
+            $la->run($chair, $qreq, $ssel);
+        } catch (Redirection $r) {
+            $url = $r->url;
+        }
+        xassert_str_contains($url ?? "", "autoassign");
+        parse_str(parse_url($url, PHP_URL_QUERY) ?? "", $param);
+        $srch = new PaperSearch($chair, ["q" => $param["q"] ?? "", "t" => $param["t"] ?? ""]);
+        xassert_eqq($srch->paper_ids(), [1, 2, 3]);
+    }
+
+    function test_score_selector_options_are_text() {
+        // Ht::select takes text, so review field names are not HTML-escaped
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $oldname = $this->conf->checked_review_field("s01")->name;
+        $sv = SettingValues::make_request($chair, [
+            "has_rf" => 1, "rf/1/id" => "s01", "rf/1/name" => "Reviewer's <merit> & quality"
+        ]);
+        xassert($sv->execute());
+
+        $page = new Autoassign_Page($chair, TestQreq::get_page("autoassign", []));
+        $f = $this->conf->checked_review_field("s01");
+        $opts = $page->scoreselector_options();
+        xassert_eqq($opts["+" . $f->search_keyword()], "Reviewer's <merit> & quality " . $f->unparse_value($f->nvalues()));
+
+        $sv = SettingValues::make_request($chair, [
+            "has_rf" => 1, "rf/1/id" => "s01", "rf/1/name" => $oldname
+        ]);
+        xassert($sv->execute());
+    }
 }

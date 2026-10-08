@@ -198,8 +198,8 @@ class Autoassign_Page {
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f instanceof Score_ReviewField) {
                 $kw = $f->search_keyword();
-                $opt["+{$kw}"] = $f->name_html . " " . $f->unparse_value($f->nvalues());
-                $opt["-{$kw}"] = $f->name_html . " " . $f->unparse_value(1);
+                $opt["+{$kw}"] = $f->name . " " . $f->unparse_value($f->nvalues());
+                $opt["-{$kw}"] = $f->name . " " . $f->unparse_value(1);
             }
         }
         $opt["random"] = "random completed reviews";

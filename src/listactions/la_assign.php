@@ -33,8 +33,7 @@ class Assign_ListAction extends ListAction {
             if ($t !== "s" && $t !== "accepted") {
                 $t = "all";
             }
-            $q = join("+", $ssel->selection());
-            $qreq->redirect_hoturl("autoassign", ["q" => $q, "t" => $t]);
+            $qreq->redirect_hoturl("autoassign", ["q" => $ssel->unparse_search(), "t" => $t]);
         }
 
         $mpc = (string) $qreq->markpc;
