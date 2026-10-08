@@ -4622,7 +4622,7 @@ class Conf {
             if ($this->has_any_lead_or_shepherd()) {
                 $owhere[] = "leadContactId={$cxid}";
             }
-            if ($user->is_manager() && !$user->is_track_manager()) {
+            if ($this->has_any_manager()) {
                 $owhere[] = "managerContactId={$cxid}";
             }
             $where[] = "(" . join(" or ", $owhere) . ")";
