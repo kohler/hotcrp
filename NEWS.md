@@ -58,6 +58,11 @@ HotCRP NEWS
     * Authors can’t edit an accepted submission until they can see its
       decision.
 
+* Tags
+
+    * Tags can now end in `?` or `!`.
+    * Recover ability to change a tag’s value on the paper page.
+
 * Search
 
     * Add `before:TIME` and `after:TIME` search terms. They accept dates and
@@ -124,7 +129,6 @@ HotCRP NEWS
     * A user’s last-activity time is updated at most once every two hours.
     * Removing a user from the PC also removes them as administrator of any
       submissions they managed.
-    * Tags can end in `?` or `!`.
     * Transient database errors return 503 errors, not 404.
 
 

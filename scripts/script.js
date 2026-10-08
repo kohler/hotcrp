@@ -13708,6 +13708,9 @@ function prepare_pstags() {
         return;
     }
     var $f = $(f), ta = f.elements.tags, psc = f.closest(".s-ps");
+    // `data-initial-value` is the server text an edit started from; saving
+    // sends changes relative to it
+    ta.setAttribute("data-initial-value", ta.defaultValue);
     function handle_tag_report(data) {
         data.message_list && render_tag_messages.call(f, data.message_list);
     }
@@ -13725,6 +13728,7 @@ function prepare_pstags() {
     });
     $(f.elements.cancel).on("click", function (evt) {
         ta.value = ta.defaultValue;
+        ta.removeAttribute("data-initial-value");
         removeClass(ta, "has-error");
         $f.find(".is-error").remove();
         check_form_differs(f, ta);
@@ -13735,7 +13739,7 @@ function prepare_pstags() {
     $f.on("foldtoggle", function (evt) {
         if (!evt.detail.open)
             return;
-        $f.data("everOpened", true);
+        ta.setAttribute("data-initial-value", ta.defaultValue);
         $f.find("input").prop("disabled", false);
         if (!$f.data("noTagReport")) {
             $.get(hoturl("api/tagmessages", {p: $f.attr("data-pid")}), handle_tag_report);
@@ -13754,12 +13758,9 @@ function prepare_pstags() {
             $p.html(h);
         }
         input_set_default_value(ta, data.tags_edit_text);
-        if (ta.value !== data.tags_edit_text
-            && (f.hasAttribute("data-saving")
-                || f.hidden)
-            && (!$f.data("everOpened")
-                || hotcrp.parse_tags.delta(data.tags_edit_text, ta.value).length === 0)) {
+        if (f.hasAttribute("data-saving") || f.hidden) {
             ta.value = data.tags_edit_text;
+            ta.removeAttribute("data-initial-value");
         }
         check_form_differs(f, ta);
         handle_tag_report(data);
@@ -13767,12 +13768,13 @@ function prepare_pstags() {
 }
 
 function save_pstags(evt) {
-    const f = this, $f = $(f), ta = f.elements.tags;
+    const f = this, $f = $(f), ta = f.elements.tags,
+        iv = ta.hasAttribute("data-initial-value") ? ta.getAttribute("data-initial-value") : ta.defaultValue;
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
     $.ajax(hoturl("=api/tags", {p: $f.attr("data-pid")}), {
         method: "POST", data: {
-            add_tags: hotcrp.parse_tags.delta(ta.defaultValue, ta.value).join(" ")
+            add_tags: hotcrp.parse_tags.delta(iv, ta.value).join(" ")
         }, timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
@@ -14381,7 +14383,7 @@ function split_tag_list(str) {
             if (ltag.charCodeAt(0) === 126 && ltag.charCodeAt(1) !== 126) {
                 ltag = siteinfo.user.uid + ltag;
             }
-            const value = m[1] === "-" ? "clear" : (m[3] === "" ? "0" : m[2]);
+            const value = m[1] === "-" ? "clear" : (m[3] === "" ? "0" : m[3]);
             a.push({str: word, ltag: ltag, value: value});
         } else {
             a.push({str: word});
