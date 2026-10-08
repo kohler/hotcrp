@@ -28,8 +28,8 @@ class Decision_PaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $da = $a->viewable_decision($pl->user)->order ? : PHP_INT_MIN;
-        $db = $b->viewable_decision($pl->user)->order ? : PHP_INT_MIN;
+        $da = $a->viewable_decision($pl->user)->order ? : PHP_INT_MAX;
+        $db = $b->viewable_decision($pl->user)->order ? : PHP_INT_MAX;
         return $da <=> $db;
     }
     function content(PaperList $pl, PaperInfo $row) {

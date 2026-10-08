@@ -45,7 +45,7 @@
     },
     {
         "name": "decision", "title": "Decision",
-        "function": "+Decision_PaperColumn", "sort": "descending"
+        "function": "+Decision_PaperColumn", "sort": true
     },
     {
         "name": "mypref",
