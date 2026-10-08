@@ -1109,4 +1109,27 @@ class Cdb_Tester {
         xassert_eqq($this->cdb_roles_for($email1), 0);
         xassert_eqq($this->cdb_roles_for($email2), Contact::ROLE_REVIEWER);
     }
+
+    function test_alert_tokens_reload() {
+        $u = $this->conf->fresh_user_by_email(self::MARINA);
+        xassert(!!$u->cdb_user());
+        $ca = new ContactAlerts($u);
+        $ca->append((object) ["name" => "cdbalert", "message_list" => [MessageItem::warning("<0>Cross-site alert")]], true);
+        $ca->append((object) ["name" => "localalert", "message_list" => [MessageItem::warning("<0>Local alert " . str_repeat("x", 100))]]);
+        $cdba = $ca->find_by_name("cdbalert")[0];
+        $locala = $ca->find_by_name("localalert")[0];
+        xassert_match($cdba->token, '/\Ahci\d+g_/');
+        xassert_match($locala->token, '/\Ahci\d+_/');
+
+        // a fresh load finds both tokens' messages
+        $u = $this->conf->fresh_user_by_email(self::MARINA);
+        $ca = new ContactAlerts($u);
+        $text = json_encode($ca->scoped_msg_content_list("home"));
+        xassert_str_contains($text, "Cross-site alert");
+        xassert_str_contains($text, "Local alert");
+        xassert(!!$ca->find($cdba->token));
+        xassert(!!$ca->find($locala->token));
+
+        $u->modify_data(function ($u) { $u->set_data("alerts", null); });
+    }
 }

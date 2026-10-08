@@ -129,7 +129,8 @@ class ContactAlerts {
                 $tok->set_expires_at($alert->expires_at);
             }
             $tok->assign_data($alert);
-            $tok->set_token_pattern("hci{$tok->contactId}_[20]");
+            $cdbsfx = $tok->is_cdb ? "g" : "";
+            $tok->set_token_pattern("hci{$tok->contactId}{$cdbsfx}_[20]");
             $tok->insert();
             assert($tok->stored());
             $alert = clone $alert;
