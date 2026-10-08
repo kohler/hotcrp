@@ -887,17 +887,32 @@ class ReviewAPI_Tester {
         $prow->load_reviews(true);
         xassert(!!$prow->review_by_user($var));
 
-        // real delete
+        // real delete reports the deleted review's id
+        $ordid = $rrow->unparse_ordinal_id();
         $j = call_api("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
         xassert_eqq($j->ok, true);
         xassert_eqq($j->valid, true);
         xassert_eqq($j->change_list, ["delete"]);
+        xassert_eqq($j->rid, $ordid);
         $prow->load_reviews(true);
         xassert(!$prow->review_by_user($var));
 
         // deleting again → not found
         $jr = call_api_result("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
         xassert_eqq($jr->status, 404);
+
+        // deleting a review that has no ordinal reports its numeric id
+        $qreq = TestQreq::post_json(["object" => "review", "email" => $var->email,
+            "OveMer" => 2], ["r" => "new"]);
+        $j = call_api("review", $this->u_chair, $qreq, $prow);
+        xassert_eqq($j->ok, true);
+        $prow->load_reviews(true);
+        $rrow = $prow->review_by_user($var);
+        xassert(!!$rrow && !$rrow->reviewOrdinal);
+        $rid = (string) $rrow->reviewId;
+        $j = call_api("review", $this->u_chair, TestQreq::delete(["p" => 18, "r" => $rid]), $prow);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->rid, "18r{$rid}");
     }
 
     /** @param int $cid

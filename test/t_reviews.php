@@ -2206,6 +2206,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($result->content["ok"]);
         MailChecker::clear();
 
+        // the redirect carries an accept capability, so the reviewer can
+        // still reach the declined review
+        xassert_str_contains($result->content["review_site_relative"], "cap=hcra{$rid}");
+
         // the live review is gone
         $paper20 = $conf->checked_paper_by_id(20);
         xassert(!$paper20->fresh_review_by_id($rid));

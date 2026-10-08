@@ -516,6 +516,13 @@ class RequestReview_API {
                 $rrid, $rrow->reviewRound,
                 $reason);
 
+            // maybe add capability to URL; otherwise user will immediately be
+            // denied access. (Make it now: deletion clears `reviewId`.)
+            $tok = null;
+            if ($user->contactXid === $rrow->contactId) {
+                $tok = ReviewAccept_Capability::make($rrow, true);
+            }
+
             // record snapshot of review, then delete review
             $rrow->delete($user, ["action" => "declined", "snapshot" => true, "no_log" => $anon]);
 
@@ -530,10 +537,7 @@ class RequestReview_API {
                 ]);
             }
 
-            // maybe add capability to URL; otherwise user will immediately be
-            // denied access
-            if ($user->contactXid === $rrow->contactId
-                && ($tok = ReviewAccept_Capability::make($rrow, true))) {
+            if ($tok) {
                 $review_site_relative = $prow->conf->hoturl("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
             }
         } else if (isset($qreq->reason)) {

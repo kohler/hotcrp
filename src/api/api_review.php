@@ -502,6 +502,7 @@ class Review_API extends MessageSet {
         $ius_conflict = $this->if_unmodified_since !== null
             && $this->if_unmodified_since < $rrow->reviewModified;
         $conflict = $vtag_conflict || $ius_conflict;
+        $ordid = $rrow->unparse_ordinal_id(); // deletion clears `reviewId`
         if ($conflict) {
             $this->error_at($vtag_conflict ? "if_vtag_match" : "if_unmodified_since",
                 $this->conf->_("<5><strong>Edit conflict</strong>: The review was edited concurrently"));
@@ -513,7 +514,7 @@ class Review_API extends MessageSet {
         }
 
         $this->status_list[] = new Review_API_Status($this->message_count(), $this->dry_run_here,
-            $valid, ["delete"], $conflict, $prow->paperId, $rrow->unparse_ordinal_id());
+            $valid, ["delete"], $conflict, $prow->paperId, $ordid);
         $this->reviews[] = null;
         return $this->post_result();
     }
