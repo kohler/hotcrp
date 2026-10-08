@@ -380,7 +380,8 @@ class Assign_Page {
                 && $rrow->requestedBy == $this->user->contactId)) {
             echo $this->conf->hotform("=assign", [
                     "p" => $this->prow->paperId, "action" => "managerequest",
-                    "email" => $rrowid->email, "round" => $rrow->reviewRound
+                    "email" => $rrowid->email,
+                    "round" => $this->conf->round_name_argument($rrow->reviewRound)
                 ], ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
                 echo Ht::hidden("given_name", $rrowid->firstName),

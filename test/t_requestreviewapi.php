@@ -461,6 +461,49 @@ class RequestReviewAPI_Tester {
         }
     }
 
+    function test_approve_proposal_round_by_number() {
+        // the assign page’s approval form names the proposal’s round by number
+        $conf = $this->conf;
+        $keys = ["tag_rounds", "rev_roundtag"];
+        $old = [];
+        foreach ($keys as $k) {
+            $old[$k] = [$conf->setting($k), $conf->setting_data($k)];
+        }
+        $email = "proposal-round@_.com";
+        try {
+            $conf->save_setting("tag_rounds", 1, "R1 R2");
+            $conf->save_refresh_setting("rev_roundtag", 1, "R1");
+            xassert_eqq($conf->round_number("R2"), 2);
+            $prow = $conf->checked_paper_by_id($this->pid);
+            $args = ["email" => $email, "given_name" => "Proposal", "family_name" => "Round", "affiliation" => "Fart", "approvereview" => 1];
+
+            // nonexistent rounds are rejected, by name or number
+            foreach (["7", "R7"] as $r) {
+                $jr = call_api_result("=requestreview", $this->u_chair, $args + ["round" => $r], $prow);
+                xassert_eqq($jr->status, 400);
+            }
+
+            foreach (["2", "R2", "0", "unnamed"] as $r) {
+                $this->clear_requests();
+                $conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=?",
+                    $this->pid, $email, "Proposal", "Round", "Fart",
+                    $this->u_prober->contactId, Conf::$now, "", $conf->round_number($r));
+                $jr = call_api_result("=requestreview", $this->u_chair, $args + ["round" => $r], $prow);
+                xassert_eqq($jr->status ?? 200, 200);
+                $u = $conf->checked_user_by_email($email);
+                $rrow = $conf->checked_paper_by_id($this->pid)->review_by_user($u);
+                xassert($rrow !== null);
+                xassert_eqq($rrow->reviewRound, ctype_digit($r) ? (int) $r : $conf->round_number($r));
+            }
+        } finally {
+            $this->clear_requests();
+            foreach ($old as $k => $vd) {
+                $conf->save_setting($k, $vd[0], $vd[1]);
+            }
+            $conf->refresh_settings();
+        }
+    }
+
     function test_review_link_refused_to_conflicted_user() {
         // a review-accept link lends its reviewer’s role only to holders
         // without a conflict on the submission

@@ -3,6 +3,19 @@
 // Copyright (c) 2008-2026 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
+    /** Parse a review round given by name or by number.
+     * @param string $s
+     * @return ?int */
+    static private function parse_round(Conf $conf, $s) {
+        if (ctype_digit($s)
+            && ($n = stoi($s)) !== null
+            && ($n === 0 || $conf->round_suffix($n) !== "")) {
+            return $n;
+        }
+        $rname = $conf->sanitize_round_name($s);
+        return $rname === false ? null : $conf->round_number($rname);
+    }
+
     /** @param Contact $user
      * @param Qrequest $qreq
      * @param PaperInfo $prow
@@ -11,8 +24,7 @@ class RequestReview_API {
         $conf = $user->conf;
         $round = null;
         if ((string) $qreq->round !== ""
-            && (($rname = $conf->sanitize_round_name($qreq->round)) === false
-                || ($round = $conf->round_number($rname)) === null)) {
+            && ($round = self::parse_round($conf, (string) $qreq->round)) === null) {
             return JsonResult::make_parameter_error("round", "<0>Review round not found");
         }
 

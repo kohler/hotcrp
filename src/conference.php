@@ -1879,6 +1879,18 @@ class Conf {
         return "";
     }
 
+    /** @param ?int $roundno
+     * @return ?non-empty-string */
+    function round_name_argument($roundno) {
+        if ($roundno === 0) {
+            return "unnamed";
+        } else if ($roundno !== null
+                   && ($rname = $this->rounds[$roundno] ?? ";") !== ";") {
+            return $rname;
+        }
+        return null;
+    }
+
     /** @param int $roundno
      * @return string */
     function round_suffix($roundno) {
