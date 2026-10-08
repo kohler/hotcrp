@@ -16,15 +16,15 @@ class Comment_SettingParser extends SettingParser {
 
     static function print_author_exchange_comments(SettingValues $sv) {
         echo '<div class="has-fold fold', $sv->vstr("comment_author") ? "o" : "c", '">';
-        if ((int) $sv->vstr("review_blind") === Conf::BLIND_NEVER) {
-            $hint = "";
-        } else {
-            $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
+        $hints = [];
+        if ((int) $sv->vstr("review_blind") !== Conf::BLIND_NEVER) {
+            $hints[] = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
         }
+        $hints[] = "Authors who can see decisions cannot comment on rejected submissions.";
         $sv->print_checkbox("comment_author", "Authors can <strong>exchange comments</strong> with reviewers", [
             "class" => "uich js-foldup",
             "hint_class" => "fx",
-            "hint" => $hint
+            "hint" => join("<br>", $hints)
         ]);
         echo "<div class=\"fx mt-2\">";
         $sv->print_radio_table("comment_author_initiate", [1 => "Authors may initiate comment exchanges", 0 => "A reviewer must leave an author-visible comment first"]);
