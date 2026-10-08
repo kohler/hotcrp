@@ -35,7 +35,8 @@ class Completion_API {
         }
         if ($user->can_view_some_decision()) {
             $comp[] = "has:decision";
-            if ($conf->setting("final_open")) {
+            if ($conf->setting("final_open")
+                && $user->can_view_some_standard_decision()) {
                 $comp[] = "has:final";
             }
         }

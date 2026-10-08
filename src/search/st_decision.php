@@ -48,11 +48,12 @@ class Decision_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $pu = $this->permuser();
-        if (!$pu->can_view_some_decision()) {
-            return in_array(0, $this->decs, true) ? "true" : "false";
-        } else if (in_array(0, $this->decs, true)
-                   && !$pu->can_view_all_decision()) {
+        if (in_array(0, $this->decs, true) && !$pu->can_view_all_decision()) {
             return "true";
+        } else if (!$pu->can_view_some_standard_decision()) {
+            // can still view desk-reject decisions
+            $decs = array_values(array_intersect($this->decs, $this->conf->decision_set()->desk_reject_ids()));
+            return empty($decs) ? "false" : "Paper.outcome" . CountMatcher::sqlexpr_using($decs);
         }
         return "Paper.outcome" . CountMatcher::sqlexpr_using($this->decs);
     }

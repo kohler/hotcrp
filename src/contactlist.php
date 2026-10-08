@@ -1142,7 +1142,7 @@ class ContactList {
         case "auacc":
             return $viewer->is_manager()
                 || ($viewer->isPC
-                    && $viewer->can_view_some_decision()
+                    && $viewer->can_view_some_standard_decision()
                     && $viewer->can_view_some_authors());
         case "aurej":
             return $viewer->is_manager()

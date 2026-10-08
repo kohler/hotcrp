@@ -2293,6 +2293,49 @@ class Search_Tester {
         $this->remove_decision("Desk rejected");
     }
 
+    function test_decision_search_finds_visible_desk_rejects() {
+        // Desk-reject decisions are visible to authors and PC even when other
+        // decisions are not
+        $conf = $this->conf;
+        $conf->set_opt("sensitiveSearchRefreshWindow", 0);
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $this->add_desk_reject("Desk rejected");
+        xassert_assign($chair, "paper,action,decision\n6,decision,Desk rejected\n7,decision,accept\n");
+
+        $randy = $conf->checked_user_by_email("randy@cs.berkeley.edu");
+        $mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($randy->can_view_some_decision());
+        xassert(!$randy->can_view_some_standard_decision());
+        xassert($mgbaker->can_view_some_decision());
+        xassert(!$mgbaker->can_view_some_standard_decision());
+        xassert($randy->can_view_decision($conf->checked_paper_by_id(6, $randy)));
+        xassert($mgbaker->can_view_decision($conf->checked_paper_by_id(6, $mgbaker)));
+        xassert(!$mgbaker->can_view_decision($conf->checked_paper_by_id(7, $mgbaker)));
+
+        xassert_search($randy, ["q" => "dec:desk", "t" => "a"], "6");
+        xassert_search($randy, ["q" => "dec:any", "t" => "a"], "6");
+        xassert_search($randy, ["q" => "has:decision", "t" => "a"], "6");
+        xassert_search($mgbaker, ["q" => "dec:desk", "t" => "sa"], "6");
+        xassert_search($mgbaker, ["q" => "dec:any", "t" => "sa"], "6");
+        xassert_search($mgbaker, ["q" => "dec:yes", "t" => "sa"], "");
+
+        // formulas see visible desk rejects
+        $f = Formula::make($randy, "dec");
+        xassert($f->ok());
+        $f->prepare();
+        xassert_eqq($f->eval($conf->checked_paper_by_id(6, $randy), null), $conf->checked_paper_by_id(6)->outcome);
+        $f = Formula::make($mgbaker, "dec")->prepare();
+        xassert_eqq($f->eval($conf->checked_paper_by_id(7, $mgbaker), null), 0);
+
+        // features about accepted papers remain hidden
+        xassert(!in_array("accepted", PaperSearch::viewable_limits($mgbaker), true));
+        xassert_search($mgbaker, ["q" => "phase:final", "t" => "sa"], "");
+
+        xassert_assign($chair, "paper,action,decision\n6,cleardecision,Desk rejected\n7,cleardecision,accept\n");
+        $this->remove_decision("Desk rejected");
+        $conf->set_opt("sensitiveSearchRefreshWindow", null);
+    }
+
     function test_search_api_reports_search_messages() {
         $u = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
         xassert(!$u->isPC);

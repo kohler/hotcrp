@@ -37,7 +37,7 @@ class Phase_SearchTerm extends SearchTerm {
         return $this->user;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (!$this->permuser()->can_view_some_decision()
+        if (!$this->permuser()->can_view_some_standard_decision()
             || $this->phase !== PaperInfo::PHASE_FINAL) {
             return "true";
         }

@@ -115,6 +115,10 @@ class ContactIntersection extends ContactPermissions {
         return $this->a->can_view_some_decision()
             && $this->b->can_view_some_decision();
     }
+    function can_view_some_standard_decision() {
+        return $this->a->can_view_some_standard_decision()
+            && $this->b->can_view_some_standard_decision();
+    }
     function tag_perm_flags(?PaperInfo $prow) {
         return $this->a->tag_perm_flags($prow)
             & $this->b->tag_perm_flags($prow);

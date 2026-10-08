@@ -89,6 +89,8 @@ abstract class ContactPermissions {
     abstract function can_view_all_decision();
     /** @return bool */
     abstract function can_view_some_decision();
+    /** @return bool */
+    abstract function can_view_some_standard_decision();
     /** @return int */
     abstract function tag_perm_flags(?PaperInfo $prow);
     /** @param string $tag
@@ -4975,7 +4977,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_option(PaperOption $opt) {
-        if (($opt->is_final() && !$this->can_view_some_decision())
+        if (($opt->is_final() && !$this->can_view_some_standard_decision())
             || !$opt->test_can_exist()
             || !$this->scope_allows_some(TS::S_SUB_READ | ($opt->has_document() ? TS::S_DOC_READ : 0))) {
             return false;
@@ -6261,6 +6263,18 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_decision() {
+        return $this->can_view_some_standard_decision()
+            || ($this->conf->decision_set()->has_desk_reject()
+                && ($this->isPC
+                    || $this->is_author()
+                    || ($this->is_reviewer()
+                        && ($this->conf->setting("viewrev_ext") ?? 0) >= 0)));
+    }
+
+    /** @return bool
+     * Return true iff this user can view some decision that’s not "undecided"
+     * or a desk rejection. */
+    function can_view_some_standard_decision() {
         if ($this->is_manager()) {
             return true;
         } else if ($this->conf->time_some_author_view_decision()) {

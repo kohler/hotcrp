@@ -141,6 +141,11 @@ class DecisionSet implements IteratorAggregate, Countable {
         return $a;
     }
 
+    /** @return bool */
+    function has_desk_reject() {
+        return $this->_has_desk_reject;
+    }
+
     /** @return list<int> */
     function desk_reject_ids() {
         if (!$this->_has_desk_reject) {

@@ -1876,7 +1876,7 @@ class PaperSearch extends MessageSet {
             $ts[] = "s";
             if ($reqtype === "accepted"
                 || ($user->conf->has_any_accepted()
-                    && $user->can_view_some_decision())) {
+                    && $user->can_view_some_standard_decision())) {
                 $ts[] = "accepted";
             }
         }
