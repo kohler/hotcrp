@@ -1360,4 +1360,57 @@ class Scope_Tester {
         $conf->save_refresh_setting("rev_open", $old_rev_open);
         MailChecker::clear();
     }
+
+    function test_some_review_identity_ignores_temporary_scope_override() {
+        // The cached review-identity bound is computed ignoring scope, and
+        // scope is applied on each call, so a temporary OVERRIDE_SCOPE does
+        // not leak into later checks
+        $u = $this->conf->fresh_user_by_email("lixia@cs.ucla.edu");
+        xassert(!$u->is_manager());
+        xassert($u->can_view_some_review_identity());
+
+        // computed inside the override, then checked outside it
+        $u->set_scope("submission:read");
+        $overrides = $u->add_overrides(Contact::OVERRIDE_SCOPE);
+        xassert($u->can_view_some_review_identity());
+        $u->set_overrides($overrides);
+        xassert(!$u->can_view_some_review_identity());
+
+        // computed outside the override, then checked inside it
+        $u->set_scope("submission:read");
+        xassert(!$u->can_view_some_review_identity());
+        $overrides = $u->add_overrides(Contact::OVERRIDE_SCOPE);
+        xassert($u->can_view_some_review_identity());
+        $u->set_overrides($overrides);
+        $u->set_scope();
+    }
+
+    function test_some_review_identity_follows_au_seerev_override() {
+        // OVERRIDE_AU_SEEREV lets an author view reviews, and therefore
+        // reviewer identities when reviews are not blind, regardless of the
+        // order in which the cached bound was computed
+        $conf = $this->conf;
+        $old_rev_blind = $conf->setting("rev_blind");
+        $conf->save_refresh_setting("rev_blind", Conf::BLIND_NEVER);
+        xassert($conf->_au_seerev === null);
+        $u = $conf->fresh_user_by_email("randy@cs.berkeley.edu");
+        xassert($u->is_author() && !$u->is_reviewer());
+
+        // computed without the override, then checked with it
+        Contact::update_rights();
+        xassert(!$u->can_view_some_review_identity());
+        $overrides = $u->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+        xassert($u->can_view_some_review_identity());
+        $u->set_overrides($overrides);
+        xassert(!$u->can_view_some_review_identity());
+
+        // computed with the override, then checked without it
+        Contact::update_rights();
+        $overrides = $u->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+        xassert($u->can_view_some_review_identity());
+        $u->set_overrides($overrides);
+        xassert(!$u->can_view_some_review_identity());
+
+        $conf->save_refresh_setting("rev_blind", $old_rev_blind);
+    }
 }

@@ -447,7 +447,7 @@ class UserStatus extends MessageSet {
             $cj->bot = true;
         }
 
-        if ($user->roles) {
+        if (($user->roles & Contact::ROLE_PCLIKE) !== 0) {
             $cj->roles = self::unparse_roles_json($user->roles);
         }
 

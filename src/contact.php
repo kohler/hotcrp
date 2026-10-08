@@ -242,12 +242,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     const ROLE_MANAGER = 0x18000;
     const ROLE_TRACK_MANAGER = 0x8000;
     const ROLE_ASSIGNED_MANAGER = 0x10000;
-    const ROLE_APPROVABLE = 0x20000;
+    const ROLE_VIEW_SOME_REVIEW = 0x20000;
     const ROLE_VIEW_SOME_REVIEW_ID = 0x40000;
     const ROLE_OUTSTANDING_REQUEST = 0x80000;
 
     const ROLE_DBMASK = 0x004F;         // PCLIKE | HASAPP
     const ROLE_CDBMASK = 0x007F;        // DBMASK | AUTHOR | REVIEWER
+    const ROLE_AUREMASK = 0x00B0;       // AUTHOR | REVIEWER | REQUESTER
 
     // tags every account has by role, rather than by assignment
     // (keep in sync with the "pc-tags" suggestion builder in script.js)
@@ -3210,17 +3211,59 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $this->_last_rights = null;
     }
 
-    /** @param int $wantmask */
-    private function check_author_reviewer_status($wantmask) {
-        if ($this->_rights_version === self::$rights_version
-            && ($this->role_mask & $wantmask) === $wantmask) {
+    function check_rights_version() {
+        if ($this->_rights_version === self::$rights_version) {
             return;
         }
+        $this->role_mask = self::ROLE_DBMASK;
+        $this->roles = $this->roles & self::ROLE_DBMASK;
+        $this->_session_roles = $this->roles;
+        $this->_conflict_types = $this->_can_view_pc = null;
+        $this->_has_approvable = $this->_authored_papers = null;
+        $this->_dangerous_track_mask = $this->_root_user ? 0 : null;
+        $this->_rights_version = self::$rights_version;
+    }
+
+    /** @param int $mask
+     * @return int */
+    private function session_roles($mask) {
+        if ($this->_rights_version === self::$rights_version
+            && ($this->role_mask & $mask) === $mask) {
+            return $this->_session_roles & $mask;
+        }
         $this->check_rights_version();
-        $rmask = self::ROLE_AUTHOR | self::ROLE_REVIEWER | self::ROLE_REQUESTER;
-        $this->roles &= ~$rmask;
-        $this->_session_roles &= ~$rmask;
-        $this->role_mask |= $rmask;
+        $smask = $mask & ~$this->role_mask;
+        if (($smask & self::ROLE_AUREMASK) !== 0) {
+            $this->_set_author_reviewer_roles();
+        }
+        if (($smask & self::ROLE_METAREVIEWER) !== 0) {
+            $this->_set_metareviewer_roles();
+        }
+        if (($smask & self::ROLE_OUTSTANDING_REVIEW) !== 0) {
+            $this->_set_outstanding_review_roles();
+        }
+        if (($smask & self::ROLE_OUTSTANDING_REQUEST) !== 0) {
+            $this->_set_outstanding_request_roles();
+        }
+        if (($smask & self::ROLE_LEAD) !== 0) {
+            $this->_set_lead_roles();
+        }
+        if (($smask & self::ROLE_MANAGER) !== 0) {
+            $this->_set_manager_roles();
+        }
+        if (($smask & self::ROLE_VIEW_SOME_REVIEW) !== 0) {
+            $this->_set_view_some_review_roles();
+        }
+        if (($smask & self::ROLE_VIEW_SOME_REVIEW_ID) !== 0) {
+            $this->_set_view_some_review_id_roles();
+        }
+        return $this->_session_roles & $mask;
+    }
+
+    private function _set_author_reviewer_roles() {
+        $this->role_mask |= self::ROLE_AUREMASK;
+        $this->roles &= ~self::ROLE_AUREMASK;
+        $this->_session_roles &= ~self::ROLE_AUREMASK;
         // Load from database
         $this->_conflict_types = [];
         if ($this->contactId > 0) {
@@ -3255,7 +3298,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                 }
                 $this->roles |= ($row[1] > 0 ? self::ROLE_REVIEWER : 0)
                     | ($row[2] > 0 ? self::ROLE_REQUESTER : 0);
-                $this->_session_roles |= ($this->roles & $rmask)
+                $this->_session_roles |= ($this->roles & self::ROLE_AUREMASK)
                     | ($row[3] > 0 ? self::ROLE_REVIEWER : 0);
             }
             Dbl::free($result);
@@ -3273,23 +3316,97 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
     }
 
-    function check_rights_version() {
-        if ($this->_rights_version === self::$rights_version) {
-            return;
+    private function _set_metareviewer_roles() {
+        $this->role_mask |= self::ROLE_METAREVIEWER;
+        if ($this->isPC
+            && $this->conf->setting("metareviews")
+            && !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")")) {
+            $this->_session_roles |= self::ROLE_METAREVIEWER;
         }
-        $this->role_mask = self::ROLE_DBMASK;
-        $this->roles = $this->roles & self::ROLE_DBMASK;
-        $this->_session_roles = $this->roles;
-        $this->_conflict_types = $this->_can_view_pc = null;
-        $this->_has_approvable = $this->_authored_papers = null;
-        $this->_dangerous_track_mask = $this->_root_user ? 0 : null;
-        $this->_rights_version = self::$rights_version;
     }
+
+    private function _set_outstanding_review_roles() {
+        $this->role_mask |= self::ROLE_OUTSTANDING_REVIEW;
+        if ($this->has_review()
+            && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview", true) . " and reviewNeedsSubmit!=0)")) {
+            $this->_session_roles |= self::ROLE_OUTSTANDING_REVIEW;
+        }
+    }
+
+    private function _set_outstanding_request_roles() {
+        $this->role_mask |= self::ROLE_OUTSTANDING_REQUEST;
+        if ($this->has_email()
+            && $this->conf->fetch_ivalue("select exists (select * from ReviewRequest where email=?) from dual", $this->email)) {
+            $this->_session_roles |= self::ROLE_OUTSTANDING_REQUEST;
+        }
+    }
+
+    private function _set_lead_roles() {
+        $this->role_mask |= self::ROLE_LEAD;
+        if ($this->contactXid > 0
+            && $this->isPC
+            && $this->conf->has_any_lead_or_shepherd()
+            && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactXid)) {
+            $this->_session_roles |= self::ROLE_LEAD;
+        }
+    }
+
+    private function _set_manager_roles() {
+        $this->role_mask |= self::ROLE_MANAGER;
+        if ($this->privChair) {
+            $this->_session_roles |= self::ROLE_TRACK_MANAGER;
+        } else if ($this->contactXid <= 0 || !$this->isPC) {
+            // nothing
+        } else if ($this->conf->check_any_admin_tracks($this)) {
+            $this->_session_roles |= self::ROLE_TRACK_MANAGER;
+        } else if ($this->conf->has_any_manager()
+                   && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0) {
+            $this->_session_roles |= self::ROLE_ASSIGNED_MANAGER;
+        }
+    }
+
+    private function _set_view_some_review_roles() {
+        $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW;
+        if ($this->is_reviewer()
+            || ($this->is_author()
+                && ($this->conf->_au_seerev
+                    || $this->conf->any_response_open === 2
+                    || ($this->conf->any_response_open === 1
+                        && !empty($this->relevant_response_rounds()))))) {
+            $this->_session_roles |= self::ROLE_VIEW_SOME_REVIEW;
+        }
+    }
+
+    private function _set_view_some_review_id_roles() {
+        $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
+        $overrides = $this->set_overrides(self::OVERRIDE_SCOPE);
+        if ($this->is_manager()
+            || (!$this->conf->is_review_blind(null)
+                && $this->is_author()
+                && $this->session_roles(self::ROLE_VIEW_SOME_REVIEW) !== 0)) {
+            $this->_session_roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
+        } else {
+            $tags = "";
+            if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
+                $tags = " {$t}#0 ";
+            }
+            if ($this->isPC) {
+                $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
+            } else {
+                $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
+            }
+            $prow = PaperInfo::make_permissive_reviewer($this, $rtype, $tags);
+            if ($this->can_view_review_identity($prow, null)) {
+                $this->_session_roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
+            }
+        }
+        $this->set_overrides($overrides);
+    }
+
 
     /** @return bool */
     function is_author() {
-        $this->check_author_reviewer_status(self::ROLE_AUTHOR);
-        return ($this->_session_roles & self::ROLE_AUTHOR) !== 0;
+        return $this->session_roles(self::ROLE_AUTHOR) !== 0;
     }
 
     /** @return PaperInfoSet */
@@ -3313,14 +3430,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return associative-array<int,int> */
     function conflict_types() {
-        $this->check_author_reviewer_status($this->_conflict_types === null ? -1 : 0);
+        $this->session_roles(self::ROLE_AUTHOR); // which also sets _conflict_types
         return $this->_conflict_types;
     }
 
     /** @return bool */
     function has_review() {
-        $this->check_author_reviewer_status(self::ROLE_REVIEWER);
-        return ($this->_session_roles & self::ROLE_REVIEWER) !== 0;
+        return $this->session_roles(self::ROLE_REVIEWER) !== 0;
     }
 
     /** @return bool */
@@ -3330,15 +3446,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function is_metareviewer() {
-        if (($this->role_mask & self::ROLE_METAREVIEWER) === 0) {
-            $this->role_mask |= self::ROLE_METAREVIEWER;
-            if ($this->isPC
-                && $this->conf->setting("metareviews")
-                && !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")")) {
-                $this->roles |= self::ROLE_METAREVIEWER;
-            }
-        }
-        return ($this->roles & self::ROLE_METAREVIEWER) !== 0;
+        return $this->session_roles(self::ROLE_METAREVIEWER) !== 0;
     }
 
     /** @return int */
@@ -3347,7 +3455,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if ($this->is_disabled()) {
             return 0;
         }
-        $this->check_author_reviewer_status(self::ROLE_CDBMASK);
+        $this->session_roles(self::ROLE_CDBMASK);
         return $this->roles & self::ROLE_CDBMASK;
     }
 
@@ -3367,86 +3475,34 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function has_outstanding_review() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_OUTSTANDING_REVIEW) === 0) {
-            $this->role_mask |= self::ROLE_OUTSTANDING_REVIEW;
-            if ($this->has_review()
-                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview", true) . " and reviewNeedsSubmit!=0)")) {
-                $this->roles |= self::ROLE_OUTSTANDING_REVIEW;
-            }
-        }
-        return ($this->roles & self::ROLE_OUTSTANDING_REVIEW) !== 0;
+        return $this->session_roles(self::ROLE_OUTSTANDING_REVIEW) !== 0;
     }
 
     /** @return bool */
     function has_outstanding_request() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_OUTSTANDING_REQUEST) === 0) {
-            $this->role_mask |= self::ROLE_OUTSTANDING_REQUEST;
-            if ($this->has_email()
-                && $this->conf->fetch_ivalue("select exists (select * from ReviewRequest where email=?) from dual", $this->email)) {
-                $this->roles |= self::ROLE_OUTSTANDING_REQUEST;
-            }
-        }
-        return ($this->roles & self::ROLE_OUTSTANDING_REQUEST) !== 0;
+        return $this->session_roles(self::ROLE_OUTSTANDING_REQUEST) !== 0;
     }
 
     /** @return bool */
     function is_requester() {
-        $this->check_author_reviewer_status(self::ROLE_REQUESTER);
-        return ($this->_session_roles & self::ROLE_REQUESTER) !== 0;
+        return $this->session_roles(self::ROLE_REQUESTER) !== 0;
     }
 
     /** @return bool */
     function is_discussion_lead() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_LEAD) === 0) {
-            $this->role_mask |= self::ROLE_LEAD;
-            if ($this->contactXid > 0
-                && $this->isPC
-                && $this->conf->has_any_lead_or_shepherd()
-                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactXid)) {
-                $this->roles |= self::ROLE_LEAD;
-            }
-        }
-        return ($this->roles & self::ROLE_LEAD) !== 0;
-    }
-
-    /** @return bool */
-    function is_manager() {
-        if ($this->privChair) {
-            return true;
-        } else if ($this->contactXid <= 0 || !$this->isPC) {
-            return false;
-        } else if ($this->is_track_manager()) {
-            return true;
-        }
-        // `is_track_manager` did `check_rights_Version`
-        if (($this->role_mask & self::ROLE_ASSIGNED_MANAGER) === 0) {
-            $this->role_mask |= self::ROLE_ASSIGNED_MANAGER;
-            if ($this->conf->has_any_manager()
-                && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0) {
-                $this->roles |= self::ROLE_ASSIGNED_MANAGER;
-            }
-        }
-        return ($this->roles & self::ROLE_MANAGER) !== 0;
+        return $this->session_roles(self::ROLE_LEAD) !== 0;
     }
 
     /** @return bool */
     function is_track_manager() {
-        if ($this->privChair) {
-            return true;
-        } else if ($this->contactXid <= 0 || !$this->isPC) {
-            return false;
-        }
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_TRACK_MANAGER) === 0) {
-            $this->role_mask |= self::ROLE_TRACK_MANAGER;
-            if ($this->conf->check_any_admin_tracks($this)) {
-                $this->roles |= self::ROLE_TRACK_MANAGER;
-            }
-        }
-        return ($this->roles & self::ROLE_TRACK_MANAGER) !== 0;
+        return $this->privChair
+            || $this->session_roles(self::ROLE_TRACK_MANAGER) !== 0;
+    }
+
+    /** @return bool */
+    function is_manager() {
+        return $this->privChair
+            || $this->session_roles(self::ROLE_MANAGER) !== 0;
     }
 
     /** Return the tags of the tracks this user administers, or null if they
@@ -5088,16 +5144,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_review() {
-        if (!$this->scope_allows_some(TS::S_REV_READ)) {
-            return false;
-        }
-        return $this->is_reviewer()
-            || ($this->is_author()
-                && (($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
-                    || $this->conf->_au_seerev
-                    || $this->conf->any_response_open === 2
-                    || ($this->conf->any_response_open === 1
-                        && !empty($this->relevant_response_rounds()))));
+        return $this->scope_allows_some(TS::S_REV_READ)
+            && ($this->session_roles(self::ROLE_VIEW_SOME_REVIEW) !== 0
+                || (($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
+                    && $this->is_author()));
     }
 
     /** @return bool */
@@ -5381,32 +5431,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_review_identity() {
-        if (($this->role_mask & self::ROLE_VIEW_SOME_REVIEW_ID) === 0) {
-            $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
-            if ($this->is_manager()
-                || (!$this->conf->is_review_blind(null)
+        return $this->scope_allows_some(TS::S_REV_READ)
+            && ($this->session_roles(self::ROLE_VIEW_SOME_REVIEW_ID) !== 0
+                || (($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
                     && $this->is_author()
-                    && $this->can_view_some_review())) {
-                $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
-            } else {
-                $tags = "";
-                if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
-                    $tags = " {$t}#0 ";
-                }
-                if ($this->isPC) {
-                    $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
-                } else {
-                    $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
-                }
-                $prow = PaperInfo::make_permissive_reviewer($this, $rtype, $tags);
-                $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
-                if ($this->can_view_review_identity($prow, null)) {
-                    $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
-                }
-                $this->set_overrides($overrides);
-            }
-        }
-        return ($this->roles & self::ROLE_VIEW_SOME_REVIEW_ID) !== 0;
+                    && !$this->conf->is_review_blind(null)));
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
