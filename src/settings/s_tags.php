@@ -101,15 +101,6 @@ class Tags_SettingParser extends SettingParser {
             "autocomplete" => "off"
         ]);
     }
-    static function print_tag_sitewide(SettingValues $sv) {
-        if ($sv->newv("tag_admin_open") || $sv->conf->has_any_manager()) {
-            $sv->print_entry_group("tag_admin_open", null, [
-                "class" => "need-suggest tags",
-                "hint" => "Administrators can see and change these tags even on conflicted submissions.",
-                "autocomplete" => "off"
-            ]);
-        }
-    }
     static function print_tag_approval(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_approval", null, [
             "class" => "need-suggest tags",
@@ -129,9 +120,6 @@ class Tags_SettingParser extends SettingParser {
             "hint" => "The " . $sv->conf->hotlink("offline reviewing page", "offline") . " will expose support for uploading rankings by this tag. (" . $sv->conf->hotlink("Help", "help", ["t" => "ranking"]) . ")",
             "autocomplete" => "off"
         ]);
-    }
-    static function print_tag_seeall(SettingValues $sv) {
-        $sv->print_checkbox("tag_visibility_conflict", "PC can see tags for conflicted submissions");
     }
 
     private function strip_presets($si, $v) {
