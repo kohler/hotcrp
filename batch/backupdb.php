@@ -837,7 +837,15 @@ class BackupDB_Batch {
                 fwrite(STDERR, "{$output}\n");
             }
             $this->_out_dstname = str_starts_with($output, "/") ? $output : "./{$output}";
-            $this->_out_srcname = "{$this->_out_dstname}.tmp";
+            // write regular files via a temporary file and rename;
+            // write devices, FIFOs, and symlinks directly
+            if (is_link($this->_out_dstname)
+                || (file_exists($this->_out_dstname) && !is_file($this->_out_dstname))
+                || !is_writable(dirname($this->_out_dstname))) {
+                $this->_out_srcname = $this->_out_dstname;
+            } else {
+                $this->_out_srcname = "{$this->_out_dstname}.tmp";
+            }
             if ($this->compress) {
                 $this->out = @gzopen($this->_out_srcname, "wb9");
             } else {
@@ -925,7 +933,8 @@ class BackupDB_Batch {
         }
         if ($this->_output_mode === "file") {
             if (!@fclose($this->out)
-                || !@rename($this->_out_srcname, $this->_out_dstname)) {
+                || ($this->_out_srcname !== $this->_out_dstname
+                    && !@rename($this->_out_srcname, $this->_out_dstname))) {
                 throw error_get_last_as_exception("{$this->_out_dstname}: ");
             }
             $this->out = null;

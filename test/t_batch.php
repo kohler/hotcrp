@@ -318,4 +318,44 @@ class Batch_Tester {
         xassert(!$metadata["timed_out"]);
         fclose($sp[0]);
     }
+
+    /** @param string $output */
+    private function run_schema_backup($output) {
+        global $Opt;
+        $bdb = new BackupDB_Batch(Dbl::parse_connection_params($Opt), [
+            "output" => $output, "schema" => true, "only" => ["Settings"]
+        ]);
+        return $bdb->run();
+    }
+
+    function test_backupdb_output_targets() {
+        $dir = tempdir();
+        xassert(!!$dir);
+
+        // a regular file is replaced atomically
+        $fn = "{$dir}/backup.sql";
+        file_put_contents($fn, "old\n");
+        xassert_eqq($this->run_schema_backup($fn), 0);
+        xassert_str_contains(file_get_contents($fn), "CREATE TABLE `Settings`");
+        xassert(!file_exists("{$fn}.tmp"));
+
+        // a symlink is written through, not replaced
+        $target = "{$dir}/target.sql";
+        file_put_contents($target, "old\n");
+        $link = "{$dir}/link.sql";
+        symlink($target, $link);
+        xassert_eqq($this->run_schema_backup($link), 0);
+        xassert(is_link($link));
+        xassert_str_contains(file_get_contents($target), "CREATE TABLE `Settings`");
+        xassert(!file_exists("{$link}.tmp"));
+
+        // a device is written directly
+        xassert_eqq($this->run_schema_backup("/dev/null"), 0);
+        xassert(!file_exists("/dev/null.tmp"));
+
+        unlink($link);
+        unlink($target);
+        unlink($fn);
+        rmdir($dir);
+    }
 }
