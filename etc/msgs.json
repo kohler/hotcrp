@@ -8,21 +8,21 @@
     ["average {0} score {1}", "{0} score {1}", ["{2}=1"]],
 
     {
-        "in": "You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
+        "in": "<5>You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
         "m": [
-            ["You have submitted {n} of <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}"]],
-            ["You have submitted <a href=\"{url}\">{na} review</a>.", ["!#{scores}", "{n}=1", "{na}=1"]],
-            ["You have submitted <a href=\"{url}\">{na} review</a> with {scores:list}.", ["{n}=1", "{na}=1"]],
-            ["You have submitted <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}", "{n}={na}"]],
-            ["You have submitted <a href=\"{url}\">{na} reviews</a> with {scores:list}.", ["{n}={na}"]]
+            ["<5>You have submitted {n} of <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}"]],
+            ["<5>You have submitted <a href=\"{url}\">{na} review</a>.", ["!#{scores}", "{n}=1", "{na}=1"]],
+            ["<5>You have submitted <a href=\"{url}\">{na} review</a> with {scores:list}.", ["{n}=1", "{na}=1"]],
+            ["<5>You have submitted <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}", "{n}={na}"]],
+            ["<5>You have submitted <a href=\"{url}\">{na} reviews</a> with {scores:list}.", ["{n}={na}"]]
         ]
     },
     {
-        "in": "The average PC member has submitted {n:.1f} reviews with {scores:list}.",
+        "in": "<5>The average PC member has submitted {n:.1f} reviews with {scores:list}.",
         "m": [
-            ["The average PC member has submitted {n:.1f} reviews.", ["!#{scores}"]],
-            ["The average PC member has submitted {n:.1f} review with {scores:list}.", ["{n}=1"]],
-            ["The average PC member has submitted {n:.1f} review.", ["{n}=1", "!#{scores}"]]
+            ["<5>The average PC member has submitted {n:.1f} reviews.", ["!#{scores}"]],
+            ["<5>The average PC member has submitted {n:.1f} review with {scores:list}.", ["{n}=1"]],
+            ["<5>The average PC member has submitted {n:.1f} review.", ["{n}=1", "!#{scores}"]]
         ]
     },
 

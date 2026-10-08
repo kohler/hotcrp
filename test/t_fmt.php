@@ -249,4 +249,29 @@ class Fmt_Tester {
         xassert_eqq($ms->_("<5>{:j}", "&"), "<5>&quot;&amp;&quot;");
         xassert_eqq($ms->_("<5>{:jx}", 1), "<5>0x1");
     }
+
+    function test_home_review_summary() {
+        $conf = Conf::$main;
+        $url = "search?q=&t=r";
+        $scores = ["average Merit &amp; <b>x</b> score 3.5"];
+        $msg = "<5>You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.";
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 1), new FmtArg("na", 2),
+                new FmtArg("url", $url, 0), new FmtArg("scores", $scores)),
+            "You have submitted 1 of <a href=\"search?q=&amp;t=r\">2 reviews</a> with average Merit &amp; <b>x</b> score 3.5.");
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 1), new FmtArg("na", 2),
+                new FmtArg("url", $url, 0), new FmtArg("scores", [])),
+            "You have submitted 1 of <a href=\"search?q=&amp;t=r\">2 reviews</a>.");
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 1), new FmtArg("na", 1),
+                new FmtArg("url", $url, 0), new FmtArg("scores", [])),
+            "You have submitted <a href=\"search?q=&amp;t=r\">1 review</a>.");
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 3), new FmtArg("na", 3),
+                new FmtArg("url", $url, 0), new FmtArg("scores", $scores)),
+            "You have submitted <a href=\"search?q=&amp;t=r\">3 reviews</a> with average Merit &amp; <b>x</b> score 3.5.");
+
+        $msg = "<5>The average PC member has submitted {n:.1f} reviews with {scores:list}.";
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 2.5), new FmtArg("scores", $scores)),
+            "The average PC member has submitted 2.5 reviews with average Merit &amp; <b>x</b> score 3.5.");
+        xassert_eqq($conf->_5($msg, new FmtArg("n", 2.5), new FmtArg("scores", [])),
+            "The average PC member has submitted 2.5 reviews.");
+    }
 }

@@ -344,7 +344,7 @@ class Home_Page {
                     $score_texts[] = $conf->_("average {0} score {1}", $rf->name_html, $rf->unparse_computed($this->_rf_means[$i]), $this->_r_num_submitted);
                 }
             }
-            echo $conf->_5("You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
+            echo $conf->_5("<5>You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
                 new FmtArg("n", $this->_r_num_submitted), new FmtArg("na", $this->_r_num_needs_submit),
                 new FmtArg("url", $conf->hoturl("search", ["q" => "", "t" => "r"]), 0),
                 new FmtArg("scores", $score_texts)),
@@ -357,7 +357,7 @@ class Home_Page {
                     $score_texts[] = $conf->_("average {0} score {1}", $rf->name_html, $rf->unparse_computed($pc_rf_means[$i]), null);
                 }
             }
-            echo $conf->_5("The average PC member has submitted {n:.1f} reviews with {scores:list}.",
+            echo $conf->_5("<5>The average PC member has submitted {n:.1f} reviews with {scores:list}.",
                 new FmtArg("n", $sumpc_submit / $npc), new FmtArg("scores", $score_texts));
             if ($user->isPC || $user->privChair) {
                 echo "&nbsp; <small class=\"nw\">(", $conf->hotlink("details", "users", ["t" => "pc"]), "<span class=\"barsep\">·</span>", $conf->hotlink("graphs", "graph", ["group" => "procrastination"]), ")</small>";
