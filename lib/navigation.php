@@ -61,24 +61,26 @@ class NavigationState {
             $nav->protocol = "http://";
             $xport = 80;
         }
-        $hp = $server["HTTP_HOST"] ?? null;
-        if (($hp ?? "") === "") {
+        $hp = $server["HTTP_HOST"] ?? "";
+        $has_host = $hp !== "";
+        if (!$has_host) {
             $hp = $server["SERVER_NAME"] ?? "";
+            if ($hp === "") {
+                $hp = "localhost";
+            }
             // `SERVER_NAME` may hold a bare IPv6 address
             if (substr_count($hp, ":") > 1 && $hp[0] !== "[") {
                 $hp = "[{$hp}]";
             }
         }
-        $hp = $hp !== "" ? $hp : "localhost";
         $colon = str_ends_with($hp, "]") ? false : strrpos($hp, ":");
-        if ($colon === false) {
-            $colon = strlen($hp);
-            if (($port = $server["SERVER_PORT"])
-                && $port != $xport) {
-                $hp .= ":" . $port;
-            }
+        $nav->host = $colon === false ? $hp : substr($hp, 0, $colon);
+        if (!$has_host
+            && $colon === false
+            && ($port = $server["SERVER_PORT"])
+            && $port != $xport) {
+            $hp .= ":{$port}";
         }
-        $nav->host = substr($hp, 0, $colon);
         $nav->server = $nav->protocol . $hp;
 
         $nav->request_uri = $server["REQUEST_URI"];

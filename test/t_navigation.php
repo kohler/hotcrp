@@ -849,7 +849,7 @@ class Navigation_Tester {
             "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
         ]);
         xassert_eqq($ns->host, "example.com");
-        xassert_eqq($ns->server, "http://example.com:8080");
+        xassert_eqq($ns->server, "http://example.com");
 
         $ns = NavigationState::make_server([
             "HTTP_HOST" => "127.0.0.1", "SERVER_PORT" => 80,
@@ -863,7 +863,7 @@ class Navigation_Tester {
             "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
         ]);
         xassert_eqq($ns->host, "[::1]");
-        xassert_eqq($ns->server, "http://[::1]:8080");
+        xassert_eqq($ns->server, "http://[::1]");
 
         $ns = NavigationState::make_server([
             "SERVER_NAME" => "[::1]:8080", "SERVER_PORT" => 8080,
@@ -885,6 +885,65 @@ class Navigation_Tester {
         ]);
         xassert_eqq($ns->host, "[2001:db8::5]");
         xassert_eqq($ns->server, "http://[2001:db8::5]");
+    }
+
+    /** @param array<string,mixed> $server
+     * @return NavigationState */
+    private function make_server_at($server) {
+        return NavigationState::make_server($server + [
+            "SCRIPT_FILENAME" => __FILE__, "REQUEST_URI" => "/fart", "SCRIPT_NAME" => "/fart"
+        ]);
+    }
+
+    function test_server_port() {
+        // a `Host` header names the port the client used; without a port, it
+        // means the scheme's default, whatever port the server listens on
+        $ns = $this->make_server_at([
+            "HTTP_HOST" => "hotcrp.example.org", "HTTP_X_FORWARDED_PROTO" => "https",
+            "SERVER_PORT" => 80
+        ]);
+        xassert_eqq($ns->host, "hotcrp.example.org");
+        xassert_eqq($ns->server, "https://hotcrp.example.org");
+        xassert_eqq($ns->resolve("paper/1"), "https://hotcrp.example.org/paper/1");
+
+        $ns = $this->make_server_at([
+            "HTTP_HOST" => "hotcrp.example.org", "HTTPS" => "on", "SERVER_PORT" => 8443
+        ]);
+        xassert_eqq($ns->server, "https://hotcrp.example.org");
+
+        $ns = $this->make_server_at([
+            "HTTP_HOST" => "hotcrp.example.org:8443", "HTTPS" => "on", "SERVER_PORT" => 8443
+        ]);
+        xassert_eqq($ns->host, "hotcrp.example.org");
+        xassert_eqq($ns->server, "https://hotcrp.example.org:8443");
+
+        $ns = $this->make_server_at([
+            "HTTP_HOST" => "[2001:db8::5]", "REQUEST_SCHEME" => "https", "SERVER_PORT" => 8443
+        ]);
+        xassert_eqq($ns->host, "[2001:db8::5]");
+        xassert_eqq($ns->server, "https://[2001:db8::5]");
+
+        // without a `Host` header, a nondefault server port is added
+        $ns = $this->make_server_at([
+            "SERVER_NAME" => "example.com", "SERVER_PORT" => 8080
+        ]);
+        xassert_eqq($ns->host, "example.com");
+        xassert_eqq($ns->server, "http://example.com:8080");
+
+        $ns = $this->make_server_at([
+            "HTTP_HOST" => "", "SERVER_NAME" => "example.com", "HTTPS" => "on", "SERVER_PORT" => 443
+        ]);
+        xassert_eqq($ns->server, "https://example.com");
+
+        $ns = $this->make_server_at([
+            "SERVER_NAME" => "[::1]", "SERVER_PORT" => 8080
+        ]);
+        xassert_eqq($ns->host, "[::1]");
+        xassert_eqq($ns->server, "http://[::1]:8080");
+
+        $ns = $this->make_server_at(["SERVER_PORT" => 8080]);
+        xassert_eqq($ns->host, "localhost");
+        xassert_eqq($ns->server, "http://localhost:8080");
     }
 
     function test_base_numbered_host() {
