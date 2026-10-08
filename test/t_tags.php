@@ -1238,6 +1238,50 @@ seqnexttag,6,altorder\n");
         $this->clear_vote_tags("vother");
     }
 
+    function test_pc_can_view_conflicted_private_tags() {
+        $this->set_vote_allotment("vsee#5");
+        $vcid = $this->u_varghese->contactId;
+        $fcid = $this->u_floyd->contactId;
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1 4,{$vcid}~vsee#2\ntag,4,{$fcid}~vsee#1\ntag,4,{$vcid}~vmine\n");
+        $p4 = $this->conf->checked_paper_by_id(4);
+        xassert($p4->has_conflict($this->u_varghese));
+        xassert(!$p4->has_conflict($this->u_floyd));
+
+        // conflicted PC normally see none of their private tags
+        xassert(!$this->u_varghese->can_view_tag($p4, "{$vcid}~vsee"));
+        xassert(!$this->u_varghese->can_view_tag($p4, "{$fcid}~vsee"));
+        xassert_search($this->u_varghese, "#~vsee", "1");
+
+        // with `tag_seeall`, they see their own private tags and others'
+        // public per-user votes, as unconflicted PC do
+        $this->conf->save_refresh_setting("tag_seeall", 1);
+        $p4 = $this->conf->checked_paper_by_id(4);
+        xassert($this->u_varghese->can_view_tag($p4, "{$vcid}~vsee"));
+        xassert($this->u_varghese->can_view_tag($p4, "{$vcid}~vmine"));
+        xassert($this->u_varghese->can_view_tag($p4, "{$fcid}~vsee"));
+        xassert($this->u_varghese->can_view_peruser_tag($p4, "vsee"));
+        $vt = $p4->viewable_tags($this->u_varghese);
+        xassert_str_contains($vt, " {$vcid}~vmine#0 {$vcid}~vsee#2 ");
+        xassert_str_contains($vt, " vsee#3");
+        xassert_not_str_contains($vt, "{$fcid}~");
+        xassert_search($this->u_varghese, "#~vsee", "1 4");
+        xassert_search($this->u_varghese, "#~vmine", "4");
+        xassert_search($this->u_varghese, "#floyd~vsee", "4");
+        // but cannot change them
+        xassert(!$this->u_varghese->can_edit_tag($p4, "{$vcid}~vsee", 2, 3));
+
+        // private per-user votes stay private
+        $this->conf->save_refresh_setting("tag_vote_private_peruser", 1);
+        $p4 = $this->conf->checked_paper_by_id(4);
+        xassert($this->u_varghese->can_view_tag($p4, "{$vcid}~vsee"));
+        xassert(!$this->u_varghese->can_view_tag($p4, "{$fcid}~vsee"));
+
+        $this->conf->save_refresh_setting("tag_vote_private_peruser", null);
+        $this->conf->save_refresh_setting("tag_seeall", null);
+        xassert_assign($this->u_chair, "action,paper,tag\ncleartag,4,{$vcid}~vmine\n");
+        $this->clear_vote_tags("vsee");
+    }
+
     function test_find_having() {
         $dt = $this->conf->tags();
         xassert_neqq($dt->find_having("red", TagInfo::TF_STYLE), null);

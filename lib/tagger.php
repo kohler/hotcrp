@@ -913,13 +913,13 @@ class TagMap {
             $ti = $p & TagInfo::TF_CHAIR_PUBLIC ? $this->find($tag) : null;
             return $ti ? $ti->flags & TagInfo::TFM_PERM_NONPRIVATE : TagInfo::TF_CHAIR_HIDDEN;
         } else if ($tw === 0 || intval($tag) === $cid) {
-            return TagInfo::TF_PC | TagInfo::TF_PRIVATE;
+            return TagInfo::TF_PC | TagInfo::TF_PRIVATE | ($this->all_flags & TagInfo::TF_PC_PUBLIC);
         } else if ((($relevant_perm ?? TagInfo::TFM_PERM) & TagInfo::TF_OTHER_PRIVATE) === 0) {
             return 0;
         }
         $ti = $p & TagInfo::TF_OTHER_PRIVATE ? $this->find(substr($tag, $tw + 1)) : null;
         if ($ti && ($ti->flags & TagInfo::TF_OTHER_PRIVATE) !== 0) {
-            return TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE;
+            return TagInfo::TF_PC | TagInfo::TF_OTHER_PRIVATE | ($this->all_flags & TagInfo::TF_PC_PUBLIC);
         }
         return TagInfo::TF_OTHER_PRIVATE;
     }
@@ -1287,7 +1287,9 @@ class TagMap {
         $ntfl = ~$ufl & TagInfo::TFM_PERM_NEG;
         if (($ufl & TagInfo::TF_PC) === 0) {
             $ntfl |= $ufl & TagInfo::TFM_PERM_POS;
-        } else if ($ctype === self::CENSOR_SEARCH) {
+        }
+        if ($ctype === self::CENSOR_SEARCH
+            && ($ufl & (TagInfo::TF_PC | ($this->all_flags & TagInfo::TF_PC_PUBLIC))) !== 0) {
             $ntfl |= TagInfo::TF_OTHER_PRIVATE;
         }
 
