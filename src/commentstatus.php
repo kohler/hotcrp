@@ -194,18 +194,20 @@ final class CommentStatus extends MessageSet {
         if ($crow->timeModified >= Conf::$now) {
             Conf::advance_current_time($crow->timeModified);
         }
-        if ($displayed) {
-            if ($crow->timeNotified + 10800 < Conf::$now
-                || (($ctype & CommentInfo::CT_RESPONSE) !== 0
-                    && ($ctype & CommentInfo::CT_DRAFT) === 0
-                    && ($old_ctype & CommentInfo::CT_DRAFT) !== 0)) {
-                $crow->set_prop("timeNotified", Conf::$now);
-            }
-            // reset timeDisplayed if you change the comment type
-            if ((!$crow->timeDisplayed || $crow->ordinal_missing())
-                && ($text !== "" || $docs)) {
-                $crow->set_prop("timeDisplayed", Conf::$now);
-            }
+        // notify for displayed comments and draft responses at most every
+        // 3 hours, and whenever a response is submitted
+        if (($displayed || $is_response)
+            && ($crow->timeNotified + 10800 < Conf::$now
+                || ($is_response
+                    && $displayed
+                    && ($old_ctype & CommentInfo::CT_DRAFT) !== 0))) {
+            $crow->set_prop("timeNotified", Conf::$now);
+        }
+        // reset timeDisplayed if you change the comment type
+        if ($displayed
+            && (!$crow->timeDisplayed || $crow->ordinal_missing())
+            && ($text !== "" || $docs)) {
+            $crow->set_prop("timeDisplayed", Conf::$now);
         }
 
         // ensure _old_prop entries for new comments

@@ -1601,6 +1601,29 @@ concerns.
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
 ******** t_comments-response-combination
+To: Marcel Waldvogel <waldvogel@tik.ee.ethz.ch>
+Subject: [Testconf I] Draft response for #4 "Scalable High Speed IP Routing
+ Lookups"
+
+The draft authors' response for Test Conference I (Testconf I)
+submission #4 has been updated as shown below. This response has not yet
+been submitted to reviewers. For the most up-to-date version, or to turn
+off notification emails, see the submission site.
+
+* Title: Scalable High Speed IP Routing Lookups
+* Site: http://hotcrp.lcdf.org/test/paper/4
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+http://hotcrp.lcdf.org/test
+
+Response by Author [George Varghese <varghese@ccrc.wustl.edu>] (1 word)
+---------------------------------------------------------------------------
+Draft
+
+******** t_comments-response-combination
 To: Marcel Waldvogel <waldvogel@tik.ee.ethz.ch>, George Varghese <varghese@ccrc.wustl.edu>
 Subject: [Testconf I] Response for #4 "Scalable High Speed IP Routing Lookups"
 

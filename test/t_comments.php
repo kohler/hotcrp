@@ -899,6 +899,50 @@ class Comments_Tester {
         xassert($sv->execute());
     }
 
+    /** @return int */
+    private function draft_response_mail_count() {
+        $n = 0;
+        foreach (MailChecker::$preps as $prep) {
+            if (strpos($prep->subject, "Draft response for #1 ") !== false)
+                ++$n;
+        }
+        return $n;
+    }
+
+    function test_draft_response_notifies_contacts() {
+        $paper1 = $this->open_clean_response_round();
+        xassert_gt(count($paper1->contact_list()), 1);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1", "response/1/id" => "1",
+            "response/1/done" => "@" . (Conf::$now + 100000)
+        ]);
+        xassert($sv->execute());
+
+        // starting a draft response notifies the other contacts
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Draft body", "draft" => 1], $paper1);
+        xassert($j->ok);
+        $rid = (int) $j->comment->cid;
+        xassert_gt($this->draft_response_mail_count(), 0);
+        xassert_eqq($this->mail_count_to("floyd@ee.lbl.gov"), 0);
+
+        // edits within three hours do not
+        MailChecker::clear();
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "text" => "Draft body 2", "draft" => 1], $paper1);
+        xassert($j->ok);
+        xassert_eqq($this->draft_response_mail_count(), 0);
+
+        // later edits do
+        Conf::advance_current_time(Conf::$now + 20000);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "text" => "Draft body 3", "draft" => 1], $paper1);
+        xassert($j->ok);
+        xassert_gt($this->draft_response_mail_count(), 0);
+
+        MailChecker::clear();
+        call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $rid, "delete" => 1], $paper1);
+        MailChecker::clear();
+        $this->close_response_round();
+    }
+
     /** Open response round 1 on paper 1 and drop any response it already has.
      * @return PaperInfo */
     private function open_clean_response_round() {
