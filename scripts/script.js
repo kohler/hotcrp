@@ -11090,9 +11090,9 @@ handle_ui.on("js-annotate-order", function () {
             session_chair = $e("span", "select", inpute("session_chair", {type: "select", class: "need-pcselector", "data-pcselector-options": "0 *", "data-default-value": anno.session_chair || "none"}, "session")),
             deleter = $e("button", {
                 type: "button",
-                class: "ml-2 need-tooltip js-delete-ta",
+                class: "ml-2 need-tooltip js-delete-ta btn-licon-s",
                 "aria-label": "Delete annotation"
-            }, $svg_licon("trash", "m")),
+            }, $svg_licon("trash", "s")),
             fieldset = $e("fieldset", "mt-3 mb-2",
                 $e("legend", null,
                     "#" + dtag + "#",
@@ -11109,6 +11109,7 @@ handle_ui.on("js-annotate-order", function () {
     }
     function awaken_anno() {
         $pu.find(".need-pcselector").each(populate_pcselector);
+        $pu.awaken();
     }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
@@ -14805,7 +14806,7 @@ handle_ui.on("js-edit-formulas", function () {
         if (f.editable) {
             nei.className = "mb-1";
             nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", class: "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
-                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_licon("trash", "m")));
+                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, $svg_licon("trash", "s")));
             xei.append($e("textarea", {class: "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
         } else {
             nei.append(f.name);

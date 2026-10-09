@@ -66,7 +66,7 @@ class Decision_SettingParser extends SettingParser {
             echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
         if ($editable) {
-            echo Ht::button(Ht::make_licon("trash", "m"), ["class" => "fx ui js-settings-decision-delete btn-licon-s ml-2 need-tooltip", "name" => "decision/{$ctr}/deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
+            echo Ht::button(Ht::make_licon("trash", "s"), ["class" => "fx ui js-settings-decision-delete btn-licon-s ml-2 need-tooltip", "name" => "decision/{$ctr}/deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         if ($count) {
             echo $sv->conf->hotlink(plural($count, "submission"), "search", ["q" => "dec:" . SearchWord::quote($sv->oldv("decision/{$ctr}/name"))], ["class" => "ml-2"]);
