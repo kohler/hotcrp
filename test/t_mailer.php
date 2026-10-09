@@ -1015,4 +1015,38 @@ class Mailer_Tester {
         xassert($prep->can_send());
         $conf->set_opt("emailFrom", $old_from);
     }
+
+    /** @return string */
+    private function expand_assignments(Contact $sender, Contact $recipient, $recipients) {
+        $mr = (new MailRecipients($sender))->set_recipients($recipients);
+        $mailer = (new HotCRPMailer($sender, $recipient))->set_recip_set($mr);
+        return $mailer->expand("{{ASSIGNMENTS}}", "body");
+    }
+
+    function test_assignments_keyword_skips_withdrawn_papers() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+        $rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        $prow = $conf->checked_paper_by_id(17);
+        xassert($prow->timeSubmitted > 0 && !$prow->has_conflict($marina));
+        $had_review = !!$prow->review_by_user($marina);
+        if (!$had_review) {
+            xassert_assign($chair, "paper,action,user\n17,pcreview,marina@poema.ru\n");
+        }
+
+        xassert_str_contains($this->expand_assignments($chair, $marina, "pc"), "#17 ");
+
+        // a withdrawn paper's assignments are not listed
+        xassert_assign($chair, "paper,action,notify\n17,withdraw,no\n");
+        xassert_not_str_contains($this->expand_assignments($chair, $marina, "pc"), "#17 ");
+
+        xassert_assign($chair, "paper,action,notify\n17,revive,no\n");
+        if (!$had_review) {
+            xassert_assign($chair, "paper,action,user\n17,clearreview,marina@poema.ru\n");
+        }
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        MailChecker::clear();
+    }
 }

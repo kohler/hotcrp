@@ -462,7 +462,7 @@ class MailRecipients extends MessageSet {
             $options["anyShepherd"] = $options["reviewSignatures"] = true;
         } else {
             $options["reviewSignatures"] = true;
-            $options["decision"] = ["standard"]; // skip desk rejects (???)
+            $options["decision"] = ["standard"]; // skip desk rejects
         }
 
         // additional manager limit
@@ -526,7 +526,7 @@ class MailRecipients extends MessageSet {
         }
         $rf = $this->rect->flags;
         if (($rf & self::F_REV) === 0) {
-            return true;
+            return $prow->timeSubmitted > 0;
         }
         // withdrawn papers + incomplete reviews generally uninteresting
         if (($rf & self::FM_REV_SPECIFIC) === 0
