@@ -1104,4 +1104,23 @@ In thee!
         }
         $this->conf->refresh_settings();
     }
+
+    function test_form_upload_errors_reported() {
+        $qreq = TestQreq::user_get($this->user, [], new MemoryQsession("uploaderrs", []))
+            ->set_annex("upload_errors", [MessageItem::error("<0>Uploaded file too large")]);
+        $old_main = Qrequest::$main_request;
+        Qrequest::set_main_request($qreq);
+        $this->conf->claim_saved_messages();
+        $this->conf->saved_messages_begin();
+        ob_start();
+        try {
+            $this->conf->print_body_entry($qreq, "Upload", "upload", ["save_messages" => true]);
+        } finally {
+            ob_end_clean();
+            $this->conf->_header_printed = false;
+            Qrequest::$main_request = $old_main;
+        }
+        $text = json_encode($this->conf->claim_saved_messages());
+        xassert_str_contains($text, "Uploaded file too large");
+    }
 }

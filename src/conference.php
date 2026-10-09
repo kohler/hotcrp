@@ -5422,7 +5422,7 @@ class Conf {
             }
         }
         if ($qreq->has_annex("upload_errors")
-            && ($mx = Ht::fmt_feedback_msg_content($qreq->annex("upload_errors")))) {
+            && ($mx = Ht::fmt_feedback_msg_content($this, $qreq->annex("upload_errors")))) {
             $this->_save_msgs[] = $mx;
         }
         if ($user && $user->data("alerts")) {
