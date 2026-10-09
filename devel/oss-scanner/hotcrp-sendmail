@@ -1,0 +1,59 @@
+#! /usr/bin/env python3
+## hotcrp-sendmail -- stand-in `sendmail` for the OSS Scanner image
+## Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
+##
+## Stores each outgoing message, unmodified, as one file in $HOTCRP_MAILDIR,
+## and links it into $HOTCRP_MAILDIR/to/<address>/ for every address in its To,
+## Cc, and Bcc headers. Addresses are matched loosely, so an address injected
+## into a display name gets its own directory. Always exits 0, like a sendmail
+## that accepted the message.
+
+import os
+import re
+import sys
+import time
+
+MAILDIR = os.environ.get("HOTCRP_MAILDIR", "/var/spool/hotcrp-mail")
+ADDR_RE = re.compile(rb"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
+RECIPIENT_HEADER_RE = re.compile(rb"(?:to|cc|bcc)[ \t]*:", re.IGNORECASE)
+
+
+def recipients(msg):
+    """Return the addresses in the To, Cc, and Bcc headers, lowercased."""
+    m = re.search(rb"\r?\n\r?\n", msg)
+    headers = re.sub(rb"\r?\n[ \t]+", b" ", msg[:m.start()] if m else msg)
+    addrs = []
+    for line in re.split(rb"\r?\n", headers):
+        if RECIPIENT_HEADER_RE.match(line):
+            for am in ADDR_RE.finditer(line):
+                a = am.group(0).decode("latin-1").lower()
+                if a not in addrs:
+                    addrs.append(a)
+    return addrs
+
+
+def main():
+    msg = sys.stdin.buffer.read()
+    # php-fpm runs this as www-data, batch scripts as root; both must be able
+    # to add to the same directories.
+    os.umask(0)
+    os.makedirs(MAILDIR, exist_ok=True)
+    t = time.time_ns()
+    name = time.strftime("%Y%m%dT%H%M%S", time.localtime(t // 10**9)) \
+        + ".{:09d}-{}.eml".format(t % 10**9, os.getpid())
+    path = os.path.join(MAILDIR, name)
+    with open(path, "wb") as f:
+        f.write(msg)
+    for addr in recipients(msg):
+        # `/` is legal in an address's local part; keep it out of the path.
+        d = os.path.join(MAILDIR, "to", addr.replace("/", "%2F"))
+        os.makedirs(d, exist_ok=True)
+        os.link(path, os.path.join(d, name))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except BrokenPipeError:
+        sys.exit(0)

@@ -86,6 +86,9 @@ Installation
    }
    ```
 
+   If you serve HotCRP on a nonstandard port, you may need `fastcgi_param
+   HTTP_HOST $host:$server_port;` after `include fastcgi_params`.
+
    **Apache with mod_proxy and `php-fpm`**: Add a `ProxyPass`.
 
    ```
