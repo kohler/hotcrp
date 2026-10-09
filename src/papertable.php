@@ -1772,8 +1772,8 @@ class PaperTable {
         if (empty($treport_warn)) {
             echo '<ul class="ifnx want-tag-report-warnings feedback-list" hidden></ul>';
         } else {
-            echo '<ul class="ifnx want-tag-report-warnings feedback-list"><li>',
-                join("</li><li>", MessageSet::feedback_html_items($treport_warn)), "</li></ul>";
+            echo '<ul class="ifnx want-tag-report-warnings feedback-list">',
+                join("", MessageSet::feedback_html_items($treport_warn, true)), "</ul>";
         }
         echo '<div class="ifnx js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
 
@@ -1787,8 +1787,8 @@ class PaperTable {
         if (empty($treport)) {
             echo '<ul class="want-tag-report feedback-list" hidden></ul>';
         } else {
-            echo '<ul class="want-tag-report feedback-list"><li>',
-                join("</li><li>", MessageSet::feedback_html_items($treport)), "</li></ul>";
+            echo '<ul class="want-tag-report feedback-list">',
+                join("", MessageSet::feedback_html_items($treport, true)), "</ul>";
         }
         if ($is_sitewide) {
             echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit selected tags.";

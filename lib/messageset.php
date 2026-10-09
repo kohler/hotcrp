@@ -23,6 +23,8 @@ class MessageItem implements JsonSerializable {
     public $fmessage;
     /** @var ?list<mixed> */
     public $args;
+    /** @var ?string */
+    public $item_class;
 
     /** @param int $status
      * @param ?string $field
@@ -40,6 +42,13 @@ class MessageItem implements JsonSerializable {
         } else {
             $this->message = $m ?? "";
         }
+    }
+
+    /** @param ?string $item_class
+     * @return $this */
+    function set_item_class($item_class) {
+        $this->item_class = $item_class;
+        return $this;
     }
 
     /** @param object $x
@@ -890,12 +899,13 @@ class MessageSet {
     /** @param string $field
      * @return \Generator<MessageItem> */
     function message_list_at($field) {
-        if (isset($this->errf[$field])) {
-            $this->apply_fmt();
-            foreach ($this->msgs as $mi) {
-                if ($mi->field === $field) {
-                    yield $mi;
-                }
+        if (!isset($this->errf[$field])) {
+            return;
+        }
+        $this->apply_fmt();
+        foreach ($this->msgs as $mi) {
+            if ($mi->field === $field) {
+                yield $mi;
             }
         }
     }
@@ -914,6 +924,78 @@ class MessageSet {
         $this->apply_fmt();
         foreach ($this->msgs as $mi) {
             if (self::field_is_under($mi->field, $prefix, $separator))
+                yield $mi;
+        }
+    }
+
+    /** @param ?string $field
+     * @param string $filter
+     * @return bool */
+    static private function filter_pattern_match($field, $filter) {
+        if (!str_ends_with($filter, "*")) {
+            return $field === $filter;
+        }
+        $filterlen = strlen($filter);
+        if ($filterlen === 1) {
+            return $field !== null;
+        } else if ($field === null) {
+            return false;
+        }
+        if (strpos("/:", $filter[$filterlen - 2]) !== false) {
+            $wantlen = max(min(strlen($field), $filterlen - 1), $filterlen - 2);
+        } else {
+            $wantlen = $filterlen - 1;
+        }
+        return strlen($field) >= $wantlen
+            && substr_compare($field, $filter, 0, $wantlen) === 0;
+    }
+
+    /** @param MessageItem $mi
+     * @param string|list<string>|Closure(MessageItem):bool $filter
+     * @return bool */
+    static private function test_filter($mi, $filter) {
+        if (is_string($filter)) {
+            return $mi->field !== null
+                && self::filter_pattern_match($mi->field, $filter);
+        } else if (is_array($filter)) {
+            if ($mi->field === null) {
+                return false;
+            }
+            foreach ($filter as $f) {
+                if (self::filter_pattern_match($mi->field, $f))
+                    return true;
+            }
+            return false;
+        }
+        return $filter($mi);
+    }
+
+    /** @param string|list<string>|Closure(MessageItem):bool $filter
+     * @return bool */
+    private function filter_may_match($filter) {
+        if (is_string($filter)) {
+            $fs = [$filter];
+        } else if (is_array($filter) && count($filter) === 1) {
+            $fs = $filter;
+        } else {
+            return true;
+        }
+        foreach ($fs as $f) {
+            if (str_ends_with($f, "*") || isset($this->errf[$f]))
+                return true;
+        }
+        return false;
+    }
+
+    /** @param string|list<string>|Closure(MessageItem):bool $filter
+     * @return \Generator<MessageItem> */
+    function message_list_for($filter) {
+        if (!$this->filter_may_match($filter)) {
+            return;
+        }
+        $this->apply_fmt();
+        foreach ($this->msgs as $mi) {
+            if (self::test_filter($mi, $filter))
                 yield $mi;
         }
     }
@@ -1042,11 +1124,27 @@ class MessageSet {
     }
 
 
+    /** @param string $t
+     * @param string $tcontext
+     * @param bool $li
+     * @param string $liclass
+     * @return string */
+    static private function render_feedback_item($t, $tcontext, $li, $liclass) {
+        if ($li && $liclass !== "") {
+            return "<li class=\"{$liclass}\">{$t}{$tcontext}</li>";
+        } else if ($li) {
+            return "<li>{$t}{$tcontext}</li>";
+        }
+        return $t . $tcontext;
+    }
+
     /** @param iterable<MessageItem> $message_list
+     * @bool $li
      * @return list<string> */
-    static function feedback_html_items($message_list) {
+    static function feedback_html_items($message_list, $li = false) {
         $ts = [];
         $t = $tcontext = "";
+        $liclass = "";
         $last_mi = $last_landmark = null;
         foreach ($message_list as $mi) {
             if ($mi->message === null) {
@@ -1087,8 +1185,8 @@ class MessageSet {
                 $s = "";
             } else if ($mi->status !== self::INFORM
                        && ($t !== "" || $tcontext !== "")) {
-                $ts[] = $t . $tcontext;
-                $t = $tcontext = "";
+                $ts[] = self::render_feedback_item($t, $tcontext, $li, $liclass);
+                $t = $tcontext = $liclass = "";
             } else if ($mi->context !== null
                        && $mi->pos1 !== null
                        && $tcontext !== "") {
@@ -1120,6 +1218,9 @@ class MessageSet {
                     $k = self::status_class($mi->status, "is-diagnostic", "is-");
                 }
                 $t .= "<div class=\"{$k}\">{$pstart}{$lm}{$s}</div>";
+                if ($mi->item_class !== null) {
+                    $liclass = $mi->item_class;
+                }
             } else {
                 $t .= "<div class=\"msg-inform\">{$pstart}{$lm}{$s}</div>";
             }
@@ -1139,7 +1240,7 @@ class MessageSet {
             }
         }
         if ($t !== "" || $tcontext !== "") {
-            $ts[] = $t . $tcontext;
+            $ts[] = self::render_feedback_item($t, $tcontext, $li, $liclass);
         }
         return $ts;
     }
@@ -1148,7 +1249,7 @@ class MessageSet {
      * @param ?array<string,mixed> $js
      * @return string */
     static function feedback_html($message_list, $js = null) {
-        $items = self::feedback_html_items($message_list);
+        $items = self::feedback_html_items($message_list, true);
         if (empty($items)) {
             return "";
         }
@@ -1158,7 +1259,7 @@ class MessageSet {
             $js["class"] = Ht::add_tokens("feedback-list", $js["class"] ?? null);
             $k = Ht::extra($js);
         }
-        return "<ul{$k}><li>" . join("</li><li>", $items) . "</li></ul>";
+        return "<ul{$k}>" . join("", $items) . "</ul>";
     }
 
     /** @param string $field
