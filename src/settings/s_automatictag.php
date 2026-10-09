@@ -80,7 +80,7 @@ class AutomaticTag_SettingParser extends SettingParser {
             return $this->_apply_automatic_tag_req($si, $sv);
         }
         if ($si->name0 === "automatic_tag/" && $si->name2 === "/search") {
-            $q = $sv->reqstr($si->name);
+            $q = $sv->base_parse_req($si) ?? "";
             if (simplify_whitespace($q) === "") {
                 $sv->error_at($si, "<0>Entry required");
             } else {

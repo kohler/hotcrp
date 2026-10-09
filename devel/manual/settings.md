@@ -120,7 +120,7 @@ match request objects to existing objects by `id` (and sometimes by name).
 | `storage`       | Where the value is stored (see below) |
 | `title`, `title_pattern` | Human-readable title, used in error messages and labels |
 | `required`      | Whether an empty value is an error |
-| `size`, `placeholder`, `autogrow`, `spellcheck` | Form control rendering hints (`placeholder` may be `"auto"`) |
+| `size`, `placeholder`, `autogrow`, `spellcheck`, `wrap` | Form control rendering hints (`placeholder` may be `"auto"`; `wrap` renders a one-row textarea that wraps and grows) |
 | `explicit_placeholder` | If true, empty values become `placeholder` on JSON export, and `placeholder` values become empty on JSON/form import. Defaults by type: true for `int`, `nonnegint`, `float`, and `prefer_numeric` strings (e.g. `"none"`, `"any"`), false otherwise |
 | `parser_class`  | Name of a `SettingParser` subclass with custom logic |
 | `parse_order`   | Numeric order in which requests are parsed (default 0; ties broken by source order) |

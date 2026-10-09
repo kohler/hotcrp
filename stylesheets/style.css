@@ -694,6 +694,12 @@ label.checki {
 	flex: 1 1 0;
 	flex-basis: min-content;
 }
+.entryi > .entry > textarea:first-child {
+	/* align the label with the first line of text; a textarea's own
+	   baseline is its bottom edge. Offset = border + padding-top +
+	   half the line-height difference (1.4 vs. 1.35) */
+	margin-top: calc(0.025em - 3px);
+}
 .checki, .entryi, .entryg, .break-avoid {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
@@ -2515,8 +2521,15 @@ th.settings-simplehead {
 .settings-draghandle:hover {
 	opacity: 1 !important;
 }
-.settings-tag-style-table input.tags {
-	width: 25rem;
+table.settings-tag-styles {
+	width: min(100%, 720px); /* .w-text */
+}
+table.settings-tag-styles.demargin {
+	width: calc(min(100%, 720px) + 48px);
+}
+.settings-tag-styles td.lentry {
+	width: 100%;
+	padding-right: 0;
 }
 hr.dropmark {
 	/* Do not use borders and margin, because margin isn't included in parent's

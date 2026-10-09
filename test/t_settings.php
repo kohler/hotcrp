@@ -2937,6 +2937,65 @@ class Settings_Tester {
         xassert_search($this->u_chair, "#AutoDel", "");
     }
 
+    function test_automatic_tag_search_newlines() {
+        // newlines in automatic tag searches are preserved
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_automatic_tag" => 1,
+            "automatic_tag/1/id" => "",
+            "automatic_tag/1/tag" => "AutoNL",
+            "automatic_tag/1/search" => "  1\r\n  or 2\r\n"
+        ]);
+        xassert($sv->execute());
+        $ats = $this->all_jsonv_by("automatic_tag", "tag");
+        xassert_eqq($ats["AutoNL"]->search, "1\n  or 2");
+        xassert_search($this->u_chair, "#AutoNL", "1 2");
+
+        // the search renders as a textarea
+        $sv = new SettingValues($this->u_chair);
+        $ctr = $sv->search_oblist("automatic_tag", "id", "autonl");
+        $h = $sv->entry("automatic_tag/{$ctr}/search");
+        xassert_str_starts_with($h, "<textarea");
+        xassert_str_contains($h, ">1\n  or 2</textarea>");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"autonl","delete":true}]}');
+        xassert($sv->execute());
+        xassert_search($this->u_chair, "#AutoNL", "");
+    }
+
+    function test_visibility_condition_newlines() {
+        // visibility conditions preserve newlines, but not CRs or outer space
+        $old_rev = [$this->conf->setting("au_seerev"), $this->conf->setting_data("au_seerev")];
+        $old_dec = [$this->conf->setting("au_seedec"), $this->conf->setting_data("au_seedec")];
+        $sv = SettingValues::make_request($this->u_chair, [
+            "review_visibility_author_condition" => "  1\r\n  or 2\r\n",
+            "decision_visibility_author_condition" => "  3\r\n  or 4\r\n"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting_data("au_seerev"), "1\n  or 2");
+        xassert_eqq($this->conf->setting_data("au_seedec"), "3\n  or 4");
+
+        $this->conf->save_refresh_setting("au_seerev", $old_rev[0], $old_rev[1]);
+        $this->conf->save_refresh_setting("au_seedec", $old_dec[0], $old_dec[1]);
+    }
+
+    function test_tag_list_newlines() {
+        // tag lists render as textareas, but whitespace is simplified
+        $old = $this->conf->setting_data("tag_conflict_free");
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_tag_pc_open" => 1,
+            "tag_pc_open" => "  zopen1\r\n\r\n  zopen2\r\n"
+        ]);
+        xassert($sv->execute());
+        $sv = new SettingValues($this->u_chair);
+        xassert_eqq($sv->oldv("tag_pc_open"), "zopen1 zopen2");
+        $h = $sv->entry("tag_pc_open");
+        xassert_str_starts_with($h, "<textarea");
+        xassert_str_contains($h, ">zopen1 zopen2</textarea>");
+
+        $this->conf->save_refresh_setting("tag_conflict_free", $old === null ? null : 1, $old);
+    }
+
     /** Tags that tracks and submission classes contribute to the tag
      * settings round-trip through settings JSON without being written into
      * those settings. */

@@ -131,9 +131,8 @@ function stri_ends_with($haystack, $needle) {
 function preg_matchpos($pattern, $subject) {
     if (preg_match($pattern, $subject, $m, PREG_OFFSET_CAPTURE)) {
         return $m[0][1];
-    } else {
-        return false;
     }
+    return false;
 }
 
 /** @param string $text
@@ -218,7 +217,7 @@ function convert_to_utf8($str) {
 function simplify_whitespace($str) {
     // Replace invisible Unicode space-type characters with true spaces,
     // including control characters and DEL.
-    return trim(preg_replace('/(?:[\x00-\x20\x7F]|\xC2[\x80-\xA0]|\xE2\x80[\x80-\x8A\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80)+/', " ", $str));
+    return trim(preg_replace('/(?:[\x00-\x20\x7F]|\xC2[\x80-\xA0]|\xE2\x80[\x80-\x8A\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80|\A\xEF\xBB\xBF)+/', " ", $str));
 }
 
 /** @param string $text

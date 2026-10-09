@@ -2175,7 +2175,7 @@ class SettingValues extends MessageSet {
             && ($placeholder = $si->placeholder($this)) !== null) {
             $js["placeholder"] = $placeholder;
         }
-        if ($si->autogrow) {
+        if ($si->autogrow || $si->wrap) {
             $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
         if (!isset($js["spellcheck"])
@@ -2186,6 +2186,13 @@ class SettingValues extends MessageSet {
             && isset($js["placeholder"])
             && $v === (string) $dv) {
             $v = "";
+        }
+        if ($si->wrap) {
+            $js["class"] = Ht::add_tokens($js["class"], "w-text");
+            $js["rows"] = 1;
+            $js["cols"] = $js["size"] ?? 80;
+            unset($js["size"]);
+            return Ht::textarea($name, $v, $js);
         }
         return Ht::entry($name, $v, $js);
     }

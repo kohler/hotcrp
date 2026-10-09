@@ -465,13 +465,11 @@ class String_Sitype extends Sitype {
         } else if ($subtype === "prefer_numeric") {
             $this->simple = $this->prefer_numeric = true;
         } else if ($subtype === "search") {
-            $this->simple = true;
             $this->example = "search expression";
         } else if ($subtype === "condition") {
-            $this->simple = $this->condition = true;
+            $this->condition = true;
             $this->example = "search expression";
         } else if ($subtype === "formula") {
-            $this->simple = true;
             $this->example = "formula expression";
         } else if ($subtype === "mailbody") {
             $this->long = $this->mailbody = true;
@@ -485,7 +483,7 @@ class String_Sitype extends Sitype {
         } else if ($this->long) {
             $s = cleannl($vstr);
         } else {
-            $s = trim($vstr);
+            $s = trim(cleannl($vstr));
         }
         if ($this->mailbody && $s !== "" && !str_ends_with($s, "\n")) {
             $s .= "\n";

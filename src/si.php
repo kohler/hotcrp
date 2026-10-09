@@ -104,6 +104,9 @@ class Si {
     public $spellcheck;
     /** @var ?bool
      * @readonly */
+    public $wrap;
+    /** @var ?bool
+     * @readonly */
     public $explicit_placeholder;
     /** @var 0|1|2|3
      * @readonly */
@@ -141,7 +144,8 @@ class Si {
         "title" => "is_string",
         "title_pattern" => "is_string",
         "type" => "is_string",
-        "values" => "Si::is_auto_or_list"
+        "values" => "Si::is_auto_or_list",
+        "wrap" => "is_bool"
     ];
 
     static function is_auto_or_list($x) {

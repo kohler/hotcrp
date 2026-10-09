@@ -27,7 +27,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
         }
         if ($si->name === "decision_visibility_author_condition"
             && $sv->has_req($si->name)) {
-            $sv->save($si, $sv->reqstr($si->name));
+            $sv->save($si, $sv->base_parse_req($si));
             $sv->request_validate($si);
             return true;
         }

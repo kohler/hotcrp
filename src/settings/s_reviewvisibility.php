@@ -57,7 +57,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "review_visibility_author_condition"
             && $sv->has_req($si->name)) {
-            $sv->save($si, $sv->reqstr($si->name));
+            $sv->save($si, $sv->base_parse_req($si));
             $sv->save("review_visibility_author_tags", "");
             $sv->request_validate($si);
             return true;
