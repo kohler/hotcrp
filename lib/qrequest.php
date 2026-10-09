@@ -724,7 +724,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                         || $fi["error"] == UPLOAD_ERR_FORM_SIZE) {
                         $errors[] = $e = MessageItem::error("<0>Uploaded file too large");
                         if (!$too_big) {
-                            $errors[] = MessageItem::inform("<0>The maximum upload size is " . ini_get("upload_max_filesie") . "B.");
+                            $errors[] = MessageItem::inform("<0>The maximum upload size is " . ini_get("upload_max_filesize") . "B.");
                             $too_big = true;
                         }
                     } else if ($fi["error"] == UPLOAD_ERR_PARTIAL) {

@@ -121,6 +121,9 @@ HotCRP NEWS
     * The `batch/savepapers.php` script gains `--trust-document-metadata`,
       which subsumes the old `--skip-document-verify`,
       `--skip-document-content`, and `--ignore-content-file` flags.
+    * The `batch/search.php` script’s default search collection is `default`,
+      which is usually broader than `s`. Supply `-t s` to get submitted papers
+      only.
     * Document downloads are logged regardless of the requested byte range.
       Downloads through reviewer links are attributed to the reviewer, and
       downloads by anonymous review-token holders aren’t logged.
