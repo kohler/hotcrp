@@ -1145,6 +1145,16 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
+        // a PC member's own external review becomes a PC review
+        if ($rrow->reviewId
+            && $rrow->reviewType === REVIEW_EXTERNAL
+            && $user->contactId === $rrow->contactId
+            && $user->isPC
+            && !$usedReviewToken) {
+            $rrow->set_prop("reviewType", REVIEW_PC);
+            $rflags = ($rflags & ~ReviewInfo::RFM_TYPES) | (1 << REVIEW_PC);
+        }
+
         // process review fields
         $before_msgcount = $this->message_count();
         $view_score = VIEWSCORE_EMPTY;

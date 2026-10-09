@@ -2259,6 +2259,42 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper20->paperId, $rid);
     }
 
+    function test_external_review_becomes_pc_review_when_reviewer_joins_pc() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        $editdelegate = $conf->setting("pcrev_editdelegate");
+        $conf->save_refresh_setting("pcrev_editdelegate", 2);
+
+        // chair requests an external review from a new reviewer
+        $paper20 = $conf->checked_paper_by_id(20);
+        $xqreq = new Qrequest("POST", ["email" => "joinspc@_.com", "name" => "Joan Spc"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper20);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+        $reviewer = $conf->checked_user_by_email("joinspc@_.com");
+        $rrow = $conf->checked_paper_by_id(20)->review_by_user($reviewer);
+        xassert_eqq($rrow->reviewType, REVIEW_EXTERNAL);
+        xassert($rrow->subject_to_approval());
+
+        // the reviewer joins the PC, then submits
+        $reviewer->save_roles(Contact::ROLE_PC, $this->u_chair);
+        $reviewer = $conf->fresh_user_by_email("joinspc@_.com");
+        xassert($reviewer->isPC);
+        $paper20 = $conf->checked_paper_by_id(20);
+        xassert(save_review($paper20, $reviewer, ["ovemer" => 2, "revexp" => 1, "papsum" => "PC now\n", "ready" => true]));
+        MailChecker::clear();
+
+        // the review is now a PC review, submitted without approval
+        $rrow = $conf->checked_paper_by_id(20)->fresh_review_by_user($reviewer);
+        xassert_eqq($rrow->reviewType, REVIEW_PC);
+        xassert_eqq($rrow->rflags & ReviewInfo::RFM_TYPES, 1 << REVIEW_PC);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+        $rrow->delete($this->u_chair, ["no_rights" => true]);
+        $reviewer->save_roles(0, $this->u_chair);
+        $conf->save_refresh_setting("pcrev_editdelegate", $editdelegate);
+    }
+
     // Pin the observable retract (`retractreview`) contract, which the manual
     // `delete from PaperReview` at api_requestreview.php could route through
     // `ReviewInfo::delete()`. Retracting an undrafted requested review removes
