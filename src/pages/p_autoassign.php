@@ -342,7 +342,7 @@ class Autoassign_Page {
                 }
             }
             if (!empty($selectable_tags)) {
-                $options = make_array("(PC member)", "PC tagged:", ...$selectable_tags);
+                $options = ["(PC member)", "PC tagged:", ...$selectable_tags];
                 array_push($options, "PC member:", "*");
             } else {
                 $options = ["(PC member)", "*"];

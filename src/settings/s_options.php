@@ -301,10 +301,7 @@ class Options_SettingParser extends SettingParser {
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "feedback_items" => make_array(
-                ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
-                ...$sv->message_list_under("sf/{$this->ctr}/values", "/")
-            )
+            "feedback_items" => [...$sv->message_list_for(["sf/{$this->ctr}/values_text", "sf/{$this->ctr}/values/*"])]
         ]);
     }
 

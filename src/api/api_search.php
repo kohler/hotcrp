@@ -164,7 +164,7 @@ class Search_API {
             if (str_starts_with($rf->name, "__")) {
                 continue;
             }
-            $ufs = make_array($rf, ...$cs->members($rf->name));
+            $ufs = [$rf, ...$cs->members($rf->name)];
             foreach ($ufs as $uf) {
                 if (str_starts_with($uf->name, "__")
                     || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))

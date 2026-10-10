@@ -684,6 +684,12 @@ class PaperTable {
         return $this->edit_status ? $this->edit_status->message_list_at($field) : [];
     }
 
+    /** @param string|list<string>|Closure(MessageItem):bool $filter
+     * @return iterable<MessageItem> */
+    function message_list_for($filter) {
+        return $this->edit_status ? $this->edit_status->message_list_for($filter) : [];
+    }
+
     /** @param PaperOption $opt */
     function print_field_description($opt) {
         $ml = [...$this->message_list_at($opt->formid)];
