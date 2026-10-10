@@ -2405,8 +2405,9 @@ class Conf {
         return null;
     }
 
-    /** @param bool $require_pc */
-    private function _refresh_user_cache($require_pc) {
+    /** @param ?bool $require_pc
+     * @param 0|1 $sliced */
+    private function _refresh_user_cache($require_pc, $sliced) {
         $this->_ensure_user_cache();
         $reqids = $reqemails = [];
         foreach ($this->_user_cache_missing ?? [] as $req) {
@@ -2434,14 +2435,15 @@ class Conf {
             $qf[] = "email?a";
             $qv[] = $reqemails;
         }
-        $require_pc = $require_pc || ($this->_pc_set === null && !$this->opt("largePC"));
+        $require_pc = $require_pc
+            ?? ($this->_pc_set === null && !$this->opt("largePC"));
         if ($require_pc) {
             $qf[] = "(roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0)";
         }
         if (empty($qf)) {
             return;
         }
-        $result = $this->qe("select " . $this->user_query_fields($this->_slice) . " from ContactInfo where " . join(" or ", $qf), ...$qv);
+        $result = $this->qe("select " . $this->user_query_fields($sliced ? $this->_slice : 0) . " from ContactInfo where " . join(" or ", $qf), ...$qv);
         foreach (ContactSet::make_result($result, $this) as $u) {
             $this->_user_cache[$u->contactId] = $u;
             if ($this->_user_email_cache !== null) {
@@ -2467,7 +2469,7 @@ class Conf {
         }
         if (!array_key_exists($id, $this->_user_cache ?? [])) {
             $this->_user_cache_missing[] = $id;
-            $this->_refresh_user_cache(false);
+            $this->_refresh_user_cache($sliced ? null : false, $sliced);
         }
         $u = $this->_user_cache[$id] ?? null;
         if ($u && $sliced !== 1 && $u->_slice !== 0) {
@@ -2493,7 +2495,7 @@ class Conf {
         $lemail = strtolower($email);
         if (!array_key_exists($lemail, $this->_user_email_cache)) {
             $this->_user_cache_missing[] = $lemail;
-            $this->_refresh_user_cache(false);
+            $this->_refresh_user_cache($sliced ? null : false, $sliced);
         }
         $u = $this->_user_email_cache[$lemail] ?? null;
         if ($u && $sliced !== 1 && $u->_slice !== 0) {
@@ -2709,7 +2711,7 @@ class Conf {
     /** @return ContactSet */
     function pc_set() {
         if ($this->_pc_set === null) {
-            $this->_refresh_user_cache(true);
+            $this->_refresh_user_cache(true, 1);
         }
         return $this->_pc_set;
     }
