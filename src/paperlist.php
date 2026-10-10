@@ -317,7 +317,7 @@ final class PaperList extends MessageSet {
     /** @var bool */
     public $row_overridable;
     /** @var 0|1|2 */
-    public $overriding = 0;
+    public $overriding = 0; // 1: rendering without conflict override, 2: with
     /** @var string */
     public $row_tags;
     /** @var string */
@@ -701,6 +701,12 @@ final class PaperList extends MessageSet {
     private function _view_overrides() {
         $this->_viewmap();
         return $this->_view_force;
+    }
+
+    /** Set the user's conflict override to the list's. Returns old overrides.
+     * @return int */
+    private function _set_view_overrides() {
+        return $this->user->set_overrides(($this->user->overrides() & ~Contact::OVERRIDE_CONFLICT) | $this->_view_overrides());
     }
 
     /** @return bool */
@@ -1104,7 +1110,7 @@ final class PaperList extends MessageSet {
         }
         assert($this->_sortcol_fixed === 0);
         $this->_sortcol_fixed = 1;
-        $overrides = $this->user->add_overrides($this->_view_overrides());
+        $overrides = $this->_set_view_overrides();
         // apply sorters from search terms
         if (($thenqe = $this->search->then_term())) {
             foreach ($thenqe->subset_terms() as $chrange) {
@@ -1177,7 +1183,7 @@ final class PaperList extends MessageSet {
         $this->_groups = []; // `_groups === null` means _sort has not been called
 
         // actually sort
-        $overrides = $this->user->add_overrides($this->_view_overrides());
+        $overrides = $this->_set_view_overrides();
         if ($this->_then_map) {
             foreach ($rowset as $row) {
                 $row->_search_group = $this->_then_map[$row->paperId];
@@ -1226,7 +1232,7 @@ final class PaperList extends MessageSet {
         $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
-        $overrides = $this->user->add_overrides($this->_view_overrides());
+        $overrides = $this->_set_view_overrides();
         $ptagval = $pidx !== count($plist) ? $plist[$pidx]->viewable_tag_value($etag, $this->user) : null;
         while ($aidx !== count($alist) || $pidx !== count($plist)) {
             if ($aidx !== count($alist)
@@ -1584,7 +1590,9 @@ final class PaperList extends MessageSet {
             }
         }
 
-        // prepare, mark fields editable
+        // prepare, mark fields editable; columns prepare and analyze rows
+        // without conflict override (rendering adds it where needed)
+        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
         $this->_viewmap_columns = [];
         $vcols1 = $vcols2 = [];
         foreach ($fs1 as $k => $f) {
@@ -1623,6 +1631,7 @@ final class PaperList extends MessageSet {
         foreach ($this->_vcolumns as $f) {
             $f->reset($this);
         }
+        $this->user->set_overrides($overrides);
     }
 
     /** @param ?int $context
@@ -1814,6 +1823,11 @@ final class PaperList extends MessageSet {
         ++$this->count;
         $this->row_attr = [];
         $this->row_overridable = $this->user->has_overridable_conflict($row);
+        if (!$this->row_overridable) {
+            $this->overriding = 0;
+        } else {
+            $this->overriding = ($this->user->overrides() & Contact::OVERRIDE_CONFLICT) !== 0 ? 2 : 1;
+        }
 
         $this->row_tags = $this->row_tags_override = "";
         if (isset($row->paperTags) && $row->paperTags !== "") {
@@ -2586,7 +2600,7 @@ final class PaperList extends MessageSet {
             return [];
         }
         $data = [];
-        $overrides = $this->user->add_overrides($this->_view_overrides());
+        $overrides = $this->_set_view_overrides();
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
@@ -2627,8 +2641,13 @@ final class PaperList extends MessageSet {
         }
         $ishtml = ($frflags & FieldRender::CFHTML) !== 0;
 
-        // turn off forceShow
-        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+        // HTML renders overridable cells both ways; other formats obey the
+        // list's conflict override
+        if ($ishtml) {
+            $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+        } else {
+            $overrides = $this->_set_view_overrides();
+        }
 
         // output field data
         $data = [];
@@ -2688,7 +2707,7 @@ final class PaperList extends MessageSet {
             $stats[$fdef->name] = $sset;
         }
 
-        // restore forceShow
+        // restore overrides
         $this->user->set_overrides($overrides);
 
         // output
@@ -2746,7 +2765,7 @@ final class PaperList extends MessageSet {
     function text_csv() {
         // get column list, check sort
         $this->_reset_vcolumns(FieldRender::CFLIST | FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
-        $overrides = $this->user->add_overrides($this->_view_overrides());
+        $overrides = $this->_set_view_overrides();
 
         // collect row data
         $body = [];

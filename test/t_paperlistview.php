@@ -399,6 +399,50 @@ class PaperListView_Tester {
         $this->conf->save_refresh_setting("options", $oldv, $oldd);
     }
 
+    /** Text and JSON output of a formula column obey the list's conflict
+     * override. */
+    function test_formula_text_obeys_force() {
+        $chair = $this->u_chair;
+        $rev = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $pid = null;
+        foreach ($this->conf->paper_set(["finalized" => true], $chair) as $prow) {
+            if (!$prow->has_conflict($chair) && !$prow->has_conflict($rev)
+                && !$prow->review_by_user($rev)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        $old_rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
+        xassert_assign($chair, "paper,action,email\n{$pid},primary,{$rev->email}\n");
+        save_review($pid, $rev, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+        xassert_assign($chair, "paper,action,email\n{$pid},conflict,{$chair->email}\n", true);
+        $chair = $this->conf->checked_user_by_email($chair->email);
+
+        $f = Formula::make($chair, "count(OveMer)")->prepare();
+        $prow = $this->conf->checked_paper_by_id($pid, $chair);
+        $vplain = $f->eval($prow, null);
+        $overrides = $chair->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $vforce = $f->eval($prow, null);
+        $chair->set_overrides($overrides);
+        xassert_neqq($vplain, $vforce);
+
+        foreach (["hide:force" => $vplain, "show:force" => $vforce] as $view => $v) {
+            $pl = new PaperList("empty", new PaperSearch($chair, ["q" => "{$pid}", "t" => "s"]));
+            $pl->parse_view("{$view} show:(count(OveMer))", ViewCommand::ORIGIN_MAX);
+            $tj = $pl->text_json();
+            xassert_eqq($tj[$pid]["formula:(count(OveMer))"] ?? null, (string) $v);
+            foreach ([PaperList::FORMAT_JSON, PaperList::FORMAT_CSV] as $format) {
+                $fj = $pl->format_json($format);
+                xassert_eqq($fj["papers"][0]["formula:(count(OveMer))"] ?? null, (string) $v);
+            }
+        }
+
+        xassert_assign($chair, "paper,action,email\n{$pid},clearconflict,{$chair->email}\n", true);
+        $this->conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $rev->contactId);
+        $this->conf->save_refresh_setting("rev_open", $old_rev_open);
+    }
+
     function test_chair_default() {
         $old = $this->conf->setting_data("pldisplay_default");
         foreach ([
