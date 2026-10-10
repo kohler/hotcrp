@@ -128,6 +128,11 @@ This shell session does the same, but using `multipart/form-data`.
 $ curl -H "Authorization: bearer hct_XXX" -F "json=<data.json" -F paper.pdf=@paper.pdf SITEURL/api/paper
 ```
 
+> [!CAUTION]
+> `multipart/form-data` uploads are processed by PHP, which mangles field names
+> containing spaces, periods, and brackets (for instance, `paper.pdf` becomes
+> `paper_pdf`). The example above works, but an upload may fail or have
+> unexpected results if mangled names collide.
 
 ## Administrator use
 

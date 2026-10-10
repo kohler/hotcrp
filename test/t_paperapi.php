@@ -372,6 +372,29 @@ class PaperAPI_Tester {
         $this->npid = $jr->paper->pid;
     }
 
+    /** A form upload's `content_file` can name a file part by its original
+     * name, although PHP mangles `paper.pdf` to `paper_pdf`. An exact match
+     * takes precedence. */
+    function test_content_file_mangled_part_name() {
+        $pj = ["pid" => "new", "title" => "Mangled part name", "abstract" => "Abstract",
+               "authors" => [["name" => "Deborah Estrin", "email" => "estrin@usc.edu"]],
+               "submission" => ["content_file" => "paper.pdf"], "status" => "draft"];
+        $qreq = TestQreq::post(["json" => json_encode($pj)])
+            ->set_file_content("paper_pdf", "%PDF-mangled", "paper.pdf", "application/pdf");
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($jr->paper->pid);
+        xassert_eqq($prow->document(DTYPE_SUBMISSION)->content(), "%PDF-mangled");
+
+        $qreq = TestQreq::post(["json" => json_encode(["pid" => $prow->paperId] + $pj)])
+            ->set_file_content("paper_pdf", "%PDF-mangled-2", "paper.pdf", "application/pdf")
+            ->set_file_content("paper.pdf", "%PDF-exact", "paper.pdf", "application/pdf");
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($prow->paperId);
+        xassert_eqq($prow->document(DTYPE_SUBMISSION)->content(), "%PDF-exact");
+    }
+
     /** An author's GET → POST round trip keeps the names of authors with no
      * email address. */
     function test_round_trip_keeps_authors_without_email() {

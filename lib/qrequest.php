@@ -393,6 +393,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
+    /** @param string $name
+     * @return string
+     * Return the PHP-mangled version of request key `$name`.
+     * Mangling removes leading spaces and replaces `.`, space, and unmatched
+     * `[` with `_`. */
+    static function mangle_key($name) {
+        return preg_replace('/[ .]|\[(?=[^\\]]*+\z)/', "_", ltrim($name, " "));
+    }
+
     #[\ReturnTypeWillChange]
     function offsetExists($offset) {
         return array_key_exists($offset, $this->_v);
@@ -578,14 +587,6 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $f = $this->_files[$name] ?? null;
         return $f ? $f->content($offset, $maxlen) : false;
     }
-    /** @param string $name
-     * @param int $offset
-     * @param ?int $maxlen
-     * @return string|false
-     * @deprecated */
-    function file_contents($name, $offset = 0, $maxlen = null) {
-        return $this->file_content($name, $offset, $maxlen);
-    }
     /** @return array<string,QrequestFile> */
     function files() {
         return $this->_files;
@@ -709,7 +710,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             if (is_array($fix["error"])) {
                 $fis = [];
                 foreach (array_keys($fix["error"]) as $i) {
-                    $fis[$i ? "$nx.$i" : $nx] = ["name" => $fix["name"][$i], "type" => $fix["type"][$i], "size" => $fix["size"][$i], "tmp_name" => $fix["tmp_name"][$i], "error" => $fix["error"][$i]];
+                    if (is_array($fix["error"][$i])) {
+                        // nested file arrays (`x[a][b]`) are not supported
+                        $errors[] = $e = MessageItem::error("<0>Error uploading file");
+                        $e->landmark = $nx;
+                        continue;
+                    }
+                    $fis[$i ? "{$nx}.{$i}" : $nx] = ["name" => $fix["name"][$i], "type" => $fix["type"][$i], "size" => $fix["size"][$i], "tmp_name" => $fix["tmp_name"][$i], "error" => $fix["error"][$i]];
                 }
             } else {
                 $fis = [$nx => $fix];

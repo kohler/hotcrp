@@ -2550,6 +2550,38 @@ class Unit_Tester {
         xassert_eqq($q->path_component(2), null);
     }
 
+    function test_qrequest_mangle_key() {
+        xassert_eqq(Qrequest::mangle_key("paper.pdf"), "paper_pdf");
+        xassert_eqq(Qrequest::mangle_key("a b"), "a_b");
+        xassert_eqq(Qrequest::mangle_key("  a.b"), "a_b");
+        xassert_eqq(Qrequest::mangle_key("a[b"), "a_b");
+        xassert_eqq(Qrequest::mangle_key("a[b.c"), "a_b_c");
+        xassert_eqq(Qrequest::mangle_key("a[ b"), "a__b");
+        xassert_eqq(Qrequest::mangle_key("a[[b"), "a__b");
+        xassert_eqq(Qrequest::mangle_key("a]b"), "a]b");
+        xassert_eqq(Qrequest::mangle_key("a\x80b"), "a\x80b");
+    }
+
+    function test_qrequest_nested_file_array() {
+        $saved = [$_GET, $_POST, $_FILES];
+        $_GET = $_POST = [];
+        $_FILES = ["x" => [
+            "name" => ["a" => ["b" => "f.txt"]], "type" => ["a" => ["b" => "text/plain"]],
+            "size" => ["a" => ["b" => 3]], "tmp_name" => ["a" => ["b" => "/nonexistent"]],
+            "error" => ["a" => ["b" => UPLOAD_ERR_OK]]
+        ]];
+        try {
+            $qreq = Qrequest::make_global();
+        } finally {
+            [$_GET, $_POST, $_FILES] = $saved;
+        }
+        xassert(!$qreq->has_files());
+        $errors = $qreq->annex("upload_errors") ?? [];
+        xassert_eqq(count($errors), 1);
+        xassert_eqq($errors[0]->landmark, "x");
+        xassert_str_contains(Ht::fmt_feedback_msg($this->conf, $errors), "Error uploading file");
+    }
+
     function test_is_anonymous_email() {
         xassert(Contact::is_anonymous_email("anonymous"));
         xassert(Contact::is_anonymous_email("anonymous1"));

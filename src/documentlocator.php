@@ -272,9 +272,12 @@ class DocumentLocator {
         if (is_string($docj->content_file)) {
             if ($this->ziparchive) {
                 return $this->apply_zip_content_file($docj, $importer);
-            } else if ($this->attachment_qreq
-                       && ($qf = $this->attachment_qreq->file($docj->content_file))) {
-                return self::apply_qrequest_file($docj, $qf);
+            } else if ($this->attachment_qreq) {
+                $qf = $this->attachment_qreq->file($docj->content_file)
+                    ?? $this->attachment_qreq->file(Qrequest::mangle_key($docj->content_file));
+                if ($qf) {
+                    return self::apply_qrequest_file($docj, $qf);
+                }
             }
         }
         unset($docj->content_file);
