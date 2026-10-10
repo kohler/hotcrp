@@ -2361,4 +2361,40 @@ class Search_Tester {
         xassert_eqq($srch->paper_ids(), []);
         xassert_eqq($srch->alternate_query(), false);
     }
+
+    /** Managers find their ghost reviews with `re:me`; `t=r` never
+     * includes ghost reviews. */
+    function test_re_me_ghost_reviews() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $pc = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $pid = null;
+        foreach ($this->conf->paper_set(["where" => "timeSubmitted>0"], $this->u_root) as $prow) {
+            if (!$prow->review_by_user($chair) && !$prow->has_conflict($chair)
+                && !$prow->review_by_user($pc) && !$prow->has_conflict($pc)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert($pid !== null);
+        xassert_assign($this->u_root, "paper,action,email,ghost\n{$pid},primary,chair@_.com,yes\n{$pid},primary,estrin@usc.edu,yes\n");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        xassert($prow->review_by_user($chair)->is_ghost());
+        xassert($prow->review_by_user($pc)->is_ghost());
+
+        $chair = $this->conf->fresh_user_by_email("chair@_.com");
+        $pc = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert($chair->is_manager());
+        xassert(!$pc->is_manager());
+        $re_me = function ($user, $t = null) {
+            $args = ["q" => "re:me"] + ($t ? ["t" => $t] : []);
+            return (new PaperSearch($user, $args))->paper_ids();
+        };
+        xassert_in_eqq($pid, $re_me($chair));
+        xassert_not_in_eqq($pid, $re_me($chair, "r"));
+        xassert_not_in_eqq($pid, (new PaperSearch($chair, ["q" => "", "t" => "r"]))->paper_ids());
+        xassert_not_in_eqq($pid, $re_me($pc));
+        xassert_not_in_eqq($pid, $re_me($pc, "r"));
+
+        xassert_assign($this->u_root, "paper,action,email\n{$pid},clearreview,chair@_.com\n{$pid},clearreview,estrin@usc.edu\n");
+    }
 }

@@ -262,40 +262,35 @@ class Home_Page {
         // which review fields to show?
 
         // Information about my reviews
-        $where = [];
-        if ($user->contactId) {
-            $where[] = "PaperReview.contactId=" . $user->contactId;
-        }
-        if (($tokens = $user->review_tokens())) {
-            $where[] = "reviewToken in (" . join(",", $tokens) . ")";
-        }
-        if (!empty($where)) {
-            $rfs = $this->default_review_fields();
-            $q = "select reviewType, reviewSubmitted, reviewNeedsSubmit, timeApprovalRequested, reviewRound";
+        $replist = null;
+        if ($user->has_review()) {
+            $replist = new PaperList("reviewerHome", new PaperSearch($user, ["q" => "re:me"]));
+            $replist->set_table_id_class(null, "pltable-reviewerhome");
+            $rfs = $replist->qopts["scores"] = $this->default_review_fields();
+            $replist->prepare_table_view();
             $missing_rounds = $scores = [];
             foreach ($rfs as $rf) {
-                $q .= ", " . $rf->main_storage;
                 $scores[] = [];
             }
-            $q = "{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted>0 or timeSubmitted>0)";
-            if (!empty($user->hidden_papers)) {
-                $q .= "and paperId not in (" . join(",", array_keys($user->hidden_papers)) . ")";
-            }
-            $result = $user->conf->qe($q);
-            while (($row = $result->fetch_row())) {
-                if ($row[1] || $row[3] < 0) {
-                    $this->_r_num_submitted += 1;
-                    $this->_r_num_needs_submit += 1;
-                    for ($i = 0; $i !== count($rfs); ++$i) {
-                        if ($row[5 + $i] !== null)
-                            $scores[$i][] = (int) $row[5 + $i];
+            foreach ($replist->unordered_rowset() as $prow) {
+                foreach ($prow->reviews_by_user($user, $user->review_tokens()) as $rrow) {
+                    if ($rrow->is_ghost()) {
+                        continue;
+                    } else if ($rrow->reviewSubmitted
+                               || $rrow->timeApprovalRequested < 0) {
+                        $this->_r_num_submitted += 1;
+                        $this->_r_num_needs_submit += 1;
+                        foreach ($rfs as $i => $rf) {
+                            if (($fv = $rrow->fval($rf)) !== null)
+                                $scores[$i][] = $fv;
+                        }
+                    } else if ($rrow->reviewNeedsSubmit
+                               && $prow->timeSubmitted > 0) {
+                        $this->_r_num_needs_submit += 1;
+                        $missing_rounds[(int) $rrow->reviewRound] = true;
                     }
-                } else if ($row[2]) {
-                    $this->_r_num_needs_submit += 1;
-                    $missing_rounds[(int) $row[4]] = true;
                 }
             }
-            Dbl::free($result);
             $this->_r_unsubmitted_rounds = array_keys($missing_rounds);
             $this->_rf_means = [];
             foreach ($scores as $sarr) {
@@ -454,15 +449,11 @@ class Home_Page {
             }
         }
 
-        if ($user->has_review()) {
-            $plist = new PaperList("reviewerHome", new PaperSearch($user, ["q" => "re:me"]));
-            $plist->set_table_id_class(null, "pltable-reviewerhome");
-            if (!$plist->is_empty()) {
-                echo '<div class="fx"><hr class="g">';
-                $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
-                $plist->print_table_html();
-                echo '</div>';
-            }
+        if ($replist && !$replist->is_empty()) {
+            echo '<div class="fx"><hr class="g">';
+            $replist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
+            $replist->print_table_html();
+            echo '</div>';
         }
 
         if ($has_rinfo) {

@@ -1225,7 +1225,8 @@ class PaperSearch extends MessageSet {
     function main_term() {
         if ($this->_qe === null) {
             $this->_has_qe = true;
-            if ($this->query_is_re_me()) {
+            if ($this->query_is_re_me()
+                && !$this->user->is_manager() /* managers can see ghost reviews */) {
                 $this->_qe = new Limit_SearchTerm($this, "r");
                 $this->_qe->set_implicit();
             } else {
