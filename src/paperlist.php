@@ -286,6 +286,8 @@ final class PaperList extends MessageSet {
     private $_column_error_stash;
     /** @var ?list<MessageItem> */
     private $_list_messages;
+    /** @var ?array{int,int} */
+    private $_view_prepared; // [context, min_origin] prepared, not yet rendered
     /** @var ?bool */
     private $_report_view_errors;
 
@@ -626,6 +628,7 @@ final class PaperList extends MessageSet {
         assert($vc->origin() >= ViewCommand::ORIGIN_REPORT && $vc->origin() <= ViewCommand::ORIGIN_MAX);
         $vc = self::canonical_view_command($vc);
         $this->_viewmap = null;
+        $this->_view_prepared = null;
         $k = $vc->keyword;
         $origin = $vc->origin();
         // `authors[full]` and `authors[anon]` mean `aufull` and `anonau`
@@ -1521,6 +1524,21 @@ final class PaperList extends MessageSet {
 
     /** @param int $context */
     private function _reset_vcolumns($context, $min_origin = 0) {
+        assert($context !== 0);
+
+        // a render may use a prepare_table_view preparation
+        $vp = $this->_view_prepared;
+        $this->_view_prepared = null;
+        if ($vp === [$context, $min_origin]) {
+            return;
+        }
+
+        // need tags for row coloring in HTML
+        if (($context & FieldRender::CFHTML) !== 0
+            && $this->user->can_view_tags(null)) {
+            $this->qopts["tags"] = true;
+        }
+
         // reset
         $this->_has = [];
         $this->count = 0;
@@ -1610,7 +1628,11 @@ final class PaperList extends MessageSet {
     /** @param ?int $context
      * @return $this */
     function prepare_table_view($context = null) {
-        $this->_reset_vcolumns($context ?? (FieldRender::CFLIST | FieldRender::CFHTML));
+        $context = $context ?? (FieldRender::CFLIST | FieldRender::CFHTML);
+        if ($this->_view_prepared !== [$context, 0]) {
+            $this->_reset_vcolumns($context);
+            $this->_view_prepared = [$context, 0];
+        }
         return $this;
     }
 
@@ -2317,11 +2339,6 @@ final class PaperList extends MessageSet {
 
     /** @return PaperListTableRender */
     private function _table_render() {
-        // need tags for row coloring
-        if ($this->user->can_view_tags(null)) {
-            $this->qopts["tags"] = true;
-        }
-
         // get column list
         $this->_reset_vcolumns(FieldRender::CFLIST | FieldRender::CFHTML);
         if (empty($this->_vcolumns)) {

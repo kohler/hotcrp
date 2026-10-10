@@ -364,6 +364,41 @@ class PaperListView_Tester {
         xassert_eqq($this->conf->setting_data("pldisplay_default"), $old);
     }
 
+    /** A render may reuse a prepared view, but later renders start fresh. */
+    function test_prepared_view_reuse() {
+        $pl = new PaperList("pl", new PaperSearch($this->u_chair, "1-5"), ["sort" => true]);
+        $pl->parse_view("show:id show:title", ViewCommand::ORIGIN_MAX);
+        $pl->prepare_table_view();
+        $j1 = $pl->format_json(PaperList::FORMAT_HTML);
+        xassert_eqq($pl->count, 5);
+        $j2 = $pl->format_json(PaperList::FORMAT_HTML);
+        xassert_eqq($pl->count, 5);
+        xassert_eqq($j2, $j1);
+
+        // a prepared view does not leak into a render with another min origin
+        $pl = new PaperList("pl", new PaperSearch($this->u_chair, "1-5"), ["sort" => true]);
+        $pl->parse_view("show:title", ViewCommand::ORIGIN_REPORT);
+        $pl->parse_view("show:id", ViewCommand::ORIGIN_MAX);
+        $pl->prepare_table_view();
+        $fj = $pl->format_json(PaperList::FORMAT_HTML, ViewCommand::ORIGIN_MAX);
+        xassert_eqq(array_column($fj["fields"], "name"), ["id"]);
+        $pl->prepare_table_view();
+        xassert_in_eqq("title", array_map(function ($f) { return $f->name; }, $pl->vcolumns()));
+
+        // sorting by a submission field works before any render
+        $oldv = $this->conf->setting("options");
+        $oldd = $this->conf->setting_data("options");
+        $this->conf->save_refresh_setting("options", 1, json_encode([
+            ["id" => 1, "name" => "Calories", "abbr" => "calories", "type" => "numeric", "position" => 1, "display" => "default"]
+        ]));
+        $pl = new PaperList("pl", new PaperSearch($this->u_chair, "1-5"), ["sort" => true]);
+        $pl->parse_view("sort:calories", ViewCommand::ORIGIN_MAX);
+        xassert_eqq(count($pl->paper_ids()), 5);
+        xassert($pl->sorters()[0] instanceof Option_PaperColumn);
+        xassert(!$pl->has_problem());
+        $this->conf->save_refresh_setting("options", $oldv, $oldd);
+    }
+
     function test_chair_default() {
         $old = $this->conf->setting_data("pldisplay_default");
         foreach ([
