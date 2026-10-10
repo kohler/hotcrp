@@ -1216,10 +1216,10 @@ class Permission_Tester {
         }
         xassert(!$pl->has_problem());
         if ($force) {
-            // table_html_json() never renders overridden content
+            // HTML output never renders overridden content
             return $pl->text_json()[1]["revtype"] ?? "";
         }
-        return $pl->table_html_json()["data"][1]["revtype"] ?? "";
+        return paper_list_html_cells($pl)[1]["revtype"] ?? "";
     }
 
     function test_conflict_column_sort_shows_pins_to_managers() {

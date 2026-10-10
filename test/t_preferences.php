@@ -109,7 +109,7 @@ class Preferences_Tester {
 
         $pl = new PaperList("empty", new PaperSearch($this->u_chair, ["t" => "s", "q" => "2"]));
         $pl->parse_view("pref", ViewCommand::ORIGIN_MAX);
-        $cell = (($pl->table_html_json()["data"][2] ?? [])["mypref"] ?? "");
+        $cell = ((paper_list_html_cells($pl)[2] ?? [])["mypref"] ?? "");
         xassert_str_contains($cell, "7");
         xassert(!str_contains($cell, "fx5"));
 

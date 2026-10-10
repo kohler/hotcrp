@@ -1575,7 +1575,7 @@ class Formulas_Tester {
             xassert_eqq($conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
             $pl = new PaperList("empty", new PaperSearch($reviewer, ["t" => "r", "q" => ""]));
             $pl->parse_view("title", ViewCommand::ORIGIN_MAX);
-            $data = $pl->table_html_json()["data"];
+            $data = paper_list_html_cells($pl);
             $titles = [];
             foreach ([2, 3, 4] as $pid) {
                 xassert_str_contains($data[$pid]["title"], "-paper{$pid}.pdf\"");
@@ -1595,7 +1595,7 @@ class Formulas_Tester {
             // ...while the chair's list links the final version.
             $pl = new PaperList("empty", new PaperSearch($this->u_chair, "2 3"));
             $pl->parse_view("title", ViewCommand::ORIGIN_MAX);
-            $data = $pl->table_html_json()["data"];
+            $data = paper_list_html_cells($pl);
             xassert_str_contains($data[2]["title"], "-final2.pdf\"");
             xassert_str_contains($data[3]["title"], "-paper3.pdf\"");
         }
@@ -2459,7 +2459,7 @@ class Formulas_Tester {
     private function topics_column_json(Contact $user, $t, $q) {
         $pl = new PaperList("empty", new PaperSearch($user, ["t" => $t, "q" => $q]));
         $pl->parse_view("topics", ViewCommand::ORIGIN_MAX);
-        return json_encode($pl->table_html_json()["data"]);
+        return json_encode(paper_list_html_cells($pl));
     }
 
     /** The text a `get/...` list action produces for one viewer.
@@ -2482,7 +2482,7 @@ class Formulas_Tester {
     private function topicscore_column(Contact $user, $pid) {
         $pl = new PaperList("empty", new PaperSearch($user, ["t" => "s", "q" => (string) $pid]));
         $pl->parse_view("topicscore:marina@poema.ru", ViewCommand::ORIGIN_MAX);
-        return ($pl->table_html_json()["data"])[$pid] ?? [];
+        return paper_list_html_cells($pl)[$pid] ?? [];
     }
 
     /** Set the intrinsic Topics field's presence through the settings path.

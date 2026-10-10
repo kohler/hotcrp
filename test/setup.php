@@ -853,6 +853,24 @@ function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     return $pl->text_json();
 }
 
+/** Return the HTML cells `$pl` renders, as a map from paper ID to a map
+ * from column name to HTML.
+ * @return array<int,array<string,string>> */
+function paper_list_html_cells(PaperList $pl) {
+    $cells = [];
+    foreach ($pl->format_json(PaperList::FORMAT_HTML)["papers"] as $p) {
+        $pid = $p["pid"];
+        unset($p["pid"], $p["\$attributes"]);
+        foreach ($p as &$v) {
+            if (is_array($v))
+                $v = $v["html"];
+        }
+        unset($v);
+        $cells[$pid] = $p;
+    }
+    return $cells;
+}
+
 /** @param Contact $user
  * @param string|array $query
  * @param string $col
