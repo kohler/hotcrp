@@ -3740,6 +3740,14 @@ class Conf {
     function time_review_open() {
         return ($this->_permbits & self::PB_REVIEW_OPEN) !== 0;
     }
+    /** Return the review flags that mark a review as live. A review is a
+     * ghost if none of its rflags are in this mask. While reviewing is open,
+     * ghosts are reviews without `RF_LIVE`; otherwise, ghosts are empty
+     * reviews.
+     * @return int */
+    function ghost_review_flags() {
+        return $this->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
+    }
     /** @return bool */
     function allow_self_assignment() {
         return ($this->_permbits & self::PB_REVIEW_SELF_ASSIGN) !== 0;

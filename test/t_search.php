@@ -2049,9 +2049,10 @@ class Search_Tester {
 
     function test_ghost_review_status() {
         // Ghostliness must mean the same to `ReviewInfo::is_ghost()`,
-        // `Contact::act_reviewer_sql()`, and `PaperContactInfo::mark_review_type()`:
-        // once reviewing closes only *empty* reviews are ghosts, and a ghost
-        // confers no review status whatever its reviewNeedsSubmit.
+        // `Contact::act_reviewer_sql()`, `PaperContactInfo::mark_review_type()`,
+        // and the review icon: once reviewing closes only *empty* reviews
+        // are ghosts, and a ghost confers no review status whatever its
+        // reviewNeedsSubmit.
         $conf = $this->conf;
         $chair = $conf->checked_user_by_email("chair@_.com");
         $ext = $conf->checked_user_by_email("van@ee.lbl.gov");
@@ -2074,6 +2075,13 @@ class Search_Tester {
         $conf->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and contactId=?",
             $gpid, $pc->contactId);
 
+        // a live, empty review
+        $epid = $this->unreviewed_submitted_pid($pc);
+        xassert_assign($chair, "paper,action,email\n{$epid},primary,{$pc->email}\n");
+        $rrow = $conf->checked_paper_by_id($epid)->review_by_user($pc);
+        xassert(!$rrow->is_ghost());
+        xassert_not_str_contains($rrow->icon_classes(), "rtghost");
+
         $conf->save_refresh_setting("rev_open", null);
         $conf->invalidate_caches("users");
         $ext = $conf->checked_user_by_email("van@ee.lbl.gov");
@@ -2085,17 +2093,26 @@ class Search_Tester {
         xassert($prow->has_active_reviewer($ext));
         xassert($ext->can_view_paper($prow));
         xassert_in_eqq($pid, $this->xassert_limit_agrees($ext, "r"));
+        xassert_not_str_contains($prow->review_by_user($ext)->icon_classes(), "rtghost");
 
         // the ghost review confers nothing
         $gprow = $conf->checked_paper_by_id($gpid);
         xassert($gprow->review_by_user($pc)->is_ghost());
         xassert(!$gprow->has_active_reviewer($pc));
         xassert_not_in_eqq($gpid, $this->xassert_limit_agrees($pc, "r"));
+        xassert_str_contains($gprow->review_by_user($pc)->icon_classes(), "rtghost");
 
-        $conf->qe("delete from PaperReview where (paperId=? and contactId=?) or (paperId=? and contactId=?)",
-            $pid, $ext->contactId, $gpid, $pc->contactId);
-        $conf->qe("delete from PaperConflict where conflictType<=? and ((paperId=? and contactId=?) or (paperId=? and contactId=?))",
-            CONFLICT_MAXUNCONFLICTED, $pid, $ext->contactId, $gpid, $pc->contactId);
+        // the empty review is now a ghost, and looks like one
+        $eprow = $conf->checked_paper_by_id($epid);
+        xassert($eprow->review_by_user($pc)->is_ghost());
+        xassert(!$eprow->has_active_reviewer($pc));
+        xassert_not_in_eqq($epid, $this->xassert_limit_agrees($pc, "r"));
+        xassert_str_contains($eprow->review_by_user($pc)->icon_classes(), "rtghost");
+
+        $conf->qe("delete from PaperReview where (paperId=? and contactId=?) or (paperId?a and contactId=?)",
+            $pid, $ext->contactId, [$gpid, $epid], $pc->contactId);
+        $conf->qe("delete from PaperConflict where conflictType<=? and ((paperId=? and contactId=?) or (paperId?a and contactId=?))",
+            CONFLICT_MAXUNCONFLICTED, $pid, $ext->contactId, [$gpid, $epid], $pc->contactId);
         $conf->save_refresh_setting("rev_open", $old_rev_open);
         $conf->invalidate_caches("users");
     }

@@ -462,8 +462,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function is_ghost() {
-        $m = $this->conf->time_review_open() ? self::RF_LIVE : self::RFM_NONEMPTY;
-        return ($this->rflags & $m) === 0;
+        return ($this->rflags & $this->conf->ghost_review_flags()) === 0;
     }
 
     /** @return bool */
@@ -605,11 +604,12 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @param int $rflags
+     * @param int $ghost_flags
      * @return string */
-    static function rflags_icon_class_suffix($rflags) {
+    static function rflags_icon_class_suffix($rflags, $ghost_flags) {
         if (($rflags & self::RF_SUBMITTED) !== 0) {
             return "";
-        } else if (($rflags & self::RF_LIVE) === 0) {
+        } else if (($rflags & $ghost_flags) === 0) {
             return " rtghost";
         } else if (($rflags & self::RF_APPROVED) !== 0) {
             return " rtsubrev";
@@ -624,7 +624,7 @@ class ReviewInfo implements JsonSerializable {
         if ($classes !== null) {
             $k = Ht::add_tokens($k, $classes);
         }
-        return $k . self::rflags_icon_class_suffix($this->rflags);
+        return $k . self::rflags_icon_class_suffix($this->rflags, $this->conf->ghost_review_flags());
     }
 
     /** @param ?string $classes

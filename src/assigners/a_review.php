@@ -321,10 +321,10 @@ class Review_Assigner extends Assigner {
     }
     /** @param bool $before
      * @return string */
-    private function icon_h($before) {
+    private function icon_h(AssignmentSet $aset, $before) {
         $rflags = $this->item->get($before, "_rflags");
         return review_type_icon($this->item->get($before, "_rtype"),
-                                ReviewInfo::rflags_icon_class_suffix($rflags));
+                                ReviewInfo::rflags_icon_class_suffix($rflags, $aset->conf->ghost_review_flags()));
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
@@ -334,14 +334,14 @@ class Review_Assigner extends Assigner {
         if ($this->item->differs("_rtype")
             || (($oldrflags ^ $newrflags) & ReviewInfo::RF_SUBMITTED) !== 0) {
             if ($this->item->pre("_rtype")) {
-                $i = $this->icon_h(true);
+                $i = $this->icon_h($aset, true);
                 $t .= $deleted ? " {$i}" : " <del>{$i}</del>";
             }
             if ($this->rtype) {
-                $t .= ' <ins>' . $this->icon_h(false) . '</ins>';
+                $t .= ' <ins>' . $this->icon_h($aset, false) . '</ins>';
             }
         } else if (!$deleted) {
-            $t .= ' ' . $this->icon_h(false);
+            $t .= ' ' . $this->icon_h($aset, false);
         }
         if ($this->item->differs("_round")) {
             if (($round = $this->item->pre("_round"))) {

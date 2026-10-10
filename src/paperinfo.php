@@ -352,8 +352,7 @@ final class PaperContactInfo {
             return;
         }
         // ghost reviews confer no review rights
-        $m = $conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
-        if (($rflags & $m) === 0) {
+        if (($rflags & $conf->ghost_review_flags()) === 0) {
             return;
         }
         $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);

@@ -4329,8 +4329,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return "false";
         }
         $s = count($m) === 1 ? $m[0] : "(" . join(" or ", $m) . ")";
-        // see also ReviewInfo::is_ghost
-        $mask = $this->conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
+        $mask = $this->conf->ghost_review_flags();
         return "({$s} and ({$table}.rflags&{$mask})!=0)";
     }
 
