@@ -30,7 +30,9 @@ COPY . /src
 WORKDIR /src
 
 RUN install -m 0755 devel/oss-scanner/hotcrp-scanctl /usr/local/bin/hotcrp-scanctl \
-    && install -m 0755 devel/oss-scanner/hotcrp-sendmail /usr/local/bin/hotcrp-sendmail
+    && install -m 0755 devel/oss-scanner/hotcrp-sendmail /usr/local/bin/hotcrp-sendmail \
+    && install -D -m 0644 devel/oss-scanner/bashrc.sh /etc/hotcrp-scanctl/bashrc.sh \
+    && echo '. /etc/hotcrp-scanctl/bashrc.sh' >> /root/.bashrc
 
 # Create the test-suite databases and the sample conferences, then shut
 # MariaDB down cleanly so its data directory is part of the image.

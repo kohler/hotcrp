@@ -15,6 +15,7 @@ without a pull request there.
 | `hotcrp-scanctl`  | In-image helper: `start`, `stop`, `reset`, `test`, `db`, `mail`    |
 | `hotcrp-sendmail` | Fake `sendmail`; saves each message under `/var/spool/hotcrp-mail` |
 | `seed.php`        | Loads the sample conferences                                       |
+| `bashrc.sh`       | Interactive shells say to run `hotcrp-scanctl start` if needed     |
 
 `hotcrp-scanctl start` runs MariaDB, php-fpm, and nginx. nginx serves two sample
 conferences from one multiconference installation, sharing a contact database:
