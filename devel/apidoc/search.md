@@ -153,7 +153,7 @@ This response might be returned for the search `10-12 THEN 5-8`:
 * response ?hotlist hotlist
 
     * condition hotlist
-* response ?default_tracker_visibility string: Default visibility for a meeting tracker over the matching submissions: `all` for the whole PC, `+TAG` or `-TAG` for PC members with or without a tag, or `+none` for administrators only.
+* response ?default_tracker_visibility string: Default visibility for a meeting tracker over the matching submissions: `all` for the whole PC, `+TAG` or `-TAG` for PC members with or without a tag, `+none` for administrators only, or a user ID for a single PC member.
 
     * condition default_tracker_visibility
 * response ?fields [object]

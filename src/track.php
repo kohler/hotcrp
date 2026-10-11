@@ -99,4 +99,59 @@ class Track {
     static function unparse_right($right) {
         return array_search($right, self::$perm_name_map);
     }
+
+
+    /** Parse a permission description into a permission string.
+     *
+     * Accepts `""`, null, or `all` (case-insensitive) for the whole PC, which
+     * returns `""`; `+none` for administrators only; `+TAG` or `-TAG` for PC
+     * members with or without a tag; and a user ID or email for a single PC
+     * member, which returns the member’s user ID as a string.
+     *
+     * Returns false on error and sets `$error` to an Ftext message.
+     * @param ?string $s
+     * @param ?string &$error
+     * @return string|false */
+    static function parse_perm_text($s, Contact $viewer, &$error = null) {
+        $error = null;
+        $s = trim($s ?? "");
+        if ($s === "" || strcasecmp($s, "all") === 0) {
+            return "";
+        } else if (strcasecmp($s, "+none") === 0) {
+            return "+none";
+        }
+        $conf = $viewer->conf;
+        if ($s[0] === "+" || $s[0] === "-") {
+            $tagger = new Tagger($viewer);
+            if (($s[1] ?? "") === "#") {
+                $error = "<0>Permission ‘{$s}’ should be written without ‘#’";
+                return false;
+            } else if (!($tag = $tagger->check_syntax(substr($s, 1), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
+                $error = $tagger->error_ftext();
+                return false;
+            }
+            return $s[0] . $tag;
+        }
+        if (ctype_digit($s)) {
+            $u = $conf->pc_member_by_id(intval($s));
+        } else if (validate_email($s)) {
+            $u = $conf->pc_member_by_email($s);
+        } else {
+            $error = "<0>Permission ‘{$s}’ should be ‘all’, ‘+none’, ‘+TAG’, ‘-TAG’, or a PC member’s email";
+            return false;
+        }
+        if (!$u) {
+            $error = "<0>PC member ‘{$s}’ not found";
+            return false;
+        }
+        return (string) $u->contactId;
+    }
+
+    /** Return the user ID named by permission string `$perm`, or 0 if
+     * `$perm` is not a single-user permission.
+     * @param ?string $perm
+     * @return int */
+    static function perm_user_id($perm) {
+        return $perm !== null && $perm !== "" && ctype_digit($perm) ? intval($perm) : 0;
+    }
 }

@@ -4011,41 +4011,21 @@ handle_ui.on("js-tracker", function (evt) {
             $t.append(hidden_input(trp + "/p", siteinfo.paperid));
         if (tr.listinfo)
             $t.append(hidden_input(trp + "/listinfo", tr.listinfo));
-        let vis = tr.visibility || "", vistype;
-        if (vis === "+none" || vis === "none") {
-            vistype = "none";
-            vis = "x";
-        } else if (vis === "" || vis === "all") {
-            vistype = "all";
-            vis = "x";
-        } else {
-            vistype = vis.charAt(0);
-        }
-        const gvis = (dl.tracker && dl.tracker.global_visibility) || "",
-            vismap = [["all", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
-            vissel = $e("select", {id: ktrp + "/visibility_type", name: trp + "/visibility_type", class: "uich js-foldup", "data-default-value": vistype});
-        if (hotcrp.status.is_admin) {
-            vismap.push(["none", "Administrators only"]);
-        }
-        for (const v of vismap) {
-            vissel.append($e("option", {value: v[0], selected: v[0] === vistype, disabled: gvis === "+none" && v[0] !== "none"}, v[1]));
-        }
-        $t.append($e("div", {class: "entryi has-fold fold" + (vistype === "+" || vistype === "-" ? "o" : "c"), "data-fold-values": "+ -"},
-            $e("label", {for: ktrp + "/visibility_type"}, "PC visibility"),
-            $e("div", "entry", $e("span", "select", vissel),
-                $e("input", {type: "text", name: trp + "/visibility", value: vis.substring(1), placeholder: "(tag)", class: "need-suggest need-autogrow pc-tags fx ml-2"}))));
+        const gvis = (dl.tracker && dl.tracker.global_visibility) || "";
+        $t.append($e("div", "entryi",
+            $e("label", {for: ktrp + "/visibility/edit"}, "PC visibility"),
+            $e("div", "entry", permsel_make(tr.visibility, {
+                name: trp + "/visibility", id: ktrp + "/visibility",
+                disabled: gvis === "+none"
+            }))));
         if (gvis) {
-            let gvist;
-            if (gvis === "+none") {
-                gvist = "Administrators only";
-            } else if (gvis.charAt(0) === "+") {
-                gvist = "PC members with tag " + gvis.substring(1);
-            } else {
-                gvist = "PC members without tag " + gvis.substring(1);
-            }
+            const gvise = $e("div", "entry");
             $t.append($e("div", "entryi",
-                $e("label", null, "Global visibility"),
-                $e("div", "entry", gvist, $e("div", "f-d", "This ", $e("a", {href: hoturl("settings", {group: "tracks"})}, "setting"), " restricts all trackers."))));
+                $e("label", null, "Global visibility"), gvise));
+            demand_load.pc().then(pc => pc, () => null).then(function (pc) {
+                const r = permsel_parse(permsel_perm_text(gvis, pc), pc, "all");
+                gvise.append(r ? r.label : gvis, $e("div", "f-d", "This ", $e("a", {href: hoturl("settings", {group: "tracks"})}, "setting"), " restricts all trackers."));
+            });
         }
         $t.append($e("div", "entryi", $e("label"),
             $e("div", "entry", $e("label", "checki",
@@ -9134,6 +9114,13 @@ function CompletionSpan(value, indexPos) {
                                 // region and any subsequent characters that
                                 // match the chosen replacement
     this.visiblePriority = false;  // Dim items with priority <= 0
+    this.wordMatch = false;     // If truthy, match words of the span against
+                                // word prefixes of items and keywords, and
+                                // sort results by match quality
+    this.wholeValue = false;    // If truthy, completion replaces the whole
+                                // value, regardless of selection
+    this.query = null;          // If non-null, filter on this string
+                                // rather than the span
 }
 
 CompletionSpan.at = function (elt) {
@@ -9142,6 +9129,20 @@ CompletionSpan.at = function (elt) {
         return new CompletionSpan("", -1);
     }
     return new CompletionSpan(elt.value, startPos);
+};
+
+CompletionSpan.whole = function (elt) {
+    // Span the whole value. If the whole nonempty value is selected, match
+    // all items.
+    const value = elt.value, cs = new CompletionSpan(value, value.length);
+    cs.startPos = 0;
+    cs.wholeValue = true;
+    if (value !== ""
+        && elt.selectionStart === 0
+        && elt.selectionEnd === value.length) {
+        cs.query = "";
+    }
+    return cs;
 };
 
 CompletionSpan.prototype.matchLeft = function (re) {
@@ -9193,6 +9194,9 @@ CompletionSpan.prototype.span = function () {
 };
 
 CompletionSpan.prototype.spanMatches = function (elt) {
+    if (this.wholeValue) {
+        return elt.value === this.value;
+    }
     return elt.selectionStart === this.indexPos
         && elt.selectionEnd === this.indexPos
         && elt.value.length >= this.endPos
@@ -9209,6 +9213,7 @@ CompletionSpan.prototype.filter = function (tlist) {
     // * `item.ml`: Integer. Ignore this item if it doesn’t match
     //   the first `item.ml` characters of the match region.
     // * `item.pri`: Integer priority; higher is more important.
+    // * `item.k`: Keywords string (`wordMatch` only).
     // Shorthand:
     // * A string `item` sets `item.s`.
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
@@ -9221,6 +9226,8 @@ CompletionSpan.prototype.filter = function (tlist) {
 
     if (this.indexPos < 0 || this.endPos - this.startPos < this.minLength) {
         return null;
+    } else if (this.wordMatch) {
+        return this.filterWords(tlist);
     }
 
     const caseSensitive = this.caseSensitive;
@@ -9278,6 +9285,107 @@ CompletionSpan.prototype.filter = function (tlist) {
         return null;
     }
     return {items: res, best: best, cspan: this};
+};
+
+function completion_words(s) {
+    return s.split(/[^\p{L}\p{M}\p{N}~]+/u).filter(w => w !== "");
+}
+
+const completion_fold_map = {
+    "Æ": "AE", "æ": "ae", "Đ": "D", "đ": "d", "Ħ": "H", "ħ": "h", "ı": "i",
+    "Ŀ": "L", "ŀ": "l", "Ł": "L", "ł": "l", "Ø": "O", "ø": "o", "Œ": "OE",
+    "œ": "oe", "ß": "ss", "ſ": "s", "Ŧ": "T", "ŧ": "t", "Ɓ": "B", "ƀ": "b"
+};
+
+// Return `s` with accents removed, and lowercased if `lower` is truthy.
+function completion_fold(s, lower) {
+    if (/[\u0080-\uffff]/.test(s)) {
+        s = s.normalize("NFKD");
+        if (lower) {
+            s = s.toLowerCase();
+        }
+        return s.replace(/\p{M}+/gu, "")
+            .replace(/[ÆæĐđĦħıĿŀŁłØøŒœßſŦŧƁƀ]/g, ch => completion_fold_map[ch]);
+    }
+    return lower ? s.toLowerCase() : s;
+}
+
+// Return `s` normalized for accent-sensitive matching, and lowercased if
+// `lower` is truthy.
+function completion_lower(s, lower) {
+    if (/[\u0080-\uffff]/.test(s)) {
+        s = s.normalize("NFKD");
+        if (lower) {
+            s = s.toLowerCase();
+        }
+        return s.normalize("NFKC");
+    }
+    return lower ? s.toLowerCase() : s;
+}
+
+// Split `s` into words for matching. Each word is a pair of its lowercase
+// form and its accent-folded form.
+function completion_word_pairs(s, lower) {
+    return completion_words(completion_lower(s, lower)).map(w => [w, completion_fold(w, lower)]);
+}
+
+// Return true iff query word `qw` matches word `w`, both from
+// `completion_word_pairs`. An unaccented query word matches regardless of
+// accents in `w`, but an accented query word matches only the same accents
+// (asymmetric search, UTS #10 §11.2).
+function completion_word_match(qw, w, prefix) {
+    const i = qw[0] === qw[1] ? 1 : 0;
+    return prefix ? w[i].startsWith(qw[i]) : w[i] === qw[i];
+}
+
+CompletionSpan.prototype.filterWords = function (tlist) {
+    // Rank items by match quality: exact match, then prefix match, then
+    // keyword prefix match, then word-prefix match (every word of the query
+    // is a prefix of some word of the item or its keywords), then substring
+    // match. Ties are broken by `item.pri`, then by order in `tlist`. When
+    // the query is empty, all items with nonnegative priority match.
+    // Accents that the query omits are ignored.
+    const lower = !this.caseSensitive || this.caseSensitive === "lower",
+        qraw = (this.query !== null ? this.query : this.span()).trim().replace(/\s+/g, " "),
+        ql = completion_lower(qraw, lower),
+        qfold = completion_fold(ql, lower) === ql,
+        q = qfold ? completion_fold(ql, lower) : ql,
+        norm = qfold ? completion_fold : completion_lower,
+        qwords = completion_word_pairs(qraw, lower), res = [];
+    for (let i = 0; i !== tlist.length; ++i) {
+        const titem = completion_item(tlist[i]),
+            ltext = norm(titem.s, lower),
+            lk = titem.k ? norm(titem.k, lower) : "";
+        let rank = 0;
+        if (q === "") {
+            rank = (titem.pri || 0) >= 0 ? 1 : 0;
+        } else if (ltext === q) {
+            rank = 6;
+        } else if (ltext.startsWith(q)) {
+            rank = 5;
+        } else if (lk !== "" && lk.split(" ").some(w => w.startsWith(q))) {
+            rank = 4;
+        } else if (qwords.length !== 0) {
+            const words = completion_word_pairs(titem.s + " " + (titem.k || ""), lower);
+            if (qwords.every(qw => words.some(w => completion_word_match(qw, w, true)))) {
+                rank = 3;
+            }
+        }
+        if (rank === 0 && q.length > 2 && ltext.includes(q)) {
+            rank = 2;
+        }
+        if (rank > 0) {
+            res.push({titem: titem, rank: rank, pri: titem.pri || 0, i: i});
+        }
+    }
+    if (res.length === 0) {
+        return null;
+    }
+    res.sort((a, b) => b.rank - a.rank || b.pri - a.pri || a.i - b.i);
+    if (this.maxItems && res.length > this.maxItems) {
+        res.length = this.maxItems;
+    }
+    return {items: res.map(x => x.titem), best: q === "" ? null : 0, cspan: this};
 };
 
 CompletionSpan.prototype.filterFrom = function (promise) {
@@ -9573,8 +9681,8 @@ function suggest() {
             log_jserror(JSON.stringify({value:val,hint:x,repl:repl,startPos:startPos,endPos:endPos}));
         }
         elt.setRangeText(repl, startPos, endPos, "end");
-        if (hintinfo.postReplace) {
-            hintinfo.postReplace(elt, repl, startPos);
+        if (cspan.postReplace) {
+            cspan.postReplace(elt, repl, startPos);
         }
         $(elt).trigger("input");
 
@@ -9871,6 +9979,241 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
     return cs.filterFrom(prom);
 });
 
+
+// permission selectors
+// A `span.permsel` holds a button summarizing a permission, a hidden text
+// entry, and a hidden input holding the permission value. Clicking the button
+// swaps in the entry, which offers suggestions; committing the entry sets the
+// value and restores the button. Entry texts are `all`, `none`, `#TAG`,
+// `-#TAG`, or `NAME <EMAIL>`; values are `all`, `+none`, `+TAG`, `-TAG`, or a
+// user ID.
+
+function permsel_user_name(u) {
+    return u.emailpos ? u.name.substring(0, u.emailpos - 1) : u.name;
+}
+
+function permsel_user_text(u) {
+    const name = permsel_user_name(u);
+    return name && name !== u.email ? name + " <" + u.email + ">" : u.email;
+}
+
+function permsel_find_user(t, pc) {
+    if (!pc) {
+        return null;
+    }
+    let m;
+    if (/^\d+$/.test(t)) {
+        return pc.pc.find(u => u.uid === +t) || null;
+    } else if ((m = /^(?:.*<\s*)?([^\s<>]+@[^\s<>]+?)\s*>?$/.exec(t))) {
+        const le = m[1].toLowerCase();
+        return pc.pc.find(u => u.email && u.email.toLowerCase() === le) || null;
+    }
+    // Prefer exact name matches, then match each word as a prefix of a name
+    // or email word.
+    const qwords = completion_word_pairs(t, true);
+    if (qwords.length === 0) {
+        return null;
+    }
+    const exact = [], prefix = [];
+    for (const u of pc.pc) {
+        const words = completion_word_pairs(permsel_user_name(u), true);
+        if (words.length === qwords.length
+            && qwords.every((qw, i) => completion_word_match(qw, words[i], false))) {
+            exact.push(u);
+            continue;
+        }
+        words.push(...completion_word_pairs(u.email || "", true));
+        if (qwords.every(qw => words.some(w => completion_word_match(qw, w, true)))) {
+            prefix.push(u);
+        }
+    }
+    const found = exact.length ? exact : prefix;
+    return found.length === 1 ? found[0] : null;
+}
+
+// Return `{text, label, value}` for permission text `t`, or null if `t` is
+// invalid. `pc` is the `demand_load.pc()` result, or null if unavailable.
+function permsel_parse(t, pc, deftype) {
+    t = t.trim().replace(/\s+/g, " ");
+    const lt = t.toLowerCase();
+    let m, u;
+    if (lt === "" && deftype === "none") {
+        return {text: "none", label: "Administrators only", value: "+none"};
+    } else if (lt === "" || /^(?:all|any|pc|\+?#?pc|\+all)$/.test(lt)) {
+        return {text: "all", label: "Whole PC", value: "all"};
+    } else if (/^(?:\+?#?none|-all|-any)$/.test(lt)) {
+        return {text: "none", label: "Administrators only", value: "+none"};
+    } else if ((m = /^([-+]?)\s*(#?)([^\s#@<>]*)$/.exec(t))
+               && (m[1] || m[2] || !/^\d+$/.test(m[3]))) {
+        if (m[3] === "") {
+            return null;
+        }
+        let tag = m[3];
+        const ltag = tag.toLowerCase(),
+            pctag = pc && (pc.tags || []).find(x => x.toLowerCase() === ltag);
+        if (!m[1] && !m[2] && pc && !pctag) {
+            // a bare word must name a PC tag or a single PC member
+            u = permsel_find_user(t, pc);
+            return u ? permsel_user_result(u) : null;
+        }
+        tag = pctag || tag;
+        if (m[1] === "-") {
+            return {text: "-#" + tag, label: "PC not tagged #" + tag, value: "-" + tag};
+        } else {
+            return {text: "#" + tag, label: "PC tagged #" + tag, value: "+" + tag};
+        }
+    } else if ((u = permsel_find_user(t, pc))) {
+        return permsel_user_result(u);
+    } else if (!pc && (m = /^(.*?)\s*<([^\s<>]+@[^\s<>]+)>$/.exec(t))) {
+        return {text: t, label: m[1] || m[2], value: m[2]};
+    }
+    return null;
+}
+
+function permsel_user_result(u) {
+    return {text: permsel_user_text(u), label: permsel_user_name(u) || u.email, value: String(u.uid)};
+}
+
+// Return entry text for permission value `perm`. `pc` is needed to translate
+// user IDs.
+function permsel_perm_text(perm, pc) {
+    let m, u;
+    if (perm == null || perm === "" || perm === "all") {
+        return "all";
+    } else if (perm === "+none") {
+        return "none";
+    } else if ((m = /^([-+])([^#\s].*)$/.exec(perm))) {
+        return (m[1] === "-" ? "-#" : "#") + m[2];
+    } else if (/^\d+$/.test(perm) && (u = permsel_find_user(perm, pc))) {
+        return permsel_user_text(u);
+    }
+    return perm;
+}
+
+function permsel_apply(span, r) {
+    span.querySelector(".permsel-entry").value = r.text;
+    span.querySelector(".permsel-button").textContent = r.label;
+    const ve = span.querySelector(".permsel-value");
+    if (ve.value !== r.value) {
+        ve.value = r.value;
+        ve.dispatchEvent(new Event("change", {bubbles: true}));
+    }
+}
+
+// Create a permission selector for permission value `perm`.
+function permsel_make(perm, attr) {
+    const deftype = attr.deftype || "all",
+        value = perm == null || perm === "" ? "all" : perm,
+        btn = $e("button", {type: "button", id: attr.id + "/edit", class: "ui js-permsel-edit permsel-button", disabled: attr.disabled}),
+        entry = $e("input", {type: "text", id: attr.id, size: 30, spellcheck: "false", autocomplete: "off", class: "permsel-entry need-suggest permsel-suggest hidden", disabled: attr.disabled}),
+        ve = hidden_input(attr.name, value, {class: "permsel-value", "data-default-value": value, disabled: attr.disabled}),
+        span = $e("span", {class: "permsel", "data-permsel-default": deftype}, btn, entry, ve);
+    function finish(pc) {
+        const text = permsel_perm_text(value, pc),
+            r = permsel_parse(text, pc, deftype);
+        entry.value = text;
+        btn.textContent = r ? r.label : text;
+    }
+    if (/^\d+$/.test(value)) {
+        demand_load.pc().then(finish, () => finish(null));
+    } else {
+        finish(null);
+    }
+    return span;
+}
+
+function permsel_close(entry, refocus) {
+    const span = entry.closest(".permsel"),
+        btn = span.querySelector(".permsel-button");
+    function finish(pc) {
+        if (!hasClass(btn, "hidden")) {
+            return;
+        }
+        const r = permsel_parse(entry.value, pc, span.getAttribute("data-permsel-default"));
+        if (!r) {
+            addClass(entry, "has-error");
+            refocus && entry.focus();
+            return;
+        }
+        removeClass(entry, "has-error");
+        addClass(entry, "hidden");
+        removeClass(btn, "hidden");
+        refocus && btn.focus();
+        permsel_apply(span, r);
+    }
+    demand_load.pc().then(finish, () => finish(null));
+}
+
+function permsel_keydown(evt) {
+    const k = event_key(evt);
+    if (k === "Enter" && !event_key.modcode(evt)) {
+        permsel_close(this, true);
+        evt.preventDefault();
+    } else if (k === "Escape" && !event_key.modcode(evt)) {
+        this.value = this.getAttribute("data-permsel-prev") || this.value;
+        permsel_close(this, true);
+        evt.preventDefault();
+        evt.stopPropagation();
+    }
+}
+
+function permsel_blur() {
+    const entry = this;
+    setTimeout(function () {
+        document.activeElement !== entry && permsel_close(entry, false);
+    }, 10);
+}
+
+handle_ui.on("js-permsel-edit", function () {
+    const span = this.closest(".permsel"),
+        entry = span.querySelector(".permsel-entry");
+    if (!entry.hasAttribute("data-permsel-prev")) {
+        entry.addEventListener("keydown", permsel_keydown);
+        entry.addEventListener("blur", permsel_blur);
+    }
+    entry.setAttribute("data-permsel-prev", entry.value);
+    hasClass(entry, "need-suggest") && hotcrp.suggest.call(entry);
+    addClass(this, "hidden");
+    removeClass(entry, "hidden");
+    entry.focus();
+    entry.select();
+    entry.dispatchEvent(new Event("input", {bubbles: true}));
+});
+
+function permsel_postreplace(elt) {
+    setTimeout(function () { permsel_close(elt, true); }, 0);
+}
+
+hotcrp.suggest.add_builder("permsel-suggest", function (elt) {
+    if (hasClass(elt, "hidden")) {
+        return null;
+    }
+    const cs = hotcrp.suggest.CompletionSpan.whole(elt),
+        deftype = elt.closest(".permsel").getAttribute("data-permsel-default");
+    cs.wordMatch = true;
+    cs.maxItems = 30;
+    cs.postReplace = permsel_postreplace;
+    return cs.filterFrom(demand_load.pc().then(function (pc) {
+        const items = [
+            {s: "Whole PC", r: "all", k: "all everyone", pri: 3, no_space: true}
+        ];
+        if (deftype === "none" || hotcrp.status.is_admin) {
+            items.push({s: "Administrators only", r: "none", k: "none admins chairs", pri: 3, no_space: true});
+        }
+        for (const t of pc.tags || []) {
+            if (/^(?:pc|listedpc|unlistedpc|bot)$/i.test(t)) {
+                continue;
+            }
+            items.push({s: "#" + t, pri: 2, no_space: true});
+            items.push({s: "-#" + t, d: "not tagged", pri: -1, no_space: true});
+        }
+        for (const u of pc.pc) {
+            const name = permsel_user_name(u);
+            items.push({s: name || u.email, d: name ? u.email : null, k: u.email, r: permsel_user_text(u), pri: 0, no_space: true});
+        }
+        return items;
+    }));
+});
 
 // list management, conflict management
 function encode_session_list_ids(ids) {

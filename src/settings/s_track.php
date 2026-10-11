@@ -71,13 +71,16 @@ class Track_Setting {
     /** @param string $p
      * @return string */
     static function perm_type($p) {
-        return $p === "all" || $p === "none" ? $p : $p[0];
+        if ($p === "all" || $p === "none") {
+            return $p;
+        }
+        return $p[0] === "+" || $p[0] === "-" ? $p[0] : "user";
     }
 
     /** @param string $p
      * @return string */
     static function perm_tag($p) {
-        return $p === "all" || $p === "none" ? "" : substr($p, 1);
+        return $p[0] === "+" || $p[0] === "-" ? substr($p, 1) : "";
     }
 
     static function right_title($right) {
@@ -159,6 +162,10 @@ class Track_SettingParser extends SettingParser {
             $trx = $sv->oldv($si->name_prefix(2));
             $p = $trx !== null ? $trx->perm($si->name1) : "all";
             if ($si->name2 === "") {
+                if (($uid = Track::perm_user_id($p)) > 0
+                    && ($u = $sv->conf->user_by_id($uid, USER_SLICE))) {
+                    $p = $u->email;
+                }
                 $sv->set_oldv($si->name, $p);
             } else if ($si->name2 === "/type") {
                 $sv->set_oldv($si->name, Track_Setting::perm_type($p));
@@ -202,21 +209,19 @@ class Track_SettingParser extends SettingParser {
         $deftype = Track::right_name_required($right) ? "none" : "all";
         $trx = $this->cur_trx;
         $pfx = "track/{$this->ctr}/perm/{$right}";
-        $p = $sv->reqstr($pfx) ?? $trx->perm($right);
-        $reqtype = $sv->reqstr("{$pfx}/type") ?? Track_Setting::perm_type($p);
-        $reqtag = $sv->reqstr("{$pfx}/tag") ?? Track_Setting::perm_tag($p);
+        $oldval = self::unparse_perm_value($trx->perm($right));
+        $reqval = $sv->reqstr($pfx);
+        if ($reqval === null && $sv->has_req("{$pfx}/type")) {
+            $reqval = self::legacy_perm_text($sv, $pfx);
+        }
+        $perm = $reqval !== null ? self::parse_perm_req($sv, $reqval, $right) : $trx->perm($right);
 
         $unfolded = Track_Setting::perm_type($trx->perm($right)) !== $deftype
-            || $reqtype !== $deftype
+            || ($reqval !== null && $reqval !== $oldval)
             || (($flags & self::PERM_DEFAULT_UNFOLDED) !== 0 && $trx->is_empty())
             || $sv->problem_status_at("track/{$this->ctr}");
         if (!$unfolded) {
             ++$this->nfolded;
-        }
-
-        $permts = ["all" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
-        if ($deftype === "none") {
-            $permts = ["none" => $permts["none"], "+" => $permts["+"], "-" => $permts["-"]];
         }
 
         $hints = [];
@@ -231,16 +236,34 @@ class Track_SettingParser extends SettingParser {
             $label = $label[0];
         }
 
+        if ($perm === false) {
+            $desc = $text = trim($reqval);
+        } else {
+            $desc = self::unparse_perm_description($perm ?? $deftype, $sv->conf);
+            $text = self::unparse_perm_text($perm ?? $deftype, $sv->conf);
+        }
+        $editable = $sv->editable($pfx);
+
         echo '<div class="', $sv->control_class($pfx, "entryi wide"),
-            ' has-fold fold', $reqtype === "all" || $reqtype === "none" ? "c" : "o",
-            $unfolded ? "" : " fx3",
-            '" data-fold-values="+ -" id="', $pfx, '">',
+            $unfolded ? "" : " fx3", '" id="', $pfx, '">',
             Ht::hidden("has_{$pfx}", 1),
-            $sv->label(["{$pfx}/type", "{$pfx}/tag"], $label),
-            '<div class="entry">',
-            Ht::select("{$pfx}/type", $permts, $reqtype, $sv->sjs("{$pfx}/type", ["class" => "uich js-foldup"])),
-            " &nbsp;",
-            Ht::entry("{$pfx}/tag", $reqtag, $sv->sjs("{$pfx}/tag", ["class" => "fx need-suggest pc-tags", "data-suggest-role-tags" => true, "spellcheck" => false, "autocomplete" => "off"])),
+            $sv->label(["{$pfx}/edit", $pfx], $label),
+            '<div class="entry"><span class="permsel" data-permsel-default="', $deftype, '">',
+            Ht::button(htmlspecialchars($desc), [
+                "id" => "{$pfx}/edit",
+                "class" => "ui js-permsel-edit permsel-button",
+                "disabled" => !$editable
+            ]),
+            Ht::entry("", $text, [
+                "id" => "{$pfx}/entry",
+                "class" => "permsel-entry need-suggest permsel-suggest hidden",
+                "size" => 30, "spellcheck" => false, "autocomplete" => "off"
+            ]),
+            Ht::hidden($pfx, $reqval ?? $oldval, $sv->sjs($pfx, [
+                "id" => "{$pfx}/value", "class" => "permsel-value",
+                "data-default-value" => $oldval
+            ])),
+            '</span>',
             MessageSet::feedback_html([
                 ...$sv->message_list_for([$pfx, "{$pfx}/type", "{$pfx}/tag"]),
                 ...$hints
@@ -253,7 +276,7 @@ class Track_SettingParser extends SettingParser {
     }
 
     function print_viewrev_perm(SettingValues $sv, $gj) {
-        $this->print_perm($sv, "viewrev", ["Who can see reviews?", [MessageItem::plain("<0>This setting constrains all users including co-reviewers.")->set_item_class("fx")]]);
+        $this->print_perm($sv, "viewrev", ["Who can see reviews?", [MessageItem::plain("<0>This setting constrains all users including co-reviewers.")]]);
     }
 
     private function print_track(SettingValues $sv, $ctr) {
@@ -317,28 +340,88 @@ class Track_SettingParser extends SettingParser {
     }
 
 
-    private function _apply_req_perm(Si $si, SettingValues $sv) {
-        $pfx = $si->name0 . $si->name1;
-
-        // parse request
-        if ($sv->reqstr($pfx) !== null) {
-            $s = trim($sv->reqstr($pfx));
-            if ($s !== "" && ($s[0] === "+" || $s[0] === "-")) {
-                $type = $s[0];
-                $tag = substr($s, 1);
-            } else if ($s === "") {
-                $type = "all";
-                $tag = "";
-            } else {
-                $type = "+";
-                $tag = $s;
-            }
-        } else {
-            $type = $sv->base_parse_req("{$pfx}/type");
-            $tag = $type === "+" || $type === "-" ? trim($sv->vstr("{$pfx}/tag")) : "";
+    /** Return the value submitted by a permission selector for permission
+     * string `$perm`: `all`, `+none`, `+TAG`, `-TAG`, or a user ID.
+     * @param ?string $perm
+     * @return string */
+    static function unparse_perm_value($perm) {
+        if ($perm === null || $perm === "" || $perm === "all" || $perm === "+pc") {
+            return "all";
+        } else if ($perm === "none") {
+            return "+none";
         }
+        return $perm;
+    }
 
-        // canonicalize
+    /** Return the text shown for permission string `$perm` in a permission
+     * selector’s text entry: `all`, `none`, `#TAG`, `-#TAG`, or a PC
+     * member’s `NAME <EMAIL>`.
+     * @param ?string $perm
+     * @return string */
+    static function unparse_perm_text($perm, Conf $conf) {
+        if ($perm === null || $perm === "" || $perm === "all" || $perm === "+pc") {
+            return "all";
+        } else if ($perm === "+none" || $perm === "none") {
+            return "none";
+        } else if ($perm[0] === "+") {
+            return "#" . substr($perm, 1);
+        } else if ($perm[0] === "-") {
+            return "-#" . substr($perm, 1);
+        } else if (($uid = Track::perm_user_id($perm)) > 0
+                   && ($u = $conf->user_by_id($uid, USER_SLICE))) {
+            return Text::nameo($u, NAME_EB);
+        }
+        return $perm;
+    }
+
+    /** Return a plain-text summary of permission string `$perm`.
+     * @param ?string $perm
+     * @return string */
+    static function unparse_perm_description($perm, Conf $conf) {
+        if ($perm === null || $perm === "" || $perm === "all" || $perm === "+pc") {
+            return "Whole PC";
+        } else if ($perm === "+none" || $perm === "none") {
+            return "Administrators only";
+        } else if ($perm[0] === "+") {
+            return "PC tagged #" . substr($perm, 1);
+        } else if ($perm[0] === "-") {
+            return "PC not tagged #" . substr($perm, 1);
+        } else if (($uid = Track::perm_user_id($perm)) > 0
+                   && ($u = $conf->user_by_id($uid, USER_SLICE))) {
+            return Text::nameo($u, NAME_P);
+        }
+        return $perm;
+    }
+
+    /** @param string $text
+     * @param string $right
+     * @param ?string &$error
+     * @return string|false|null */
+    static function parse_perm_req(SettingValues $sv, $text, $right, &$error = null) {
+        $error = null;
+        if (trim($text) === "") {
+            return null;
+        }
+        if (strcasecmp(trim($text), "none") === 0) {
+            $text = "+none";
+        }
+        $p = Track::parse_perm_text($text, $sv->user, $error);
+        $required = Track::right_name_required($right);
+        if ($p === "") {
+            return $required ? "+pc" : null;
+        } else if ($p === "+none") {
+            return $required ? null : "+none";
+        } else if ($p === "+pc" && !$required) {
+            return null;
+        }
+        return $p;
+    }
+
+    /** @param string $pfx
+     * @return string */
+    private static function legacy_perm_text(SettingValues $sv, $pfx) {
+        $type = $sv->base_parse_req("{$pfx}/type");
+        $tag = $type === "+" || $type === "-" ? trim($sv->vstr("{$pfx}/tag")) : "";
         if ($tag === "" || strcasecmp($tag, "all") === 0 || strcasecmp($tag, "any") === 0) {
             if ($type === "+") {
                 $type = "all";
@@ -352,24 +435,19 @@ class Track_SettingParser extends SettingParser {
                 $type = "all";
             }
         }
-
-        // check
-        if ($type === "" || $type === "all" || $type === "any") {
-            $pv = null;
-        } else if ($type === "none") {
-            $pv = Track::right_name_required($si->name1) ? null : "+none";
-        } else {
-            if (($t = $sv->tagger()->check_syntax($tag, Tagger::NOVALUE | Tagger::NOPRIVATE))) {
-                $pv = $type . $t;
-            } else {
-                $sv->error_at($pfx, $sv->tagger()->error_ftext());
-                $sv->error_at("{$pfx}/tag");
-                return;
-            }
+        if ($type === "+" || $type === "-") {
+            return "{$type}{$tag}";
         }
+        return $type === "none" ? "+none" : "all";
+    }
 
-        // store
-        if ($pv === null) {
+    private function _apply_req_perm(Si $si, SettingValues $sv) {
+        $pfx = $si->name0 . $si->name1;
+        $text = $sv->reqstr($pfx) ?? self::legacy_perm_text($sv, $pfx);
+        $pv = self::parse_perm_req($sv, $text, $si->name1, $error);
+        if ($pv === false) {
+            $sv->error_at($pfx, $error);
+        } else if ($pv === null) {
             unset($this->cur_trx->j->{$si->name1});
         } else {
             $this->cur_trx->j->{$si->name1} = $pv;
@@ -450,14 +528,19 @@ class Track_SettingParser extends SettingParser {
                     }
                 }
                 foreach ($tr->perm as $right => $p) {
-                    if ($p !== null
-                        && $p !== "+none"
-                        && ($right !== Track::VIEWPDF || $p !== $tr->perm[Track::VIEW])
-                        && !$conf->pc_tag_exists(substr($p, 1))
-                        && $tracks_interest) {
-                        $pn = Track::unparse_right($right);
+                    if ($p === null
+                        || $p === "+none"
+                        || ($right === Track::VIEWPDF && $p === $tr->perm[Track::VIEW])
+                        || !$tracks_interest) {
+                        continue;
+                    }
+                    $pn = Track::unparse_right($right);
+                    if (($uid = Track::perm_user_id($p)) > 0) {
+                        if (!$conf->pc_member_by_id($uid)) {
+                            $sv->warning_at("track/{$ctr}/perm/{$pn}", "<0>This permission names a user who is no longer on the PC.");
+                        }
+                    } else if (!$conf->pc_tag_exists(substr($p, 1))) {
                         $sv->warning_at("track/{$ctr}/perm/{$pn}", "<0>No PC member has tag ‘" . substr($p, 1) . "’. You might want to check your spelling.");
-                        $sv->warning_at("track/{$ctr}/perm/{$pn}/tag");
                     }
                 }
             }

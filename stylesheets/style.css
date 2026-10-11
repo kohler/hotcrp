@@ -1647,6 +1647,32 @@ select, .select {
 	opacity: 0.6;
 }
 
+.permsel-button {
+	position: relative;
+	min-width: 10em;
+	max-width: 100%;
+	padding-right: 1.5em;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.permsel-button::after {
+	content: "";
+	position: absolute;
+	top: 0.15em;
+	bottom: 0;
+	right: 0.5em;
+	width: 0.5em;
+	height: 0.5em;
+	margin-top: auto;
+	margin-bottom: auto;
+	pointer-events: none;
+	border-left: 0.3em solid transparent;
+	border-right: 0.3em solid transparent;
+	border-top: 0.5em solid var(--contrast-text);
+	opacity: 0.6;
+}
+
 /* Select embedded in running text: sized to its selected option, so the
    sentence closes up around it. A hidden sizer holds the selected option's
    text and is the only child in flow, so it alone establishes the width;
