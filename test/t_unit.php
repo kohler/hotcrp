@@ -2093,6 +2093,25 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
     }
 
+    function test_utf8_deaccent_table() {
+        xassert_eqq(UnicodeHelper::deaccent("Łódź Ærø Gúðrún ß ẞ"), "Lodz AEro Gudrun ss SS");
+        xassert_eqq(UnicodeHelper::deaccent("Işıl Ŧ ƀ ‐–"), "Isil T b --");
+        xassert_eqq(UnicodeHelper::deaccent("ｆｕｌｌ（ｗｉｄｔｈ）［ｘ］｛ｙ｝ ① ² ﬁ ㎒"), "full(width)[x]{y} 1 2 fi ㎒");
+        xassert_eqq(UnicodeHelper::deaccent("ᴬᴭ™ ǲ ŀ ´"), "AAETM Dz l ´");
+        xassert_eqq(UnicodeHelper::deaccent("pro\u{AD}cess Jean\u{A0}Dupont e\u{301}cole"), "process Jean Dupont ecole");
+        // non-Latin scripts and negated symbols are unchanged
+        xassert_eqq(UnicodeHelper::deaccent("Ἀθῆναι Ёлка カタカナ a≠b"), "Ἀθῆναι Ёлка カタカナ a≠b");
+        $do = UnicodeHelper::deaccent_offsets("a\u{AD}b é");
+        xassert_eqq($do->out, "ab e");
+        xassert_eqq($do->reverse(1), 3);
+        xassert_eqq($do->reverse(3), 5);
+        foreach (UTF8_DEACCENT_MAP as $k => $v) {
+            xassert_eqq(strcspn($k, UTF8_DEACCENT_LEAD), 0);
+            xassert(strlen($v) <= strlen($k));
+            xassert_eqq(UnicodeHelper::deaccent($v), $v);
+        }
+    }
+
     function test_utf16_to_utf8() {
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C"), "ABC");
         xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE\x0A"), "ABC😊");
