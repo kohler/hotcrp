@@ -171,8 +171,12 @@ class MentionLister {
                 $p = $tr->perm[Track::VIEW];
                 if ($p === null) {
                     return $conf->viewable_pc_members($user);
-                } else if ($p !== "+none"
-                           && $user->can_view_tag_somewhere(substr($p, 1))) {
+                } else if ($p === "+none") {
+                    continue;
+                }
+                $ch = $p[0];
+                if (($ch !== "+" && $ch !== "-")
+                    || $user->can_view_tag_somewhere(substr($p, 1))) {
                     $relevant_perm[] = $p;
                 }
             }

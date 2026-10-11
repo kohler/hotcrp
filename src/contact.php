@@ -1912,7 +1912,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     function has_permission($perm) {
         // other code assumes `has_permission(null)` is always true
         // XXX Should negative permissions ever apply to non-PC users?
-        return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
+        if (!$perm) {
+            return true;
+        }
+        $ch = $perm[0];
+        if ($ch === "+") {
+            return $this->has_tag(substr($perm, 1));
+        } else if ($ch === "-") {
+            return $this->isPC && !$this->has_tag(substr($perm, 1));
+        }
+        return (string) $this->contactXid === $perm;
     }
 
     /** @param string $xright
@@ -4242,23 +4251,21 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return ($this->privChair
                 || ($this->isPC
                     && $this->check_xtrack("viewtracker")
-                    && (!$tracker_json
-                        || ($tracker_json->visibility ?? "") === ""
-                        || ($this->has_tag(substr($tracker_json->visibility, 1))
-                            === ($tracker_json->visibility[0] === "+")))))
+                    && (($tracker_json->visibility ?? null) === null
+                        || $this->has_permission($tracker_json->visibility))))
             && $this->scope_allows(TS::S_OTH_READ);
     }
 
     /** @return bool */
     function include_tracker_conflict($tracker_json = null) {
-        return $this->isPC
-            && (!($perm = $this->conf->xtrack_permission("viewtracker"))
-                || $perm === "+none"
-                || $this->has_permission($perm))
-            && (!$tracker_json
-                || ($vis = $tracker_json->visibility ?? "") === ""
-                || $vis === "+none"
-                || ($this->has_tag(substr($vis, 1)) === ($vis[0] === "+")));
+        if (!$this->isPC) {
+            return false;
+        }
+        $perm = $this->conf->xtrack_permission("viewtracker");
+        $vis = $tracker_json->visibility ?? null;
+        return $perm === "+none"
+            || $vis === "+none"
+            || ($this->has_permission($perm) && $this->has_permission($vis));
     }
 
     /** @return bool */
