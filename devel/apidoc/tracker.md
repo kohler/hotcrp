@@ -106,12 +106,13 @@ Trackers are configured as a numbered list of structured parameters
 
 * `id`—the tracker’s ID, or `new` to create one.
 * `name`, `logo`—display label and logo.
-* `visibility`, `visibility_type`—who may see the tracker. `visibility_type` is
-  `all` (the whole PC), `+` or `-` (PC members with or without the tag given
-  in `visibility`), or `none` (administrators only). Alternatively, give
-  `visibility` alone as `all`, `+TAG`, `-TAG`, or `none`. If both are empty
-  or absent, a new tracker gets the default visibility for its submissions’
-  tracks, and an existing tracker keeps its visibility.
+* `visibility`—who may see the tracker: `all` (the whole PC), `+TAG` or
+  `-TAG` (PC members with or without a tag), `none` or `+none`
+  (administrators only), or a single PC member, given by user ID or email.
+  If empty or absent, a new tracker gets the default visibility for its
+  submissions’ tracks, and an existing tracker keeps its visibility. The
+  older `visibility_type` field, which is `all`, `+`, `-`, or `none`,
+  combines with a tag in `visibility`.
 * `hideconflicts`—whether to hide conflicted submissions (paired with a
   `has_tr/<n>/hideconflicts` presence marker).
 * `listinfo`—the encoded submission list the tracker walks.

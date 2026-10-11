@@ -1763,9 +1763,6 @@ class UnicodeHelper {
         "ﬀ" => "ff", "ﬁ" => "fi", "ﬂ" => "fl", "ﬃ" => "ffi", "ﬄ" => "ffl"
     ];
 
-    /** @var array<string,Transliterator|false> */
-    private static $search_tr = [];
-
     /** @param string $str
      * @return ?string */
     static function maybe_deaccent($str) {

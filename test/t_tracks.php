@@ -275,6 +275,133 @@ class Tracks_Tester {
         $this->conf->save_refresh_setting("tracks", null);
     }
 
+    function test_parse_perm_text() {
+        $uid = (string) $this->u_estrin->contactId;
+        foreach ([
+            ["", ""], [null, ""], ["all", ""], ["ALL", ""],
+            ["+none", "+none"], ["+NONE", "+none"],
+            ["+red", "+red"], ["-red", "-red"], [" +red ", "+red"],
+            ["estrin@usc.edu", $uid], ["ESTRIN@usc.edu", $uid], [$uid, $uid]
+        ] as $x) {
+            $p = Track::parse_perm_text($x[0], $this->u_chair, $error);
+            xassert_eqq($p, $x[1]);
+            xassert_eqq($error, null);
+        }
+        foreach (["none", "red", "#red", "-#red", "+#red", "- red", "PC", "+", "-",
+                  "Deborah Estrin <estrin@usc.edu>", "<estrin@usc.edu>",
+                  "Deborah Estrin", "estrin", "nobody@nowhere.edu",
+                  (string) $this->u_nobody->contactId,
+                  (string) $this->u_nobody->contactId . "999999"] as $s) {
+            xassert_eqq(Track::parse_perm_text($s, $this->u_chair, $error), false);
+            xassert(is_string($error));
+        }
+    }
+
+    function test_unparse_perm() {
+        $uid = (string) $this->u_estrin->contactId;
+        xassert_eqq(Track_SettingParser::unparse_perm_value(null), "all");
+        xassert_eqq(Track_SettingParser::unparse_perm_value("+pc"), "all");
+        xassert_eqq(Track_SettingParser::unparse_perm_value("none"), "+none");
+        xassert_eqq(Track_SettingParser::unparse_perm_value("-red"), "-red");
+        xassert_eqq(Track_SettingParser::unparse_perm_value($uid), $uid);
+        xassert_eqq(Track_SettingParser::unparse_perm_text(null, $this->conf), "all");
+        xassert_eqq(Track_SettingParser::unparse_perm_text("+none", $this->conf), "none");
+        xassert_eqq(Track_SettingParser::unparse_perm_text("+red", $this->conf), "#red");
+        xassert_eqq(Track_SettingParser::unparse_perm_text("-red", $this->conf), "-#red");
+        xassert_eqq(Track_SettingParser::unparse_perm_text($uid, $this->conf), "Deborah Estrin <estrin@usc.edu>");
+        xassert_eqq(Track_SettingParser::unparse_perm_description(null, $this->conf), "Whole PC");
+        xassert_eqq(Track_SettingParser::unparse_perm_description("+none", $this->conf), "Administrators only");
+        xassert_eqq(Track_SettingParser::unparse_perm_description("+red", $this->conf), "PC tagged #red");
+        xassert_eqq(Track_SettingParser::unparse_perm_description("-red", $this->conf), "PC not tagged #red");
+        xassert_eqq(Track_SettingParser::unparse_perm_description($uid, $this->conf), "Deborah Estrin");
+    }
+
+    function test_user_permission_settings() {
+        $uid = $this->u_estrin->contactId;
+
+        // a single PC member, named by ID or email, is stored by ID
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1, "track/1/id" => "new", "track/1/tag" => "red",
+            "track/1/perm/view" => (string) $uid,
+            "track/1/perm/admin" => "estrin@usc.edu",
+            "track/1/perm/viewrev" => "-blue"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->track_permission("red", Track::VIEW), (string) $uid);
+        xassert_eqq($this->conf->track_permission("red", Track::ADMIN), (string) $uid);
+        xassert_eqq($this->conf->track_permission("red", Track::VIEWREV), "-blue");
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert($this->u_estrin->can_view_paper($p1));
+        xassert($this->u_estrin->allow_admin($p1));
+        $other = null;
+        foreach ($this->conf->pc_members() as $u) {
+            if ($u !== $this->u_estrin
+                && !$u->privChair
+                && !$p1->has_reviewer($u)
+                && !$p1->has_conflict($u)) {
+                $other = $u;
+                break;
+            }
+        }
+        xassert(!$other->can_view_paper($p1));
+        xassert(!$other->allow_admin($p1));
+
+        // JSON settings name the member by email
+        $sv = new SettingValues($this->u_chair);
+        $tjs = array_values(array_filter($sv->all_jsonv()->track, function ($t) {
+            return $t->tag === "red";
+        }));
+        xassert_eqq(count($tjs), 1);
+        xassert_eqq($tjs[0]->perm->view ?? null, "estrin@usc.edu");
+        xassert_eqq($tjs[0]->perm->viewrev ?? null, "-blue");
+
+        // the settings page summarizes the permission, shows its entry text,
+        // and submits its value
+        $sv = new SettingValues($this->u_chair);
+        ob_start();
+        $sv->print("tracks");
+        $out = ob_get_clean();
+        xassert_str_contains($out, ">Deborah Estrin</button>");
+        xassert_str_contains($out, "value=\"Deborah Estrin &lt;estrin@usc.edu&gt;\"");
+        xassert_str_contains($out, ">PC not tagged #blue</button>");
+        xassert(preg_match('/<input type="hidden" name="track\/1\/perm\/view" value="' . $uid . '"/', $out));
+        xassert(preg_match('/<input type="hidden" name="track\/1\/perm\/viewrev" value="-blue"/', $out));
+
+        // whole PC, administrators only, and errors
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1, "track/1/id" => "red",
+            "track/1/perm/view" => "all", "track/1/perm/admin" => "all",
+            "track/1/perm/viewrev" => "none"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->track_permission("red", Track::VIEW), null);
+        xassert_eqq($this->conf->track_permission("red", Track::ADMIN), "+pc");
+        xassert_eqq($this->conf->track_permission("red", Track::VIEWREV), "+none");
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1, "track/1/id" => "red",
+            "track/1/perm/view" => "nobody@nowhere.edu"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "not found");
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1, "track/1/id" => "red",
+            "track/1/perm/view" => "Deborah Estrin"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "should be");
+
+        // old type/tag request form still works
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_track" => 1, "track/1/id" => "red",
+            "has_track/1/perm/view" => 1,
+            "track/1/perm/view/type" => "-", "track/1/perm/view/tag" => "blue"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->track_permission("red", Track::VIEW), "-blue");
+
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
     function finalize() {
         $this->conf->save_refresh_setting("tracks", null);
         xassert_assign($this->u_chair, "paper,tag\nall,-red -blue\n", true);

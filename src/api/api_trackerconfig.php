@@ -12,8 +12,6 @@ class TrackerConfig_API {
     /** @var Qrequest
      * @readonly */
     public $qreq;
-    /** @var Tagger */
-    private $tagger;
     /** @var list<MessageItem> */
     private $ml = [];
 
@@ -21,7 +19,6 @@ class TrackerConfig_API {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
-        $this->tagger = new Tagger($user);
     }
 
     /** @param int $i
@@ -38,42 +35,34 @@ class TrackerConfig_API {
         $vis = trim($qreq["tr/{$i}/visibility"] ?? "");
         if (isset($qreq["tr/{$i}/visibility_type"])) {
             $vistype = strtolower(trim($qreq["tr/{$i}/visibility_type"]));
-        } else if ($vis !== "" && ($vis[0] === "+" || $vis[0] === "-")) {
-            $vistype = $vis[0];
-            $vis = ltrim(substr($vis, 1));
-        } else {
-            // bare `all`, `pc`, or `none`
-            $vistype = strtolower($vis);
-            $vis = "";
+            if ($vistype === "+" || $vistype === "-") {
+                $vis = $vistype . ltrim($vis, "#");
+            } else if ($vistype !== "") {
+                $vis = $vistype;
+            }
         }
-        if (str_starts_with($vis, "#")) {
-            $vis = substr($vis, 1);
-        }
-        if ($vistype === "" && $vis === "") {
+        if ($vis === "") {
             // unspecified: new trackers get the default visibility
             return null;
+        } else if (strcasecmp($vis, "pc") === 0) {
+            $vis = "all";
+        } else if (strcasecmp($vis, "none") === 0) {
+            $vis = "+none";
         }
 
-        $vperm = "";
-        if ($vistype === "none"
-            || ($vistype === "+" && strcasecmp($vis, "none") === 0)) {
-            $vperm = "+none";
-        } else if ($vistype === "all"
-                   || $vistype === "pc"
-                   || ($vistype === "+" && strcasecmp($vis, "pc") === 0)) {
-            // $vperm === ""
-        } else if ($vistype !== "+" && $vistype !== "-") {
-            $this->error_at_sfx($i, "visibility", "<0>Invalid visibility");
-        } else if ($vis === ""
-                   || strcasecmp($vis, "pc") === 0) {
+        $vperm = Track::parse_perm_text($vis, $this->user, $error);
+        if ($vperm === false) {
+            $this->error_at_sfx($i, "visibility", $error);
+            return "";
+        } else if ($vperm === "+pc") {
+            $vperm = "";
+        } else if ($vperm === "-pc") {
             $this->error_at_sfx($i, "visibility", "<0>PC tag required");
-        } else if (($vt = $this->tagger->check_syntax($vis, Tagger::NOPRIVATE | Tagger::NOVALUE))) {
-            if (!$this->conf->pc_tag_exists($vt)) {
-                $this->error_at_sfx($i, "visibility", "<0>Unknown PC tag");
-            }
-            $vperm = $vistype . $vt;
-        } else {
-            $this->error_at_sfx($i, "visibility", $this->tagger->error_ftext(true));
+        } else if ($vperm !== ""
+                   && $vperm !== "+none"
+                   && ($vperm[0] === "+" || $vperm[0] === "-")
+                   && !$this->conf->pc_tag_exists(substr($vperm, 1))) {
+            $this->error_at_sfx($i, "visibility", "<0>Unknown PC tag");
         }
         if ($vperm !== ""
             && !$this->user->privChair

@@ -282,12 +282,21 @@ class MeetingTracker_Tester {
             [["visibility" => "none"], "+none"],
             [["visibility" => "", "visibility_type" => "none"], "+none"],
             [["visibility" => "-red"], "-red"],
-            [["visibility" => "red", "visibility_type" => "+"], "+red"]
+            [["visibility" => "red", "visibility_type" => "+"], "+red"],
+            [["visibility" => "#red", "visibility_type" => "-"], "-red"],
+            [["visibility" => "estrin@usc.edu"], (string) $this->u_estrin->contactId],
+            [["visibility" => (string) $this->u_estrin->contactId], (string) $this->u_estrin->contactId]
         ] as $i => $x) {
             $j = $this->trackerconfig($this->u_chair, $new + $x[0]);
             xassert($j->ok);
             $trs[] = $j->new_trackerid;
             xassert_eqq($this->tracker_visibility($j->new_trackerid), $x[1]);
+        }
+
+        // visibility must be in canonical form
+        foreach (["red", "#red", "Deborah Estrin", "Deborah Estrin <estrin@usc.edu>"] as $vis) {
+            $j = $this->trackerconfig($this->u_chair, $new + ["visibility" => $vis]);
+            xassert(!$j->ok);
         }
 
         // a whole-PC default is stored as empty visibility
