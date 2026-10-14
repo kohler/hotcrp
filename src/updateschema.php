@@ -782,6 +782,29 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    /** @param string $table
+     * @return true */
+    private function v333_refold_unaccented_name($table) {
+        $this->conf->qe("lock tables {$table} write");
+        $updates = [];
+        $result = $this->conf->qe("select * from {$table}");
+        while (($u = Contact::fetch($result, $this->conf))) {
+            $n = $u->db_searchable_name();
+            if ($n !== $u->unaccentedName) {
+                $updates[] = [$n, $u->contactId];
+            }
+        }
+        Dbl::free($result);
+
+        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
+        foreach ($updates as $nu) {
+            $cleanf("update {$table} set unaccentedName=? where contactId=?", $nu[0], $nu[1]);
+        }
+        $cleanf(null);
+        $this->conf->qe("unlock tables");
+        return true;
+    }
+
     /** @return bool */
     private function v260_paperreview_fields() {
         if ($this->check_column_exists("PaperReview", "reviewFormat")
@@ -3397,6 +3420,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 332
             && $this->v332_listed_unlisted_pc()) {
             $conf->update_schema_version(333);
+        }
+        if ($conf->sversion === 333
+            && $this->v333_refold_unaccented_name("ContactInfo")
+            && $this->v333_refold_unaccented_name("DeletedContactInfo")) {
+            $conf->update_schema_version(334);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
