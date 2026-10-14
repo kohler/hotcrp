@@ -369,6 +369,4 @@ interface FormatChecker {
     /** @return bool */
     function append_report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc,
                            MessageSet $ms);
-    /** @return ?string */
-    function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc);
 }

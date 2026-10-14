@@ -44,6 +44,18 @@ class MessageItem implements JsonSerializable {
         }
     }
 
+    /** @return $this */
+    private function _f() {
+        if ($this->fmessage === null) {
+            $this->fmessage = $this->message;
+            if ($this->args === null) {
+                $this->args = [];
+            }
+            $this->message = null;
+        }
+        return $this;
+    }
+
     /** @param ?string $item_class
      * @return $this */
     function set_item_class($item_class) {
@@ -266,10 +278,7 @@ class MessageItem implements JsonSerializable {
     /** @param ?string $msg
      * @return MessageItem */
     static function fplain($msg, ...$args) {
-        if (empty($args)) {
-            $args[] = FmtArg::blank();
-        }
-        return new MessageItem(MessageSet::PLAIN, null, $msg, ...$args);
+        return (new MessageItem(MessageSet::PLAIN, null, $msg, ...$args))->_f();
     }
 
     /** @param ?string $msg
@@ -645,6 +654,14 @@ class MessageSet {
     /** @return bool */
     function has_error() {
         return $this->problem_status >= self::ERROR;
+    }
+    /** @return bool */
+    function has_warning() {
+        foreach ($this->msgs as $mi) {
+            if ($mi->status === self::WARNING)
+                return true;
+        }
+        return false;
     }
     /** @return bool */
     function has_success() {
