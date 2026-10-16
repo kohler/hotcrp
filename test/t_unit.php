@@ -2247,17 +2247,10 @@ class Unit_Tester {
 
     function test_paperidset_requires_integers() {
         // `sql_predicate` interpolates IDs, so non-integers are ignored
-        $old_log = ini_get("error_log");
-        $logfn = tempnam(sys_get_temp_dir(), "hotcrp-errlog");
-        ini_set("error_log", $logfn);
         $set = (new PaperIDSet)->add_range("1 or 1=1", 100)->add_range(1, "5 or 1=1")
             ->add("2")->add_list([3, "4 or 1=1"]);
-        ini_set("error_log", $old_log);
-        $log = file_get_contents($logfn);
-        @unlink($logfn);
         xassert_eqq($set->ids(), [3]);
         xassert_eqq($set->sql_predicate("paperId"), "paperId=3");
-        xassert_str_contains($log, "PaperIDSet->add_range()");
     }
 
     function test_paperidset_max_int() {

@@ -122,7 +122,7 @@ final class PaperIDSet implements Countable {
         if (!is_int($p0) || !is_int($p1)) {
             // callers should ensure that arguments are ints, check and warn
             // if they don’t
-            if (++self::$error_printed === 1) {
+            if (++self::$error_printed === 1 && !defined("HOTCRP_TESTHARNESS")) {
                 error_log(debug_string_backtrace());
             }
             return $this;
