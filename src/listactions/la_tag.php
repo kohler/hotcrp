@@ -80,24 +80,20 @@ class Tag_ListAction extends ListAction {
             $act = "";
         }
 
-        $tagreq = trim(str_replace(",", " ", (string) $qreq->tag));
-        $tags = preg_split('/\s+/', $tagreq);
+        $tagreq = trim((string) $qreq->tag);
+        $tags = Tag_AssignmentParser::split_tag_assignments($tagreq);
         $papers = $ssel->paper_set($user);
 
-        if ($act === "da") {
-            $otags = $tags;
-            foreach ($otags as $t) {
-                $tags[] = "all~" . preg_replace('/\A.*~([^~]+)\z/', '$1', $t);
-            }
-            $act = "d";
-        } else if ($act === "sor" || $act === "sosr") {
+        if ($act === "sor" || $act === "sosr") {
             $papers->shuffle();
         }
 
         $x = ["action,paper,tag\n"];
         if (str_starts_with($act, "s")) {
             foreach ($tags as $t) {
-                $x[] = "cleartag,all," . Tagger::tv_tag($t) . "\n";
+                if (($m = Tag_AssignmentParser::unpack_tag_assignment($t)) !== null
+                    && ($m[4] === "" || $m[4] === "#"))
+                    $x[] = "cleartag,all," . CsvGenerator::quote($m[1] . $m[2] . $m[3]) . "\n";
             }
         }
         if ($act === "s" || $act === "a") {
@@ -114,16 +110,16 @@ class Tag_ListAction extends ListAction {
 
         $assignset = new AssignmentSet($user);
         $assignset->set_overrides(Contact::OVERRIDE_CONFLICT); // i.e., not other overrides
-        if ($tagreq === "" || $act === "") {
+        if (empty($tags) || $act === "") {
             if ($act === "") {
                 $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter error" : "<0>Parameter missing"));
             }
-            if ($tagreq === "") {
+            if (empty($tags)) {
                 $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Tags required"));
             }
         } else if (!$papers->is_empty() && $action) {
             foreach ($papers as $p) {
-                $x[] = "{$action},{$p->paperId}," . join(" ", $tags) . "\n";
+                $x[] = "{$action},{$p->paperId}," . CsvGenerator::quote(join(" ", $tags)) . "\n";
             }
             $assignset->parse(join("", $x));
         } else if (!$papers->is_empty() && $act === "cr" && $user->privChair) {

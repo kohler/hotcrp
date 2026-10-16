@@ -313,22 +313,40 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
     }
 
-    function set_req($req, AssignmentState $state) {
-        $this->pieces = [];
-        $sp = new SearchParser($req["tag"] ?? "");
-        $ok = true;
-        $any = false;
+    /** @param ?string $tag
+     * @return list<string> */
+    static function split_tag_assignments($tag) {
+        $sp = new SearchParser($tag ?? "");
+        $pieces = [];
         while (true) {
             $sp->skip_span(" ,;");
             if ($sp->is_empty()) {
                 break;
             }
-            $any = true;
-            $ok = $this->add_piece($sp->shift_balanced_parens(" ,;"), $req, $state) && $ok;
+            $pieces[] = $sp->shift_balanced_parens(" ,;");
         }
-        if (!$any && $ok) {
+        return $pieces;
+    }
+
+    /** @param string $t
+     * @return ?array{string,string,string,string,string,string} */
+    static function unpack_tag_assignment($t) {
+        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9@*_:.\/]*+(?:\?|!(?!=))*+)(\z|#|#?+[=<>]=?+|#?+!=|#?+≠|#?+≤|#?+≥)(.*)\z/', $t, $m)) {
+            return null;
+        }
+        return $m;
+    }
+
+    function set_req($req, AssignmentState $state) {
+        $this->pieces = [];
+        $tags = self::split_tag_assignments($req["tag"] ?? "");
+        if (empty($tags)) {
             $state->error("<0>Tag required");
-            $ok = false;
+            return false;
+        }
+        $ok = true;
+        foreach ($tags as $t) {
+            $ok = $this->add_piece($t, $req, $state) && $ok;
         }
         return $ok;
     }
@@ -336,7 +354,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     /** @param CsvRow $req */
     private function add_piece($tag, $req, AssignmentState $state) {
         // parse tag into parts
-        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9@*_:.\/]*+(?:\?|!(?!=))*+)(\z|#|#?+[=<>]=?+|#?+!=|#?+≠|#?+≤|#?+≥)(.*)\z/', $tag, $m)
+        if (($m = self::unpack_tag_assignment($tag)) === null
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;

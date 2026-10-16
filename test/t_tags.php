@@ -894,13 +894,7 @@ seqnexttag,6,altorder\n");
             $aset = (new AssignmentSet($this->u_varghese))->parse("paper,action,tag\n{$pt[0]},tag,{$pt[1]}\n");
             xassert(!$aset->execute());
             $feedback[] = str_replace("#{$pt[0]}", "#N", $aset->full_feedback_text());
-            $qreq = TestQreq::post_page("api/searchaction", ["p" => (string) $pt[0], "tag" => $pt[1]])
-                ->set_user($this->u_varghese);
-            $ssel = SearchSelection::make_papers($qreq, $this->u_varghese);
-            $la = ListAction::lookup("tag/add", $this->u_varghese, $qreq, $ssel, ListAction::F_API);
-            xassert($la instanceof ListAction);
-            $jr = $la->run($this->u_varghese, $qreq, $ssel);
-            xassert($jr instanceof JsonResult);
+            $jr = $this->run_tag_list_action($this->u_varghese, "tag/add", (string) $pt[0], $pt[1]);
             xassert_eqq($jr->content["ok"], false);
             xassert_eqq($jr->status, 403);
             $feedback[] = str_replace("#{$pt[0]}", "#N", json_encode($jr->content["message_list"] ?? null));
@@ -1433,13 +1427,7 @@ seqnexttag,6,altorder\n");
         xassert_assign($this->u_varghese, "paper,action,tag\n{$a},tag,~crank#1\n{$b},tag,~crank#2\n{$c},tag,~crank#3\n");
         xassert_assign($this->u_floyd, "paper,action,tag\n{$a},tag,~crank#1\n{$c},tag,~crank#2\n{$b},tag,~crank#3\n");
 
-        $qreq = TestQreq::post_page("api/searchaction", ["p" => join(" ", $pids), "tag" => "crank"])
-            ->set_user($this->u_chair);
-        $ssel = SearchSelection::make_papers($qreq, $this->u_chair);
-        $la = ListAction::lookup("tag/calculate_rank", $this->u_chair, $qreq, $ssel, ListAction::F_API);
-        xassert($la instanceof ListAction);
-        $jr = $la->run($this->u_chair, $qreq, $ssel);
-        xassert($jr instanceof JsonResult);
+        $jr = $this->run_tag_list_action($this->u_chair, "tag/calculate_rank", join(" ", $pids), "crank");
         xassert_eqq($jr->content["ok"], true);
 
         // both rank $a first, so it ranks first
@@ -1493,5 +1481,53 @@ seqnexttag,6,altorder\n");
         xassert_eqq($srch->alternate_query(), "#huh?");
 
         xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,huh?\nall,cleartag,wow!\nall,cleartag,what?!\n");
+    }
+
+    /** @param string $action
+     * @param string $p
+     * @param string $tag
+     * @return JsonResult */
+    private function run_tag_list_action(Contact $user, $action, $p, $tag) {
+        $qreq = TestQreq::post_page("api/searchaction", ["p" => $p, "tag" => $tag])
+            ->set_user($user);
+        $ssel = SearchSelection::make_papers($qreq, $user);
+        $la = ListAction::lookup($action, $user, $qreq, $ssel, ListAction::F_API);
+        xassert($la instanceof ListAction);
+        $jr = $la->run($user, $qreq, $ssel);
+        xassert($jr instanceof JsonResult);
+        return $jr;
+    }
+
+    function test_define_list_action_quoted_tags() {
+        // a quoted tag list is a single invalid tag, so nothing changes
+        xassert_assign($this->u_chair, "paper,tag\n3,keepme\n");
+        foreach (["tag/define", "tag/define_order"] as $action) {
+            foreach (["\"qa qb\"" => false, "\"qa\nall\"" => false, "qa qb" => true] as $tag => $ok) {
+                $jr = $this->run_tag_list_action($this->u_chair, $action, "1 2", $tag);
+                xassert_eqq($jr->content["ok"], $ok);
+                xassert_eqq($this->conf->checked_paper_by_id(2)->has_tag("qa"), $ok);
+                xassert($this->conf->checked_paper_by_id(3)->has_tag("keepme"));
+            }
+            xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,qa qb\n");
+        }
+        xassert_assign($this->u_chair, "paper,action,tag\n3,cleartag,keepme\n");
+    }
+
+    function test_tag_list_action_formula_values() {
+        // tag values may be formulas containing spaces and commas
+        xassert_assign($this->u_chair, "paper,tag\n3,qa#7\n");
+        $jr = $this->run_tag_list_action($this->u_chair, "tag/define", "1 2", "qa#(1 + 2), qb#(3 * 4)");
+        xassert_eqq($jr->content["ok"], true);
+        $prow = $this->conf->checked_paper_by_id(2);
+        xassert_eqq($prow->tag_value("qa"), 3.0);
+        xassert_eqq($prow->tag_value("qb"), 12.0);
+        xassert(!$this->conf->checked_paper_by_id(3)->has_tag("qa"));
+
+        $jr = $this->run_tag_list_action($this->u_chair, "tag/add", "1 2", "qc#greatest(1,5)");
+        xassert_eqq($jr->content["ok"], true);
+        xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("qc"), 5.0);
+        xassert_eqq($this->conf->checked_paper_by_id(2)->tag_value("qa"), 3.0);
+
+        xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,qa qb qc\n");
     }
 }
