@@ -1740,9 +1740,8 @@ class PaperSearch extends MessageSet {
         } else if (strlen($this->q) <= 24
                    || $this->main_term() instanceof Tag_SearchTerm) {
             return "{$this->q} in {$lx}";
-        } else {
-            return "{$lx} search";
         }
+        return "{$lx} search";
     }
 
     /** @param string $listid
@@ -1977,7 +1976,7 @@ class PaperSearch extends MessageSet {
             }
             return Ht::select("t", $sel_opt, $selected, $extra);
         }
-        $t = self::limit_description($conf, $selected);
+        $t = Ftext::as(5, self::limit_description($conf, $selected), 0);
         if (isset($extra["id"])) {
             $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
         }

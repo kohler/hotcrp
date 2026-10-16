@@ -15,6 +15,21 @@ class DecisionSet implements IteratorAggregate, Countable {
     private $_nonexistent_id = -2;
 
 
+    /** @var array<string,int> */
+    private const SPECIALS = [
+        "yes" => DecisionInfo::CAT_YES,
+        "no" => DecisionInfo::CM_NO,
+        "maybe" => DecisionInfo::CAT_OTHER,
+        "?" => DecisionInfo::CAT_OTHER,
+        "any" => DecisionInfo::CX_ANY,
+        "none" => DecisionInfo::CX_NONE,
+        "unknown" => DecisionInfo::CX_NONE,
+        "unspecified" => DecisionInfo::CX_NONE,
+        "undecided" => DecisionInfo::CX_NONE,
+        "standard" => DecisionInfo::CM_STD
+    ];
+
+
     /** @suppress PhanAccessReadOnlyProperty */
     function __construct(Conf $conf, $j = null) {
         if (is_object($j)) {
@@ -85,7 +100,7 @@ class DecisionSet implements IteratorAggregate, Countable {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "") {
             return "Empty decision name";
-        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?|standard)\z/i', $dname)) {
+        } else if (isset(self::SPECIALS[strtolower($dname)])) {
             return "Decision name “{$dname}” is reserved";
         }
         return false;
@@ -200,19 +215,13 @@ class DecisionSet implements IteratorAggregate, Countable {
             if ($word === $dinfo->name)
                 return [$dinfo->id];
         }
-        if (strcasecmp($word, "yes") === 0) {
-            return $this->cat_ids(DecisionInfo::CAT_YES);
-        } else if (strcasecmp($word, "no") === 0) {
-            return $this->cat_ids(DecisionInfo::CM_NO);
-        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
-            return $this->cat_ids(DecisionInfo::CAT_OTHER);
-        } else if (strcasecmp($word, "standard") === 0) {
-            if (!$this->_has_desk_reject) {
-                return $this->ids();
+        if (($sv = self::SPECIALS[strtolower($word)] ?? null) !== null) {
+            if ($sv === DecisionInfo::CX_ANY) {
+                return array_values(array_diff($this->ids(), [0]));
+            } else if ($sv === DecisionInfo::CX_NONE) {
+                return [0];
             }
-            return $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES | DecisionInfo::CAT_STDREJECT);
-        } else if (strcasecmp($word, "any") === 0) {
-            return array_values(array_diff($this->ids(), [0]));
+            return $this->cat_ids($sv);
         }
         return $this->abbrev_matcher()->find_all($word);
     }
@@ -228,19 +237,21 @@ class DecisionSet implements IteratorAggregate, Countable {
             if ($word === $dinfo->name)
                 return "={$dinfo->id}";
         }
-        if (strcasecmp($word, "yes") === 0) {
-            return ">0";
-        } else if (strcasecmp($word, "no") === 0) {
-            return $this->_has_other ? $this->cat_ids(DecisionInfo::CM_NO) : "<0";
-        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
-            return $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
-        } else if (strcasecmp($word, "standard") === 0) {
-            if (!$this->_has_desk_reject) {
+        if (($sv = self::SPECIALS[strtolower($word)] ?? null) !== null) {
+            if ($sv === DecisionInfo::CX_ANY) {
+                return "!=0";
+            } else if ($sv === DecisionInfo::CX_NONE) {
+                return "=0";
+            } else if ($sv === DecisionInfo::CAT_YES) {
+                return ">0";
+            } else if ($sv === DecisionInfo::CM_STD && !$this->_has_desk_reject) {
                 return "!={$this->_nonexistent_id}";
+            } else if ($sv === DecisionInfo::CM_NO && !$this->_has_other) {
+                return "<0";
+            } else if ($sv === DecisionInfo::CAT_OTHER && !$this->_has_other) {
+                return "=0";
             }
-            return $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES | DecisionInfo::CAT_STDREJECT);
-        } else if (strcasecmp($word, "any") === 0) {
-            return "!=0";
+            return $this->cat_ids($sv);
         }
         return $this->abbrev_matcher()->find_all($word);
     }
@@ -250,6 +261,9 @@ class DecisionSet implements IteratorAggregate, Countable {
     function sqlexpr($word) {
         $compar = $this->matchexpr($word);
         if (is_string($compar)) {
+            if ($compar === "!={$this->_nonexistent_id}") {
+                return "true";
+            }
             return "outcome{$compar}";
         } else if (empty($compar)) {
             return "false";

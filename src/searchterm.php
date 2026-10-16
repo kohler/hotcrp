@@ -1270,7 +1270,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     /* NB all named_limits must equal themselves when urlencoded */
     /** @var array<string,string|array{string,string}> */
-    static public $reqtype_map = [
+    private const REQTYPE_MAP = [
         "a" => ["a", "author"],
         "acc" => "accepted",
         "accepted" => "accepted",
@@ -1342,7 +1342,7 @@ class Limit_SearchTerm extends SearchTerm {
     static function canonical_names(Conf $conf, $limit) {
         if ($limit === null) {
             return null;
-        } else if (($rt = self::$reqtype_map[$limit] ?? null) !== null) {
+        } else if (($rt = self::REQTYPE_MAP[$limit] ?? null) !== null) {
             return is_string($rt) ? [$rt, $rt] : $rt;
         } else if (str_starts_with($limit, "dec:")
                    && count($conf->decision_set()->match(SearchWord::unquote(substr($limit, 4)))) > 0) {

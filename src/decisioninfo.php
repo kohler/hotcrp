@@ -28,6 +28,9 @@ class DecisionInfo {
     const CAT_DESKREJECT = 4;
     const CAT_OTHER = 8;
     const CM_NO = 6;
+    const CM_STD = 0xB;
+    const CX_ANY = -1;
+    const CX_NONE = 0;
     // see also DecisionSet::matchexpr
 
 

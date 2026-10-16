@@ -2364,7 +2364,7 @@ final class PaperList extends MessageSet {
             $m = "No matches";
             if (!in_array($this->search->limit(), ["s", "all", "active", "viewable"], true)) {
                 $ld = PaperSearch::limit_description($this->conf, $this->search->limit(), new FmtArg("full", true), new FmtArg("lcfirst", true));
-                $m .= " in " . lcfirst(Ftext::as(0, $ld, 0));
+                $m .= " in " . lcfirst(Ftext::as(5, $ld, 0));
             }
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
