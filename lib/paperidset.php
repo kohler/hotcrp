@@ -109,6 +109,8 @@ final class PaperIDSet implements Countable {
     /** @var ?bool */
     private $sqlexpr_precise;
 
+    static private $error_printed = 0;
+
     /** Add the IDs from `$p0` through `$p1`, inclusive. If `$p0 > $p1`,
      * the IDs are added in descending order. `$explicit` marks IDs the user
      * named individually rather than as part of a range.
@@ -117,6 +119,14 @@ final class PaperIDSet implements Countable {
      * @param bool $explicit
      * @return $this */
     function add_range($p0, $p1, $explicit = false) {
+        if (!is_int($p0) || !is_int($p1)) {
+            // callers should ensure that arguments are ints, check and warn
+            // if they don’t
+            if (++self::$error_printed === 1) {
+                error_log(debug_string_backtrace());
+            }
+            return $this;
+        }
         $rev = $p0 > $p1;
         if ($rev) {
             [$p0, $p1] = [$p1, $p0];

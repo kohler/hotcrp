@@ -1514,6 +1514,42 @@ class Search_Tester {
         xassert_eqq($pids, $odd_pids);
     }
 
+    function test_selection_range_requires_integers() {
+        // request range pairs are strings; only integer pairs are ranges
+        $qreq = TestQreq::get()->set_req("p", [["1 or 1=1", "100"]]);
+        $ssel = SearchSelection::make_papers($qreq, $this->u_root);
+        xassert($ssel->is_empty());
+        xassert_eqq($ssel->id_set()->sql_predicate("Paper.paperId"), "false");
+        $qreq = TestQreq::get()->set_req("p", [["2", "4"], "7", ["a" => 1, "b" => 2]]);
+        $ssel = SearchSelection::make_papers($qreq, $this->u_root);
+        xassert_eqq($ssel->selection(), [7]);
+        $ssel = SearchSelection::make_raw($qreq);
+        xassert_eqq($ssel->selection(), [7]);
+        $ssel = new SearchSelection([[2, 4], 7]);
+        xassert_eqq($ssel->selection(), [2, 3, 4, 7]);
+    }
+
+    function test_paper_set_large_list_requires_integers() {
+        // a `paperId` list longer than 2000 entries becomes a PaperIDSet,
+        // whose SQL predicate interpolates IDs; non-integers are dropped
+        $old_log = ini_get("error_log");
+        $logfn = tempnam(sys_get_temp_dir(), "hotcrp-errlog");
+        ini_set("error_log", $logfn);
+        $nerrors = Dbl::$nerrors;
+        $ids = array_fill(0, 2001, "1 or 1=1");
+        $ids[] = "10 or 1=1";
+        $ps = $this->conf->paper_set(["paperId" => $ids], $this->u_root);
+        xassert_eqq(Dbl::$nerrors, $nerrors);
+        xassert_eqq($ps->paper_ids(), []);
+        ini_set("error_log", $old_log);
+        @unlink($logfn);
+        // integers still work
+        $ids = array_fill(0, 2001, 3);
+        $ids[] = 1;
+        $ps = $this->conf->paper_set(["paperId" => $ids], $this->u_root);
+        xassert_eqq($ps->paper_ids(), [1, 3]);
+    }
+
     function test_selection_huge_range() {
         // a range larger than the paper table still yields a list
         $chair = $this->conf->checked_user_by_email("chair@_.com");

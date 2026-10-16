@@ -1002,6 +1002,81 @@ class Mailer_Tester {
         $conf->invalidate_caches("users", "pc");
     }
 
+    /** Return the paper IDs the mail tool selects for request `$args`, or
+     * null if it selects no paper set.
+     * @param array<string,string|list> $args
+     * @return ?list<int> */
+    private function mail_tool_paper_ids(Contact $user, $args) {
+        $qreq = TestQreq::user_post($user);
+        foreach ($args as $k => $v) {
+            $qreq->set_req($k, $v);
+        }
+        $page = new Mail_Page($user, $qreq);
+        $page->clean_request();
+        $f = Closure::bind(function () {
+            return $this->recip->has_paper_ids() ? $this->recip->paper_ids() : null;
+        }, $page, Mail_Page::class);
+        return $f();
+    }
+
+    function test_mail_tool_paper_selection() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $all = (new PaperSearch($chair, ["t" => "s", "q" => ""]))->paper_ids();
+        sort($all);
+        xassert(count($all) > 3);
+        $base = ["to" => "au", "t" => "s", "q" => "", "plimit" => "1"];
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base), $all);
+        // an explicit selection overrides the search
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => "3 1 2"]), [1, 2, 3]);
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => ["3", "1"]]), [1, 3]);
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["pap" => ["3", "1"]]), [1, 3]);
+        // ...unless the search changed
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => "3 1 2", "recheck" => "1"]), $all);
+        // ...or the search is off
+        xassert_eqq($this->mail_tool_paper_ids($chair, ["to" => "au", "has_plimit" => "1", "p" => "3 1 2"]), null);
+        // invalid entries are dropped
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => ["1 or 1=1", "3", "2"]]), [2, 3]);
+        // a selection with no valid entries selects no papers
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => ["1*updatexml(1,concat(0x7e,(select 1)),1)", "10x"]]), []);
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => [["1 or 1=1", "100"]]]), []);
+    }
+
+    /** Run the mail page for request `$args` and return its output.
+     * @param array<string,string> $args
+     * @return string */
+    private function run_mail_page(Contact $user, $args) {
+        $qreq = TestQreq::post_page("mail", $args)->set_user($user);
+        $rc = RenderCapture::make($qreq);
+        xassert($rc->ok());
+        return $rc->content;
+    }
+
+    function test_mail_page_paper_selection() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $base = ["to" => "au", "t" => "s", "subject" => "Selection", "body" => "Paper [%NUMBER%]"];
+
+        // a selection implies a search limit, which the preview form keeps
+        $out = $this->run_mail_page($chair, $base + ["q" => "", "p" => "3 1 2", "check" => "1"]);
+        xassert_str_contains($out, "Paper [1]");
+        xassert_str_contains($out, "Paper [3]");
+        xassert_not_str_contains($out, "Paper [4]");
+        xassert_str_contains($out, '<input type="hidden" name="plimit" value="1">');
+
+        // sending an unchanged search starts sending
+        $maxmailid = $this->conf->fetch_ivalue("select coalesce(max(mailId),0) from MailLog");
+        $args = $base + ["q" => "1-3", "plimit" => "1", "has_plimit" => "1", "send" => "1"];
+        $out = $this->run_mail_page($chair, $args + ["prevt" => "s", "prevq" => "1-3"]);
+        xassert_str_contains($out, '<input type="hidden" name="send" value="1">');
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from MailLog where mailId>?", $maxmailid), 1);
+        $this->conf->qe("delete from MailLog where mailId>?", $maxmailid);
+
+        // sending a changed search shows the new search's papers instead
+        $out = $this->run_mail_page($chair, $args + ["prevt" => "s", "prevq" => "1-2"]);
+        xassert_not_str_contains($out, '<input type="hidden" name="send" value="1">');
+        xassert_eqq($this->conf->fetch_ivalue("select count(*) from MailLog where mailId>?", $maxmailid), 0);
+        xassert_str_contains($out, '<input type="hidden" name="prevq" value="1-3">');
+    }
+
     function test_unparseable_email_from_omits_header() {
         // an emailFrom setting that can't be encoded leaves out the From
         // header rather than breaking every message

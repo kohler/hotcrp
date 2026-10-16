@@ -21,9 +21,12 @@ class SearchSelection {
             $this->pidset = $papers;
         } else {
             $this->pidset = new PaperIDSet;
+            // NB `$papers` might come from a Qrequest; be careful with it
             foreach ($papers ?? [] as $id) {
                 if (is_array($id)) {
-                    $this->pidset->add_range($id[0], $id[1]);
+                    if (count($id) === 2 && is_int($id[0] ?? null) && is_int($id[1] ?? null)) {
+                        $this->pidset->add_range($id[0], $id[1]);
+                    }
                 } else if (is_int($id)) {
                     $this->pidset->add($id);
                 } else if (($i = stoi($id) ?? -1) > 0) {

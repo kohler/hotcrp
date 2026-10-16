@@ -15,6 +15,10 @@ class Mail_Page {
     private $recip;
     /** @var bool */
     private $done = false;
+    /** @var bool */
+    private $recheck;
+    /** @var bool */
+    private $plimit;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
@@ -39,13 +43,15 @@ class Mail_Page {
         }
 
         $this->recip = new MailRecipients($viewer);
+        $this->recheck = friendly_boolean($qreq->recheck) ?? false;
+        $this->plimit = friendly_boolean($qreq->plimit) ?? false;
     }
 
     function clean_request() {
         $qreq = $this->qreq;
         if (isset($qreq->psearch)
             || (isset($qreq->default) && $qreq->defaultfn === "psearch")) {
-            $qreq->recheck = "1";
+            $this->recheck = true;
         }
         if (isset($qreq->recipients) && !isset($qreq->to)) {
             $qreq->to = $qreq->recipients;
@@ -78,6 +84,7 @@ class Mail_Page {
                     $qreq->to = $row->recipients;
                 }
                 if ($row->q) {
+                    $this->plimit = true;
                     $qreq->plimit = "1";
                 }
             }
@@ -92,37 +99,35 @@ class Mail_Page {
             $ssel->sort_selection();
             $qreq->set_a("p", $ssel->selection());
         }
-        if (!$qreq->has_plimit
-            && !$qreq->recheck
-            && $qreq->has_a("p")) {
+        if (!$this->recheck
+            && $qreq->has_a("p")
+            && !friendly_boolean($qreq->has_plimit)) {
+            $this->plimit = true;
             $qreq->plimit = "1";
         }
 
-        // It's OK to just set $qreq->p from the input without
-        // validation because MailRecipients filters internally
-        if (isset($qreq->prevt) && isset($qreq->prevq)) {
-            if (!friendly_boolean($qreq->plimit)) {
-                unset($qreq->p);
-            } else if (($qreq->prevt !== $qreq->t || $qreq->prevq !== $qreq->q)
-                       && !isset($qreq->recheck)) {
-                $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the submission search");
-                $qreq->recheck = "1";
-            }
-        }
-
-        if (friendly_boolean($qreq->plimit)) {
+        if ($this->plimit) {
             $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q, "tsoft" => true]);
             $papersel = $search->paper_ids();
             sort($papersel);
-            if (!$qreq->recheck
+
+            if (!$this->recheck
+                && isset($qreq->prevt)
+                && isset($qreq->prevq)
+                && ($qreq->prevt !== $qreq->t || $qreq->prevq !== $qreq->q)) {
+                $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the submission search");
+                $this->recheck = true;
+            }
+            if (!$this->recheck
                 && $qreq->has_a("p")
-                && $qreq->get_a("p") !== $papersel) {
-                $papersel = $qreq->get_a("p");
+                && $papersel !== $ssel->selection()) {
+                $papersel = $ssel->selection();
             } else {
                 unset($qreq["p"]);
             }
         } else {
             $qreq->q = "";
+            unset($qreq["p"]);
             $search = $papersel = null;
         }
 
@@ -149,7 +154,7 @@ class Mail_Page {
         if ($this->recip->need_papers()
             && $this->recip->has_paper_ids()
             && empty($this->recip->paper_ids())
-            && !isset($this->qreq->recheck)) {
+            && !$this->recheck) {
             $this->recip->error_at("q", "<0>No papers match that search");
             $this->recip->set_paper_ids(null);
             unset($this->qreq->check, $this->qreq->send);
@@ -292,7 +297,7 @@ class Mail_Page {
         if ($this->viewer->privChair) {
             echo '<div class="fx9 checki mt-1"><span class="checkc">',
                 Ht::hidden("has_plimit", 1),
-                Ht::checkbox("plimit", 1, friendly_boolean($this->qreq->plimit) ?? false,
+                Ht::checkbox("plimit", 1, $this->plimit,
                     ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
                 '<label for="plimit">Search<span class="fx8">:</span></label>';
@@ -302,7 +307,7 @@ class Mail_Page {
                 Ht::checkbox("plimit", 1, true, ["id" => "plimit", "class" => "hidden"]);
         }
         $plist = null;
-        if ($this->qreq->recheck && $this->qreq->plimit) {
+        if ($this->recheck && $this->plimit) {
             $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
                 new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q, "tsoft" => true]));
             foreach ($plist->message_list() as $mi) {
@@ -471,7 +476,7 @@ class Mail_Page {
             $qreq->print_header("Mail", "mail");
         }
 
-        if (!$qreq->recheck
+        if (!$mp->recheck
             && !$qreq->again
             && !$mp->recip->has_error()
             && $qreq->valid_token()) {

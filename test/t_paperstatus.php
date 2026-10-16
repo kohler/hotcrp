@@ -3396,11 +3396,7 @@ Phil Porras.");
             "title" => "Sneaky post-deadline title", "abstract" => "Original abstract.\r\n",
             "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu"
         ])->set_user($this->u_estrin);
-        // test_mode 2 routes feedback messages into the page (as in Render_Batch)
-        $old_test_mode = Navigation::$test_mode;
-        Navigation::$test_mode = 2;
         $rc = RenderCapture::make($qreq);
-        Navigation::$test_mode = $old_test_mode;
         $html = Render_Batch::normalize($rc->content);
         MailChecker::clear();
 
@@ -3457,10 +3453,7 @@ Phil Porras.");
             "authors:1:email" => "estrin@usc.edu",
             "has_{$fid}" => 1, $fid => "not a number"
         ])->set_user($this->u_estrin);
-        $old_test_mode = Navigation::$test_mode;
-        Navigation::$test_mode = 2;
         $rc = RenderCapture::make($qreq);
-        Navigation::$test_mode = $old_test_mode;
         $html = Render_Batch::normalize($rc->content);
         MailChecker::clear();
 
@@ -3484,8 +3477,7 @@ Phil Porras.");
         // main user was there before, so later renders and lookups are not
         // made as the first user rendered
         $saved = Contact::$main_user;
-        $old_test_mode = Navigation::$test_mode;
-        Navigation::$test_mode = 2;
+        $test_mode = Navigation::$test_mode;
         try {
             foreach ([null, $this->u_chair] as $main) {
                 Contact::$main_user = $main;
@@ -3494,10 +3486,10 @@ Phil Porras.");
                     $rc = RenderCapture::make($qreq);
                     xassert($rc->ok());
                     xassert(Contact::$main_user === $main);
+                    xassert_eqq(Navigation::$test_mode, $test_mode);
                 }
             }
         } finally {
-            Navigation::$test_mode = $old_test_mode;
             Contact::$main_user = $saved;
         }
     }

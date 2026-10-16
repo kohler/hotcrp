@@ -23,6 +23,9 @@ class RenderCapture {
         Contact::$main_user = $user;
         Navigation::headers_reset();
         $conf->_header_printed = false;
+        // mode 2 throws completions and routes feedback into the page
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
 
         ob_start();
         try {
@@ -50,6 +53,7 @@ class RenderCapture {
             $jc->result->emit($qreq);
         } catch (PageCompletion $unused) {
         } finally {
+            Navigation::$test_mode = $old_test_mode;
             $conf->swap_viewer($old_viewer);
             Contact::$main_user = $old_main_user;
         }

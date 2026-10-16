@@ -325,7 +325,7 @@ class MailSender {
                   "Mailing to: ", $this->recip->unparse(),
                   '<span id="mailinfo"></span>';
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $this->recipients)
-                && $this->qreq->plimit
+                && friendly_boolean($this->qreq->plimit)
                 && (string) $this->qreq->q !== "") {
                 assert($this->recip->has_paper_ids());
                 echo "<br>Paper selection: ";
