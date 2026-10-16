@@ -5508,6 +5508,7 @@ class Conf {
     const PCJ_AFFILIATION = 0x2;
     const PCJ_ORCID = 0x4;
     const PCJ_UID = 0x8;
+    const PCJ_TAG_MEMBERS = 0x10;
     const PCJM_DEFAULT = 0x7;
     const PCJM_UI = 0x9;
 
@@ -5579,11 +5580,36 @@ class Conf {
             $tags = array_merge($this->viewable_user_tags($viewer), ["pc", "listedpc", "unlistedpc", "bot"]);
             $this->collator()->sort($tags);
             $rj["tags"] = $tags;
+            if (($flags & self::PCJ_TAG_MEMBERS) !== 0) {
+                $rj["tag_members"] = $this->hotcrp_pc_tag_members_json($viewer, $pcm);
+            }
         }
         if (($pj = $this->hotcrp_pc_assignable_json($viewer, $flags, $pcm))) {
             $rj["p"] = $pj;
         }
         return (object) $rj;
+    }
+
+    /** @param array<int,Contact> $pcm
+     * @return object */
+    private function hotcrp_pc_tag_members_json(Contact $viewer, $pcm) {
+        $tm = [];
+        foreach (array_values($pcm) as $i => $pc) {
+            $tags = $pc->viewable_tags($viewer, 0);
+            if ($tags === "") {
+                continue;
+            }
+            foreach (Tagger::split_unpack($tags) as $ti) {
+                $tm[strtolower($ti[0])][] = $i;
+            }
+        }
+        $tj = [];
+        foreach ($this->viewable_user_tags($viewer) as $tag) {
+            if (($l = $tm[strtolower($tag)] ?? null)) {
+                $tj[$tag] = $l;
+            }
+        }
+        return (object) $tj;
     }
 
     private function hotcrp_pc_assignable_json(Contact $viewer, $flags, $pcm) {

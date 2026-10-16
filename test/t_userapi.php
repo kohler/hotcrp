@@ -55,6 +55,30 @@ class UserAPI_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    function test_pc_tag_members() {
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $j = call_api("pc", $pc, ["ui" => 1]);
+        xassert($j->ok);
+        xassert(!isset($j->tag_members));
+
+        $j = call_api("pc", $pc, ["ui" => 1, "tag_members" => 1]);
+        xassert($j->ok);
+        $red = $j->tag_members->red ?? null;
+        xassert(is_array($red) && !empty($red));
+        $emails = array_map(function ($i) use ($j) { return $j->pc[$i]->email; }, $red);
+        xassert_in_eqq("estrin@usc.edu", $emails);
+        xassert_not_in_eqq("mgbaker@cs.stanford.edu", $emails);
+        foreach ($red as $i) {
+            xassert($this->conf->checked_user_by_email($j->pc[$i]->email)->has_tag("red"));
+        }
+        xassert(!isset($j->tag_members->pc));
+
+        // users who cannot see user tags get no membership
+        $u = $this->conf->checked_user_by_email("puneet@catarina.usc.edu");
+        $j = call_api("pc", $u, ["tag_members" => 1]);
+        xassert(!isset($j->tag_members));
+    }
+
     function test_lookup_by_prefix() {
         // a prefix finds the first matching account
         $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");

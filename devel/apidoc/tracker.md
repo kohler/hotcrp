@@ -106,9 +106,10 @@ Trackers are configured as a numbered list of structured parameters
 
 * `id`—the tracker’s ID, or `new` to create one.
 * `name`, `logo`—display label and logo.
-* `visibility`—who may see the tracker: `all` (the whole PC), `+TAG` or
-  `-TAG` (PC members with or without a tag), `none` or `+none`
-  (administrators only), or a single PC member, given by user ID or email.
+* `visibility`—who may see the tracker: `all` (the whole PC), `#TAG` or
+  `-#TAG` (PC members with or without a tag; `+TAG` and `-TAG` are also
+  accepted), `none` (administrators only), or a single PC member, given by
+  user ID or email.
   If empty or absent, a new tracker gets the default visibility for its
   submissions’ tracks, and an existing tracker keeps its visibility. The
   older `visibility_type` field, which is `all`, `+`, `-`, or `none`,

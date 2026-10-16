@@ -1656,6 +1656,15 @@ select, .select {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+/* The button and its replacement entry have the same height, so swapping
+   them doesn't move the row. Buttons pad 2px/3px vertically, entries 3px/3px,
+   and Safari rounds a button's line box. */
+.permsel > .permsel-button, .permsel > .permsel-entry {
+	height: calc(1.35em + 7px);
+	padding-top: 2px;
+	padding-bottom: 3px;
+	line-height: 1.35;
+}
 .permsel-button::after {
 	content: "";
 	position: absolute;
@@ -4498,6 +4507,61 @@ a.badge-white:hover {
 .s9d {
 	padding-left: 0.5em;
 	opacity: 0.5;
+}
+.suggestlist {
+	position: relative;
+	min-width: 16rem;
+	max-width: 28rem;
+	max-height: 20rem;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.suggestion.s9l {
+	padding: 3px 8px;
+	text-indent: 0;
+	border-radius: 2px;
+}
+.s9lh {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1.5em;
+}
+.s9l .s9d {
+	flex: none;
+	padding-left: 0;
+	font-weight: normal;
+}
+.s9tdim {
+	font-weight: normal;
+	opacity: 0.6;
+}
+.s9d2 {
+	font-size: 0.75rem;
+	font-weight: normal;
+	line-height: 1rem;
+	opacity: 0.6;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.s9g {
+	margin-top: 4px;
+	padding: 5px 8px 2px;
+	border-top: 1px solid var(--input-border);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--dim-fg);
+	cursor: default;
+}
+.s9g:first-child {
+	margin-top: 0;
+	border-top: 0;
+}
+.s9gsep {
+	padding: 0;
 }
 .s9t {
 	font-weight: 500;

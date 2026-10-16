@@ -46,8 +46,6 @@ class TrackerConfig_API {
             return null;
         } else if (strcasecmp($vis, "pc") === 0) {
             $vis = "all";
-        } else if (strcasecmp($vis, "none") === 0) {
-            $vis = "+none";
         }
 
         $vperm = Track::parse_perm_text($vis, $this->user, $error);

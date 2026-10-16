@@ -48,7 +48,11 @@ class PaperPC_API {
         if (!$user->can_view_pc()) {
             return JsonResult::make_permission_error();
         }
-        $jr = new JsonResult($user->conf->hotcrp_pc_json($user, $qreq->ui ? Conf::PCJM_UI : Conf::PCJM_DEFAULT));
+        $flags = $qreq->ui ? Conf::PCJM_UI : Conf::PCJM_DEFAULT;
+        if (friendly_boolean($qreq->tag_members)) {
+            $flags |= Conf::PCJ_TAG_MEMBERS;
+        }
+        $jr = new JsonResult($user->conf->hotcrp_pc_json($user, $flags));
         if ($qreq->ui) {
             $jr->set_pretty_print(false);
         }

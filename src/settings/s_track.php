@@ -165,6 +165,8 @@ class Track_SettingParser extends SettingParser {
                 if (($uid = Track::perm_user_id($p)) > 0
                     && ($u = $sv->conf->user_by_id($uid, USER_SLICE))) {
                     $p = $u->email;
+                } else {
+                    $p = self::unparse_perm_value($p);
                 }
                 $sv->set_oldv($si->name, $p);
             } else if ($si->name2 === "/type") {
@@ -252,6 +254,7 @@ class Track_SettingParser extends SettingParser {
             Ht::button(htmlspecialchars($desc), [
                 "id" => "{$pfx}/edit",
                 "class" => "ui js-permsel-edit permsel-button",
+                "tabindex" => 0, // Safari skips untabindexed buttons
                 "disabled" => !$editable
             ]),
             Ht::entry("", $text, [
@@ -341,14 +344,18 @@ class Track_SettingParser extends SettingParser {
 
 
     /** Return the value submitted by a permission selector for permission
-     * string `$perm`: `all`, `+none`, `+TAG`, `-TAG`, or a user ID.
+     * string `$perm`: `all`, `none`, `#TAG`, `-#TAG`, or a user ID.
      * @param ?string $perm
      * @return string */
     static function unparse_perm_value($perm) {
         if ($perm === null || $perm === "" || $perm === "all" || $perm === "+pc") {
             return "all";
-        } else if ($perm === "none") {
-            return "+none";
+        } else if ($perm === "+none" || $perm === "none") {
+            return "none";
+        } else if ($perm[0] === "+") {
+            return "#" . substr($perm, 1);
+        } else if ($perm[0] === "-") {
+            return "-#" . substr($perm, 1);
         }
         return $perm;
     }
@@ -359,19 +366,11 @@ class Track_SettingParser extends SettingParser {
      * @param ?string $perm
      * @return string */
     static function unparse_perm_text($perm, Conf $conf) {
-        if ($perm === null || $perm === "" || $perm === "all" || $perm === "+pc") {
-            return "all";
-        } else if ($perm === "+none" || $perm === "none") {
-            return "none";
-        } else if ($perm[0] === "+") {
-            return "#" . substr($perm, 1);
-        } else if ($perm[0] === "-") {
-            return "-#" . substr($perm, 1);
-        } else if (($uid = Track::perm_user_id($perm)) > 0
-                   && ($u = $conf->user_by_id($uid, USER_SLICE))) {
+        if (($uid = Track::perm_user_id($perm)) > 0
+            && ($u = $conf->user_by_id($uid, USER_SLICE))) {
             return Text::nameo($u, NAME_EB);
         }
-        return $perm;
+        return self::unparse_perm_value($perm);
     }
 
     /** Return a plain-text summary of permission string `$perm`.
@@ -401,9 +400,6 @@ class Track_SettingParser extends SettingParser {
         $error = null;
         if (trim($text) === "") {
             return null;
-        }
-        if (strcasecmp(trim($text), "none") === 0) {
-            $text = "+none";
         }
         $p = Track::parse_perm_text($text, $sv->user, $error);
         $required = Track::right_name_required($right);

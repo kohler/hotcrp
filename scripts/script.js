@@ -9121,6 +9121,10 @@ function CompletionSpan(value, indexPos) {
                                 // value, regardless of selection
     this.query = null;          // If non-null, filter on this string
                                 // rather than the span
+    this.layout = null;         // If "list", display items in one scrolling
+                                // column, with group headings
+    this.renderItem = null;     // If set, function(item) returning the
+                                // contents of the item's suggestion row
 }
 
 CompletionSpan.at = function (elt) {
@@ -9214,6 +9218,9 @@ CompletionSpan.prototype.filter = function (tlist) {
     //   the first `item.ml` characters of the match region.
     // * `item.pri`: Integer priority; higher is more important.
     // * `item.k`: Keywords string (`wordMatch` only).
+    // * `item.g`: Group heading (`layout: "list"` only).
+    // * `item.active`: If truthy, highlight this item when the query is empty
+    //   (`wordMatch` only).
     // Shorthand:
     // * A string `item` sets `item.s`.
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
@@ -9342,7 +9349,9 @@ CompletionSpan.prototype.filterWords = function (tlist) {
     // Rank items by match quality: exact match, then prefix match, then
     // keyword prefix match, then word-prefix match (every word of the query
     // is a prefix of some word of the item or its keywords), then substring
-    // match. Ties are broken by `item.pri`, then by order in `tlist`. When
+    // match. Prefix matches ignore leading punctuation in items, so `re`
+    // matches `#review`. Ties are broken by `item.pri`, then by order in
+    // `tlist`. When
     // the query is empty, all items with nonnegative priority match.
     // Accents that the query omits are ignored.
     const lower = !this.caseSensitive || this.caseSensitive === "lower",
@@ -9361,7 +9370,8 @@ CompletionSpan.prototype.filterWords = function (tlist) {
             rank = (titem.pri || 0) >= 0 ? 1 : 0;
         } else if (ltext === q) {
             rank = 6;
-        } else if (ltext.startsWith(q)) {
+        } else if (ltext.startsWith(q)
+                   || ltext.replace(/^[^\p{L}\p{N}]+/u, "").startsWith(q)) {
             rank = 5;
         } else if (lk !== "" && lk.split(" ").some(w => w.startsWith(q))) {
             rank = 4;
@@ -9382,10 +9392,25 @@ CompletionSpan.prototype.filterWords = function (tlist) {
         return null;
     }
     res.sort((a, b) => b.rank - a.rank || b.pri - a.pri || a.i - b.i);
+    if (res.some(x => x.titem.g)) {
+        // keep groups together, ordered by their best matches
+        const gpos = new Map;
+        res.forEach((x, j) => {
+            const g = x.titem.g || "";
+            gpos.has(g) || gpos.set(g, j);
+            x.j = j;
+        });
+        res.sort((a, b) => gpos.get(a.titem.g || "") - gpos.get(b.titem.g || "") || a.j - b.j);
+    }
     if (this.maxItems && res.length > this.maxItems) {
         res.length = this.maxItems;
     }
-    return {items: res.map(x => x.titem), best: q === "" ? null : 0, cspan: this};
+    let best = q === "" ? null : 0;
+    if (q === "") {
+        const i = res.findIndex(x => x.titem.active);
+        best = i >= 0 ? i : null;
+    }
+    return {items: res.map(x => x.titem), best: best, cspan: this};
 };
 
 CompletionSpan.prototype.filterFrom = function (promise) {
@@ -9444,11 +9469,27 @@ function suggest() {
         }
     }
 
-    function render_item(titem, prepend, visiblePriority) {
-        const node = document.createElement("div");
+    function render_list_row(titem) {
+        const line = $e("div", "s9lh", $e("span", "s9t", titem.s));
+        if (titem.d) {
+            line.append($e("span", "s9d", titem.d));
+        }
+        return line;
+    }
+
+    function render_item(titem, cspan, prepend) {
+        const node = document.createElement("div"),
+            list = cspan.layout === "list";
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
-        if (visiblePriority && (titem.pri || 0) <= 0) {
+        if (cspan.visiblePriority && (titem.pri || 0) <= 0) {
             node.className += " s9lopri";
+        }
+        if (list || cspan.renderItem) {
+            // these rows are always completed by `data-replacement`
+            list && (node.className += " s9l");
+            node.setAttribute("data-replacement", titem.r || titem.s);
+            node.append((cspan.renderItem || render_list_row)(titem));
+            return node;
         }
         if (titem.r) {
             node.setAttribute("data-replacement", titem.r);
@@ -9540,7 +9581,19 @@ function suggest() {
         hintinfo = cinfo;
 
         let div;
-        if (!same_list) {
+        if (!same_list && cspan.layout === "list") {
+            div = $e("div", "suggestlist");
+            let g = null;
+            for (const cliste of clist) {
+                const cg = cliste.g || "";
+                if (cg !== g && (g !== null || cg !== "")) {
+                    div.appendChild($e("div", cg ? "s9g" : "s9g s9gsep", cg));
+                }
+                g = cg;
+                div.appendChild(render_item(cliste, cspan, null));
+            }
+            hintdiv.html(div);
+        } else if (!same_list) {
             const ml = [10, 30, 60, 90, 120];
             let i = 0;
             while (i !== ml.length && clist.length > ml[i]) {
@@ -9555,7 +9608,7 @@ function suggest() {
             div = document.createElement("div");
             div.className = "suggesttable suggesttable" + (i + 1);
             for (const cliste of clist) {
-                div.appendChild(render_item(cliste, cspan.prefix, cspan.visiblePriority));
+                div.appendChild(render_item(cliste, cspan, cspan.prefix));
             }
             hintdiv.html(div);
         } else {
@@ -9563,7 +9616,11 @@ function suggest() {
             $(div).find(".s9y").removeClass("s9y");
         }
         if (cinfo.best !== null) {
-            addClass(div.childNodes[cinfo.best], "s9y");
+            const active = div.getElementsByClassName("suggestion")[cinfo.best];
+            addClass(active, "s9y");
+            scroll_to_active(active);
+        } else if (!same_list) {
+            div.scrollTop = 0;
         }
 
         let $elt = jQuery(elt),
@@ -9689,9 +9746,30 @@ function suggest() {
         kill(true);
     }
 
+    function scroll_to_active(node) {
+        const list = node.parentElement;
+        if (!hasClass(list, "suggestlist")) {
+            return;
+        }
+        let top = node.offsetTop;
+        const prev = node.previousElementSibling;
+        if (!prev || (hasClass(prev, "s9g") && !prev.previousElementSibling)) {
+            top = 0;
+        }
+        if (top < list.scrollTop) {
+            list.scrollTop = top;
+        } else if (node.offsetTop + node.offsetHeight > list.scrollTop + list.clientHeight) {
+            list.scrollTop = node.offsetTop + node.offsetHeight - list.clientHeight;
+        }
+    }
+
     function move_active(k) {
         const $sug = hintdiv.self().find(".suggestion"),
             $active = hintdiv.self().find(".s9y");
+        if ((k === "ArrowLeft" || k === "ArrowRight")
+            && hintinfo.cspan.layout === "list") {
+            return false;
+        }
         let pos = null;
         if (!$active.length) {
             if (k === "ArrowUp")
@@ -9735,6 +9813,7 @@ function suggest() {
         if ($sug[pos] !== $active[0]) {
             $active.removeClass("s9y");
             addClass($sug[pos], "s9y");
+            scroll_to_active($sug[pos]);
         }
         wasnav = 2;
         return true;
@@ -9985,8 +10064,8 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
 // entry, and a hidden input holding the permission value. Clicking the button
 // swaps in the entry, which offers suggestions; committing the entry sets the
 // value and restores the button. Entry texts are `all`, `none`, `#TAG`,
-// `-#TAG`, or `NAME <EMAIL>`; values are `all`, `+none`, `+TAG`, `-TAG`, or a
-// user ID.
+// `-#TAG`, or `NAME <EMAIL>`; values are the same, except that a user ID
+// replaces `NAME <EMAIL>`.
 
 function permsel_user_name(u) {
     return u.emailpos ? u.name.substring(0, u.emailpos - 1) : u.name;
@@ -10038,11 +10117,11 @@ function permsel_parse(t, pc, deftype) {
     const lt = t.toLowerCase();
     let m, u;
     if (lt === "" && deftype === "none") {
-        return {text: "none", label: "Administrators only", value: "+none"};
+        return {text: "none", label: "Administrators only", value: "none"};
     } else if (lt === "" || /^(?:all|any|pc|\+?#?pc|\+all)$/.test(lt)) {
         return {text: "all", label: "Whole PC", value: "all"};
     } else if (/^(?:\+?#?none|-all|-any)$/.test(lt)) {
-        return {text: "none", label: "Administrators only", value: "+none"};
+        return {text: "none", label: "Administrators only", value: "none"};
     } else if ((m = /^([-+]?)\s*(#?)([^\s#@<>]*)$/.exec(t))
                && (m[1] || m[2] || !/^\d+$/.test(m[3]))) {
         if (m[3] === "") {
@@ -10058,9 +10137,9 @@ function permsel_parse(t, pc, deftype) {
         }
         tag = pctag || tag;
         if (m[1] === "-") {
-            return {text: "-#" + tag, label: "PC not tagged #" + tag, value: "-" + tag};
+            return {text: "-#" + tag, label: "PC not tagged #" + tag, value: "-#" + tag};
         } else {
-            return {text: "#" + tag, label: "PC tagged #" + tag, value: "+" + tag};
+            return {text: "#" + tag, label: "PC tagged #" + tag, value: "#" + tag};
         }
     } else if ((u = permsel_find_user(t, pc))) {
         return permsel_user_result(u);
@@ -10074,17 +10153,26 @@ function permsel_user_result(u) {
     return {text: permsel_user_text(u), label: permsel_user_name(u) || u.email, value: String(u.uid)};
 }
 
-// Return entry text for permission value `perm`. `pc` is needed to translate
-// user IDs.
-function permsel_perm_text(perm, pc) {
-    let m, u;
+// Return the canonical value for permission `perm`, which may use the stored
+// forms `+none`, `+TAG`, and `-TAG`.
+function permsel_value(perm) {
+    let m;
     if (perm == null || perm === "" || perm === "all") {
         return "all";
     } else if (perm === "+none") {
         return "none";
     } else if ((m = /^([-+])([^#\s].*)$/.exec(perm))) {
         return (m[1] === "-" ? "-#" : "#") + m[2];
-    } else if (/^\d+$/.test(perm) && (u = permsel_find_user(perm, pc))) {
+    }
+    return perm;
+}
+
+// Return entry text for permission `perm`. `pc` is needed to translate user
+// IDs.
+function permsel_perm_text(perm, pc) {
+    let u;
+    perm = permsel_value(perm);
+    if (/^\d+$/.test(perm) && (u = permsel_find_user(perm, pc))) {
         return permsel_user_text(u);
     }
     return perm;
@@ -10103,8 +10191,8 @@ function permsel_apply(span, r) {
 // Create a permission selector for permission value `perm`.
 function permsel_make(perm, attr) {
     const deftype = attr.deftype || "all",
-        value = perm == null || perm === "" ? "all" : perm,
-        btn = $e("button", {type: "button", id: attr.id + "/edit", class: "ui js-permsel-edit permsel-button", disabled: attr.disabled}),
+        value = permsel_value(perm),
+        btn = $e("button", {type: "button", id: attr.id + "/edit", class: "ui js-permsel-edit permsel-button", tabindex: 0, disabled: attr.disabled}),
         entry = $e("input", {type: "text", id: attr.id, size: 30, spellcheck: "false", autocomplete: "off", class: "permsel-entry need-suggest permsel-suggest hidden", disabled: attr.disabled}),
         ve = hidden_input(attr.name, value, {class: "permsel-value", "data-default-value": value, disabled: attr.disabled}),
         span = $e("span", {class: "permsel", "data-permsel-default": deftype}, btn, entry, ve);
@@ -10184,35 +10272,118 @@ function permsel_postreplace(elt) {
     setTimeout(function () { permsel_close(elt, true); }, 0);
 }
 
+demand_load.pc_tag_members = demand_load.make(function (resolve, reject) {
+    $.get(hoturl("api/pc", {ui: 1, tag_members: 1}), null, function (v) {
+        if (v && v.ok) {
+            resolve(v);
+        } else {
+            demand_load.pc().then(resolve, reject);
+        }
+    });
+});
+
+// Return suggestion items for a permission selector. Items carry data for
+// `permsel_render_item`: `count`, the number of PC members with the
+// permission; `members`, a list of those members; `not_tag`, a tag those
+// members lack; or `u` and `utags`, a single PC member and their tags. If
+// `current` is set, highlight the item for that permission value and, unless
+// it is the whole PC or administrators only, move it right after those items.
+function permsel_items(pc, deftype, negative, current) {
+    const npc = pc.pc.length,
+        tpri = negative ? -1 : 2,
+        tm = pc.tag_members || {},
+        utags = pc.pc.map(() => []),
+        lcurrent = current ? current.toLowerCase() : null,
+        items = [
+            {s: "Whole PC", r: "all", k: "all everyone", count: npc,
+             pri: 3, no_space: true, active: current === "all"}
+        ];
+    if (deftype === "none" || hotcrp.status.is_admin) {
+        const chairs = pc.pc.filter(u => u.roles === "chair");
+        items.push({s: "Administrators only", r: "none", k: "none admins administrators chairs",
+                    count: chairs.length, members: chairs,
+                    pri: 3, no_space: true, active: current === "none"});
+    }
+    const rest = [];
+    function add(item, value) {
+        if (lcurrent !== null && value.toLowerCase() === lcurrent) {
+            item.g = "";
+            item.pri = 2.5;
+            item.active = true;
+            items.push(item);
+        } else {
+            rest.push(item);
+        }
+    }
+    for (const t of pc.tags || []) {
+        if (/^(?:pc|listedpc|unlistedpc|bot)$/i.test(t)) {
+            continue;
+        }
+        const members = tm[t], pos = {s: "#" + t, g: "Tags", pri: tpri, no_space: true},
+            neg = {s: "-#" + t, g: "Tags", not_tag: t, pri: 2, no_space: true};
+        if (members) {
+            for (const i of members) {
+                utags[i].push("#" + t);
+            }
+            pos.count = members.length;
+            pos.members = members.map(i => pc.pc[i]);
+            neg.count = npc - members.length;
+        }
+        add(pos, pos.s);
+        if (negative || lcurrent === neg.s.toLowerCase()) {
+            add(neg, neg.s);
+        }
+    }
+    pc.pc.forEach((u, i) => {
+        add({s: permsel_user_text(u), u: u, utags: utags[i],
+             g: "PC members", pri: 0, no_space: true}, String(u.uid));
+    });
+    items.push(...rest);
+    return items;
+}
+
+function permsel_render_item(titem) {
+    const s9t = $e("span", "s9t"), line = $e("div", "s9lh", s9t);
+    let detail = null;
+    if (titem.u) {
+        const name = permsel_user_name(titem.u);
+        if (name && name !== titem.u.email) {
+            s9t.append(name + " ", $e("span", "s9tdim", "<" + titem.u.email + ">"));
+        } else {
+            s9t.append(titem.u.email);
+        }
+        detail = titem.utags.join(" ");
+    } else {
+        s9t.append(titem.s);
+        if (titem.count != null) {
+            line.append($e("span", "s9d", plural(titem.count, "member")));
+        }
+        if (titem.not_tag) {
+            detail = "PC members not tagged #" + titem.not_tag;
+        } else if (titem.members) {
+            detail = titem.members.slice(0, 20).map(u => permsel_user_name(u) || u.email).join(", ");
+        }
+    }
+    return detail ? $frag(line, $e("div", "s9d2", detail)) : line;
+}
+
 hotcrp.suggest.add_builder("permsel-suggest", function (elt) {
     if (hasClass(elt, "hidden")) {
         return null;
     }
     const cs = hotcrp.suggest.CompletionSpan.whole(elt),
-        deftype = elt.closest(".permsel").getAttribute("data-permsel-default");
+        span = elt.closest(".permsel"),
+        deftype = span.getAttribute("data-permsel-default"),
+        // an unfiltered list highlights the current permission
+        current = cs.query === "" ? span.querySelector(".permsel-value").value : null,
+        // a leading `-` asks for negated tags
+        negative = /^\s*-/.test(cs.query !== null ? cs.query : elt.value);
     cs.wordMatch = true;
-    cs.maxItems = 30;
+    cs.layout = "list";
+    cs.renderItem = permsel_render_item;
+    cs.maxItems = 300;
     cs.postReplace = permsel_postreplace;
-    return cs.filterFrom(demand_load.pc().then(function (pc) {
-        const items = [
-            {s: "Whole PC", r: "all", k: "all everyone", pri: 3, no_space: true}
-        ];
-        if (deftype === "none" || hotcrp.status.is_admin) {
-            items.push({s: "Administrators only", r: "none", k: "none admins chairs", pri: 3, no_space: true});
-        }
-        for (const t of pc.tags || []) {
-            if (/^(?:pc|listedpc|unlistedpc|bot)$/i.test(t)) {
-                continue;
-            }
-            items.push({s: "#" + t, pri: 2, no_space: true});
-            items.push({s: "-#" + t, d: "not tagged", pri: -1, no_space: true});
-        }
-        for (const u of pc.pc) {
-            const name = permsel_user_name(u);
-            items.push({s: name || u.email, d: name ? u.email : null, k: u.email, r: permsel_user_text(u), pri: 0, no_space: true});
-        }
-        return items;
-    }));
+    return cs.filterFrom(demand_load.pc_tag_members().then(pc => permsel_items(pc, deftype, negative, current)));
 });
 
 // list management, conflict management

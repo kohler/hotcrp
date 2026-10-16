@@ -3040,7 +3040,7 @@ class Settings_Tester {
         xassert($sv->execute());
         $tracks = $this->all_jsonv_by("track", "tag");
         xassert_eqq($tracks["redtrack"]->id, "redtrack");
-        xassert_eqq($tracks["redtrack"]->perm->view, "+red");
+        xassert_eqq($tracks["redtrack"]->perm->view, "#red");
 
         // renaming via the anchor preserves permissions
         $sv = (new SettingValues($this->u_chair))->set_use_req(true);
@@ -3048,7 +3048,7 @@ class Settings_Tester {
         xassert($sv->execute());
         $tracks = $this->all_jsonv_by("track", "tag");
         xassert(!isset($tracks["redtrack"]));
-        xassert_eqq($tracks["bluetrack"]->perm->view, "+red");
+        xassert_eqq($tracks["bluetrack"]->perm->view, "#red");
 
         // an entry with an anchor but no tag is an error
         $sv = (new SettingValues($this->u_chair))->set_use_req(true);

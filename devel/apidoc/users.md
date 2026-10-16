@@ -74,13 +74,17 @@ When the request is made in the context of a submission the caller administers,
 members are `assignable` as reviewers.
 
 Set `ui=1` to receive the richer representation HotCRP’s own interface uses.
+Set `tag_members=1` to receive `tag_members`, which maps each visible user tag
+to the PC members that have it, given as indexes into `pc`.
 
 * scope other:read
 * badge featured
 * param ?ui boolean: Return the representation used by the HotCRP web interface.
+* param ?tag_members boolean: Return `tag_members`.
 * response pc [object]: The PC members.
 * response ?sort string: `last` when the roster is sorted by last name.
 * response ?tags tag_list: User tags visible to the caller.
+* response ?tag_members object: Map from each visible user tag to a list of indexes into `pc` of the PC members with that tag; requested by `tag_members`.
 * response ?p object: Per-submission assignment information, when the request has an administered submission in context.
 
 
