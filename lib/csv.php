@@ -875,6 +875,7 @@ class CsvGenerator {
     const FLAG_CR = 32;             // terminate lines with CR
     const FLAG_LF = 0;              // terminate lines with LF (default)
     const FLAG_ITEM_COMMENTS = 64;  // honor per-row `__precomment__`/`__postcomment__`
+    const FLAG_OMIT_APPENDED_HEADER = 128; // omit header when stream is a nonempty file
     const FLAG_HEADERS = 256;       // a header row is present (set internally)
     const FLAG_HTTP_HEADERS = 512;  // Content-Disposition already sent (internal)
     const FLAG_FLUSHED = 1024;      // some output already flushed (internal)
@@ -1187,6 +1188,18 @@ class CsvGenerator {
         return $this->type === self::TYPE_COMMA ? ".csv" : ".txt";
     }
 
+    /** Return true iff `$stream` is a regular file that already has data.
+     * Checks size rather than offset because a `>>` redirection starts at
+     * offset 0.
+     * @param resource $stream
+     * @return bool */
+    private static function is_nonempty_file($stream) {
+        $st = fstat($stream);
+        return $st !== false
+            && ($st["mode"] & 0170000) === 0100000
+            && $st["size"] > 0;
+    }
+
     /** @return void */
     function flush() {
         if ($this->stream === null) {
@@ -1216,8 +1229,11 @@ class CsvGenerator {
         }
         $nw = $nwx = 0;
         if ($this->headerline !== "") {
-            $nw += fwrite($this->stream, $this->headerline);
-            $nwx += strlen($this->headerline);
+            if (($this->flags & self::FLAG_OMIT_APPENDED_HEADER) === 0
+                || !self::is_nonempty_file($this->stream)) {
+                $nw += fwrite($this->stream, $this->headerline);
+                $nwx += strlen($this->headerline);
+            }
             $this->headerline = "";
         }
         while (!empty($this->lines)) {
