@@ -1,6 +1,6 @@
 <?php
 // reviewcsv.php -- HotCRP review export script
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -52,7 +52,7 @@ class ReviewCSV_Batch {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->fr = new FieldRender(FieldRender::CFHTML | FieldRender::CFVERBOSE, $this->user);
-        $this->csv = new CsvGenerator;
+        $this->csv = new CsvGenerator(CsvGenerator::FLAG_OMIT_APPENDED_HEADER);
         $this->rfseen = $conf->review_form()->order_array(false);
     }
 
@@ -155,12 +155,14 @@ class ReviewCSV_Batch {
         }
         $x["status"] = $rs;
         foreach ($prow->page_fields() as $o) {
-            if (($o->type === "title"
-                 || $o->type === "abstract"
-                 || $o->type === "text")
-                && $o->published($this->fr->context)
+            if (($o instanceof Text_PaperOption
+                 || $o->type === "title")
                 && ($v = $prow->option($o))) {
+                $this->fr->clear();
                 $o->render($this->fr, $v);
+                if ((string) $this->fr->value === "") {
+                    continue;
+                }
                 $x["field"] = $o->title();
                 $x["format"] = $this->fr->value_format;
                 $x["data"] = $this->fr->value;
@@ -225,7 +227,12 @@ class ReviewCSV_Batch {
         }
     }
 
-    function output($stream) {
+    /** @param resource $stream */
+    function set_stream($stream) {
+        $this->csv->set_stream($stream);
+    }
+
+    function output() {
         if (!empty($this->output) && !$this->narrow) {
             foreach ($this->conf->all_review_fields() as $f) {
                 if ($this->rfseen[$f->order]) {
@@ -241,7 +248,7 @@ class ReviewCSV_Batch {
             }
         }
 
-        @fwrite($stream, $this->csv->unparse());
+        $this->csv->flush();
     }
 
     /** @param string $q */
@@ -314,8 +321,9 @@ Usage: php batch/reviewcsv.php [-acx] [QUERY...]")
         $fcsv = new ReviewCSV_Batch($conf);
         $fcsv->parse_arg($arg);
         $fcsv->prepare($arg);
+        $fcsv->set_stream(STDOUT);
         $fcsv->run(join(" ", $arg["_"]));
-        $fcsv->output(STDOUT);
+        $fcsv->output();
         return 0;
     }
 }
