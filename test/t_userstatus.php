@@ -1851,11 +1851,22 @@ class UserStatus_Tester {
     }
 
     function test_store_does_not_adopt_similar_email() {
-        // the database collation would match these to chair@_.com
+        // the database collation may match these to chair@_.com
         foreach (["chair\x01@_.com", "cha\u{ED}r@_.com"] as $email) {
             foreach ([0, Contact::SAVE_ANY_EMAIL] as $flags) {
                 $u = Contact::make_keyed($this->conf, ["email" => $email, "affiliation" => "Elsewhere"]);
-                xassert_eqq($u->store($flags), null);
+                $nu = $u->store($flags);
+                if ($nu === null) {
+                    continue;
+                }
+                // collations that distinguish the emails create a new account
+                xassert_eqq($flags, Contact::SAVE_ANY_EMAIL);
+                xassert_eqq($nu->email, $email);
+                $this->conf->qe("delete from ContactInfo where contactId=?", $nu->contactId);
+                if (($cdb = $this->conf->contactdb())) {
+                    Dbl::qe($cdb, "delete from ContactInfo where email=binary ?", $email);
+                }
+                $this->conf->invalidate_caches("users");
             }
         }
         xassert_eqq($this->conf->fresh_user_by_email("chair@_.com")->affiliation, "");
