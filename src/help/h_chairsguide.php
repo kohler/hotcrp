@@ -336,4 +336,49 @@ $hth->search_link("download all final versions as a <code>.zip</code> archive", 
 ".  (The submitted versions are archived for reference.)</p></li>\n";
         }
     }
+
+    static function print_revisions(HelpRenderer $hth, $gj) {
+        if ($gj->itemid === -1) {
+            echo $hth->subhead("Revisions");
+            echo "<p>Conferences may use a revision cycle, that is, papers that got a “revision” 
+            decision after the reviews can be revised and resubmitted by the authors.
+            One way of submitting a revision is to let authors upload their revised papers as 
+            attachments to comments for their submissions. If specific workflows such as revision 
+            deadlines are needed, follow these steps to prepare to accept the submissions of revisions.</p>\n<ol>\n";
+            $hth->print_members("chair/revisions");
+            echo "</ol>\n\n";
+
+        } else if ($gj->itemid === 1) {
+            echo "<li><p><strong>", $hth->setting_link("Define a decision type", "decision"), "</strong> for
+            papers with a “revision” decision.</p></li>\n";
+        } else if ($gj->itemid === 2) {
+            echo "<li><p><strong>", $hth->setting_link("Create an automatic tag", "automatic_tag"), "</strong> 
+            that corresponds to the revision decision type so that all papers with a revision decision will be
+            tagged automatically.</p></li>\n";
+        } else if ($gj->itemid === 3) {
+            echo "<li><p><strong>", $hth->setting_group_link("Add a submission class", "sub"), "</strong> with 
+            that automatic tag name as the tag/title of the class.</p></li>\n";
+        } else if ($gj->itemid === 4) {
+            echo "<li><p><strong>Set the resubmission deadline</strong> of that submission class to a date in 
+            the future, which is the deadline for submitting revisions while leaving the other deadline fields blank.</p></li>\n";
+        } else if ($gj->itemid === 5) {
+            echo "<li><p><strong>", $hth->setting_group_link("Change the submission form", "subform"), "</strong> to add
+            fields for uploading a revision (e.g., a PDF upload field to upload a revised paper). Any added field should
+            have set its <em>condition</em> to “Custom...” with the value being the automatic revision tag or the 
+            name of the submission class for revisions. Accordingly, the added fields will only appear for papers with a 
+            “revision” decision. Set existing fields of the submission form that authors should not be allowed to edit when 
+            uploading a revision to read-only (i.e., set each field's <em>edit condition</em> to read-only).</p></li>\n";
+        } else if ($gj->itemid === 6) {
+            echo "<li><p>Note that during the whole revision process, the HotCRP site must be open for submissions (", 
+            $hth->setting_group_link("Open the site for revisions", "sub"), " must be checked).</p></li>\n";
+        } else if ($gj->itemid === 7) {
+            echo "<li><p>Authors can now edit their existing submissions and upload revised versions of their papers until 
+            the resubmission deadline of the added submission class.</p></li>\n";
+        } else if ($gj->itemid === 8) {
+            echo "<li><p>After the resubmission deadline, reviewers of the initial submission can review and discuss the 
+            revised paper, and eventually make a decision.</p></li>\n";
+        }
+
+    }
+
 }
