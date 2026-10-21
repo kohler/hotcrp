@@ -22,7 +22,7 @@ class Login_Tester {
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
 
-        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com", "firstcdb@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -521,6 +521,30 @@ class Login_Tester {
         }
     }
 
+    function test_setup_phase_requires_no_cdb() {
+        $email = "firstcdb@hotcrp.com";
+        $this->conf->save_setting("setupPhase", 1);
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
+        $redir = null;
+        try {
+            (new Signin_Page)->create_request($user, $qreq);
+        } catch (Redirection $redir) {
+        }
+        xassert(!!$redir);
+        $u = $this->conf->fresh_user_by_email($email);
+        if ($this->cdb) {
+            // the first user is not special
+            xassert_not_str_contains($redir->url, "hcpw");
+            xassert(!$u->privChair);
+        } else {
+            // the first user becomes administrator and sets a password
+            xassert_str_contains($redir->url, "resetpassword/hcpw0");
+            xassert($u->privChair);
+        }
+        xassert(!$this->conf->setting("setupPhase"));
+    }
+
     function test_login_first_user() {
         $email = "firstchair@hotcrp.com";
         $this->conf->save_setting("setupPhase", 1);
@@ -565,6 +589,7 @@ class Login_Tester {
 
         $u = user($email);
         xassert($u->check_password("newuserpassword!"));
-        xassert($u->privChair);
+        // conferences sharing a contactdb have no setup phase
+        xassert_eqq($u->privChair, !$this->cdb);
     }
 }

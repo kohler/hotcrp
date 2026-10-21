@@ -195,14 +195,18 @@ class LoginHelper {
         return $info;
     }
 
-    /** @return bool */
+    /** Potentially make the conference’s first user its administrator
+     * (only if no contactdb).
+     * @return bool */
     static private function check_setup_phase(Contact $user) {
-        if ($user->conf->setting("setupPhase")) {
-            $user->ensure_account_here()->save_roles(Contact::ROLE_ADMIN, null);
-            $user->conf->save_setting("setupPhase", null);
-            return true;
+        if (!$user->conf->setting("setupPhase")) {
+            return false;
         }
-        return false;
+        if (($created = !$user->conf->contactdb())) {
+            $user->ensure_account_here()->save_roles(Contact::ROLE_ADMIN, null);
+        }
+        $user->conf->save_setting("setupPhase", null);
+        return $created;
     }
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {

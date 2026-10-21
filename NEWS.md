@@ -116,6 +116,12 @@ HotCRP NEWS
     * Report scope errors more thoroughly.
     * A single request can upload at most 100 documents.
 
+* Contact database
+
+    * New sites that use a contact database do not automatically assign
+      administrator privilege to the first account to sign in. Use `php
+      batch/saveusers.php` to assign administrator privilege to an account.
+
 * Other changes
 
     * The `batch/savepapers.php` script gains `--trust-document-metadata`,
