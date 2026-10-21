@@ -167,7 +167,7 @@ class Mailer {
 
     static function kw_url($args, $isbool, $m) {
         if (!$args) {
-            return $m->conf->opt("paperSite");
+            return $m->conf->baseurl();
         }
         $a = preg_split('/\s*,\s*/', $args);
         foreach ($a as &$t) {
@@ -247,7 +247,7 @@ class Mailer {
             $loginparts = "email=" . urlencode($this->recipient->email);
         }
         if ($uf->name === "LOGINURL") {
-            return $this->conf->opt("paperSite") . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
+            return $this->conf->baseurl() . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
         } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
         }

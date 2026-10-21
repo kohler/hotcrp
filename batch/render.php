@@ -61,7 +61,7 @@ class Render_Batch {
         }
 
         $this->conf = $user->conf;
-        $this->urlbase = $this->conf->opt("paperSite");
+        $this->urlbase = $this->conf->baseurl();
         if ($this->urlbase === "") {
             $this->urlbase = "http://hotcrp.invalid";
         }

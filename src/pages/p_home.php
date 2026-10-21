@@ -155,7 +155,7 @@ class Home_Page {
     }
     static function print_info_site(Contact $user) {
         if (($site = $user->conf->opt("conferenceSite"))
-            && $site !== $user->conf->opt("paperSite")) {
+            && $site !== $user->conf->baseurl()) {
             echo '<li>', Ht::link("Conference site", $site), '</li>';
         }
     }
@@ -186,7 +186,7 @@ class Home_Page {
         }
         echo '<div class="homegrp"><p>Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
         if (($site = $this->conf->opt("conferenceSite"))
-            && $site !== $this->conf->opt("paperSite"))
+            && $site !== $this->conf->baseurl())
             echo " For general information, see ", Ht::link(htmlspecialchars($site), $site), ".";
         echo '</p></div>';
     }

@@ -4654,7 +4654,7 @@ class Authorize_Tester {
     /** Fetch protected resource metadata as if `$url` had been requested.
      * @return string */
     private function well_known($url) {
-        $base = NavigationState::make_base($this->conf->opt("paperSite"));
+        $base = NavigationState::make_base($this->conf->baseurl());
         // `make_base` splits `$rest` at its first "/", so it must not start with one
         $nav = NavigationState::make_base($base->server . "/",
             substr($url, strlen($base->server) + 1));
@@ -4672,7 +4672,7 @@ class Authorize_Tester {
     }
 
     function test_protected_resource_metadata() {
-        $site = $this->conf->opt("paperSite");
+        $site = $this->conf->baseurl();
         $base = NavigationState::make_base($site);
         $wk = $base->server . "/.well-known/oauth-protected-resource";
         $get = function ($suffix = "") use ($wk, $base) {

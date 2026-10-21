@@ -108,9 +108,9 @@ class UpdateContactdb_Batch {
             $qf[] = "longName=?";
             $qv[] = $this->conf->long_name;
         }
-        if ($this->conf->opt("paperSite") !== $this->confrow->url) {
+        if ($this->conf->baseurl() !== $this->confrow->url) {
             $qf[] = "url=?";
-            $qv[] = $this->conf->opt("paperSite");
+            $qv[] = $this->conf->baseurl();
         }
         if ($this->conf->opt("conferenceSite") !== $this->confrow->conferenceSite) {
             $qf[] = "conferenceSite=?";

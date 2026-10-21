@@ -2166,7 +2166,7 @@ class Conf {
 
     /** @return string */
     function oauth_issuer() {
-        return $this->opt["oAuthIssuer"] ?? $this->opt["paperSite"];
+        return $this->opt["oAuthIssuer"] ?? $this->baseurl();
     }
 
 
@@ -3936,6 +3936,11 @@ class Conf {
     }
 
 
+    /** @return string */
+    function baseurl() {
+        return $this->opt("paperSite");
+    }
+
     /** @param NavigationState $nav
      * @param ?string $url */
     function set_site_path_relative($nav, $url) {
@@ -4141,7 +4146,7 @@ class Conf {
             }
         }
         if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$main) {
-            return $this->opt("paperSite") . "/" . $t;
+            return $this->baseurl() . "/" . $t;
         }
         $siteurl = $nav->site_path_relative;
         if ($need_site_path && $siteurl === "") {
@@ -5833,7 +5838,7 @@ class Conf {
             if (($mlist = $this->opt("messageOverrides"))) {
                 expand_json_includes_callback($mlist, [$this->_fmt, "addj"]);
             }
-            $this->_fmt->define("site", FmtItem::make_template("<0>" . $this->opt["paperSite"], FmtItem::EXPAND_NONE));
+            $this->_fmt->define("site", FmtItem::make_template("<0>" . $this->baseurl(), FmtItem::EXPAND_NONE));
             if (($n = $this->opt["messageRecordSources"] ?? null)) {
                 $this->_fmt->record_sources($n);
             }

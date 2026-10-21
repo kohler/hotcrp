@@ -42,7 +42,7 @@ class WellKnown_Page {
         }
 
         // check that this is an API path
-        $site = $conf->opt("paperSite");
+        $site = $conf->baseurl();
         $sitenav = NavigationState::make_base($site);
         $bplen = strlen($sitenav->base_path);
         if (substr_compare($nav->path, $sitenav->base_path, self::OAPSTRLEN, $bplen) !== 0
@@ -97,7 +97,7 @@ class WellKnown_Page {
         }
         self::cache_headers(604800);
         Navigation::header("Content-Type: application/json; charset=utf-8");
-        $site = $conf->opt("paperSite");
+        $site = $conf->baseurl();
         $j = ["issuer" => $conf->oauth_issuer()];
         // enumerate capabilities implied by clients
         $has_dynamic = $has_mdoc = false;

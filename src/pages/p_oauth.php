@@ -62,7 +62,7 @@ class OAuth_Page {
         $tokdata = [
             "authtype" => $authi->name,
             "session" => $this->qreq->qsid(),
-            "site_uri" => $this->conf->opt("paperSite"),
+            "site_uri" => $this->conf->baseurl(),
             "nonce" => base48_encode($nonce_bytes),
             "smsg" => $smsg
         ];
