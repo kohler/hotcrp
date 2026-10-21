@@ -10665,6 +10665,9 @@ function tablelist_postreorder(tbl) {
     }
     lasthead && change_heading(null);
     tbl.setAttribute("data-reordered", "");
+    // recompute group checkboxes, including those of new heading rows
+    const ge = tbl.querySelector(".is-range-group");
+    ge && handle_ui.trigger.call(ge, "js-range-click", new CustomEvent("updaterange", {detail: {}}));
 }
 
 
@@ -10914,15 +10917,21 @@ DraggableRow.prototype.legend = function () {
         t = t ? "#".concat(this.id, "  ", t) : "#" + this.id;
     return t;
 };
+DraggableRow.prototype.selected = function () {
+    const e = this.front.querySelector("input.js-selector");
+    return e && e.checked;
+};
 
-function make_gapf() {
-    var gaps = [], gappos = 0;
+function make_gapf(choices) {
+    const gaps = [];
+    let gappos = 0;
+    choices = choices || [1, 1, 1, 1, 1, 2, 2, 2, 3, 4];
     return function (reset) {
         if (reset) {
             gappos = 0;
         }
         if (gappos === gaps.length) {
-            gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
+            gaps.push(choices[Math.floor(Math.random() * choices.length)]);
         }
         return gaps[gappos++];
     };
@@ -11227,18 +11236,39 @@ function DraggableTable(srctr, dragtag) {
             }
         }
     }
+
+    // dragging a selected submission also drags other selected submissions
+    this.multi = null;
+    if (this.srcindex !== null
+        && this.rs[this.srcindex].id
+        && this.rs[this.srcindex].selected()) {
+        const multi = [];
+        for (const ra of this.rs) {
+            ra.id && ra.selected() && multi.push(ra.index);
+        }
+        this.multi = multi.length > 1 ? multi : null;
+    }
 }
-DraggableTable.prototype.group_back_index = function (i) {
-    if (i < this.rs.length && this.rs[i].isgroup) {
-        while (i + 1 < this.rs.length && !this.rs[i + 1].isgroup) {
+DraggableTable.prototype.group_back_index = function (i, rs) {
+    rs = rs || this.rs;
+    if (i < rs.length && rs[i].isgroup) {
+        while (i + 1 < rs.length && !rs[i + 1].isgroup) {
             ++i;
         }
     }
     return i;
 };
+DraggableTable.prototype.legend = function () {
+    const frag = document.createDocumentFragment();
+    frag.append(this.rs[this.srcindex].legend());
+    if (this.multi) {
+        frag.append($e("span", "dim", " + ".concat(this.multi.length - 1, " more")));
+    }
+    return frag;
+};
 DraggableTable.prototype.content = function () {
     if (this.srcindex !== null) {
-        return this.rs[this.srcindex].legend();
+        return this.legend();
     }
     return "None";
 };
@@ -11246,32 +11276,41 @@ DraggableTable.prototype.content = function () {
 function Tagval_DraggableTable(srctr, dragtag) {
     DraggableTable.call(this, srctr, dragtag);
     this.dragtag = dragtag;
-    this.gapf = function () { return 1; };
-    // annotated groups are assumed to be gapless
-    if (this.grouprs.length > 0) {
-        let sd = 0, nd = 0, s2d = 0, lv = null;
-        for (let i = 0; i < this.rs.length; ++i) {
-            if (this.rs[i].id && this.rs[i].tagval !== false) {
-                if (lv !== null) {
-                    ++nd;
-                    const d = this.rs[i].tagval - lv;
-                    sd += d;
-                    s2d += d * d;
-                }
-                lv = this.rs[i].tagval;
-            }
+    // collect positive gaps between adjacent submissions in the same group
+    const gaps = [];
+    let lv = null, sd = 0, s2d = 0, integral = true;
+    for (const ra of this.rs) {
+        if (ra.isgroup || ra.tagval === false) {
+            lv = null;
+            continue;
         }
-        if (nd < 4 || sd < 0.9 * nd || sd > 1.1 * nd || s2d < 0.9 * nd || s2d > 1.1 * nd) {
-            this.gapf = make_gapf();
+        if (lv !== null && ra.tagval > lv) {
+            const d = ra.tagval - lv;
+            gaps.push(d);
+            sd += d;
+            s2d += d * d;
         }
+        lv = ra.tagval;
+        integral = integral && ra.tagval === Math.floor(ra.tagval);
     }
+    // Gapless orders stay gapless. Other orders get gaps drawn from their
+    // existing gaps, so that hidden submissions are harder to locate.
+    const nd = gaps.length;
+    this.gapless = nd >= 4 && sd >= 0.9 * nd && sd <= 1.1 * nd
+        && s2d >= 0.9 * nd && s2d <= 1.1 * nd;
+    if (this.gapless) {
+        this.gapf = function () { return 1; };
+    } else {
+        this.gapf = make_gapf(nd >= 4 ? gaps : null);
+    }
+    this.gapstep = integral ? 1 : 0.01;
 }
 Object.setPrototypeOf(Tagval_DraggableTable.prototype, DraggableTable.prototype);
 Tagval_DraggableTable.prototype.content = function () {
     const frag = document.createDocumentFragment(),
         unchanged = this.srcindex === this.dragindex,
         srcra = this.rs[this.srcindex];
-    frag.append(srcra.legend());
+    frag.append(this.legend());
     let newval;
     if (unchanged) {
         newval = srcra.tagval;
@@ -11288,106 +11327,212 @@ Tagval_DraggableTable.prototype.content = function () {
     return frag;
 };
 Tagval_DraggableTable.prototype.compute = function () {
-    const len = this.rs.length, si = this.srcindex, di = this.dragindex,
-        sigroup = this.rs[si].isgroup, nsi = this.group_back_index(si) - si + 1;
-    let i, j, d, tv;
-    // initialize to unchanged, reset gap
-    for (i = 0; i !== len; ++i) {
-        this.rs[i].newtagval = this.rs[i].tagval;
-    }
-    this.gapf(true);
-    // forward: [init] [si:SRC:si+nsi) [si+nsi:shift:di) <DST> [di:rest:len)
-    // reverse: [init] <DST> [di:shift:si) [si:SRC:si+nsi) [si+nsi:rest:len)
-    // return if no shift region (which means no change)
-    if (si === di
-        || si + nsi === di
-        || (this.rs[si].tagval === false
-            && di > 0
-            && this.rs[di-1].tagval === false)) {
+    if (!this.multi) {
+        this.compute_move(this.rs, this.srcindex, this.dragindex);
         return;
     }
-    // forward: handle shift region
-    if (si < di && this.rs[si+nsi].tagval !== false) {
-        d = this.rs[si].tagval - this.rs[si+nsi].tagval;
-        i = si + nsi;
-        while (i !== di
-               && this.rs[i].tagval !== false
-               && (sigroup || !this.rs[i].isgroup)) {
-            this.rs[i].newtagval += d;
-            ++i;
+    // move the source row, then move other selected rows next to it
+    const work = this.rs.map(function (ra) {
+        return {ra: ra, tagval: ra.tagval, newtagval: ra.tagval, isgroup: ra.isgroup};
+    }), ws = work.slice(), self = this;
+    function move(w, di) {
+        const si = work.indexOf(w);
+        self.compute_move(work, si, di);
+        work.splice(si, 1);
+        work.splice(di > si ? di - 1 : di, 0, w);
+        for (const x of work) {
+            x.tagval = x.newtagval;
         }
     }
-    // handle move region
-    if (len === 0 || (di === 0 && this.rs[di].newtagval === false)) {
-        tv = 1;
-    } else if (di === 0) {
-        tv = this.rs[di].newtagval;
+    const srcw = ws[this.srcindex];
+    move(srcw, this.dragindex);
+    // earlier rows go before the source, later rows after it;
+    // if the source became untagged, all rows go after it
+    let before = this.multi.filter((i) => i < this.srcindex),
+        after = this.multi.filter((i) => i > this.srcindex);
+    if (srcw.tagval === false) {
+        after = before.concat(after);
+        before = [];
+    }
+    for (let i = before.length - 1; i >= 0; --i) {
+        move(ws[before[i]], work.indexOf(ws[before[i + 1] ?? this.srcindex]));
+    }
+    for (let i = 0; i !== after.length; ++i) {
+        move(ws[after[i]], work.indexOf(ws[i ? after[i - 1] : this.srcindex]) + 1);
+    }
+    for (const w of work) {
+        w.ra.newtagval = w.newtagval;
+    }
+};
+Tagval_DraggableTable.prototype.compute_move = function (rs, si, di) {
+    const len = rs.length, srcra = rs[si], sigroup = srcra.isgroup,
+        nsi = this.group_back_index(si, rs) - si + 1;
+    // initialize to unchanged, reset gap
+    for (const ra of rs) {
+        ra.newtagval = ra.tagval;
+    }
+    this.gapf(true);
+    // return if no change
+    if (si === di
+        || si + nsi === di
+        || (srcra.tagval === false
+            && di > 0
+            && rs[di-1].tagval === false)) {
+        return;
+    }
+    // gapless orders close the hole left by a forward move
+    if (this.gapless
+        && si < di
+        && rs[si+nsi].tagval !== false
+        && (sigroup || !rs[si+nsi].isgroup)) {
+        const d = rs[si+nsi].tagval - srcra.tagval;
+        for (let i = si + nsi;
+             i !== di && rs[i].tagval !== false && (sigroup || !rs[i].isgroup);
+             ++i) {
+            rs[i].newtagval -= d;
+        }
+    }
+    // a move into the untagged region clears the tag
+    const prev = di > 0 ? rs[di-1] : null, next = di < len ? rs[di] : null;
+    if (prev && prev.newtagval === false) {
+        for (let i = si; i !== si + nsi; ++i) {
+            rs[i].newtagval = false;
+        }
+        return;
+    }
+    // choose the new value; a submission may share its group heading’s value
+    const hi = next && next.newtagval !== false ? next.newtagval : null;
+    let tv, gap = 0;
+    if (!prev) {
+        tv = this.top_value(hi);
     } else {
-        tv = this.rs[di-1].newtagval;
-        if (tv !== false && (sigroup || !this.rs[di-1].isgroup)) {
-            tv += this.gapf();
-        }
-        if (tv !== false && sigroup) {
-            j = si < di ? si + nsi : di;
-            if (j !== len && this.rs[j].tagval !== false) {
-                tv = Math.max(tv, this.rs[j].tagval);
-            }
-        }
+        gap = prev.isgroup && !sigroup ? 0 : this.gapf();
+        tv = this.room_value(prev.newtagval, gap, hi);
     }
-    if (tv === false || this.rs[si].tagval === false) {
-        for (i = si; i !== si + nsi; ++i) {
-            this.rs[i].newtagval = tv;
-        }
-    } else {
-        d = tv - this.rs[si].tagval;
-        for (i = si; i !== si + nsi; ++i) {
-            this.rs[i].newtagval += d;
-        }
+    if (tv !== null) {
+        this.place(rs, si, nsi, tv);
+        this.push_after(rs, si, nsi, di);
+        return;
     }
-    // reverse: handle shift region
-    if (si > di
-        && (nsi === 1 || this.rs[si+nsi-1].newtagval >= this.rs[di].tagval)) {
-        tv = this.rs[si+nsi-1].newtagval + this.gapf();
-        if (sigroup) {
-            tv = Math.max(tv, this.rs[si].tagval);
-        }
-        d = tv - this.rs[di].tagval;
-        i = di;
-        while (i !== si
-               && this.rs[i].tagval !== false
-               && (i === di || this.rs[i].tagval <= this.rs[i-1].newtagval)) {
-            this.rs[i].newtagval += d;
-            ++i;
-        }
+    // no room: shift later rows down, or earlier rows up, whichever
+    // changes fewer rows
+    const base = rs.map((ra) => ra.newtagval);
+    this.place(rs, si, nsi, prev.newtagval + gap);
+    this.push_after(rs, si, nsi, di);
+    if (this.gapless || nsi !== 1) {
+        return;
     }
-    // handle rest
-    i = Math.max(si + nsi, di);
-    if (i !== len && this.rs[i].tagval !== false) {
-        if (si < di) { // forward
-            tv = this.rs[si + nsi - 1].newtagval + this.gapf();
-        } else { // reverse
-            tv = this.rs[si - 1].newtagval;
-            if (this.rs[i].tagval !== this.rs[si-1].tagval) {
-                tv += this.gapf();
-            }
-        }
-        while (this.rs[i].tagval < tv) {
-            this.rs[i].newtagval = tv;
-            ++i;
-            if (i === len || this.rs[i].tagval === false) {
-                break;
-            }
-            tv += Math.min(this.rs[i].tagval - this.rs[i-1].tagval, this.gapf());
-        }
+    const after = rs.map((ra) => ra.newtagval);
+    rs.forEach((ra, i) => { ra.newtagval = base[i]; });
+    this.place(rs, si, nsi, hi - this.gapf());
+    if (!this.pull_before(rs, si, nsi, di)
+        || changed_count(rs) >= changed_count(rs, after)) {
+        rs.forEach((ra, i) => { ra.newtagval = after[i]; });
     }
+};
+function changed_count(rs, nvs) {
+    let n = 0;
+    for (let i = 0; i !== rs.length; ++i) {
+        if ((nvs ? nvs[i] : rs[i].newtagval) !== rs[i].tagval)
+            ++n;
+    }
+    return n;
+}
+Tagval_DraggableTable.prototype.place = function (rs, si, nsi, tv) {
+    const srctv = rs[si].tagval;
+    for (let i = si; i !== si + nsi; ++i) {
+        rs[i].newtagval = srctv === false ? tv : rs[i].tagval + tv - srctv;
+    }
+};
+// Shift rows after the moved rows down until they fit.
+Tagval_DraggableTable.prototype.push_after = function (rs, si, nsi, di) {
+    let x = rs[si + nsi - 1], first = true;
+    for (let i = di; i !== rs.length; ++i) {
+        if (i === si) {
+            i += nsi - 1;
+            continue;
+        }
+        const y = rs[i];
+        if (y.newtagval === false) {
+            break;
+        }
+        const tie = (x.isgroup && !y.isgroup) || (!first && y.tagval === x.tagval);
+        if (tie ? y.newtagval >= x.newtagval : y.newtagval > x.newtagval) {
+            break;
+        }
+        if (x.isgroup && !y.isgroup) {
+            y.newtagval = x.newtagval;
+        } else if (first) {
+            y.newtagval = x.newtagval + this.gapf();
+        } else {
+            y.newtagval = x.newtagval + Math.min(y.tagval - x.tagval, this.gapf());
+        }
+        x = y;
+        first = false;
+    }
+};
+// Shift rows before the moved rows up until they fit. Return false if that
+// would move a positive value to 0 or below.
+Tagval_DraggableTable.prototype.pull_before = function (rs, si, nsi, di) {
+    let x = rs[si], first = true;
+    if (x.newtagval <= 0 && rs[di].newtagval > 0) {
+        return false;
+    }
+    for (let i = di - 1; i >= 0; --i) {
+        if (i === si + nsi - 1) {
+            i -= nsi - 1;
+            continue;
+        }
+        const y = rs[i];
+        const tie = (y.isgroup && !x.isgroup) || (!first && y.tagval === x.tagval);
+        if (tie ? y.newtagval <= x.newtagval : y.newtagval < x.newtagval) {
+            break;
+        }
+        if (y.isgroup && !x.isgroup) {
+            y.newtagval = x.newtagval;
+        } else if (first) {
+            y.newtagval = x.newtagval - this.gapf();
+        } else {
+            y.newtagval = x.newtagval - Math.min(x.tagval - y.tagval, this.gapf());
+        }
+        if (y.newtagval <= 0 && y.tagval > 0) {
+            return false;
+        }
+        x = y;
+        first = false;
+    }
+    return true;
+};
+// Return a value in (lo, hi) close to lo + gap, or null if there’s no room.
+// If gap is 0, the value may equal lo.
+Tagval_DraggableTable.prototype.room_value = function (lo, gap, hi) {
+    const v = lo + gap;
+    if (hi === null || v < hi) {
+        return v;
+    } else if (gap === 0) {
+        return null;
+    }
+    const step = this.gapstep, m = lo + step * Math.floor((hi - lo) / (2 * step) + 1e-9);
+    return m > lo && m < hi ? m : null;
+};
+// Return a value for the first row, preferring not to cross 0.
+Tagval_DraggableTable.prototype.top_value = function (hi) {
+    if (hi === null) {
+        return 1;
+    }
+    const v = hi - this.gapf();
+    if (v > 0 || hi <= 0) {
+        return v;
+    }
+    const step = this.gapstep, m = step * Math.floor(hi / (2 * step) + 1e-9);
+    return m > 0 ? m : hi;
 };
 Tagval_DraggableTable.prototype.commit = function () {
     const saves = [], annosaves = [], srcra = this.rs[this.srcindex];
     this.compute();
     for (let i = 0; i !== this.rs.length; ++i) {
-        const row = this.rs[i];
-        if (row.newtagval !== row.tagval) {
-            const nv = tagvalue_unparse(row.newtagval);
+        const row = this.rs[i], nv = tagvalue_unparse(row.newtagval);
+        if (nv !== tagvalue_unparse(row.tagval)) {
             if (row.id) {
                 saves.push("".concat(row.id, " ", this.dragtag, "#", nv === "" ? "clear" : nv));
             } else if (row.annoid) {
@@ -11428,7 +11573,7 @@ Assign_DraggableTable.prototype.content = function () {
         srcra = this.rs[this.srcindex],
         oldidx = srcra.groupindex,
         newidx = this.drag_groupindex();
-    frag.append(srcra.legend());
+    frag.append(this.legend());
     let legend;
     if (newidx < this.assigninfo.length) {
         legend = this.groupinfo[newidx].legend;
@@ -11444,10 +11589,7 @@ Assign_DraggableTable.prototype.content = function () {
     return frag;
 };
 Assign_DraggableTable.prototype.commit = function () {
-    const as = [],
-        srcra = this.rs[this.srcindex],
-        oldidx = srcra.groupindex,
-        newidx = this.drag_groupindex();
+    const as = [], newidx = this.drag_groupindex();
     function doassignlist(as, assignlist, id, ondrag) {
         const len = (assignlist || []).length;
         for (let i = 0; i !== len; ++i) {
@@ -11459,13 +11601,16 @@ Assign_DraggableTable.prototype.commit = function () {
             }
         }
     }
-    if (oldidx !== newidx) {
-        for (let i = 0; i !== this.assigninfo.length; ++i) {
-            i !== newidx && doassignlist(as, this.assigninfo[i], srcra.id, "leave");
+    for (const si of this.multi || [this.srcindex]) {
+        const ra = this.rs[si];
+        if (ra.groupindex !== newidx) {
+            for (let i = 0; i !== this.assigninfo.length; ++i) {
+                i !== newidx && doassignlist(as, this.assigninfo[i], ra.id, "leave");
+            }
+            doassignlist(as, this.assigninfo[newidx], ra.id, "enter");
         }
-        doassignlist(as, this.assigninfo[newidx], srcra.id, "enter");
     }
-    if (!as.empty) {
+    if (as.length) {
         $.post(hoturl("=api/assign", {format: "none"}),
             {assignments: JSON.stringify(as), search: tablelist_search(this.tablelist)},
             function (rv) {
