@@ -2146,6 +2146,12 @@ class Conf {
         return $this->external_login();
     }
 
+    /** @return bool
+     * @deprecated */
+    function allow_preferred_email() {
+        return $this->require_preferred_email();
+    }
+
     /** @return bool */
     function allow_local_signin() {
         $lt = $this->login_type();
@@ -2634,14 +2640,6 @@ class Conf {
         }
         $x = $this->_linked_user_cache[$uid] ?? [$uid];
         return is_int($x) ? $this->_linked_user_cache[$x] : $x;
-    }
-
-
-    // preferred emails
-
-    /** @return bool */
-    function allow_preferred_email() {
-        return ($this->_slice & Contact::SLICEBIT_PREFERREDEMAIL) === 0;
     }
 
 

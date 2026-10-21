@@ -484,6 +484,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $u->country = $args["country"];
         }
         if (isset($args["preferredEmail"])
+            && $conf->require_preferred_email()
             && ($preferred_email = trim($args["preferredEmail"])) !== ""
             && validate_email($preferred_email)) {
             $u->preferredEmail = $preferred_email;
@@ -1340,6 +1341,17 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && ($for !== "pc" || ($this->roles & self::ROLE_PCLIKE) === 0);
     }
 
+    /** Return the address that mail to this user should use: the stored
+     * preferred email where the site allows one, otherwise the email.
+     * @return string */
+    function delivery_email() {
+        if (($this->preferredEmail ?? "") !== ""
+            && $this->conf->require_preferred_email()) {
+            return $this->preferredEmail;
+        }
+        return $this->email;
+    }
+
     /** @param bool $self_requested
      * @return bool */
     function can_receive_mail($self_requested = false) {
@@ -1350,9 +1362,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
                    && $this->conf->opt("sendEmailUnconfirmed") === false) {
             $disabled |= self::CF_UNCONFIRMED;
         }
-        $e = $this->preferredEmail ?? $this->email;
         return ($this->cflags & ($disabled | self::CF_BOT)) === 0
-            && self::is_plausible_email($e);
+            && self::is_plausible_email($this->delivery_email());
     }
 
     /** @return int */

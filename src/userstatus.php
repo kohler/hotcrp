@@ -1361,7 +1361,7 @@ class UserStatus extends MessageSet {
                 $this->diffs[$diff] = true;
             }
         }
-        if ($user->conf->allow_preferred_email()
+        if ($user->conf->require_preferred_email()
             && ($v = $this->jval->preferred_email ?? null) !== null
             && strlen($v) <= 120) {
             $user->set_prop("preferredEmail", $v, $ifempty);

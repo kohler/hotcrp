@@ -1843,11 +1843,52 @@ class UserStatus_Tester {
         // `preferred_email` is parsed but only saved where the site allows it
         $this->csv_save("email,preferredemail\ncsvt10@_.com,elsewhere@_.com\n");
         $u = $this->conf->fresh_user_by_email("csvt10@_.com");
-        if ($this->conf->allow_preferred_email()) {
+        if ($this->conf->require_preferred_email()) {
             xassert_eqq($u->preferredEmail, "elsewhere@_.com");
         } else {
             xassert_eqq($u->preferredEmail, null);
         }
+    }
+
+    function test_preferred_email_requires_external_login() {
+        $email = "newpreferred@_.com";
+        $this->delete_account($email);
+        xassert(!$this->conf->external_login());
+
+        // unslicing the user cache does not change site policy
+        $this->conf->user_by_id(array_key_first($this->conf->pc_members()));
+        xassert(!$this->conf->require_preferred_email());
+
+        // neither creating nor updating an account stores a preferred email
+        foreach (["preferredEmail", "preferred_email"] as $k) {
+            $u = (new UserStatus($this->conf->root_user()))->save_user((object) [
+                "email" => $email, $k => "elsewhere@_.com"
+            ]);
+            xassert(!!$u);
+            xassert_eqq($this->conf->fresh_user_by_email($email)->preferredEmail, null);
+        }
+
+        // a preferred email stored earlier is ignored
+        $this->conf->qe("update ContactInfo set preferredEmail=? where email=?", "elsewhere@_.com", $email);
+        $u = $this->conf->fresh_user_by_email($email);
+        xassert_eqq($u->preferredEmail, "elsewhere@_.com");
+        xassert_eqq($u->delivery_email(), $email);
+        xassert_eqq(MailPreparation::recipient_address($u), $email);
+
+        // external login sites do store it
+        $this->delete_account($email);
+        $old_login_type = $this->conf->opt("loginType");
+        $this->conf->set_opt("loginType", "htauth");
+        xassert($this->conf->require_preferred_email());
+        $u = (new UserStatus($this->conf->root_user()))->save_user((object) [
+            "email" => $email, "preferredEmail" => "elsewhere@_.com"
+        ]);
+        xassert(!!$u);
+        $u = $this->conf->fresh_user_by_email($email);
+        xassert_eqq($u->preferredEmail, "elsewhere@_.com");
+        xassert_eqq($u->delivery_email(), "elsewhere@_.com");
+        $this->conf->set_opt("loginType", $old_login_type);
+        $this->delete_account($email);
     }
 
     function test_csv_rows_are_independent() {

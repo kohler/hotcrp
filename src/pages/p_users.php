@@ -147,8 +147,8 @@ class Users_Page {
             $has_orcid = $has_orcid || $row["orcid"] !== "";
             $has_phone = $has_phone || ($row["phone"] ?? "") !== "";
             $has_disabled = $has_disabled || $user->is_disabled();
-            if ($user->preferredEmail && $user->preferredEmail !== $user->email) {
-                $row["preferred_email"] = $user->preferredEmail;
+            if (($pe = $user->delivery_email()) !== $user->email) {
+                $row["preferred_email"] = $pe;
                 $has_preferred_email = true;
             }
             if ($user->contactTags) {

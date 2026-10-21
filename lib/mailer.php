@@ -98,9 +98,8 @@ class Mailer {
      * @return string */
     function expand_user($contact, $out) {
         $r = Author::make_keyed($contact);
-        if (is_object($contact)
-            && ($contact->preferredEmail ?? "") != "") {
-            $r->email = $contact->preferredEmail;
+        if ($contact instanceof Contact) {
+            $r->email = $contact->delivery_email();
         }
 
         $flags = $this->context === self::CONTEXT_EMAIL ? NAME_MAILQUOTE : 0;
@@ -842,7 +841,7 @@ class Mailer {
                 $template[$lcfield] = $rest[$lcfield];
         }
 
-        // look up recipient; use preferredEmail if set
+        // look up recipient; mail goes to its `delivery_email()`
         if (!$this->recipient || !$this->recipient->email) {
             throw new Exception("No email in Mailer::send");
         }

@@ -57,8 +57,7 @@ class MailPreparation extends MessageSet implements JsonSerializable {
     /** @param Contact $u
      * @return string */
     static function recipient_address($u) {
-        $e = $u->preferredEmail ?? $u->email;
-        return Text::name($u->firstName, $u->lastName, $e, NAME_MAILQUOTE | NAME_E);
+        return Text::name($u->firstName, $u->lastName, $u->delivery_email(), NAME_MAILQUOTE | NAME_E);
     }
 
     /** @return Contact */
@@ -181,7 +180,7 @@ class MailPreparation extends MessageSet implements JsonSerializable {
             } else if ($ru->is_bot()) {
                 // bot addresses are implausible, but report them separately
                 $mx["bot"][] = $ru->email;
-            } else if (!Contact::is_plausible_email($ru->preferredEmail ?? $ru->email)) {
+            } else if (!Contact::is_plausible_email($ru->delivery_email())) {
                 $mx["fake"][] = $ru->email;
             } else if ($ru->is_disabled()) {
                 $mx["disabled"][] = $ru->email;
