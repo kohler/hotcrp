@@ -1530,4 +1530,17 @@ seqnexttag,6,altorder\n");
 
         xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,qa qb qc\n");
     }
+
+    function test_assigntags_response() {
+        $jr = call_api("=assigntags", $this->u_chair, ["tagassignment" => "1 atr#2 2 atr#1"]);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->papers), 2);
+        $tvs = [];
+        foreach ($jr->papers as $pj) {
+            $tvs[$pj->pid] = $pj->tags;
+        }
+        xassert_in_eqq("atr#2", $tvs[1]);
+        xassert_in_eqq("atr#1", $tvs[2]);
+        xassert_assign($this->u_chair, "paper,action,tag\nall,cleartag,atr\n");
+    }
 }

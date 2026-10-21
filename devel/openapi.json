@@ -3543,7 +3543,7 @@
         "/assigntags": {
             "post": {
                 "summary": "Change tags on several submissions",
-                "description": "Apply tags to many submissions in one request. `tagassignment` is a\nwhitespace/comma-separated stream of submission IDs and tags: each number sets\nthe “current” submission, and each following tag (until the next number) is\nassigned to it. For example, `1 discuss 2 discuss reject` tags submission 1 with\n`discuss` and submission 2 with `discuss` and `reject`.\n\nThe response’s `p` array carries refreshed [tag objects](#tag-tags) for the\naffected submissions. Supplying `search` adds that search’s results to the\nresponse as well.\n",
+                "description": "Apply tags to many submissions in one request. `tagassignment` is a\nwhitespace/comma-separated stream of submission IDs and tags: each number sets\nthe “current” submission, and each following tag (until the next number) is\nassigned to it. For example, `1 discuss 2 discuss reject` tags submission 1 with\n`discuss` and submission 2 with `discuss` and `reject`.\n\nThe response’s `papers` array carries refreshed [tag objects](#tag-tags) for the\naffected submissions. Supplying `search` adds that search’s results to the\nresponse as well.\n",
                 "operationId": "assigntags",
                 "x-order": 98,
                 "tags": [
@@ -3604,7 +3604,7 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "p": {
+                                                "papers": {
                                                     "type": "array",
                                                     "items": {
                                                         "$ref": "#/components/schemas/tag_response"
@@ -3631,7 +3631,7 @@
                                                 }
                                             },
                                             "required": [
-                                                "p"
+                                                "papers"
                                             ]
                                         }
                                     ]

@@ -113,7 +113,7 @@ the “current” submission, and each following tag (until the next number) is
 assigned to it. For example, `1 discuss 2 discuss reject` tags submission 1 with
 `discuss` and submission 2 with `discuss` and `reject`.
 
-The response’s `p` array carries refreshed [tag objects](#tag-tags) for the
+The response’s `papers` array carries refreshed [tag objects](#tag-tags) for the
 affected submissions. Supplying `search` adds that search’s results to the
 response as well.
 
@@ -121,7 +121,7 @@ response as well.
 * badge featured
 * param =tagassignment string: Submission IDs interleaved with the tags to assign to them.
 * param ?+search search_parameter_specification
-* response p [tag_response]: Refreshed tag objects for the affected submissions.
+* response papers [tag_response]: Refreshed tag objects for the affected submissions.
 * response_schema search_response.opt
 
 

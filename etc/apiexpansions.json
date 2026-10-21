@@ -98,7 +98,7 @@
     "name": "assigntags", "post": true,
     "tags": ["Tags"],
     "parameters": "=tagassignment ?=search",
-    "response": "p ?ids ?groups ?search_params"
+    "response": "papers ?ids ?groups ?search_params"
   },
   {
     "name": "autoassign", "post": true,

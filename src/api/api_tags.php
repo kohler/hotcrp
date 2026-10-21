@@ -179,7 +179,7 @@ class Tags_API {
         }
         $jr = new JsonResult([
             "ok" => true,
-            "p" => Assign_API::assigned_paper_info($user, $assigner)
+            "papers" => Assign_API::assigned_paper_info($user, $assigner)
         ]);
         if ($qreq->search) {
             Search_API::apply_search($jr, $user, $qreq, $qreq->search);
