@@ -130,6 +130,10 @@ class LoginHelper {
     /** @param Contact $user
      * @return array{ok:true,user:Contact}|array{ok:false,disabled?:true,email?:true} */
     static function check_external_login($user) {
+        // External identities must still be printable ASCII
+        if (!preg_match('/\A[\x21-\x7E]+\z/', $user->email)) {
+            return ["ok" => false, "email" => true, "invalidemail" => true];
+        }
         if ($user->contactdb_disabled()) {
             return ["ok" => false, "disabled" => true, "email" => true];
         }

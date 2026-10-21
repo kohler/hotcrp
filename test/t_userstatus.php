@@ -1850,6 +1850,19 @@ class UserStatus_Tester {
         }
     }
 
+    function test_store_does_not_adopt_similar_email() {
+        // the database collation would match these to chair@_.com
+        foreach (["chair\x01@_.com", "cha\u{ED}r@_.com"] as $email) {
+            foreach ([0, Contact::SAVE_ANY_EMAIL] as $flags) {
+                $u = Contact::make_keyed($this->conf, ["email" => $email, "affiliation" => "Elsewhere"]);
+                xassert_eqq($u->store($flags), null);
+            }
+        }
+        xassert_eqq($this->conf->fresh_user_by_email("chair@_.com")->affiliation, "");
+        $u = Contact::make_keyed($this->conf, ["email" => "CHAIR@_.com"])->store();
+        xassert_eqq($u->email, "chair@_.com");
+    }
+
     function test_preferred_email_requires_external_login() {
         $email = "newpreferred@_.com";
         $this->delete_account($email);

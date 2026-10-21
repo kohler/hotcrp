@@ -2726,6 +2726,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
     }
 
+    /** Return the local account with this email. The database collation can
+     * match a different email (it ignores accents and control characters),
+     * so check the result.
+     * @return ?Contact */
+    private function _fresh_local_user() {
+        $u = $this->conf->fresh_user_by_email($this->email);
+        return $u && strcasecmp($u->email, $this->email) === 0 ? $u : null;
+    }
+
     /** @param int $flags
      * @param ?Contact $actor
      * @return ?Contact */
@@ -2742,7 +2751,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
              && !validate_email($this->email))
             || (($flags & self::SAVE_SELF_REGISTER) !== 0
                 && !$this->allow_self_register())) {
-            $localu = $this->conf->fresh_user_by_email($this->email);
+            $localu = $this->_fresh_local_user();
             if (!$localu) {
                 return null;
             }
@@ -2818,7 +2827,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
 
         if (!$this->save_prop()) {
             // maybe user actually already existed; return it as `$localu`
-            return $this->conf->fresh_user_by_email($this->email);
+            return $this->_fresh_local_user();
         }
 
         // log creation of non-placeholder accounts

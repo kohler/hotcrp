@@ -3,8 +3,10 @@ HotCRP NEWS
 
 ## Version 3.5
 
-* Security updates: This release fixes a number of vulnerabilities, including
-  many reported via the Anthropic OSS Program and Milad Nasr – thanks!
+* Security updates
+
+    This release fixes a number of vulnerabilities, including many reported via
+    the Anthropic OSS Program and Milad Nasr – thanks!
 
     * Fix a vulnerability, critical for deployments using a contact database,
       that could misdeliver password reset mails to attacker-chosen mailboxes
@@ -116,8 +118,10 @@ HotCRP NEWS
     * Report scope errors more thoroughly.
     * A single request can upload at most 100 documents.
 
-* Contact database
+* Upgrade notes
 
+    * LDAP and htauth usernames are restricted to ASCII characters only.
+      LDAP users with non-ASCII usernames will be unable to sign in.
     * New sites that use a contact database do not automatically assign
       administrator privilege to the first account to sign in. Use `php
       batch/saveusers.php` to assign administrator privilege to an account.

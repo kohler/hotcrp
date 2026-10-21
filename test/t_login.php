@@ -521,6 +521,18 @@ class Login_Tester {
         }
     }
 
+    function test_external_login_requires_ascii() {
+        // the database collation would match these to chair@_.com
+        foreach (["cha\u{ED}r@_.com", "chair\x01@_.com", "chair@_\x7F.com"] as $email) {
+            $u = Contact::make_keyed($this->conf, ["email" => $email]);
+            $info = LoginHelper::check_external_login($u);
+            xassert_eqq($info["ok"], false);
+            xassert_eqq($u->contactId, 0);
+        }
+        $info = LoginHelper::check_external_login($this->conf->checked_user_by_email("chair@_.com"));
+        xassert_eqq($info["ok"], true);
+    }
+
     function test_setup_phase_requires_no_cdb() {
         $email = "firstcdb@hotcrp.com";
         $this->conf->save_setting("setupPhase", 1);
