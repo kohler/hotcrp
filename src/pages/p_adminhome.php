@@ -43,7 +43,7 @@ class AdminHome_Page {
             $ml[] = MessageItem::warning_note("<5>PHP’s <code>post_max_size</code> setting is smaller than its <code>upload_max_filesize</code> setting. The <code>post_max_size</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file");
         }
         $memory_limit = ini_get_bytes("memory_limit");
-        if ($post_max_size >= $memory_limit) {
+        if ($memory_limit > 0 && $post_max_size >= $memory_limit) {
             $ml[] = MessageItem::urgent_note("<5>PHP’s <code>memory_limit</code> setting is smaller than its <code>post_max_size</code> setting. The <code>memory_limit</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file");
         }
         if ((int) ini_get("session.gc_maxlifetime") < ($conf->opt("sessionLifetime") ?? 86400)
