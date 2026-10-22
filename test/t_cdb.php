@@ -891,6 +891,43 @@ class Cdb_Tester {
         xassert($ps->save_paper_json((object) ["id" => 1, "authors" => $authors]));
     }
 
+    function test_author_orcid_entry_respects_cdb_accounts() {
+        $paper1 = $this->user_chair->checked_paper_by_id(1);
+        $authors = array_map(function ($au) {
+            return (object) ["name" => $au->name(), "email" => $au->email, "affiliation" => $au->affiliation];
+        }, $paper1->author_list());
+
+        // margay has a real contactdb account (no local one), so entering
+        // an ORCID iD for margay records nothing; the save is refused
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Margay', lastName='Face', email='margay@fart.edu', password=' unset', cflags=0");
+        $this->conf->invalidate_caches("users");
+        $this->conf->set_opt("requireOrcid", 1);
+        $ps = new PaperStatus($this->user_chair);
+        $ps->save_paper_json((object) [
+            "id" => 1, "authors" => [(object) ["email" => "margay@fart.edu", "orcid" => "0000-0002-1825-0097"]]
+        ]);
+        xassert_str_contains($ps->full_feedback_text(), "ORCID iD not recorded");
+        xassert_str_contains($ps->full_feedback_text(), "Please ask margay@fart.edu to sign in");
+        xassert(!$this->conf->fresh_user_by_email("margay@fart.edu"));
+        xassert_eqq($this->conf->fresh_cdb_user_by_email("margay@fart.edu")->orcid(), "");
+
+        // kodkod is new everywhere, so the ORCID iD is recorded
+        $ps = new PaperStatus($this->user_chair);
+        $ps->save_paper_json((object) [
+            "id" => 1, "authors" => [(object) ["email" => "kodkod@fart.edu", "orcid" => "0000-0001-5109-3700"]]
+        ]);
+        xassert_not_str_contains($ps->full_feedback_text(), "Please ask");
+        xassert_eqq($this->conf->fresh_user_by_email("kodkod@fart.edu")->confirmed_orcid(), "0000-0001-5109-3700");
+        if (($cdbu = $this->conf->fresh_cdb_user_by_email("kodkod@fart.edu"))) {
+            xassert_eqq($cdbu->orcid(), "0000-0001-5109-3700");
+        }
+        $this->conf->set_opt("requireOrcid", null);
+
+        // restore the original author list
+        $ps = new PaperStatus($this->conf->root_user());
+        xassert($ps->save_paper_json((object) ["id" => 1, "authors" => $authors]));
+    }
+
     function test_import_secondary() {
         Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Leopard', lastName='Face', email='leopard@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
         Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Puma', lastName='Face', email='puma@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
