@@ -716,6 +716,31 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
     }
 
+    /** Return canonical form of ORCID iD `$s`, or null if `$s` is invalid.
+     * Accepts orcid.org URLs and missing hyphens; checks the checksum.
+     * @param string $s
+     * @return ?string */
+    static function clean_orcid($s) {
+        $s = trim($s);
+        if ($s === "") {
+            return "";
+        }
+        if (!preg_match('/\A(?:(?:https?:\/\/)?(?:www\.)?orcid\.org\/)?(\d{4})-?(\d{4})-?(\d{4})-?(\d{3}[\dX])\z/i', $s, $m)) {
+            return null;
+        }
+        $d = $m[1] . $m[2] . $m[3] . strtoupper($m[4]);
+        // ISO 7064 MOD 11-2 check digit
+        $t = 0;
+        for ($i = 0; $i !== 15; ++$i) {
+            $t = ($t + (int) $d[$i]) * 2;
+        }
+        $r = (12 - $t % 11) % 11;
+        if ($d[15] !== ($r === 10 ? "X" : (string) $r)) {
+            return null;
+        }
+        return substr($d, 0, 4) . "-" . substr($d, 4, 4) . "-" . substr($d, 8, 4) . "-" . substr($d, 12);
+    }
+
 
     // A sort specification is an integer divided into units of 3 bits.
     // A unit of 1 === first, 2 === last, 3 === email, 4 === affiliation.
