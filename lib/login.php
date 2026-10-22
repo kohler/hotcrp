@@ -208,6 +208,7 @@ class LoginHelper {
         }
         if (($created = !$user->conf->contactdb())) {
             $user->ensure_account_here()->save_roles(Contact::ROLE_ADMIN, null);
+            SiteURL_SettingParser::record_site_url($user);
         }
         $user->conf->save_setting("setupPhase", null);
         return $created;

@@ -37,9 +37,15 @@ $Opt["dbName"] = "FIXME";
 //   downloadPrefix  Prefix for downloaded files, such as papers; should
 //                   end in a dash. Example: "hotnets5-". Defaults to
 //                   $Opt["dbName"] plus a dash.
-//   paperSite       [OPTIONAL] URL for this HotCRP installation. Used in
-//                   emails. Default is derived from the access URL.
-//   conferenceSite  [OPTIONAL] Conference site URL (CFP, registration).
+//   paperSite       URL for this HotCRP installation. It is best to set this
+//                   explicitly (and sites using a contact database MUST set
+//                   it explicitly). If unset, HotCRP will derive the site URL
+//                   from administrator accesses.
+//   defaultPaperSite [OPTIONAL] Like paperSite, but used primarily for email
+//                   (links on web pages will use the URL the user accessed).
+//                   May be preferable to paperSite for sites accessible via
+//                   multiple names.
+//   conferenceSite  [OPTIONAL] Public conference URL (e.g., CFP, registration).
 
 
 // EMAIL

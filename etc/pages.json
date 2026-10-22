@@ -181,10 +181,6 @@
     [   "forgotpassword/form/description", 10, "Signin_Page::print_forgot_form_description"   ],
     [   "forgotpassword/form/email", 20, "*Signin_Page::print_forgot_form_email"   ],
     [   "forgotpassword/form/actions", 100, "*Signin_Page::print_forgot_form_actions"   ],
-    {
-        "name": "forgotpassword/externallogin", "order": false,
-        "print_function": "Signin_Page::forgot_externallogin_message"
-    },
 
 
     {   "name": "resetpassword", "allow_disabled": true   },

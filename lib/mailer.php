@@ -166,8 +166,11 @@ class Mailer {
     }
 
     static function kw_url($args, $isbool, $m) {
-        if (!$args) {
-            return $m->conf->baseurl();
+        // without a site URL, leave the keyword unexpanded
+        if ($m->conf->safe_baseurl() === null) {
+            return null;
+        } else if (!$args) {
+            return $m->conf->safe_baseurl();
         }
         $a = preg_split('/\s*,\s*/', $args);
         foreach ($a as &$t) {
@@ -187,7 +190,7 @@ class Mailer {
             }
         }
         parse_str($a[1], $param);
-        return $m->conf->hoturl($a[0], $param, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_PLACEHOLDERS);
+        return $m->conf->hoturl($a[0], $param, Conf::HOTURL_SAFE_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS | Conf::HOTURL_PLACEHOLDERS);
     }
 
     static function kw_php($args, $isbool, $m) {
@@ -247,7 +250,10 @@ class Mailer {
             $loginparts = "email=" . urlencode($this->recipient->email);
         }
         if ($uf->name === "LOGINURL") {
-            return $this->conf->baseurl() . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
+            if (($site = $this->conf->safe_baseurl()) === null) {
+                return null;
+            }
+            return $site . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
         } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
         }
@@ -270,6 +276,10 @@ class Mailer {
             return null;
         }
         $this->sensitive = true;
+        if ($this->conf->safe_baseurl() === null) {
+            $this->preparation->append_item(MessageItem::error("<0>This site can’t send password links until its site URL is set"));
+            return false;
+        }
         if (!$this->censor && !$this->preparation->reset_capability) {
             $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
             if (($cdbu = $this->recipient->cdb_user())) {
@@ -282,7 +292,7 @@ class Mailer {
             $this->preparation->reset_capability = $capinfo->salt;
         }
         $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
-        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
+        return $this->conf->hoturl("resetpassword", ["__PATH__" => $token], Conf::HOTURL_SAFE_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
     }
 
     /** @param string $what
@@ -951,6 +961,10 @@ class Mailer {
             } else if ($this->censor === self::CENSOR_ALL) {
                 return "<0>‘{$xref}’ ignored, password links cannot appear in mails with Cc or Bcc";
             }
+        }
+        if ((strpos($kw, "LINK") !== false || strpos($kw, "URL") !== false)
+            && $this->conf->safe_baseurl() === null) {
+            return "<0>Link keywords ignored, the site URL is not set";
         }
         return "<0>‘{$xref}’ keyword not found";
     }

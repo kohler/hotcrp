@@ -45,6 +45,26 @@ class Signin_Page {
         return $this->_ms ? $this->_ms->problem_status_at($field) : 0;
     }
 
+    /** Print why `$page` is unavailable.
+     * @param 'newaccount'|'forgotpassword'|'resetpassword' $page
+     * @param bool $escape
+     * @return void */
+    static function print_signin_unavailable(Conf $conf, $page, $escape = false) {
+        if ($page === "newaccount" && !$conf->allow_user_self_register()) {
+            $m = "<0>User self-registration is disabled on this site.";
+        } else if ($page !== "newaccount" && $conf->login_type()) {
+            $m = "<5>Password reset links aren’t used on this site. Contact <a href=\"mailto:{:url}\">the site administrator</a> for help signing in.";
+        } else {
+            $mp = $page === "newaccount" ? "create accounts" : "send password reset email";
+            $m = "<5>This site can’t {$mp} at the moment. Contact <a href=\"mailto:{:url}\">the site administrator</a> for help signing in.";
+        }
+        $ml = [MessageItem::error($m, new FmtArg(0, $conf->site_contact()->email, 0))];
+        if ($escape) {
+            $ml[] = MessageItem::plain("<5>" . $conf->hotlink("Return home", "index"));
+        }
+        $conf->feedback_msg($ml);
+    }
+
 
     // Signin request
     /** @param ComponentSet $cs */
@@ -263,7 +283,8 @@ class Signin_Page {
     }
 
     static function print_signin_form_create(Contact $user, Qrequest $qreq) {
-        if (!$user->conf->login_type() && $user->conf->allow_user_self_register()) {
+        if (!$user->conf->login_type()
+            && $user->conf->allow_user_self_register()) {
             echo '<p class="mt-3 mb-0 hint fx">New to the site? ',
                 $user->conf->hotlink("Create an account", "newaccount", self::redirect_param($qreq), ["class" => "uic js-href-add-email"]), '</p>';
         }
@@ -338,14 +359,18 @@ class Signin_Page {
      * @return HotCRPMailPreparation */
     function mail_user(Conf $conf, $info) {
         $user = $info["user"];
-        $prep = $user->prepare_mail($info["mailtemplate"], $info["mailrest"] ?? []);
+        // report preparation errors here, not in `prepare_mail`
+        $prep = $user->prepare_mail($info["mailtemplate"], ($info["mailrest"] ?? []) + ["no_error_quit" => true]);
         $prep->set_self_requested(true);
         if (!$prep->send()) {
-            if ($conf->opt("sendEmail")) {
+            if ($conf->safe_baseurl() === null) {
+                self::print_signin_unavailable($conf, strpos($info["mailtemplate"], "@newaccount") !== false ? "newaccount" : "forgotpassword");
+            } else if ($conf->opt("sendEmail")) {
                 $conf->feedback_msg(...$prep->message_list());
                 $this->ms()->error_at("email");
             } else {
-                $conf->error_msg("<0>The system cannot send email at this time. You’ll need help from the site administrator to sign in.");
+                $conf->error_msg($conf->_("<5>The system cannot send email at this time. You’ll need help from <a href=\"mailto:{:url}\">the site administrator</a> to sign in.",
+                    new FmtArg(0, $conf->site_contact()->email, 0)));
             }
         } else if (strpos($info["mailtemplate"], "@newaccount") !== false) {
             $conf->success_msg("<0>Sent mail to {$user->email}. When you receive that mail, follow the link to set a password and sign in to the site.");
@@ -412,12 +437,17 @@ class Signin_Page {
     }
     /** @param ComponentSet $cs */
     static function print_newaccount_head(Contact $user, Qrequest $qreq, $cs) {
-        $user->conf->emit_credential_page_headers();
-        $qreq->print_header("New account", "newaccount", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
+        $conf = $user->conf;
+        $conf->emit_credential_page_headers();
+        // the first user of a new site records the site URL
+        $ok = $conf->allow_user_self_register()
+            && ($conf->safe_baseurl() !== null
+                || ($conf->setting("setupPhase")
+                    && SiteURL_SettingParser::site_url_configurable($conf)));
+        $qreq->print_header("New account", "newaccount", ["action_bar" => "", "hide_title" => true, "body_class" => $ok ? "body-signin" : "body-error"]);
         $cs->print_on_leave("__footer");
-        if (!$user->conf->allow_user_self_register()) {
-            $user->conf->error_msg("<0>User self-registration is disabled on this site.");
-            echo '<p class="mb-5">', $user->conf->hotlink("Return home", "index"), '</p>';
+        if (!$ok) {
+            self::print_signin_unavailable($conf, "newaccount", true);
             return false;
         }
     }
@@ -450,11 +480,6 @@ class Signin_Page {
 
 
     // Forgot password request
-    static function forgot_externallogin_message(Contact $user) {
-        $user->conf->error_msg("<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.");
-        echo '<p class="mb-5">', $user->conf->hotlink("Return home", "index"), '</p>';
-        return false;
-    }
     function forgot_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
@@ -475,11 +500,14 @@ class Signin_Page {
         }
     }
     static function print_forgot_head(Contact $user, Qrequest $qreq, $cs) {
-        $user->conf->emit_credential_page_headers();
-        $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
+        $conf = $user->conf;
+        $conf->emit_credential_page_headers();
+        $ok = !$conf->login_type() && $conf->safe_baseurl() !== null;
+        $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => $ok ? "body-signin" : "body-error"]);
         $cs->print_on_leave("__footer");
-        if ($user->conf->login_type()) {
-            return $cs->print("forgotpassword/__externallogin");
+        if (!$ok) {
+            self::print_signin_unavailable($conf, "forgotpassword", true);
+            return false;
         }
     }
     static function print_forgot_body(Contact $user, Qrequest $qreq, $cs) {
@@ -641,11 +669,14 @@ class Signin_Page {
         return $info;
     }
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {
-        $user->conf->emit_credential_page_headers();
-        $qreq->print_header("Reset password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
+        $conf = $user->conf;
+        $conf->emit_credential_page_headers();
+        $ok = !$conf->login_type();
+        $qreq->print_header("Reset password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => $ok ? "body-signin" : "body-error"]);
         $cs->print_on_leave("__footer");
-        if ($user->conf->login_type()) {
-            return $cs->print("forgotpassword/__externallogin");
+        if (!$ok) {
+            self::print_signin_unavailable($conf, "resetpassword", true);
+            return false;
         }
     }
     function print_reset_body(Contact $user, Qrequest $qreq, $cs) {

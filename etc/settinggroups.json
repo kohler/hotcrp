@@ -11,7 +11,8 @@
         "settings": [
             "conference_abbreviation",
             "conference_name",
-            "conference_url"
+            "conference_url",
+            "site_url"
         ]
     },
     {
@@ -31,6 +32,10 @@
             "email_default_cc",
             "email_default_reply_to"
         ]
+    },
+    {
+        "name": "__crosscheck/site-url", "order": 30,
+        "crosscheck_function": "SiteURL_SettingParser::crosscheck"
     },
 
 

@@ -697,22 +697,6 @@ class Conf {
             }
         }
         $this->download_prefix = $this->opt["downloadPrefix"];
-
-        // remove final slash from $Opt["paperSite"]
-        $papersite = $this->opt["paperSite"] ?? "";
-        if ($papersite === "") {
-            $nav = Navigation::get();
-            if ($nav) {
-                $papersite = $nav->base_absolute() ?? "";
-            }
-            if ($papersite === "") {
-                $papersite = $this->opt["defaultPaperSite"] ?? "";
-            }
-        }
-        while (str_ends_with($papersite, "/")) {
-            $papersite = substr($papersite, 0, -1);
-        }
-        $this->opt["paperSite"] = $papersite;
         // NB only set assetUrl on global conf (see refresh_globals())
 
         // docstore, S3, dbNoPapers
@@ -2166,7 +2150,7 @@ class Conf {
 
     /** @return string */
     function oauth_issuer() {
-        return $this->opt["oAuthIssuer"] ?? $this->baseurl();
+        return $this->opt["oAuthIssuer"] ?? $this->safe_baseurl() ?? $this->baseurl();
     }
 
 
@@ -3938,7 +3922,42 @@ class Conf {
 
     /** @return string */
     function baseurl() {
-        return $this->opt("paperSite");
+        $u = $this->opt["paperSite"] ?? "";
+        if ($u === ""
+            && $this === Conf::$main
+            && ($nav = Navigation::get())
+            && $nav->server !== null) {
+            $u = $nav->server . $nav->base_path;
+        }
+        if ($u === "") {
+            $u = $this->opt["defaultPaperSite"] ?? "";
+        }
+        if ($u === ""
+            && !$this->contactdb()
+            && !$this->opt("chairHidePasswords")) {
+            $u = $this->opt["observedPaperSite"] ?? "";
+        }
+        while (str_ends_with($u, "/")) {
+            $u = substr($u, 0, -1);
+        }
+        return $u;
+    }
+
+    /** @return ?string */
+    function safe_baseurl() {
+        $u = $this->opt["paperSite"] ?? "";
+        if ($u === "") {
+            $u = $this->opt["defaultPaperSite"] ?? "";
+        }
+        if ($u === ""
+            && !$this->contactdb()
+            && !$this->opt("chairHidePasswords")) {
+            $u = $this->opt["observedPaperSite"] ?? "";
+        }
+        while (str_ends_with($u, "/")) {
+            $u = substr($u, 0, -1);
+        }
+        return $u !== "" ? $u : null;
     }
 
     /** @param NavigationState $nav
@@ -3966,8 +3985,13 @@ class Conf {
     const HOTURL_REDIRECTABLE = 64;    // in qrequrl, use `redirect` parameter if safe
     const HOTURL_MAYBE_POST = 128;     // include `post=` CSRF token if exists
     const HOTURL_PLACEHOLDERS = 256;   // do not encode `{{PLACEHOLDER}}` strings (for mail templates)
+    const HOTURL_SAFE_ABSOLUTE = 512;  // generate URL using `safe_baseurl()` (or "")
 
-    /** @param string $page
+    /** Return a URL for `$page`. With `HOTURL_SAFE_ABSOLUTE`, or for a `Conf`
+     * other than `Conf::$main`, the URL is based on `safe_baseurl()`; if the
+     * site has no safe base URL, the result is "". Callers that must tell the
+     * difference should check `safe_baseurl()` first.
+     * @param string $page
      * @param ?array $params
      * @param int $flags
      * @return string */
@@ -4145,7 +4169,11 @@ class Conf {
                 $t = substr($t, $lexpect);
             }
         }
-        if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$main) {
+        if (($flags & self::HOTURL_SAFE_ABSOLUTE) !== 0
+            || $this !== Conf::$main) {
+            $b = $this->safe_baseurl();
+            return $b !== null ? $b . "/" . $t : "";
+        } else if (($flags & self::HOTURL_ABSOLUTE) !== 0) {
             return $this->baseurl() . "/" . $t;
         }
         $siteurl = $nav->site_path_relative;

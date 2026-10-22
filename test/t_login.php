@@ -22,7 +22,7 @@ class Login_Tester {
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
 
-        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com", "firstcdb@hotcrp.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com", "firstcdb@hotcrp.com", "freshsite@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -519,6 +519,129 @@ class Login_Tester {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!$u->is_unconfirmed());
         }
+    }
+
+    /** @param string $base */
+    private function derive_paper_site($base) {
+        $this->conf->set_opt("paperSite", null);
+        Navigation::set(NavigationState::make_base($base));
+        $this->conf->refresh_settings();
+    }
+
+    /** @param bool $bearer */
+    private function chair_activates($bearer = false) {
+        $u = clone $this->user_chair;
+        if ($bearer) {
+            $u->set_bearer_authorized();
+        }
+        $u->activate(TestQreq::get_page("paper", ["p" => 1]), true);
+    }
+
+    /** @return string */
+    private function chair_visits_home() {
+        $rc = RenderCapture::make(TestQreq::get_page("index")->set_user($this->user_chair));
+        xassert($rc->ok());
+        return $rc->content;
+    }
+
+    function test_site_url_for_password_links() {
+        $conf = $this->conf;
+        $old_site = $conf->opt("paperSite");
+        $old_nav = Navigation::get();
+        $u = $conf->checked_user_by_email("estrin@usc.edu");
+
+        // a URL from the request does not reach password links
+        $this->derive_paper_site("http://attacker.example/test/");
+        xassert_eqq($conf->baseurl(), "http://attacker.example/test");
+        xassert_eqq($conf->safe_baseurl(), null);
+        $prep = $u->prepare_mail("@resetpassword", ["no_error_quit" => true]);
+        xassert($prep->has_error());
+        xassert_eqq($prep->reset_capability, null);
+        // ...and other links stay unexpanded
+        $prep = $u->prepare_mail(["subject" => "x", "body" => "{{URL}} {{URL(paper, p=1)}} {{LOGINURL}}"], ["no_error_quit" => true]);
+        xassert_eqq(trim($prep->body), "{{URL}} {{URL(paper, p=1)}} {{LOGINURL}}");
+
+        // an invalid URL is not recorded, nor is one from a bearer token
+        $this->derive_paper_site("http://bad\x7Fhost.example/test/");
+        $this->chair_activates();
+        xassert_eqq($conf->safe_baseurl(), null);
+        $this->derive_paper_site("http://internal.example/test/");
+        $this->chair_activates(true);
+        xassert_eqq($conf->safe_baseurl(), null);
+
+        // an administrator’s first visit records the site URL
+        $this->derive_paper_site("http://real.example/test/");
+        $this->chair_activates();
+        $this->derive_paper_site("http://attacker.example/test/");
+        $this->chair_activates();
+        if ($this->cdb) {
+            // ...except on contactdb sites, which ignore the setting
+            xassert(!SiteURL_SettingParser::site_url_configurable($conf));
+            xassert_eqq($conf->safe_baseurl(), null);
+            $conf->save_refresh_setting("opt.observedPaperSite", 1, "http://real.example/test");
+            xassert_eqq($conf->safe_baseurl(), null);
+            xassert(!property_exists((new SettingValues($this->user_chair))->all_jsonv(), "site_url"));
+            $sv = SettingValues::make_request($this->user_chair, ["site_url" => "http://other.example/test"]);
+            xassert($sv->execute());
+            xassert_eqq($conf->safe_baseurl(), null);
+        } else {
+            xassert_eqq($conf->safe_baseurl(), "http://real.example/test");
+            $prep = $u->prepare_mail("@resetpassword", ["no_error_quit" => true]);
+            xassert(!$prep->has_error());
+            xassert_str_contains($prep->body, "http://real.example/test/resetpassword/hcpw");
+            xassert_not_str_contains($prep->body, "attacker.example");
+
+            // administrators can change it
+            $sv = SettingValues::make_request($this->user_chair, ["site_url" => "ftp://other.example/test"]);
+            xassert(!$sv->execute());
+            $sv = SettingValues::make_request($this->user_chair, ["site_url" => "https://other.example/a\x01b"]);
+            xassert(!$sv->execute());
+            $sv = SettingValues::make_request($this->user_chair, ["site_url" => "https://other.example/test/"]);
+            xassert($sv->execute());
+            xassert_eqq($conf->safe_baseurl(), "https://other.example/test");
+            xassert_eqq((new SettingValues($this->user_chair))->all_jsonv()->site_url ?? null, "https://other.example/test");
+
+            // with a warning if it differs from the current URL
+            $sv = SettingValues::make_request($this->user_chair, []);
+            $sv->crosscheck();
+            xassert_str_contains($sv->full_feedback_text(), "differs from the URL you are using to access the site");
+            xassert_str_contains($this->chair_visits_home(), "update the site URL");
+        }
+
+        $conf->save_setting("opt.observedPaperSite", null);
+        $conf->set_opt("paperSite", $old_site);
+        Navigation::set($old_nav);
+        $conf->refresh_settings();
+    }
+
+    function test_first_user_records_site_url() {
+        // a new site has no site URL, but its first user can still sign up
+        $conf = $this->conf;
+        $old_site = $conf->opt("paperSite");
+        $old_nav = Navigation::get();
+        $this->derive_paper_site("http://fresh.example/test/");
+        $conf->save_setting("setupPhase", 1);
+        xassert_eqq($conf->safe_baseurl(), null);
+        $user = Contact::make($conf);
+        $rc = RenderCapture::make(TestQreq::get_page("newaccount")->set_user($user));
+        if ($this->cdb) {
+            xassert_str_contains($rc->content, "can’t create accounts");
+        } else {
+            xassert_str_contains($rc->content, "name=\"email\"");
+            $qreq = TestQreq::post(["email" => "freshsite@hotcrp.com"])->set_user($user)->set_page("newaccount");
+            $redir = null;
+            try {
+                (new Signin_Page)->create_request($user, $qreq);
+            } catch (Redirection $redir) {
+            }
+            xassert_str_contains($redir->url ?? "", "http://fresh.example/test/resetpassword/hcpw0");
+            xassert_eqq($conf->safe_baseurl(), "http://fresh.example/test");
+        }
+        $conf->save_setting("setupPhase", null);
+        $conf->save_setting("opt.observedPaperSite", null);
+        $conf->set_opt("paperSite", $old_site);
+        Navigation::set($old_nav);
+        $conf->refresh_settings();
     }
 
     function test_external_login_requires_ascii() {

@@ -4,6 +4,7 @@
 
 class Basics_SettingParser extends SettingParser {
     static function print_names(SettingValues $sv) {
+        SiteURL_SettingParser::print_site_url($sv);
         $sv->print_entry_group("conference_abbreviation", null, [
             "hint" => "Examples: “HotOS XIV”, “NSDI '14”"
         ]);
@@ -11,7 +12,7 @@ class Basics_SettingParser extends SettingParser {
             "hint" => "Example: “14th Workshop on Hot Topics in Operating Systems”"
         ]);
         $sv->print_entry_group("conference_url", null, [
-            "hint" => "Example: “https://yourconference.org/”"
+            "hint" => "Optional URL for a site with public-facing information about your event.<br>Example: “https://yourconference.org”"
         ]);
     }
 

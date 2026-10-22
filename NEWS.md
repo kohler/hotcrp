@@ -3,6 +3,27 @@ HotCRP NEWS
 
 ## Version 3.5
 
+* Upgrade notes
+
+    * Most sites should set `$Opt["paperSite"]` explicitly (it was previously
+      optional).
+        * Links in email no longer use the URL of the request that caused the
+          email. They use `$Opt["paperSite"]`, then `$Opt["defaultPaperSite"]`,
+          then a new Site URL setting (Settings > Basics) derived from
+          administrator site access. Without a site URL, HotCRP will not send
+          password reset or account creation email, and other email will contain
+          unexpanded `{{URL}}` keywords.
+        * Sites with a contact database MUST set `$Opt["paperSite"]` or
+          `$Opt["defaultPaperSite"]`. On other sites, the Site URL setting is
+          filled in the first time an administrator visits the site after
+          upgrading. Administrators should check that the URL shown in Settings
+          > Basics is correct.
+    * LDAP and htauth usernames are newly restricted to ASCII characters only.
+      LDAP users with non-ASCII usernames will be unable to sign in.
+    * New sites that use a contact database do not automatically assign
+      administrator privilege to the first account to sign in. Use `php
+      batch/saveusers.php` to assign administrator privilege to an account.
+
 * Security updates
 
     This release fixes a number of vulnerabilities, including many reported via
@@ -117,14 +138,6 @@ HotCRP NEWS
       and `reaction:{read/write/admin}` scopes.
     * Report scope errors more thoroughly.
     * A single request can upload at most 100 documents.
-
-* Upgrade notes
-
-    * LDAP and htauth usernames are restricted to ASCII characters only.
-      LDAP users with non-ASCII usernames will be unable to sign in.
-    * New sites that use a contact database do not automatically assign
-      administrator privilege to the first account to sign in. Use `php
-      batch/saveusers.php` to assign administrator privilege to an account.
 
 * Other changes
 

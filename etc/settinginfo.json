@@ -226,8 +226,15 @@
     },
     {
         "name": "conference_url", "storage": "opt.conferenceSite",
-        "title": "Conference URL",
+        "title": "Public conference URL",
         "type": "url", "required": false, "size": 70, "placeholder": "N/A",
+        "tags": "identity"
+    },
+    {
+        "name": "site_url", "storage": "opt.observedPaperSite",
+        "title": "Site URL",
+        "type": "url", "required": false, "size": 70,
+        "parser_class": "SiteURL_SettingParser",
         "tags": "identity"
     },
     {

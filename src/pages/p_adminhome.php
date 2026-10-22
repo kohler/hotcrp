@@ -1,6 +1,6 @@
 <?php
 // pages/p_adminhome.php -- HotCRP home page fragments for administrators
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2026 Eddie Kohler; see LICENSE.
 
 class AdminHome_Page {
     static function check_admin(Contact $user, Qrequest $qreq) {
@@ -26,6 +26,36 @@ class AdminHome_Page {
         if (PHP_VERSION_ID < 80100) {
             $ml[] = MessageItem::error("<0>HotCRP requires PHP version 8.1 or higher. You are running PHP version " . phpversion());
         }
+        // Weird URLs?
+        foreach (["conferenceSite", "paperSite"] as $k) {
+            if (($url = $conf->opt($k))
+                && !preg_match('/\Ahttps?:\/\/(?:[-.~\w:\/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z/', $url))
+                $ml[] = MessageItem::urgent_note("<5>The <code>\$Opt[\"{$k}\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem");
+        }
+        // Site URL for email missing or differs from this URL?
+        $site = $conf->safe_baseurl();
+        $site_config = SiteURL_SettingParser::site_url_configurable($conf);
+        if ($site === null
+            || ($site_config && strcasecmp($site, $conf->baseurl()) !== 0)) {
+            if ($site === null) {
+                $ml[] = MessageItem::urgent_note("<0>Users can’t create accounts, reset passwords, or follow links in email until the site URL is set.");
+                if ($site_config) {
+                    $ml[] = MessageItem::inform("<5>Set one up on " . $conf->hotlink("Settings &gt; Basics", "settings", ["group" => "basics"]) . ".");
+                } else {
+                    $ml[] = MessageItem::inform("<5>The site administrator must set <code>\$Opt[\"paperSite\"]</code> in <code>conf/options.php</code>.");
+                }
+            } else if ($site_config) {
+                $ml[] = MessageItem::warning_note("<5>The site URL, <a href=\"{0}\">{0}</a>, differs from the URL you are using to access the site, <a href=\"{1}\">{1}</a>.",
+                    new FmtArg(0, $site, 0), new FmtArg(1, $conf->baseurl(), 0));
+                $ml[] = MessageItem::inform("<5>Email uses the site URL. If you have changed the site’s location, then you should "
+                    . Ht::form($conf->hoturl("=settings", ["group" => "basics"]), ["class" => "d-inline"])
+                    . Ht::hidden("site_url", $conf->baseurl())
+                    . Ht::hidden("update", 1)
+                    . Ht::submit("update the site URL", ["class" => "btn-sm"])
+                    . ".</form>");
+            }
+        }
+        // Upload configuration
         $max_file_size = ini_get_bytes("upload_max_filesize");
         if (!$conf->opt("dbNoPapers")) {
             $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
@@ -36,7 +66,8 @@ class AdminHome_Page {
         }
         if ($max_file_size < ini_get_bytes(null, "10M")
             && $max_file_size < $conf->upload_max_filesize()) {
-            $ml[] = MessageItem::urgent_note("<5>PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most {$max_file_size}&nbsp;bytes. Usually a larger limit is appropriate. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"uploadMaxFilesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>");
+            $ml[] = MessageItem::urgent_note("<5>PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most {$max_file_size}&nbsp;bytes.");
+            $ml[] = MessageItem::inform("<5>Usually a larger limit is appropriate. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"uploadMaxFilesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>");
         }
         $post_max_size = ini_get_bytes("post_max_size");
         if ($post_max_size < $max_file_size) {
@@ -80,12 +111,6 @@ class AdminHome_Page {
         $result = PrefConflict_Autoassigner::query_result($conf, true);
         if (($row = $result->fetch_row())) {
             $ml[] = MessageItem::marked_note('<5>PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. ' . $conf->hotlink("Confirm these conflicts", "=conflictassign", null, ["class" => "nw"]));
-        }
-        // Weird URLs?
-        foreach (["conferenceSite", "paperSite"] as $k) {
-            if (($url = $conf->opt($k))
-                && !preg_match('/\Ahttps?:\/\/(?:[-.~\w:\/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z/', $url))
-                $ml[] = MessageItem::urgent_note("<5>The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem");
         }
         // Unnotified reviews?
         if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)

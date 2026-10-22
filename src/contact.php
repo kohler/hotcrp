@@ -1007,6 +1007,13 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
         }
 
+        // record this site’s URL for email on an administrator’s first visit
+        if ($this->privChair
+            && !$this->is_bearer_authorized()
+            && $this->conf->safe_baseurl() === null) {
+            SiteURL_SettingParser::record_site_url($this);
+        }
+
         return $this;
     }
 
