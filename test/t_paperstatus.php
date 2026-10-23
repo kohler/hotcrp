@@ -3494,6 +3494,110 @@ Phil Porras.");
         }
     }
 
+    function test_author_orcid_entry() {
+        $this->conf->save_refresh_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 1000);
+        $this->conf->set_opt("requireOrcid", 1);
+        $o_estrin = "0000-0002-1825-0097";
+        $o_au1 = "0000-0001-5109-3700";
+        $o_x = "0000-0002-1694-233X";
+        $authors = [
+            "has_authors" => 1,
+            "authors:1:name" => "Deborah Estrin", "authors:1:email" => "estrin@usc.edu",
+            "authors:2:name" => "Ocelot Author", "authors:2:email" => "orcidau1@_.com",
+            "authors:3:name" => "George Varghese", "authors:3:email" => "varghese@ccrc.wustl.edu"
+        ];
+
+        // ORCID iDs entered for the submitter and a new co-author are
+        // recorded; one for a co-author with a real account is not
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(Qrequest::make("POST", $authors + [
+            "title" => "ORCID entry", "abstract" => "Abstract.\r\n",
+            "authors:1:orcid" => $o_estrin,
+            "authors:2:orcid" => "https://orcid.org/{$o_au1}",
+            "authors:3:orcid" => $o_x
+        ]), null));
+        xassert($ps->execute_save());
+        $pid = $ps->paperId;
+        xassert_eqq($this->conf->fresh_user_by_email("estrin@usc.edu")->confirmed_orcid(), $o_estrin);
+        $u_au1 = $this->conf->fresh_user_by_email("orcidau1@_.com");
+        xassert($u_au1->is_placeholder());
+        xassert_eqq($u_au1->confirmed_orcid(), $o_au1);
+        if (($cdbu = $this->conf->fresh_cdb_user_by_email("orcidau1@_.com"))) {
+            xassert_eqq($cdbu->orcid(), $o_au1);
+        }
+        xassert_neqq($this->conf->fresh_user_by_email("varghese@ccrc.wustl.edu")->orcid(), $o_x);
+        xassert_str_contains($ps->feedback_text_at("authors:3:orcid"), "not recorded");
+        // only the co-author without an ORCID iD is reported missing
+        xassert_str_contains($ps->full_feedback_text(), "Please ask varghese@ccrc.wustl.edu to sign in");
+
+        // invalid ORCID iDs are errors; recorded ORCID iDs aren't replaced
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, $authors + [
+            "authors:2:orcid" => "0000-0001-5109-3701"
+        ]), $prow);
+        xassert($ps->has_error_at("authors:2:orcid"));
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, $authors + [
+            "authors:2:orcid" => $o_x
+        ]), $prow);
+        xassert_str_contains($ps->feedback_text_at("authors:2:orcid"), "not recorded");
+        xassert_eqq($this->conf->fresh_user_by_email("orcidau1@_.com")->orcid(), $o_au1);
+
+        // an ORCID iD can be entered without changing the author list
+        $authors += [
+            "authors:4:name" => "Margay Author", "authors:4:email" => "orcidau2@_.com"
+        ];
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, $authors), $prow);
+        xassert_eqq($this->conf->fresh_user_by_email("orcidau2@_.com")->orcid(), "");
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_web(TestQreq::user_post($this->u_estrin, $authors + [
+            "authors:4:orcid" => $o_x
+        ]), $prow);
+        xassert_array_eqq($ps->change_list(), [], true);
+        xassert_eqq($this->conf->fresh_user_by_email("orcidau2@_.com")->confirmed_orcid(), $o_x);
+
+        // the form shows the column only when ORCID iDs are required, and
+        // shows others' ORCID iDs to users who could look them up via
+        // api/user (render as a page load would: with a freshly loaded user)
+        $render = function ($email) use ($pid) {
+            $u = $this->conf->fresh_user_by_email($email);
+            $qreq = TestQreq::get_page("paper", ["p" => $pid, "m" => "edit"])->set_user($u);
+            return RenderCapture::make($qreq)->content;
+        };
+        $o_varghese = "0000-0003-1415-9269";
+        $this->conf->qe("update ContactInfo set orcid=? where email='varghese@ccrc.wustl.edu'", $o_varghese);
+        $this->conf->invalidate_caches("users");
+        // a PC member sees their own and PC co-authors' ORCID iDs only
+        $html = $render("estrin@usc.edu");
+        xassert_match($html, '/name="authors:1:orcid"[^>]*value="' . $o_estrin . '"/');
+        xassert_match($html, '/name="authors:3:orcid"[^>]*value="' . $o_varghese . '"/');
+        xassert_not_str_contains($html, $o_au1);
+        xassert_match($html, '/name="authors:2:orcid"[^>]*placeholder="ORCID iD on file"/');
+        // chairs see all; so does everyone when allowLookupUser is set
+        $html = $render("chair@_.com");
+        xassert_match($html, '/name="authors:2:orcid"[^>]*value="' . $o_au1 . '"/');
+        $this->conf->set_opt("allowLookupUser", true);
+        $html = $render("estrin@usc.edu");
+        xassert_match($html, '/name="authors:2:orcid"[^>]*value="' . $o_au1 . '"/');
+        $this->conf->set_opt("allowLookupUser", null);
+        $this->conf->set_opt("requireOrcid", null);
+        $html = $render("estrin@usc.edu");
+        xassert_str_contains($html, 'name="authors:1:email"');
+        xassert_not_str_contains($html, "authors:1:orcid");
+
+        MailChecker::clear();
+        $this->conf->qe("update ContactInfo set orcid=null where email='varghese@ccrc.wustl.edu'");
+        $this->conf->qe("update ContactInfo set orcid=null where email='estrin@usc.edu'");
+        if (($cdb = $this->conf->contactdb())) {
+            Dbl::qe($cdb, "update ContactInfo set orcid=null where email='estrin@usc.edu'");
+        }
+        $this->conf->invalidate_caches("users");
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
