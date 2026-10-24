@@ -1196,6 +1196,122 @@ In thee!
                     $ha->prefix() . hash($this->conf->content_hash_algorithm(), substr(self::TEXT, 0, 200)));
     }
 
+    /** The hash advances over the data recorded contiguously from offset
+     * 0, read back from the segment files after each request. */
+    function test_hash_advances_in_transfer() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $qreq = (new Qrequest("POST", [
+                "start" => 1,
+                "temp" => 0,
+                "filename" => "advance.txt",
+                "mimetype" => "text/plain",
+                "offset" => 0
+            ]))->approve_token()
+            ->set_file_content("blob", substr(self::TEXT, 0, 100));
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 100);
+
+        // a chunk beyond a hole is recorded but not hashed
+        $j = call_api("=upload", $user, $this->chunk_qreq($token, 200, substr(self::TEXT, 200, 100)), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->ranges, [0, 100, 200, 300]);
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 100);
+
+        // filling the hole hashes it and the chunk beyond
+        $j = call_api("=upload", $user, $this->chunk_qreq($token, 100, substr(self::TEXT, 100, 100)), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($j->ranges, [0, 300]);
+        xassert(!isset($j->hash));
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 300);
+
+        $qreq = (new Qrequest("POST", ["token" => $token, "size" => 300, "finish" => 1]))->approve_token();
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $ha = new HashAnalysis($this->conf->content_hash_algorithm());
+        xassert_eqq($j->hash ?? null,
+                    $ha->prefix() . hash($this->conf->content_hash_algorithm(), substr(self::TEXT, 0, 300)));
+        xassert_eqq($this->upload_files($token), []);
+    }
+
+    /** Writing a chunk does not hash it; the transfer step that follows
+     * the reply does. */
+    function test_hash_runs_in_transfer() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $token = $this->start_partial_upload($user, "tailhash.txt");
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 100);
+
+        // the request path alone records the chunk but does not hash it
+        $up = new Upload_API($this->conf);
+        $up->no_transfer = true;
+        $jr = $up->exec($user, $this->chunk_qreq($token, 100, substr(self::TEXT, 100, 100)), null);
+        xassert_eqq($jr->status, 200);
+        xassert_eqq($jr->content["ranges"], [0, 200]);
+        $tokd = TokenInfo::find($token, $this->conf)->data();
+        xassert_eqq($tokd->ranges, [0, 200]);
+        xassert_eqq($tokd->hashpos, 100);
+
+        // the next request’s transfer step hashes the recorded data
+        $qreq = (new Qrequest("POST", ["token" => $token]))->approve_token();
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        xassert(!isset($j->hash));
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 200);
+
+        $j = call_api("=upload", $user, $this->finish_upload_qreq($token), null);
+        xassert_eqq($j->ok, true);
+        $ha = new HashAnalysis($this->conf->content_hash_algorithm());
+        xassert_eqq($j->hash ?? null,
+                    $ha->prefix() . hash($this->conf->content_hash_algorithm(), self::TEXT));
+    }
+
+    /** The saved hash state covers exactly the bytes read, so hashing
+     * resumes correctly after a segment file could not be read in full. */
+    function test_hash_short_read_leaves_state() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $seg0 = str_repeat(self::TEXT, intdiv(5 << 20, strlen(self::TEXT)) + 1);
+        $seg0 = substr($seg0, 0, 5 << 20);
+        $seg1 = substr(self::TEXT, 0, 200);
+        $content = $seg0 . $seg1;
+        $qreq = (new Qrequest("POST", [
+                "start" => 1,
+                "temp" => 0,
+                "filename" => "shortread.txt",
+                "mimetype" => "text/plain"
+            ]))->approve_token();
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $token = $j->token;
+        foreach ([[0, $seg0], [5 << 20, $seg1]] as $chunk) {
+            $up = new Upload_API($this->conf);
+            $up->no_transfer = true;
+            $jr = $up->exec($user, $this->chunk_qreq($token, $chunk[0], $chunk[1]), null);
+            xassert_eqq($jr->status, 200);
+        }
+        $tokd = TokenInfo::find($token, $this->conf)->data();
+        xassert_eqq($tokd->ranges, [0, strlen($content)]);
+        xassert_eqq($tokd->hashpos, 0);
+
+        // the second segment file is cut short: the hash covers exactly the
+        // bytes that could be read
+        $segf1 = $this->conf->docstore_tempdir() . $token . "-1";
+        file_put_contents($segf1, substr($seg1, 0, 100));
+        $qreq = (new Qrequest("POST", ["token" => $token]))->approve_token();
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), (5 << 20) + 100);
+
+        // once the file is whole again, hashing resumes
+        file_put_contents($segf1, $seg1);
+        $qreq = (new Qrequest("POST", ["token" => $token, "size" => strlen($content), "finish" => 1]))->approve_token();
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $ha = new HashAnalysis($this->conf->content_hash_algorithm());
+        xassert_eqq($j->hash ?? null,
+                    $ha->prefix() . hash($this->conf->content_hash_algorithm(), $content));
+    }
+
     /** Hashing and assembly read exactly `size` bytes, whatever the
      * segment files contain past the recorded data. */
     function test_assembly_bounded_by_size() {
@@ -1211,13 +1327,12 @@ In thee!
         $j = call_api("=upload", $user, $qreq, null);
         xassert_eqq($j->ok, true);
         $token = $j->token;
-        // the first chunk is hashed as it arrives, the rest is read back
-        // from the segment file at completion
+        // both chunks are hashed once they are contiguous from offset 0
         $j = call_api("=upload", $user, $this->chunk_qreq($token, 0, substr(self::TEXT, 0, 100)), null);
         xassert_eqq($j->ok, true);
         xassert_eqq($j->ranges, [0, 200]);
         xassert(!isset($j->hash));
-        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 100);
+        xassert_eqq(TokenInfo::find($token, $this->conf)->data("hashpos"), 200);
 
         $segf = $this->conf->docstore_tempdir() . $token;
         file_put_contents($segf, str_repeat("JUNK", 100), FILE_APPEND);

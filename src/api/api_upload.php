@@ -38,6 +38,8 @@ class Upload_API {
     public $no_s3_move = false;
     /** @var bool */
     public $synchronous = false;
+    /** @var bool */
+    public $no_transfer = false;
     /** @var int */
     public $lock_timeout = self::LOCK_TIMEOUT;
     /** @var int */
@@ -384,17 +386,6 @@ class Upload_API {
         }
     }
 
-    /** @param int $pos
-     * @param string $data */
-    private function _update_hashctx($pos, $data) {
-        $this->_make_hashctx();
-        if ($pos === $this->_hashpos) {
-            hash_update($this->_hashctx, $data);
-            hash_update($this->_crc32ctx, $data);
-            $this->_hashpos += strlen($data);
-        }
-    }
-
     /** Feed segment file `$segi` to the hash contexts. Return true iff the
      * hash reached the end of `$segi` (or `$bound`, whichever is lower).
      * @param int $segi
@@ -422,6 +413,41 @@ class Upload_API {
         }
         $f && fclose($f);
         return $this->_hashpos === $end;
+    }
+
+    /** Return the end of the data the hash can cover: the data recorded
+     * contiguously from offset 0, up to `size`.
+     * @return int */
+    private function _hash_target() {
+        $ranges = $this->_capd->ranges;
+        if ($ranges[0] !== 0) {
+            return 0;
+        }
+        return min($ranges[1], $this->_capd->size ?? $ranges[1]);
+    }
+
+    /** Advance the hash over recorded data it has not covered, reading
+     * it back from the segment files, and save the hash state.
+     * The caller must hold the upload lock.
+     * @return bool */
+    private function _advance_hash() {
+        assert($this->_lock_depth > 0);
+        $this->_make_hashctx();
+        $target = $this->_hash_target();
+        $hashpos0 = $this->_hashpos;
+        $segi = 0;
+        while ($this->_hashpos < $target
+               && $this->_update_hashctx_seg($segi, $target)) {
+            ++$segi;
+        }
+        if ($this->_hashpos > $hashpos0) {
+            $this->modify_capd(function ($d) {
+                $d->hashctx = base64_encode(serialize($this->_hashctx));
+                $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
+                $d->hashpos = $this->_hashpos;
+            });
+        }
+        return $this->_hashpos === $target;
     }
 
     /** Write `$data` at `$offset`, checking it against data already there.
@@ -474,7 +500,6 @@ class Upload_API {
                 } else if (fwrite($handle, $want) !== $n) {
                     return false;
                 }
-                $this->_update_hashctx($offset, $want);
                 $offset += $n;
                 $pos += $n;
             }
@@ -486,12 +511,6 @@ class Upload_API {
                 $d->ranges = Upload_API::add_range($d->ranges, $offset0, $seg1);
                 while (count($d->s3_parts) <= $segi) {
                     $d->s3_parts[] = null;
-                }
-                if ($this->_hashctx
-                    && $d->hashpos < $this->_hashpos) {
-                    $d->hashctx = base64_encode(serialize($this->_hashctx));
-                    $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
-                    $d->hashpos = $this->_hashpos;
                 }
             });
         }
@@ -795,15 +814,7 @@ class Upload_API {
 
         // status 0: hash not yet computed
         if ($this->_capd->status === 0) {
-            // hash the bytes after `hashpos`, segment by segment
-            $this->_make_hashctx();
-            $segi = 0;
-            while ($segi !== $nseg
-                   && $this->_hashpos < $size
-                   && $this->_update_hashctx_seg($segi, $size)) {
-                ++$segi;
-            }
-            if ($this->_hashpos !== $size) {
+            if (!$this->_advance_hash()) {
                 $this->_ml[] = MessageItem::error("<0>Hash computation error");
                 return;
             }
@@ -921,6 +932,26 @@ class Upload_API {
             });
         }
 
+        // Hash newly contiguous data. A `finish` or synchronous request
+        // waits for the lock, since its reply carries the hash; a detached
+        // request leaves the data to whoever holds the lock, and a later
+        // request catches up. Completion below hashes anything left.
+        if (!isset($this->_capd->hash)
+            && $this->_capd->ranges !== [0, $this->_capd->size]
+            && ($this->_capd->hashpos ?? 0) < $this->_hash_target()
+            && $this->lock_token($this->_cap->salt, $this->_detached ? 0 : $this->lock_timeout)) {
+            try {
+                $this->_advance_hash();
+            } finally {
+                $this->unlock_token();
+            }
+        }
+        // the lock may have been refused because the upload was canceled
+        if ($this->canceled()) {
+            $this->reclaim_canceled();
+            return;
+        }
+
         // transfer S3 parts
         $s3c = null;
         if (!$this->no_s3 && !$this->_capd->temp) {
@@ -1030,6 +1061,8 @@ class Upload_API {
         }
         if ($jr) {
             return $jr;
+        } else if ($this->no_transfer) {
+            return $this->_make_result();
         }
 
         $finish = friendly_boolean($qreq->finish);

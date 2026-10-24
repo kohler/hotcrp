@@ -157,7 +157,9 @@ The lifecycle of an upload is as follows.
    parameter.
 3. Subsequent requests upload the contents of the file in chunks. The `blob`
    parameter (which can be an attached file) contains the chunk itself, and the
-   `offset` parameter defines the offset of chunk relative to the file.
+   `offset` parameter defines the offset of chunk relative to the file. Chunks
+   may arrive in any order. A chunk that overlaps data already received must
+   match it exactly; a mismatch cancels the upload.
 4. A request with `finish=1` completes the upload. The server seals the upload
    and responds with the file’s content hash. A `finish=1` request will fail
    unless all expected chunks have been received.
@@ -165,10 +167,23 @@ The lifecycle of an upload is as follows.
 `start=1` and `finish=1` requests can also include a chunk. The `ranges`
 response field represents the ranges of bytes received so far.
 
+The `size` parameter may be supplied on any request before the upload is
+finished, but once set it cannot change. It must be at least the end of the
+data already received, and no chunk may extend past it. If `size` is never
+supplied, a `finish=1` request sets it to the end of the received data.
+
+The server computes the file’s content hash as chunks arrive, so the
+`finish=1` request typically returns quickly.
+
+Requests for the same upload are serialized: a request that arrives while
+another request for the same token is in progress waits for it, and fails
+with status code 409 Conflict if it waits too long. Clients should send at
+most one request at a time per upload.
+
 The upload API is only available on sites that have enabled the document
 store.
 
-* scope document:write
+* scope none
 * badge featured
 * param ?p pid
 * param ?start boolean
@@ -188,9 +203,7 @@ store.
 * param ?filename string: Name of uploaded file
 
     * condition start
-* param ?size nonnegative_integer: Size of uploaded file in bytes.
-
-    * condition start
+* param ?size nonnegative_integer: Size of uploaded file in bytes
 * param ?token upload_token
 
     Token for the ongoing upload. Required unless `start=1`.
