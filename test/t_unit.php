@@ -235,6 +235,25 @@ class Unit_Tester {
         xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 3);
     }
 
+    function test_dbl_compare_exchange_error() {
+        Dbl::qe("delete from Settings where name='cmpxchg'");
+        Dbl::qe("insert into Settings set name='cmpxchg', value=1");
+        // a failed update is not an exchange
+        Dbl::set_error_handler(function ($dblink, $query) {});
+        $threw = false;
+        try {
+            Dbl::compare_exchange(Dbl::$default_dblink,
+                                  "select value from Settings where name=?", ["cmpxchg"],
+                                  function ($x) { return (int) $x + 1; },
+                                  "update Settings set value=?{desired}, nonesuch=1 where name=? and value=?{expected}", ["cmpxchg"]);
+        } catch (Exception $e) {
+            $threw = true;
+        }
+        Dbl::set_error_handler([$this->conf, "query_error_handler"]);
+        xassert($threw);
+        xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 1);
+    }
+
     function test_dbl_multiquery() {
         $mresult = Dbl::multi_q("select 0 from dual; select u2410ufwqoidvhslaihwqhwf from ahselhg1huql; select 1 from dual");
         $result = $mresult->next();

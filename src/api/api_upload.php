@@ -9,6 +9,10 @@ class Upload_API {
     const OLD_LOCK_TIMEOUT = 300;
     const MAX_SIZE = 1 << 30;
     const MAX_BLOB = 32 << 20;
+    // maximum number of disjoint `ranges`; token data has limited length
+    const MAX_RANGES = 128;
+    // seconds a request waits for the upload lock
+    const LOCK_TIMEOUT = 30;
     const SERVER_PROGRESS_FACTOR = 0.5;
 
     // seconds before upload token expires; see also cleandocstore.php
@@ -34,6 +38,14 @@ class Upload_API {
     public $no_s3_move = false;
     /** @var bool */
     public $synchronous = false;
+    /** @var int */
+    public $lock_timeout = self::LOCK_TIMEOUT;
+    /** @var int */
+    private $_lock_depth = 0;
+    /** @var ?string */
+    private $_lock_salt;
+    /** @var bool */
+    private $_detached = false;
     /** @var list<MessageItem> */
     private $_ml = [];
     /** @var ?HashContext */
@@ -57,13 +69,13 @@ class Upload_API {
         $segi = 0;
         $nseg = count($this->segments);
         while ($segi < $nseg - 1) {
-            list($seg0, $seg1) = $this->segments[$segi];
+            [$seg0, $seg1] = $this->segments[$segi];
             if ($offset >= $seg0 && $offset < $seg1) {
                 return [$segi, $seg0, $seg1];
             }
             ++$segi;
         }
-        list($seg0, $seg1) = $this->segments[$segi];
+        [$seg0, $seg1] = $this->segments[$segi];
         $segsz = $seg1 - $seg0;
         $segx = (int) (($offset - $seg0) / $segsz);
         return [$segi + $segx, $seg0 + $segx * $segsz, $seg0 + ($segx + 1) * $segsz];
@@ -76,7 +88,7 @@ class Upload_API {
             return $this->segments[$segi];
         }
         $segl = count($this->segments) - 1;
-        list($seg0, $seg1) = $this->segments[$segl];
+        [$seg0, $seg1] = $this->segments[$segl];
         $segsz = $seg1 - $seg0;
         $segx = $segi - $segl;
         return [$seg0 + $segx * $segsz, $seg0 + ($segx + 1) * $segsz];
@@ -268,17 +280,24 @@ class Upload_API {
         }
     }
 
-    /** Delete a canceled upload unless another request is transferring it.
-     * Also append an error message to _ml unless `$quiet`. */
-    private function reclaim_canceled($quiet = false) {
-        // Take the lock before deleting: `s3_transfer_segment` creates the
-        // multipart upload under the lock, so this is what keeps a concurrent
-        // transfer from stranding one after `delete_all` aborts it. That
-        // transfer polls `canceled` and reclaims the upload itself.
+    /** Reclaim a canceled upload unless another request is transferring
+     * it. The caller must hold the upload lock. */
+    private function try_reclaim() {
+        // Try the S3 lock: `s3_transfer_segment` creates the multipart
+        // upload under it, so this is what keeps a concurrent transfer from
+        // stranding one after `delete_all` aborts it. That transfer polls
+        // `canceled` and reclaims the upload itself.
         if (($lockf = $this->lock(false))) {
-            $this->modify_capd(null);
             $this->reclaim();
             $this->unlock($lockf);
+        }
+    }
+
+    /** Reclaim a canceled upload, which `lock_token` does as it refuses
+     * the lock, and report the cancellation unless `$quiet`. */
+    private function reclaim_canceled($quiet = false) {
+        if ($this->lock_token($this->_cap->salt, $this->lock_timeout)) {
+            $this->unlock_token();
         }
         if (!$quiet) {
             $this->_ml[] = MessageItem::error($this->_capd->cancel_message ?? "<0>Upload canceled");
@@ -286,8 +305,9 @@ class Upload_API {
     }
 
     /** Mark this upload canceled, and delete it if no other request is
-     * transferring it. */
-    function cancel($message = null) {
+     * transferring it. The caller must hold the upload lock. */
+    private function cancel($message = null) {
+        assert($this->_lock_depth > 0);
         // An expired token is refused by `exec` and swept by the token GC,
         // which calls `cleanup` to finish any teardown left undone here.
         $this->_cap->set_invalid()->set_expires_at(Conf::$now - 1)->update();
@@ -297,7 +317,38 @@ class Upload_API {
                 $d->cancel_message = $message;
             }
         });
-        $this->reclaim_canceled(true);
+        $this->try_reclaim();
+    }
+
+    /** Fix the upload’s size, which bounds every later chunk, the hash,
+     * and the assembled file. The caller must hold the upload lock.
+     * @param ?int $size  null means the data received so far, if it is one
+     *   range from offset 0
+     * @return ?MessageItem */
+    private function set_size($size) {
+        assert($this->_lock_depth > 0);
+        $ranges = $this->_capd->ranges;
+        if ($size === null) {
+            if (count($ranges) !== 2 || $ranges[0] !== 0) {
+                return null;
+            }
+            $size = $ranges[1];
+        }
+        if (isset($this->_capd->size)) {
+            if ($size !== $this->_capd->size) {
+                return MessageItem::error_at("size", "<0>Wrong size");
+            }
+            return null;
+        }
+        if ($size > $this->max_size) {
+            return MessageItem::error_at("size", "<0>File too large");
+        } else if ($size < $ranges[count($ranges) - 1]) {
+            return MessageItem::error_at("size", "<0>Size is smaller than the data already uploaded");
+        }
+        $this->modify_capd(function ($d) use ($size) {
+            $d->size = $size;
+        });
+        return null;
     }
 
     /** @return ?HashContext */
@@ -344,10 +395,42 @@ class Upload_API {
         }
     }
 
-    /** @param int $offset
+    /** Feed segment file `$segi` to the hash contexts. Return true iff the
+     * hash reached the end of `$segi` (or `$bound`, whichever is lower).
+     * @param int $segi
+     * @param int $bound
+     * @return bool */
+    private function _update_hashctx_seg($segi, $bound) {
+        [$seg0, $seg1] = $this->segment_boundaries($segi);
+        $end = min($seg1, $bound);
+        if ($this->_hashpos < $seg0) {
+            return false;
+        } else if ($end <= $this->_hashpos) {
+            return true;
+        }
+        $f = @fopen($this->segment_file($segi), "rb");
+        if ($f && fseek($f, $this->_hashpos - $seg0, SEEK_SET) === 0) {
+            while ($this->_hashpos < $end) {
+                $data = fread($f, min($end - $this->_hashpos, 1 << 20));
+                if ($data === false || $data === "") {
+                    break;
+                }
+                hash_update($this->_hashctx, $data);
+                hash_update($this->_crc32ctx, $data);
+                $this->_hashpos += strlen($data);
+            }
+        }
+        $f && fclose($f);
+        return $this->_hashpos === $end;
+    }
+
+    /** Write `$data` at `$offset`, checking it against data already there.
+     * The caller must hold the upload lock.
+     * @param int $offset
      * @param string $data
      * @return bool */
-    function exec_upload(Contact $user, $offset, $data) {
+    private function exec_upload(Contact $user, $offset, $data) {
+        assert($this->_lock_depth > 0);
         $pos = 0;
         $last_offset = $offset + strlen($data);
         while ($offset !== $last_offset) {
@@ -492,24 +575,25 @@ class Upload_API {
         return $r->response_header("etag");
     }
 
+    /** The caller must hold the upload lock. */
     private function assemble_docstore() {
+        assert($this->_lock_depth > 0);
         $asmfn = $this->assembly_file();
-        if (!($file = fopen($asmfn, "cb"))
-            || !flock($file, LOCK_EX | LOCK_NB)) {
+        if (!($file = fopen($asmfn, "wb"))) {
             return;
         }
-        ftruncate($file, 0);
+        $size = $this->_capd->size;
         $nseg = count($this->_capd->s3_parts);
-        assert($this->_capd->size !== null);
-        assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
         for ($segi = 0; $segi !== $nseg; ++$segi)  {
-            $infilename = $this->segment_file($segi);
-            if (!($infile = fopen($infilename, "r"))) {
+            [$seg0, $seg1] = $this->segment_boundaries($segi);
+            $len = min($seg1, $size) - $seg0;
+            if ($len <= 0
+                || !($infile = fopen($this->segment_file($segi), "rb"))) {
                 break;
             }
-            $n = stream_copy_to_stream($infile, $file);
+            $n = stream_copy_to_stream($infile, $file, $len);
             fclose($infile);
-            if ($n !== filesize($infilename)) {
+            if ($n !== $len) {
                 break;
             }
         }
@@ -522,12 +606,22 @@ class Upload_API {
         $this->modify_capd(function ($d) {
             $d->status = max($d->status, 2);
         });
-        flock($file, LOCK_UN);
         fclose($file);
     }
 
+    /** The caller must hold the upload lock. */
     private function complete_docstore() {
+        assert($this->_lock_depth > 0);
         $asmfn = $this->assembly_file();
+        clearstatcache(true, $asmfn);
+        if (@filesize($asmfn) !== $this->_capd->size) {
+            // assemble again on the next attempt
+            @unlink($asmfn);
+            $this->modify_capd(function ($d) {
+                $d->status = min($d->status, 1);
+            });
+            return;
+        }
         $doc = DocumentInfo::make_token($this->conf, $this->_cap, $asmfn);
         if ($this->_capd->temp) {
             $finalfn = $this->final_file($doc);
@@ -593,6 +687,43 @@ class Upload_API {
         fclose($lockf);
     }
 
+    /** The token lock serializes requests, including chunk writes, `size`,
+     * and completion. S3 uploads use a subordinate lock. Taking the lock
+     * reloads a loaded upload; if that shows it canceled, the upload is
+     * reclaimed and the lock refused, so a refused caller has nothing left
+     * to do but report.
+     * @param string $salt
+     * @param int $timeout  seconds to wait; 0 tries once
+     * @return bool */
+    private function lock_token($salt, $timeout) {
+        if ($this->_lock_depth > 0) {
+            ++$this->_lock_depth;
+            return true;
+        }
+        if ($this->conf->fetch_ivalue("select get_lock(?,?)", $salt, $timeout) !== 1) {
+            return false;
+        }
+        $this->_lock_salt = $salt;
+        ++$this->_lock_depth;
+        if ($this->_cap) {
+            $this->modify_capd(null);
+            if ($this->canceled()) {
+                $this->try_reclaim();
+                $this->unlock_token();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function unlock_token() {
+        assert($this->_lock_depth > 0);
+        --$this->_lock_depth;
+        if ($this->_lock_depth === 0) {
+            $this->conf->qe("select release_lock(?)", $this->_lock_salt);
+        }
+    }
+
     /** @param bool $synchronous
      * @param string $debugid */
     private function transfer_s3_parts(S3Client $s3c, $synchronous, $debugid) {
@@ -617,7 +748,7 @@ class Upload_API {
 
         // walk available parts and transfer to S3
         for ($segindex = 0; !$this->canceled(); ++$segindex) {
-            list($seg0, $seg1) = $this->segment_boundaries($segindex);
+            [$seg0, $seg1] = $this->segment_boundaries($segindex);
             // exit if part not available
             if ($segindex >= count($this->_capd->s3_parts)
                 || $seg0 >= $this->_capd->ranges[1]
@@ -648,45 +779,31 @@ class Upload_API {
         $this->unlock($lockf);
     }
 
-    /** @param ?S3Client $s3c */
-    private function complete_transfer($s3c) {
-        assert($this->_capd->size !== null);
-        assert(count($this->_capd->ranges) === 2);
-        assert($this->_capd->ranges[1] >= $this->_capd->size);
+    /** Compute the hash, assemble the docstore file, and emplace it.
+     * The caller must hold the upload lock. */
+    private function complete_docstore_transfer() {
+        assert($this->_lock_depth > 0);
+        // the hash and the file cover exactly `size` bytes, so all of them
+        // must be recorded, in segment files that reach `size`
+        $size = $this->_capd->size;
         $nseg = count($this->_capd->s3_parts);
-        assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
-
-        if ($this->_capd->size === 0) {
-            $this->_ml[] = MessageItem::error("<0>Empty upload");
-            $this->delete_files();
+        if ($size === null
+            || $this->_capd->ranges !== [0, $size]
+            || ($this->segment_boundaries($nseg))[0] < $size) {
             return;
         }
 
         // status 0: hash not yet computed
         if ($this->_capd->status === 0) {
-            // compute hash
+            // hash the bytes after `hashpos`, segment by segment
             $this->_make_hashctx();
-            for ($segi = 0; $segi !== $nseg; ++$segi) {
-                list($seg0, $seg1) = $this->segment_boundaries($segi);
-                if ($seg1 <= $this->_hashpos) {
-                    continue;
-                }
-                $f = $this->segment_file($segi);
-                if ($seg0 === $this->_hashpos) {
-                    $ok = hash_update_file($this->_hashctx, $f)
-                        && hash_update_file($this->_crc32ctx, $f);
-                } else {
-                    $data = @file_get_contents($f, false, null, $this->_hashpos - $seg0);
-                    $ok = $data !== false
-                        && hash_update($this->_hashctx, $data)
-                        && hash_update($this->_crc32ctx, $data);
-                }
-                if (!$ok) {
-                    break;
-                }
-                $this->_hashpos = min($seg1, $this->_capd->size);
+            $segi = 0;
+            while ($segi !== $nseg
+                   && $this->_hashpos < $size
+                   && $this->_update_hashctx_seg($segi, $size)) {
+                ++$segi;
             }
-            if ($this->_hashpos !== $this->_capd->size) {
+            if ($this->_hashpos !== $size) {
                 $this->_ml[] = MessageItem::error("<0>Hash computation error");
                 return;
             }
@@ -712,6 +829,32 @@ class Upload_API {
             && $this->_capd->status === 2) {
             $this->complete_docstore();
         }
+    }
+
+    /** @param ?S3Client $s3c */
+    private function complete_transfer($s3c) {
+        if ($this->_capd->size === 0) {
+            $this->_ml[] = MessageItem::error("<0>Empty upload");
+            $this->delete_files();
+            return;
+        }
+
+        // Statuses 0–2 compute the hash and turn the segment files into the
+        // stored document, so they must run once: hold the upload lock from
+        // checking `status` through updating it. A detached request leaves
+        // the work to whoever holds the lock.
+        if (!$this->lock_token($this->_cap->salt, $this->_detached ? 0 : $this->lock_timeout)) {
+            if ($this->canceled()) {
+                $this->reclaim_canceled();
+            }
+            return;
+        }
+        try {
+            $this->complete_docstore_transfer();
+        } finally {
+            $this->unlock_token();
+        }
+        $nseg = count($this->_capd->s3_parts ?? []);
 
         // status 3: docstore ready, S3 not ready or not configured
         if (!$this->canceled()
@@ -802,7 +945,7 @@ class Upload_API {
         // complete
         if (!$this->canceled()
             && $this->_capd->size !== null
-            && $this->_capd->ranges[1] >= $this->_capd->size) {
+            && $this->_capd->ranges === [0, $this->_capd->size]) {
             $this->complete_transfer($s3c);
         }
     }
@@ -842,7 +985,7 @@ class Upload_API {
             $j["crc32"] = $this->_capd->crc32;
         }
         if (isset($this->_capd->size)) {
-            list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));
+            [$unused, $seg1] = $this->segment_boundaries(count($this->_capd->s3_parts));
             $spl = min($seg1, $this->_capd->size) + (isset($this->_capd->hash) ? 1 << 20 : 0);
             $j["progress_value"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
             $j["progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
@@ -867,12 +1010,51 @@ class Upload_API {
             if (!$j->ok()) {
                 return $j;
             }
-        } else if ($qreq->token) {
-            $this->_cap = TokenInfo::find($qreq->token, $user->conf);
-        } else {
+        } else if (!$qreq->token) {
             return JsonResult::make_missing_error("token");
+        } else if (strlen($qreq->token) > 36
+                   || !preg_match('/\Ahcup\w++\z/', $qreq->token)) {
+            return JsonResult::make_not_found_error("token", "<0>Upload token not found");
         }
 
+        // requests on an upload are serialized by its lock
+        if (!$this->lock_token($qreq->token, $this->lock_timeout)) {
+            return JsonResult::make_message_list(409, MessageItem::error("<0>Upload busy"))
+                ->set("token", $qreq->token);
+        }
+        $jr = null;
+        try {
+            $jr = $this->exec_locked($user, $qreq);
+        } finally {
+            $this->unlock_token();
+        }
+        if ($jr) {
+            return $jr;
+        }
+
+        $finish = friendly_boolean($qreq->finish);
+        if (!$finish
+            && !$this->synchronous
+            && JsonCompletion::$allow_short_circuit) {
+            $this->_make_result()->emit($qreq);
+            if (PHP_SAPI === "fpm-fcgi") {
+                fastcgi_finish_request();
+            }
+            $this->_detached = true;
+            $this->transfer(false, "{$qreq->offset}+{$qreq->length}");
+            Navigation::complete();
+        }
+
+        $this->transfer($this->synchronous, "finish");
+        return $this->_make_result();
+    }
+
+    /** Load the upload and apply a request’s `cancel`, `size`, chunk, and
+     * `finish` to it. The caller must hold the upload lock.
+     * @return ?JsonResult */
+    private function exec_locked(Contact $user, Qrequest $qreq) {
+        assert($this->_lock_depth > 0);
+        $this->_cap = $this->_cap ?? TokenInfo::find($qreq->token, $user->conf);
         if (!$this->_cap || $this->_cap->capabilityType !== TokenInfo::UPLOAD) {
             return JsonResult::make_not_found_error("token", "<0>Upload token not found");
         } else if ($this->_cap->contactId !== $user->contactId) {
@@ -898,12 +1080,8 @@ class Upload_API {
             if ($size === null || $size < 0) {
                 return $this->_make_result(MessageItem::error_at("size", "<0>Parameter error"));
             }
-            if (!isset($this->_capd->size)) {
-                $this->modify_capd(function ($d) use ($size) {
-                    $this->_capd->size = $size;
-                });
-            } else if ($size !== $this->_capd->size) {
-                return $this->_make_result(MessageItem::error_at("size", "<0>Wrong size"));
+            if (($mi = $this->set_size($size))) {
+                return $this->_make_result($mi);
             }
         }
 
@@ -932,6 +1110,8 @@ class Upload_API {
                 return $this->_make_result(MessageItem::error_at("blob", "<0>Uploaded segment extends past maximum upload size"));
             } else if (isset($this->_capd->size) && $offset + $length > $this->_capd->size) {
                 return $this->_make_result(MessageItem::error_at("blob", "<0>Uploaded segment extends past claimed upload size"));
+            } else if (count(self::add_range($this->_capd->ranges, $offset, $offset + $length)) > 2 * self::MAX_RANGES) {
+                return $this->_make_result(MessageItem::error_at("blob", "<0>Upload too fragmented"));
             }
             $data = $blob->content(0, $length);
             if ($data === false || strlen($data) !== $length) {
@@ -948,43 +1128,19 @@ class Upload_API {
             return $this->_make_result(MessageItem::error_at("blob", "<0>Problem with uploaded file"));
         }
 
-        // a concurrent cancel may have removed the upload underneath us
-        if ($this->canceled()) {
-            $this->reclaim_canceled();
-            return $this->_make_result();
-        }
-
-        $finish = friendly_boolean($qreq->finish);
-        if ($finish) {
+        if (friendly_boolean($qreq->finish)) {
             if (count($this->_capd->ranges) !== 2) {
                 return $this->_make_result(MessageItem::error("<0>Upload has holes"));
             }
-            if ($this->_capd->size === null) {
-                $this->modify_capd(function ($d) {
-                    if (count($this->_capd->ranges) === 2
-                        && $this->_capd->ranges[0] === 0) {
-                        $this->_capd->size = $this->_capd->ranges[1];
-                    }
-                });
+            if ($this->_capd->size === null
+                && ($mi = $this->set_size(null))) {
+                return $this->_make_result($mi);
             }
             if ($this->_capd->ranges !== [0, $this->_capd->size]) {
                 return $this->_make_result(MessageItem::error("<0>Upload incomplete"));
             }
         }
-
-        if (!$finish
-            && !$this->synchronous
-            && JsonCompletion::$allow_short_circuit) {
-            $this->_make_result()->emit($qreq);
-            if (PHP_SAPI === "fpm-fcgi") {
-                fastcgi_finish_request();
-            }
-            $this->transfer(false, "{$offset}+{$length}");
-            Navigation::complete();
-        }
-
-        $this->transfer($this->synchronous, "finish");
-        return $this->_make_result();
+        return null;
     }
 
     static function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
@@ -995,6 +1151,14 @@ class Upload_API {
         $up = new Upload_API($cap->conf);
         $up->_cap = $cap;
         $up->_capd = $cap->data();
-        $up->delete_all();
+        // A request completing an expired upload may still hold its lock
+        // and need its files.
+        if ($up->lock_token($cap->salt, 2)) {
+            try {
+                $up->delete_all();
+            } finally {
+                $up->unlock_token();
+            }
+        }
     }
 }

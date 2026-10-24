@@ -1005,8 +1005,10 @@ class Dbl {
             $update_query_args["expected"] = $value;
             $update_query_args["desired"] = $new_value;
             $result = self::qe_apply($dblink, $update_query, $update_query_args);
-            if ($result->affected_rows) {
+            if ($result->affected_rows > 0) {
                 return $new_value;
+            } else if (self::is_error($result)) {
+                break;
             }
         }
         throw new Exception("Dbl::compare_exchange failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
