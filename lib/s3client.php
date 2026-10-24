@@ -197,6 +197,11 @@ class S3Client {
         return $this;
     }
 
+    /** @return bool */
+    function has_curl() {
+        return $this->_has_curl;
+    }
+
     /** @param bool $x
      * @return $this */
     function set_verbose($x) {

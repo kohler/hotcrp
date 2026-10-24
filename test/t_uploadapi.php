@@ -1312,6 +1312,126 @@ In thee!
                     $ha->prefix() . hash($this->conf->content_hash_algorithm(), $content));
     }
 
+    /** Finishing an upload whose content is already stored keeps the
+     * stored file, and replaces it only if it is damaged. */
+    function test_existing_docstore_file_kept() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        $finalfn = TokenInfo::find($j->token, $this->conf)->data("content_file");
+        xassert_eqq(file_get_contents($finalfn), self::TEXT);
+        touch($finalfn, Conf::$now - 1000);
+        clearstatcache();
+        $ino = fileinode($finalfn);
+        $mtime = filemtime($finalfn);
+
+        // the same content again: the stored file is untouched
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq(TokenInfo::find($j->token, $this->conf)->data("content_file"), $finalfn);
+        clearstatcache();
+        xassert_eqq(fileinode($finalfn), $ino);
+        xassert_eqq(filemtime($finalfn), $mtime);
+        xassert_eqq($this->upload_files($j->token), []);
+
+        // a damaged stored file of the right size is replaced
+        file_put_contents($finalfn, strrev(self::TEXT));
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq(TokenInfo::find($j->token, $this->conf)->data("content_file"), $finalfn);
+        xassert_eqq(file_get_contents($finalfn), self::TEXT);
+        xassert_eqq($this->upload_files($j->token), []);
+
+        // so is a truncated one
+        file_put_contents($finalfn, substr(self::TEXT, 0, 50));
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq(file_get_contents($finalfn), self::TEXT);
+        xassert_eqq($this->upload_files($j->token), []);
+    }
+
+    /** An upload begun before the xxh64 digest was recorded still finishes
+     * and still keeps a matching stored file. */
+    function test_old_token_without_xxh64() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        $finalfn = TokenInfo::find($j->token, $this->conf)->data("content_file");
+        clearstatcache();
+        $ino = fileinode($finalfn);
+
+        $token = $this->start_partial_upload($user, "oldtoken.txt");
+        $tok = TokenInfo::find($token, $this->conf);
+        xassert($tok->data("xxh64ctx") !== null);
+        $tok->change_data("xxh64ctx", null)->update();
+
+        $j = call_api("=upload", $user, $this->finish_upload_qreq($token), null);
+        xassert_eqq($j->ok, true);
+        $ha = new HashAnalysis($this->conf->content_hash_algorithm());
+        xassert_eqq($j->hash ?? null,
+                    $ha->prefix() . hash($this->conf->content_hash_algorithm(), self::TEXT));
+        $tokd = TokenInfo::find($token, $this->conf)->data();
+        xassert(!isset($tokd->xxh64));
+        xassert_eqq($tokd->content_file, $finalfn);
+        clearstatcache();
+        xassert_eqq(fileinode($finalfn), $ino);
+        xassert_eqq(file_get_contents($finalfn), self::TEXT);
+        xassert_eqq($this->upload_files($token), []);
+    }
+
+    /** Replacing a damaged docstore file also replaces the S3 object,
+     * even though S3 reports one of the right size. */
+    function test_replaced_docstore_file_replaces_s3() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        S3_Tester::install($this->conf, S3_Tester::make_offline());
+        $this->conf->refresh_settings();
+        // S3 claims to hold every object at the upload’s size
+        Offline_S3Result::$responder = function ($method, $skey) {
+            return $method === "HEAD"
+                ? [200, ["content-length" => (string) strlen(UploadAPI_Tester::TEXT)], ""]
+                : null;
+        };
+        $methods = function () {
+            return array_map(function ($r) { return $r[0]; }, Offline_S3Result::$requests);
+        };
+
+        Offline_S3Result::$requests = [];
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        $tokd = TokenInfo::find($j->token, $this->conf)->data();
+        xassert_eqq($tokd->status, 5);
+        xassert(!isset($tokd->replaced));
+        xassert_eqq($methods(), ["HEAD"]);
+        $finalfn = $tokd->content_file;
+
+        // an intact docstore file: S3 is trusted
+        Offline_S3Result::$requests = [];
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        xassert_eqq($methods(), ["HEAD"]);
+
+        // a damaged docstore file: the S3 object is written again
+        file_put_contents($finalfn, strrev(self::TEXT));
+        Offline_S3Result::$requests = [];
+        $j = call_api("=upload", $user, $this->make_upload_qreq(self::TEXT, ["temp" => 0]), null);
+        xassert_eqq($j->ok, true);
+        $tokd = TokenInfo::find($j->token, $this->conf)->data();
+        xassert_eqq($tokd->status, 5);
+        xassert_eqq($tokd->replaced ?? null, true);
+        xassert_eqq(file_get_contents($finalfn), self::TEXT);
+        xassert_eqq($methods(), ["PUT"]);
+        xassert_eqq(Offline_S3Result::$requests[0][1], DocumentInfo::s3_key_for($tokd->hash, $tokd->mimetype));
+        xassert_eqq($this->upload_files($j->token), []);
+
+        Offline_S3Result::$responder = null;
+        if ($this->s3c) {
+            S3_Tester::install($this->conf, $this->s3c);
+        } else {
+            S3_Tester::install($this->conf);
+        }
+        $this->conf->refresh_settings();
+    }
+
     /** Hashing and assembly read exactly `size` bytes, whatever the
      * segment files contain past the recorded data. */
     function test_assembly_bounded_by_size() {

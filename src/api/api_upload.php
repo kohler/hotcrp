@@ -54,6 +54,8 @@ class Upload_API {
     private $_hashctx;
     /** @var ?HashContext */
     private $_crc32ctx;
+    /** @var ?HashContext */
+    private $_xxh64ctx;
     /** @var ?int */
     private $_hashpos;
 
@@ -226,6 +228,7 @@ class Upload_API {
             "s3_uploadid" => false,
             "hashctx" => base64_encode(serialize(hash_init($this->conf->content_hash_algorithm()))),
             "crc32ctx" => base64_encode(serialize(hash_init("crc32b"))),
+            "xxh64ctx" => base64_encode(serialize(hash_init("xxh64"))),
             "hashpos" => 0
         ];
         $this->_cap->assign_data($data);
@@ -377,11 +380,14 @@ class Upload_API {
             && ($crc32ctx = $this->_parse_hashctx($this->_capd->crc32ctx))) {
             $this->_hashctx = $hashctx;
             $this->_crc32ctx = $crc32ctx;
+            // uploads begun before `xxh64ctx` was recorded have none
+            $this->_xxh64ctx = isset($this->_capd->xxh64ctx) ? $this->_parse_hashctx($this->_capd->xxh64ctx) : null;
             $this->_hashpos = $this->_capd->hashpos;
         }
         if (!$this->_hashctx) {
             $this->_hashctx = hash_init($this->conf->content_hash_algorithm());
             $this->_crc32ctx = hash_init("crc32b");
+            $this->_xxh64ctx = hash_init("xxh64");
             $this->_hashpos = 0;
         }
     }
@@ -408,6 +414,9 @@ class Upload_API {
                 }
                 hash_update($this->_hashctx, $data);
                 hash_update($this->_crc32ctx, $data);
+                if ($this->_xxh64ctx) {
+                    hash_update($this->_xxh64ctx, $data);
+                }
                 $this->_hashpos += strlen($data);
             }
         }
@@ -444,6 +453,9 @@ class Upload_API {
             $this->modify_capd(function ($d) {
                 $d->hashctx = base64_encode(serialize($this->_hashctx));
                 $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
+                if ($this->_xxh64ctx) {
+                    $d->xxh64ctx = base64_encode(serialize($this->_xxh64ctx));
+                }
                 $d->hashpos = $this->_hashpos;
             });
         }
@@ -650,18 +662,48 @@ class Upload_API {
         if (!$finalfn) {
             return;
         }
-        if (!rename($asmfn, $finalfn)) {
-            usleep(100);
-            $this->modify_capd(null);
+        // Emplace without clobbering: `link` fails if a file is already
+        // there. An intact existing file is kept, a damaged one replaced.
+        // A damaged file suggests the upload that stored it was bad, so
+        // `replaced` makes the S3 steps replace its S3 object too.
+        $replaced = false;
+        if (@link($asmfn, $finalfn)
+            || (file_exists($finalfn)
+                && $this->_stored_file_matches($finalfn, $doc))) {
+            @unlink($asmfn);
         } else {
-            $this->modify_capd(function ($d) use ($finalfn) {
-                if ($d->status === 2) {
-                    $d->content_file = $finalfn;
-                    $d->status = 3;
-                    $d->ready = true;
-                }
-            });
+            $replaced = file_exists($finalfn);
+            if (!rename($asmfn, $finalfn)) {
+                return;
+            }
         }
+        $this->modify_capd(function ($d) use ($finalfn, $replaced) {
+            if ($d->status === 2) {
+                $d->content_file = $finalfn;
+                $d->status = 3;
+                $d->ready = true;
+                if ($replaced) {
+                    $d->replaced = true;
+                }
+            }
+        });
+    }
+
+    /** Return true if the file at `$fn` holds this upload’s content.
+     *
+     * The content hash names `$fn`, so the token’s digests describe the
+     * file’s correct content; the question is only whether the file is
+     * damaged, which the xxh64 answers at a fraction of a sha256 pass.
+     * @param string $fn
+     * @return bool */
+    private function _stored_file_matches($fn, DocumentInfo $doc) {
+        clearstatcache(true, $fn);
+        if (@filesize($fn) !== $this->_capd->size) {
+            return false;
+        } else if (isset($this->_capd->xxh64)) {
+            return hash_file("xxh64", $fn) === $this->_capd->xxh64;
+        }
+        return $doc->file_binary_hash($fn, $doc->binary_hash()) === $doc->binary_hash();
     }
 
     /** @param ?S3Client $s3c */
@@ -669,7 +711,15 @@ class Upload_API {
         if (!$this->_capd->s3_uploadid) {
             // small file, move directly to destination
             $doc = DocumentInfo::make_token($this->conf, $this->_cap);
-            if ($doc && $doc->store_s3() > 0) {
+            if (!$doc) {
+                return;
+            }
+            if ($this->_capd->replaced ?? false) {
+                $ok = $s3c->put_file($doc->s3_key(), $this->_capd->content_file, $doc->mimetype, $doc->s3_user_data());
+            } else {
+                $ok = $doc->store_s3() > 0;
+            }
+            if ($ok) {
                 $this->modify_capd(function ($d) {
                     $d->s3_ready = true;
                     $d->status = max($d->status, 5);
@@ -821,10 +871,14 @@ class Upload_API {
             $ha = new HashAnalysis($this->conf->content_hash_algorithm());
             $hash = $ha->prefix() . hash_final($this->_hashctx);
             $crc = hash_final($this->_crc32ctx);
-            $this->_hashctx = $this->_crc32ctx = null;
-            $this->modify_capd(function ($d) use ($hash, $crc) {
+            $xxh64 = $this->_xxh64ctx ? hash_final($this->_xxh64ctx) : null;
+            $this->_hashctx = $this->_crc32ctx = $this->_xxh64ctx = null;
+            $this->modify_capd(function ($d) use ($hash, $crc, $xxh64) {
                 $d->hash = $hash;
                 $d->crc32 = $crc;
+                if ($xxh64 !== null) {
+                    $d->xxh64 = $xxh64;
+                }
                 $d->status = max($d->status, 1);
             });
         }
@@ -888,7 +942,8 @@ class Upload_API {
             && !$this->no_s3_move) {
             // move to final location
             $doc = DocumentInfo::make_token($this->conf, $this->_cap);
-            if ($s3c->head_size($this->dest_s3_key()) === $this->_capd->size
+            if ((!($this->_capd->replaced ?? false)
+                 && $s3c->head_size($this->dest_s3_key()) === $this->_capd->size)
                 || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
                 $this->modify_capd(function ($d) {
                     $d->ready = true;
@@ -967,7 +1022,7 @@ class Upload_API {
             return;
         }
         if ($s3c) {
-            if (function_exists("curl_init")) {
+            if ($s3c->has_curl()) {
                 $s3c->set_result_class("CurlS3Result");
             }
             $this->transfer_s3_parts($s3c, $synchronous, $debugid);
