@@ -1582,6 +1582,53 @@ In thee!
         $this->conf->refresh_settings();
     }
 
+    function test_cancel_s3_teardown_deferred_offline() {
+        // when the site processes work offline, upload teardown queues the
+        // S3 abort/delete rather than doing it inline
+        S3_Tester::install($this->conf, S3_Tester::make_offline());
+        $this->conf->set_opt("s3ProcessWork", true);
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->refresh_settings();
+
+        $tok = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
+            ->set_salt("hcupdeferred")
+            ->assign_data(["status" => 2, "s3_uploadid" => "UPIDdeferred", "temp" => false]);
+        $tok->insert();
+        xassert($tok->stored());
+        Offline_S3Result::$requests = [];
+
+        Upload_API::cleanup($tok);
+
+        // nothing went to S3 inline; a work item carries the abort
+        xassert_eqq(Offline_S3Result::$requests, []);
+        $result = $this->conf->qe("select * from WorkItem where workType=?", "s3cancel");
+        $wi = WorkItem::fetch($result, $this->conf->dblink);
+        $result->close();
+        xassert(!!$wi);
+        $w = $wi->current();
+        $suffix = $this->conf->confid ? "-{$this->conf->confid}" : "";
+        $expected_key = "upload/hcupdeferred{$suffix}?uploadId=UPIDdeferred";
+        xassert_eqq($w->key ?? null, $expected_key);
+
+        // draining the queue issues the DELETE
+        $pw = new ProcessWork_Batch($this->conf, ["quiet" => true]);
+        xassert_eqq($pw->run(), 0);
+        $reqs = Offline_S3Result::$requests;
+        xassert_eqq(count($reqs), 1);
+        xassert_eqq($reqs[0][0], "DELETE");
+        xassert_eqq($reqs[0][1], $expected_key);
+
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", null);
+        Offline_S3Result::$responder = null;
+        if ($this->s3c) {
+            S3_Tester::install($this->conf, $this->s3c);
+        } else {
+            S3_Tester::install($this->conf);
+        }
+        $this->conf->refresh_settings();
+    }
+
     function finalize() {
         rm_rf_tempdir($this->tmpdir);
         $this->conf->set_opt("docstore", $this->old_docstore);

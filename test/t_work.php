@@ -416,6 +416,65 @@ class Work_Tester {
         $this->conf->set_opt("s3ProcessWork", null);
     }
 
+    function test_s3cancel_deletes_upload_state() {
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", true);
+        Offline_S3Result::$requests = [];
+        Offline_S3Result::$responder = null;
+
+        $key = "upload/hcupworktest?uploadId=UPIDworktest";
+        xassert(WorkItem::make($this->conf, "s3cancel", null, ["confid" => $this->conf->confid, "key" => $key])->enqueue());
+        xassert_eqq($this->nrows(), 1);
+
+        $pw = new ProcessWork_Batch($this->conf, ["quiet" => true]);
+        xassert_eqq($pw->run(), 0);
+
+        $reqs = Offline_S3Result::$requests;
+        xassert_eqq(count($reqs), 1);
+        xassert_eqq($reqs[0][0], "DELETE");
+        xassert_eqq($reqs[0][1], $key);
+        xassert_eqq($this->nrows(), 0);
+
+        $this->conf->set_opt("s3ProcessWork", null);
+    }
+
+    function test_s3cancel_already_gone_is_done() {
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", true);
+        Offline_S3Result::$requests = [];
+        // S3 says the upload is already gone
+        Offline_S3Result::$responder = function ($method, $skey) {
+            return [404, [], ""];
+        };
+
+        xassert(WorkItem::make($this->conf, "s3cancel", null, ["confid" => $this->conf->confid, "key" => "upload/hcupgone?uploadId=UPIDgone"])->enqueue());
+        $pw = new ProcessWork_Batch($this->conf, ["quiet" => true]);
+        xassert_eqq($pw->run(), 0);          // 404 is not an error
+        xassert_eqq($this->nrows(), 0);      // and the record drains
+
+        Offline_S3Result::$responder = null;
+        $this->conf->set_opt("s3ProcessWork", null);
+    }
+
+    function test_s3cancel_endpoint_error_retries() {
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", true);
+        Offline_S3Result::$requests = [];
+        // the S3 endpoint is unreachable
+        Offline_S3Result::$responder = function ($method, $skey) {
+            return [500, [], ""];
+        };
+
+        xassert(WorkItem::make($this->conf, "s3cancel", null, ["confid" => $this->conf->confid, "key" => "upload/hcupretry?uploadId=UPIDretry"])->enqueue());
+        $pw = new ProcessWork_Batch($this->conf, ["quiet" => true]);
+        xassert_eqq($pw->run(), 1);          // reports the failure
+        xassert_eqq($this->nrows(), 1);      // and keeps the record for a later pass
+
+        Offline_S3Result::$responder = null;
+        $this->conf->qe("delete from WorkItem");
+        $this->conf->set_opt("s3ProcessWork", null);
+    }
+
     function test_invariants_last() {
         xassert(ConfInvariants::test_all($this->conf));
     }

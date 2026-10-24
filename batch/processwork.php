@@ -141,6 +141,9 @@ class ProcessWork_Batch {
                 if ($wi->workType === "s3doc") {
                     $this->wi = $wi;
                     $this->process_s3doc();
+                } else if ($wi->workType === "s3cancel") {
+                    $this->wi = $wi;
+                    $this->process_s3cancel();
                 }
             }
         }
@@ -160,7 +163,26 @@ class ProcessWork_Batch {
         ++$this->nerrors;
     }
 
-    function process_s3doc() {
+    /** @param string $confid
+     * @param mixed $key
+     * @return bool */
+    private function load_confid($confid, $key = null) {
+        global $Opt;
+        if (!$this->cdb
+            || ($this->conf
+                && ($this->conf->confid === $confid
+                    || ($Opt["s3AnyConfid"] ?? false)))) {
+            return true;
+        }
+        Multiconference::trim_conf_cache();
+        if (($this->conf = Multiconference::get_conf(SiteLoader::$root, $confid))) {
+            return true;
+        }
+        $this->error("could not load conference {$confid}", $key);
+        return false;
+    }
+
+    private function process_s3doc() {
         // Process at most `count` records per pass, then dequeue what was
         // consumed. A large backlog drains over several passes rather than one
         // long one, and progress is committed as it is made -- so a pass that
@@ -182,8 +204,7 @@ class ProcessWork_Batch {
 
     /** @param object $w
      * @return int   -1: discard this invalid entry; 1: success; 0: retry */
-    function process_s3doc_work($w) {
-        global $Opt;
+    private function process_s3doc_work($w) {
         if (!$w
             || !is_string($w->hash ?? null)
             || !is_string($w->mimetype ?? null)
@@ -195,25 +216,18 @@ class ProcessWork_Batch {
         }
         $ha = new HashAnalysis($w->hash);
         if (!$ha->complete()) {
-            $this->error("invalid hash", $w->hash ?? null);
+            $this->error("invalid hash", $w->hash);
             return -1;
         }
         if (!str_starts_with($w->content_file, "/")
             || !is_readable($w->content_file)
             || filesize($w->content_file) !== $w->size
             || hash_file($ha->algorithm(), $w->content_file) !== $ha->text_data()) {
-            $this->error("bad content_file {$w->content_file}", $w->hash ?? null);
+            $this->error("bad content_file {$w->content_file}", $w->hash);
             return -1;
         }
-        if ($this->cdb
-            && (!$this->conf
-                || ($this->conf->confid !== $w->confid
-                    && !($Opt["s3AnyConfid"] ?? false)))) {
-            Multiconference::trim_conf_cache();
-            if (!($this->conf = Multiconference::get_conf(SiteLoader::$root, $w->confid))) {
-                $this->error("could not load conference {$w->confid}", $w->hash ?? null);
-                return 0;
-            }
+        if (!$this->load_confid($w->confid, $w->hash)) {
+            return 0;
         }
         $doc = DocumentInfo::make_content_file($this->conf, $w->content_file, $w->mimetype)
             ->set_hash($w->hash)
@@ -236,6 +250,47 @@ class ProcessWork_Batch {
             $this->error("S3 failure", $w->hash ?? null);
         }
         return $stored > 0 ? 1 : 0;
+    }
+
+    private function process_s3cancel() {
+        $n = 0;
+        while (!$this->wi->done()) {
+            $w = $this->wi->current();
+            $status = $this->process_s3cancel_work($w);
+            if ($status === 0) {
+                break;
+            }
+            $this->wi->next();
+            if (++$n >= $this->count) {
+                break;
+            }
+        }
+        $this->wi->dequeue();
+    }
+
+    /** Delete one abandoned upload’s S3 state (an incomplete multipart
+     * upload, or a temporary assembled object).
+     * @param object $w
+     * @return int   -1: discard this invalid entry; 1: done; 0: retry */
+    private function process_s3cancel_work($w) {
+        if (!$w
+            || !is_string($w->key ?? null)
+            || ($this->cdb && !is_string($w->confid ?? null))) {
+            $this->error("invalid work item", $w->key ?? null);
+            return -1;
+        }
+        if (!$this->load_confid($w->confid, $w->key)) {
+            return 0;
+        }
+        $status = Upload_API::cancel_s3_upload($this->conf, $w->key);
+        if ($this->verbose || $status <= 0) {
+            $what = $status > 0 ? "deleted" : "failed";
+            fwrite($status > 0 ? STDOUT : STDERR, $this->wi->id() . ": {$w->key}: {$what}\n");
+        }
+        if ($status <= 0) {
+            $this->error("S3 delete failed", $w->key);
+        }
+        return $status;
     }
 
     /** @param list<string> $argv

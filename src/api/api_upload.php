@@ -257,13 +257,43 @@ class Upload_API {
         // before status 4 the multipart upload is incomplete, so abort it;
         // after, delete the assembled temporary object if it remains
         if ($this->_capd->s3_uploadid
-            && ($s3d = $this->conf->s3_client())) {
+            && $this->conf->s3_client()) {
             if ($this->_capd->status < 4) {
-                $s3d->delete($this->s3_key() . "?uploadId=" . $this->_capd->s3_uploadid);
+                $key = $this->s3_key() . "?uploadId=" . $this->_capd->s3_uploadid;
             } else {
-                $s3d->delete($this->s3_key());
+                $key = $this->s3_key();
+            }
+            // The abort/delete is a network round trip. When the site
+            // processes work offline, queue it rather than block teardown
+            // (e.g. a cancel, or the token GC) on S3. The upload key is
+            // unique to this token, so a deferred delete cannot touch a
+            // later upload or a stored document.
+            if ($this->conf->opt("s3ProcessWork")
+                && ($wi = WorkItem::make($this->conf, "s3cancel", null, ["confid" => $this->conf->confid, "key" => $key]))
+                && $wi->enqueue()) {
+                // handled by `processwork`, which calls `cancel_s3_upload`
+            } else {
+                self::cancel_s3_upload($this->conf, $key);
             }
         }
+    }
+
+    /** Delete the S3 state of an aborted or completed upload: an incomplete
+     * multipart upload (`$key` ends in `?uploadId=…`) or a temporary
+     * assembled object. Idempotent. Also called by `processwork` to run a
+     * deferred `s3cancel` work item.
+     * @param string $key
+     * @return int  1: deleted, already gone, or no S3; 0: transient failure */
+    static function cancel_s3_upload(Conf $conf, $key) {
+        if (!($s3 = $conf->s3_client())) {
+            return 1;
+        }
+        $s3r = $s3->start_delete($key)->run();
+        // 2xx deleted, 404 already gone: nothing left to do either way. Any
+        // other status (endpoint down, 5xx) is transient; the caller retries,
+        // and an incomplete multipart upload is also caught by an S3
+        // lifecycle rule.
+        return ($s3r->status >= 200 && $s3r->status < 300) || $s3r->status === 404 ? 1 : 0;
     }
 
     /** @return bool */
@@ -1240,8 +1270,9 @@ class Upload_API {
         $up->_cap = $cap;
         $up->_capd = $cap->data();
         // A request completing an expired upload may still hold its lock
-        // and need its files.
-        if ($up->lock_token($cap->salt, 2)) {
+        // and need its files. Never wait: a token this GC sweep skips is
+        // cleaned by whoever holds it, or by the next sweep.
+        if ($up->lock_token($cap->salt, 0)) {
             try {
                 $up->delete_all();
             } finally {
