@@ -13337,6 +13337,10 @@ handle_ui.on("js-add-attachment", function () {
         doce.setAttribute("data-document-max-size", max_size);
     }
     ee.appendChild(doce);
+    // dismissing the file picker abandons the new instance
+    filee.addEventListener("cancel", function () {
+        doce.hidden && doce.remove();
+    });
     // this hidden_input cannot be in the document-uploader: the uploader
     // might be removed later, but we need to hold the place
     if (!f.elements[name]) {
