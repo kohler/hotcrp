@@ -32,6 +32,19 @@ class AssignmentSet_Tester {
         return false;
     }
 
+    function test_error_action_message_is_plain_text() {
+        // a CSV-supplied `warning`/`error` message is always user text, never
+        // HTML, so any format prefix is shown literally
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("action,paper,message\nwarning,,<5><b>hello</b>\nerror,,<05><b>hello</b>\nerror,,<0>a < b\nerror,,plain\n");
+        $ml = $aset->message_list();
+        xassert_eqq(count($ml), 4);
+        xassert_eqq($ml[0]->message, "<0><5><b>hello</b>");
+        xassert_eqq($ml[1]->message, "<0><05><b>hello</b>");
+        xassert_eqq($ml[2]->message, "<0><0>a < b");
+        xassert_eqq($ml[3]->message, "<0>plain");
+    }
+
     function test_invisible_paper_answers_like_missing_paper() {
         // assignment errors don't reveal whether an invisible paper exists
         $u = $this->u_puneet;
