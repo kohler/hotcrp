@@ -1320,6 +1320,65 @@ class Formulas_Tester {
         $conf->qe("delete from PaperReviewPreference where paperId in (19, 20)");
     }
 
+    function test_graph_pc_index_hides_review_identity() {
+        // A PC-indexed graph drops a PC member's element from a dataset its
+        // review fails. A viewer who may not see who reviews a paper must not
+        // learn it that way: hide the identity and the element behaves like
+        // "no review", so it stays in every dataset.
+        $conf = $this->conf;
+        $p19 = $conf->checked_paper_by_id(19, $conf->root_user());
+        $revcids = [];
+        foreach ($p19->reviews_as_list() as $rrow) {
+            $revcids[$rrow->contactId] = true;
+        }
+        // two unconflicted non-chair PC members who do not review #19
+        $extra = [];
+        foreach ($conf->pc_members() as $p) {
+            if (!$p->privChair
+                && !$p19->has_conflict($p)
+                && !isset($revcids[$p->contactId])) {
+                $extra[] = $p;
+            }
+            if (count($extra) === 2) {
+                break;
+            }
+        }
+        xassert_eqq(count($extra), 2);
+        [$drafter, $viewer] = $extra;
+
+        // #19 already has complete reviews; assign one more, left unsubmitted
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,{$drafter->email}\n");
+        $old_viewrevid = $conf->setting("viewrevid");
+        $conf->save_refresh_setting("viewrevid", Conf::VIEWREV_AFTERREVIEW);
+
+        // a `reviewer`-indexed `re:complete` bar chart drops the member whose
+        // review of #19 is not complete; does the drafter still cover #19?
+        $drafter_covers_19 = function (Contact $user) use ($drafter) {
+            $fg = new FormulaGraph($user, "bars", "reviewer", "sum.pc(1)");
+            $fg->add_dataset(new FormulaGraphDataset("19 re:complete", "s", "", ""));
+            xassert($fg->prepare());
+            // each bar serializes as [x, y, ids, ...]
+            [$j] = $this->graph_json_and_warnings($fg);
+            foreach ($j["data"] as $bar) {
+                if ($bar[0] == $drafter->contactId
+                    && in_array(19, array_map("intval", $bar[2] ?? []), true)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // the chair sees the drafter's review is incomplete, so #19 leaves the
+        // drafter's bar
+        xassert(!$drafter_covers_19($this->u_chair));
+        // the hidden viewer must not learn that: with the review's author
+        // hidden, the drafter's element behaves like "no review" and keeps #19
+        xassert($drafter_covers_19($viewer));
+
+        $conf->save_refresh_setting("viewrevid", $old_viewrevid);
+        xassert_assign($this->u_chair, "paper,action,user\n19,clearreview,{$drafter->email}\n");
+    }
+
     function test_graph_explains_empty_data() {
         // A search that matches nothing plots nothing; say so rather than
         // rendering a blank chart.

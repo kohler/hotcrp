@@ -2638,18 +2638,27 @@ final class Formula implements JsonSerializable {
     function indexer_to_rrow(PaperInfo $prow, $index) {
         if (!$index) {
             return null;
-        } else if ($this->_external_index_type & Fexpr::IDXM_REVIEW) {
+        }
+        // review index always yields review
+        if ($this->_external_index_type & Fexpr::IDXM_REVIEW) {
             assert($index instanceof ReviewInfo);
             return $index;
-        } else if ($this->_external_index_type === Fexpr::IDX_PREF) {
+        }
+        // otherwise, only attribute visible identities
+        if ($this->_external_index_type === Fexpr::IDX_PREF) {
             [$uid, $pref] = $index;
             assert($pref instanceof PaperReviewPreference);
-            return $this->user->can_view_preference($prow)
-                ? $prow->review_by_user($uid)
-                : null;
+            if (!$this->user->can_view_preference($prow)) {
+                return null;
+            }
+        } else {
+            $uid = $index->contactId;
         }
-        $uid = $index->contactId;
-        return $prow->review_by_user($uid);
+        if (($rrow = $prow->review_by_user($uid))
+            && $this->user->can_view_review_identity($prow, $rrow)) {
+            return $rrow;
+        }
+        return null;
     }
 
     /** @return bool */
