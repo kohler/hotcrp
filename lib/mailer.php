@@ -802,9 +802,11 @@ class Mailer {
                     && $line[$chk[1] + 1] === " "
                     && preg_match('/\A[ \t*]*+\z/', substr($line, 0, $np), $m)) {
                     $this->_ws_ok = true; // bulleted, so the keyword stands on its own
-                    $line = $m[0] . $this->expandvar($chk[0], false) . substr($line, $chk[1]);
-                    $brp = strlpos($line, "{{");
-                    $ptp = strlpos($line, "%");
+                    // the expansion is text; do not scan it for more keywords
+                    $x = $m[0] . $this->expandvar($chk[0], false);
+                    $line = $x . substr($line, $chk[1]);
+                    $brp = strlpos($line, "{{", strlen($x));
+                    $ptp = strlpos($line, "%", strlen($x));
                     $np = min($brp, $ptp);
                     $len = strlen($line);
                     $chk = $this->_check_keyword_at($line, $np, $len, $line, 0);

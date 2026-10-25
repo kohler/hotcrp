@@ -2796,6 +2796,23 @@ class Unit_Tester {
         xassert_eqq($mailer->expand(" {{IF(NULL)}}A{{ELIF(UNKNOWN)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}Y{{ENDIF}}\n");
     }
 
+    function test_mailer_expand_no_reexpansion() {
+        // keywords in an expansion's value are text, even on `* {{KW}}: ...` lines
+        $mailer = new HotCRPMailer($this->u_root, null, [
+            "width" => 0,
+            "requester_contact" => Author::make_tabbed("{{CONFSHORTNAME}}\t%CONFSHORTNAME%\tbobjones@a.com")
+        ]);
+        $n = "{{CONFSHORTNAME}} %CONFSHORTNAME%";
+        xassert_eqq($mailer->expand("{{REQUESTERNAME}}"), "{$n}\n");
+        xassert_eqq($mailer->expand("{{REQUESTERNAME}}: {{CONFSHORTNAME}}"), "{$n}: Testconf I\n");
+        xassert_eqq($mailer->expand("* Name: {{REQUESTERNAME}}"), "* Name: {$n}\n");
+        xassert_eqq($mailer->expand("* {{REQUESTERNAME}}: Hello"), "* {$n}: Hello\n");
+        xassert_eqq($mailer->expand("* {{REQUESTERNAME}}: {{CONFSHORTNAME}}"), "* {$n}: Testconf I\n");
+        xassert_eqq($mailer->expand("* {{REQUESTERNAME}}: %CONFSHORTNAME% {{CONFSHORTNAME}}!"), "* {$n}: Testconf I Testconf I!\n");
+        xassert_eqq($mailer->expand("  %REQUESTERNAME%: {{REQUESTERNAME}}"), "  {$n}: {$n}\n");
+        xassert_eqq($mailer->expand("* {{CONFSHORTNAME}}: {{REQUESTERNAME}}"), "* Testconf I: {$n}\n");
+    }
+
     function test_mailer_expand_halfbrace() {
         $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
         xassert_eqq($mailer->expand("{{CONFNAME%//%CONFLONGNAME}}"),
