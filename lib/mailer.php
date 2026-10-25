@@ -59,6 +59,10 @@ class Mailer {
 
     /** @var array<string,true> */
     private $_unexpanded = [];
+    /** @var bool */
+    private $_ws_ok = true;
+    /** @var int */
+    private $_expand_depth = 0;
     /** @var ?MessageSet */
     private $_ms;
     /** @var bool */
@@ -272,6 +276,8 @@ class Mailer {
     function kw_passwordlink($args, $isbool, $uf) {
         if ($this->conf->login_type()) {
             return false;
+        } else if ($this->context !== self::CONTEXT_BODY) {
+            return null; // a password link belongs only in the message body
         } else if (!$this->recipient || $this->censor === self::CENSOR_ALL) {
             return null;
         }
@@ -307,47 +313,68 @@ class Mailer {
             $args = "";
         }
 
-        $mks = $this->conf->mail_keywords($name);
-        foreach ($mks as $uf) {
-            $ok = $this->recipient || (isset($uf->global) && $uf->global);
+        // A `require_whitespace` keyword (e.g. a password link) may appear
+        // only on its own at top level, with whitespace or a line edge on both
+        // sides. That bars both splicing its value into surrounding text such
+        // as a sender’s URL (`_ws_ok` is false) and nesting it inside another
+        // keyword’s arguments (depth > 0), where its value would otherwise land
+        // in whatever string that keyword builds.
+        $ws_ok = $this->_ws_ok && $this->_expand_depth === 0;
+        ++$this->_expand_depth;
 
-            $xchecks = $uf->expand_if ?? [];
-            foreach (is_array($xchecks) ? $xchecks : [$xchecks] as $xf) {
-                if (is_string($xf)) {
-                    if ($xf[0] === "*") {
-                        $ok = $ok && call_user_func([$this, substr($xf, 1)], $uf, $name);
+        try {
+            $mks = $this->conf->mail_keywords($name);
+            foreach ($mks as $uf) {
+                $ok = $this->recipient || (isset($uf->global) && $uf->global);
+
+                $xchecks = $uf->expand_if ?? [];
+                foreach (is_array($xchecks) ? $xchecks : [$xchecks] as $xf) {
+                    if (is_string($xf)) {
+                        if ($xf[0] === "*") {
+                            $ok = $ok && call_user_func([$this, substr($xf, 1)], $uf, $name);
+                        } else {
+                            $ok = $ok && call_user_func($xf, $this, $uf, $name);
+                        }
                     } else {
-                        $ok = $ok && call_user_func($xf, $this, $uf, $name);
+                        $ok = $ok && !!$xf;
                     }
+                }
+
+                if (!$ok) {
+                    $x = null;
+                } else if (($uf->require_whitespace ?? false) && !$ws_ok) {
+                    $x = null;
+                } else if ($uf->function[0] === "*") {
+                    $x = call_user_func([$this, substr($uf->function, 1)], $args, $isbool, $uf);
                 } else {
-                    $ok = $ok && !!$xf;
+                    $x = call_user_func($uf->function, $args, $isbool, $this, $uf);
+                }
+
+                if ($x !== null) {
+                    if ($uf->urlparam ?? false) {
+                        $this->_was_urlparam = true;
+                    }
+                    return $isbool ? $x : (string) $x;
                 }
             }
 
-            if (!$ok) {
-                $x = null;
-            } else if ($uf->function[0] === "*") {
-                $x = call_user_func([$this, substr($uf->function, 1)], $args, $isbool, $uf);
-            } else {
-                $x = call_user_func($uf->function, $args, $isbool, $this, $uf);
+            if ($isbool) {
+                return $mks ? null : false;
             }
-
-            if ($x !== null) {
-                if ($uf->urlparam ?? false) {
-                    $this->_was_urlparam = true;
-                }
-                return $isbool ? $x : (string) $x;
-            }
+            $this->note_unexpanded($what);
+            return null;
+        } finally {
+            --$this->_expand_depth;
         }
+    }
 
-        if ($isbool) {
-            return $mks ? null : false;
-        }
+    /** Record that keyword `$what` was left unexpanded, warning once.
+     * @param string $what */
+    private function note_unexpanded($what) {
         if (!isset($this->_unexpanded[$what])) {
             $this->_unexpanded[$what] = true;
             $this->unexpanded_warning($what);
         }
-        return null;
     }
 
 
@@ -486,6 +513,7 @@ class Mailer {
             if (($state & 1) !== 0) {
                 $yes = false;
             } else {
+                $this->_ws_ok = true; // a condition keyword stands on its own
                 $yes = $this->expandvar(substr($x[1], 1, -1), true);
                 if ($yes !== null && !is_bool($yes)) {
                     $yes = (bool) $yes;
@@ -622,7 +650,10 @@ class Mailer {
                 continue;
             }
 
-            // expand keyword
+            // expand keyword; note whether it has whitespace or a line edge on
+            // both sides, which a `require_whitespace` keyword demands
+            $this->_ws_ok = ($p === 0 || ctype_space($line[$p - 1]))
+                && ($chk[1] === $len || ctype_space($line[$chk[1]]));
             $this->_was_urlparam = false;
             $expansion = $this->expandvar($chk[0], false);
             if ($expansion === null) {
@@ -748,6 +779,7 @@ class Mailer {
             // full-line expansion
             if ($np === 0) {
                 $chk = $this->_check_keyword_at($line, $np, $len, $line, 0);
+                $this->_ws_ok = true; // a full-line keyword stands on its own
                 if ($chk !== null
                     && $chk[1] === $len
                     && ($r = $this->expandvar($chk[0], false)) !== null) {
@@ -769,6 +801,7 @@ class Mailer {
                     && $line[$chk[1]] === ":"
                     && $line[$chk[1] + 1] === " "
                     && preg_match('/\A[ \t*]*+\z/', substr($line, 0, $np), $m)) {
+                    $this->_ws_ok = true; // bulleted, so the keyword stands on its own
                     $line = $m[0] . $this->expandvar($chk[0], false) . substr($line, $chk[1]);
                     $brp = strlpos($line, "{{");
                     $ptp = strlpos($line, "%");
@@ -958,8 +991,12 @@ class Mailer {
         if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $kw)) {
             if ($this->conf->login_type()) {
                 return "<0>‘{$xref}’ ignored, this site does not use password links";
+            } else if ($this->context !== self::CONTEXT_BODY) {
+                return "<0>‘{$xref}’ ignored, password links can only appear in the message body";
             } else if ($this->censor === self::CENSOR_ALL) {
                 return "<0>‘{$xref}’ ignored, password links cannot appear in mails with Cc or Bcc";
+            } else if ($this->recipient) {
+                return "<0>‘{$xref}’ ignored, a password link must stand on its own, not inside other text";
             }
         }
         if ((strpos($kw, "LINK") !== false || strpos($kw, "URL") !== false)

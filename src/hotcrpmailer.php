@@ -497,6 +497,12 @@ class HotCRPMailer extends Mailer {
             || !$this->row->has_author($this->recipient)) {
             return null;
         }
+        // Only an administrator of the submission may put an author-view link
+        // in text they control; otherwise a sender could mint a token for a
+        // paper they are not entitled to share.
+        if (!$this->permsender->allow_admin($this->row)) {
+            return null;
+        }
         $tok = AuthorView_Capability::make($this->row);
         if ($tok === null) {
             return "";
@@ -652,6 +658,11 @@ class HotCRPMailer extends Mailer {
         if ($kw === $this->_unexpanded_paper_keyword) {
             return "<0>‘{$xref}’ keyword ignored because this mail isn’t linked to submissions or reviews";
         } else if (preg_match('/\AAUTHORVIEWCAPABILITY/', $kw)) {
+            if ($this->row
+                && $this->row->has_author($this->recipient)
+                && !$this->permsender->allow_admin($this->row)) {
+                return "<0>‘{$xref}’ keyword ignored because only administrators can send author-view links";
+            }
             return "<0>‘{$xref}’ keyword ignored because this mail isn’t meant for submission authors";
         }
         return parent::handle_unexpanded_keyword($kw, $xref);

