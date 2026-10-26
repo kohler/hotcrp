@@ -1203,4 +1203,67 @@ class Mailer_Tester {
         $conf->save_refresh_setting("rev_open", $rev_open);
         MailChecker::clear();
     }
+
+    /** PC-reviewer recipient classes include optional PC reviews, both as
+     * recipients and in {{ASSIGNMENTS}}; but self-assigned reviews are not new
+     * review assignments. */
+    function test_new_assignment_mail_skips_self_assigned_reviews() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $assigned = $conf->checked_user_by_email("marina@poema.ru");
+        $selfer = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $old = ["rev_open" => $conf->setting("rev_open"), "pcrev_any" => $conf->setting("pcrev_any")];
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->save_refresh_setting("pcrev_any", 1);
+        $pid = null;
+        foreach ($conf->paper_set(["where" => "timeSubmitted>0"], $chair) as $prow) {
+            if (!$prow->has_conflict($assigned) && !$prow->has_conflict($selfer)
+                && !$prow->review_by_user($assigned) && !$prow->review_by_user($selfer)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert_neqq($pid, null);
+
+        // an administrator assigns an optional review; a PC member starts one
+        xassert_assign($chair, "paper,action,user\n{$pid},pcreview,{$assigned->email}\n");
+        save_review($pid, $selfer, ["s01" => 2, "s02" => 2, "ready" => false]);
+        $prow = $conf->checked_paper_by_id($pid);
+        xassert_eqq($prow->review_by_user($assigned)->reviewType, REVIEW_PC);
+        xassert_eqq($prow->review_by_user($selfer)->reviewType, REVIEW_PC);
+        xassert(($prow->review_by_user($selfer)->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0);
+
+        $recipients = function ($rec) use ($chair, $pid) {
+            return array_merge(...$this->send_mail_tool($chair, $rec, [$pid], "{{EMAIL}}"));
+        };
+        foreach (["pcrev", "uncpcrev"] as $rec) {
+            $emails = $recipients($rec);
+            foreach ([$assigned, $selfer] as $u) {
+                xassert_in_eqq($u->email, $emails);
+                xassert_str_contains($this->expand_assignments($chair, $u, $rec), "#{$pid} ");
+            }
+        }
+
+        // only the assigned review is a new assignment, even if the
+        // self-assigned review was never marked notified
+        $conf->qe("update PaperReview set timeRequestNotified=0 where paperId=? and contactId=?", $pid, $selfer->contactId);
+        xassert_str_contains($this->expand_assignments($chair, $assigned, "newpcrev"), "#{$pid} ");
+        xassert_not_str_contains($this->expand_assignments($chair, $selfer, "newpcrev"), "#{$pid} ");
+        // (sending marks the new assignments as notified)
+        $emails = $recipients("newpcrev");
+        xassert_in_eqq($assigned->email, $emails);
+        xassert_not_in_eqq($selfer->email, $emails);
+
+        // a self-assigned review promoted to a primary review is one
+        xassert_assign($chair, "paper,action,user\n{$pid},primary,{$selfer->email}\n");
+        $conf->qe("update PaperReview set timeRequestNotified=0 where paperId=? and contactId=?", $pid, $selfer->contactId);
+        xassert_str_contains($this->expand_assignments($chair, $selfer, "newpcrev"), "#{$pid} ");
+        xassert_in_eqq($selfer->email, $recipients("newpcrev"));
+
+        $conf->qe("delete from PaperReview where paperId=? and contactId?a", $pid, [$assigned->contactId, $selfer->contactId]);
+        foreach ($old as $k => $v) {
+            $conf->save_refresh_setting($k, $v);
+        }
+        MailChecker::clear();
+    }
 }
