@@ -4328,6 +4328,21 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $set(Conf::VIEWREV_NEVER, null, null, null);
         xassert_eqq($view("reviewer", "mjh"), [false, true, true]);
 
+        // Rights computed under an override stay confined, even when the
+        // holder’s base rights were computed first.
+        $set(Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS);
+        $u = Contact::make($conf);
+        $u->set_capability("@ra19", $floyd->contactId);
+        $prow = $conf->checked_paper_by_id(19, $u);
+        $floyd_rrow = $prow->fresh_review_by_user($floyd);
+        $mjh_rrow = $prow->fresh_review_by_user($mjh);
+        xassert(!$u->can_view_review($prow, $mjh_rrow));
+        $overrides = $u->add_overrides(Contact::OVERRIDE_SCOPE);
+        xassert($u->can_view_review($prow, $floyd_rrow));
+        xassert(!$u->can_view_review($prow, $mjh_rrow));
+        xassert(!$u->can_view_review_identity($prow, $mjh_rrow));
+        $u->set_overrides($overrides);
+
         $set($save["viewrev"], $save["viewrevid"], $save["viewrev_ext"], $save["viewrevid_ext"]);
         $conf->save_refresh_setting("round_settings", $save_rs[0], $save_rs[1]);
         $conf->save_refresh_setting("rev_open", $save_revopen);
