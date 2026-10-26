@@ -50,7 +50,7 @@ class Mail_API {
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
             $j = ["ok" => true];
             foreach (["text", "subject", "body"] as $k) {
-                $j[$k] = $mailer->expand(convert_to_utf8($qreq[$k]), $k);
+                $j[$k] = $mailer->expand(convert_to_utf8($qreq[$k] ?? ""), $k);
             }
             return $j;
         } else if (!$qreq->template) {

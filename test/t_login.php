@@ -560,6 +560,11 @@ class Login_Tester {
         // ...and other links stay unexpanded
         $prep = $u->prepare_mail(["subject" => "x", "body" => "{{URL}} {{URL(paper, p=1)}} {{LOGINURL}}"], ["no_error_quit" => true]);
         xassert_eqq(trim($prep->body), "{{URL}} {{URL(paper, p=1)}} {{LOGINURL}}");
+        // ...and previews of password links do not fail
+        $j = call_api("mailtext", $this->user_chair, ["email" => "estrin@usc.edu", "template" => "accountinfo"]);
+        xassert($j->ok);
+        $j = call_api("mailtext", $this->user_chair, ["email" => "estrin@usc.edu", "text" => "", "subject" => "", "body" => "{{PASSWORDLINK}}"]);
+        xassert($j->ok);
 
         // an invalid URL is not recorded, nor is one from a bearer token
         $this->derive_paper_site("http://bad\x7Fhost.example/test/");

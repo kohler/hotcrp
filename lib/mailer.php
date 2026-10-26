@@ -283,7 +283,9 @@ class Mailer {
         }
         $this->sensitive = true;
         if ($this->conf->safe_baseurl() === null) {
-            $this->preparation->append_item(MessageItem::error("<0>This site can’t send password links until its site URL is set"));
+            if ($this->preparation) {
+                $this->preparation->append_item(MessageItem::error("<0>This site can’t send password links until its site URL is set"));
+            }
             return false;
         }
         if (!$this->censor && !$this->preparation->reset_capability) {
