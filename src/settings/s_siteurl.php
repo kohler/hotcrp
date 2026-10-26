@@ -35,17 +35,27 @@ class SiteURL_SettingParser extends SettingParser {
         return preg_match('/\Ahttps?+:\/\/[^\/?#\x00-\x20\x7F]+(?:\/[^?#\x00-\x20\x7F]*)?\z/i', $u) === 1;
     }
 
+    /** Return the current request’s observed paper site, or null if it can’t
+     * be determined.
+     * @return ?string */
+    static function observed_site_url(Conf $conf) {
+        if ($conf !== Conf::$main
+            || ($nav = Navigation::get())->server === null) {
+            return null;
+        }
+        $u = self::clean($nav->server . $nav->base_path);
+        return self::is_valid_site_url($u) ? $u : null;
+    }
+
     /** Record this request’s URL as the `site_url` setting, unless the site
      * has a URL for email. Call only for requests from administrators. */
     static function record_site_url(Contact $user) {
         $conf = $user->conf;
         if ($conf->opt("observedPaperSite") === null
-            && $conf === Conf::$main
             && self::site_url_configurable($conf)
-            && ($nav = Navigation::get())->server !== null
-            && self::is_valid_site_url(($u = self::clean($nav->server . $nav->base_path)))) {
-            $conf->save_refresh_setting("opt.observedPaperSite", 1, $u);
-            $conf->log_for($user, null, "Site URL set to {$u}");
+            && ($obsurl = self::observed_site_url($conf)) !== null) {
+            $conf->save_refresh_setting("opt.observedPaperSite", 1, $obsurl);
+            $conf->log_for($user, null, "Site URL set to {$obsurl}");
         }
     }
 
@@ -64,6 +74,7 @@ class SiteURL_SettingParser extends SettingParser {
         $sv->print_entry_group("site_url", null, [
             "hint" => "This site’s public URL (used for links in email). Example: “https://hotcrp.example.org”"
         ]);
+        echo Ht::hidden("site_url_force", 1);
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
@@ -74,15 +85,34 @@ class SiteURL_SettingParser extends SettingParser {
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        $v = self::clean($sv->reqstr($si->name) ?? "");
         if (!self::site_url_configurable($sv->conf)) {
-            // ignore
-        } else if ($v !== ""
-                   && !self::is_valid_site_url($v)) {
-            $sv->error_at($si, "<0>Site URL must start with “http://” or “https://” and have no query or fragment");
-        } else {
-            $sv->update($si, $v);
+            return true;
         }
+        $force = false;
+        $v = $sv->reqstr($si->name) ?? "";
+        if (preg_match('/\A\s*+force(?=\s|\z)([\s\S]*)\z/i', $v, $m)) {
+            $force = true;
+            $v = $m[1];
+        } else if ($sv->reqstr_boolean($si->name . "_force")) {
+            $force = true;
+        }
+        $v = self::clean($v);
+        if ($v !== ""
+            && !self::is_valid_site_url($v)) {
+            $sv->error_at($si, "<0>Site URL must start with “http://” or “https://” and have no query or fragment");
+            return true;
+        }
+        if ($v !== ""
+            && !$force
+            && strcasecmp($v, $sv->oldv($si) ?? "") !== 0
+            && ($obsurl = self::observed_site_url($sv->conf)) !== null
+            && strcasecmp($v, $obsurl) !== 0) {
+            $sv->warning_at($si, "<0>Site URL incompatible with current URL, not changed");
+            $sv->inform_at($si, "<5>“{desired}” differs from the URL you are using to access the site, “{expected}”. To set it anyway, use “<code>force {desired}</code>”.",
+                new FmtArg("desired", $v, 0), new FmtArg("expected", $obsurl, 0));
+            return true;
+        }
+        $sv->update($si, $v);
         return true;
     }
 

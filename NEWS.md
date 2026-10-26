@@ -156,6 +156,8 @@ HotCRP NEWS
     * Removing a user from the PC also removes them as administrator of any
       submissions they managed.
     * Transient database errors return 503 errors, not 404.
+    * `{{PASSWORDLINK}}` mail keywords only expand if surrounded by
+      whitespace or on their own line.
 
 
 ## Version 3.4 – 5.Aug.2026
