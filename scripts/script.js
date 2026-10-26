@@ -13447,7 +13447,7 @@ handle_ui.on("document-uploader", function (event) {
         $.ajax(hoturl("=api/upload", {p: siteinfo.paperid, token: token, cancel: 1}),
                {method: "POST"});
     }
-    function cancel() {
+    function stop() {
         if (that.hotcrpUploader !== self) {
             return false;
         }
@@ -13460,12 +13460,18 @@ handle_ui.on("document-uploader", function (event) {
         if (jqxhr && token) {
             jqxhr.abort();
         }
+        return true;
+    }
+    function cancel() {
+        if (!stop()) {
+            return false;
+        }
         send_cancel();
         return true;
     }
     var self = {cancel: cancel},
         token = false, canceled = false, cancel_sent = false, jqxhr = null,
-        size = file.size,
+        retries = 0, chunkpos = 0, size = file.size,
         pos = 0, uploading = 0, sprogress0 = 0, sprogress1 = size,
         progresselt = $e("progress", {class: "mr-2", max: size + sprogress1, value: "0"});
     that.hotcrpUploader = self;
@@ -13483,7 +13489,42 @@ handle_ui.on("document-uploader", function (event) {
         progresselt.max = size + sprogress1;
     }
 
-    function ajax(r) {
+    function send() {
+        const args = {p: siteinfo.paperid};
+        if (token) {
+            args.token = token;
+        } else {
+            args.dt = doce.getAttribute("data-dt");
+            args.start = 1;
+        }
+        let fd = new FormData, myxhr;
+        fd.append("mimetype", file.type);
+        fd.append("filename", file.name);
+        chunkpos = pos;
+        const endpos = Math.min(size, pos + blob_limit);
+        uploading = endpos - pos;
+        if (uploading !== 0) {
+            args.offset = pos;
+            fd.append("blob", file.slice(pos, endpos), "blob");
+        }
+        args.size = size;
+        if (endpos === size)
+            args.finish = 1;
+        pos = endpos;
+        jqxhr = $.ajax(hoturl("=api/upload", args), {
+            method: "POST", data: fd, processData: false,
+            contentType: false, success: ajax, timeout: 300000,
+            xhr: function () {
+                myxhr = new window.XMLHttpRequest();
+                myxhr.upload.addEventListener("progress", upload_progress);
+                myxhr.addEventListener("load", progress);
+                return myxhr;
+            }
+        });
+        myxhr.upload.addEventListener("progress", upload_progress);
+    }
+
+    function ajax(r, status, xhr) {
         if (canceled) {
             // the request that created the token landed after the cancel
             if (r.ok && r.token) {
@@ -13493,11 +13534,26 @@ handle_ui.on("document-uploader", function (event) {
             return;
         }
         if (!r.ok) {
-            if (cancel() && r.message_list) {
+            if (status === "abort") {
+                return;
+            }
+            // A busy upload, timeout, or network or server error may be
+            // transient: retry the chunk. Only the user cancels the upload.
+            const transient = xhr
+                && (status === "timeout" || xhr.status === 0
+                    || xhr.status === 409 || xhr.status >= 500);
+            if (transient && retries < 5) {
+                ++retries;
+                pos = chunkpos;
+                setTimeout(function () {
+                    that.hotcrpUploader === self && send();
+                }, 1000 << retries);
+            } else if ((transient ? stop() : cancel()) && r.message_list) {
                 doce.appendChild(feedback.render_alert(r.message_list));
             }
             return;
         }
+        retries = 0;
         if (r.ranges && r.ranges.length === 2) {
             pos = r.ranges[1];
         }
@@ -13509,43 +13565,8 @@ handle_ui.on("document-uploader", function (event) {
             sprogress1 = r.progress_max;
             progress();
         }
-        var args = {p: siteinfo.paperid};
-        if (token) {
-            args.token = token;
-        } else {
-            args.dt = doce.getAttribute("data-dt");
-            args.start = 1;
-        }
         if (!r.hash) {
-            let fd = new FormData, myxhr;
-            fd.append("mimetype", file.type);
-            fd.append("filename", file.name);
-            const endpos = Math.min(size, pos + blob_limit);
-            uploading = endpos - pos;
-            if (uploading !== 0) {
-                args.offset = pos;
-                fd.append("blob", file.slice(pos, endpos), "blob");
-            }
-            args.size = size;
-            if (endpos === size)
-                args.finish = 1;
-            pos = endpos;
-            jqxhr = $.ajax(hoturl("=api/upload", args), {
-                method: "POST", data: fd, processData: false,
-                contentType: false, success: ajax, timeout: 300000,
-                error: function (xhr, status) {
-                    if (status !== "abort" && cancel()) {
-                        doce.appendChild(feedback.render_alert([{message: "<0>Upload failed", status: 2 /*MessageSet::ERROR*/}]));
-                    }
-                },
-                xhr: function () {
-                    myxhr = new window.XMLHttpRequest();
-                    myxhr.upload.addEventListener("progress", upload_progress);
-                    myxhr.addEventListener("load", progress);
-                    return myxhr;
-                }
-            });
-            myxhr.upload.addEventListener("progress", upload_progress);
+            send();
         } else {
             that.disabled = true;
             while (that.nextSibling)
