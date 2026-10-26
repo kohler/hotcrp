@@ -2813,6 +2813,22 @@ class Unit_Tester {
         xassert_eqq($mailer->expand("* {{CONFSHORTNAME}}: {{REQUESTERNAME}}"), "* Testconf I: {$n}\n");
     }
 
+    function test_mailer_expand_bullet_keeps_unexpanded() {
+        // a bulleted keyword that cannot expand stays; the rest of the line expands
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
+        xassert_eqq($mailer->expand("* {{TITLE}}: hello"), "* {{TITLE}}: hello\n");
+        xassert_eqq($mailer->expand("* {{TITLE}}: {{CONFSHORTNAME}}"), "* {{TITLE}}: Testconf I\n");
+        xassert_eqq($mailer->expand("  {{NAME}}: %CONFSHORTNAME% {{AUTHORS}}!"), "  {{NAME}}: Testconf I {{AUTHORS}}!\n");
+        // ...with the same hanging indent an expanded keyword would get
+        $mailer = new HotCRPMailer($this->u_root, null, [
+            "width" => 20,
+            "requester_contact" => Author::make_tabbed("Robert\tJones\tbobjones@a.com")
+        ]);
+        xassert_eqq($mailer->expand("* {{REQUESTERNAME}}: {{CONFLONGNAME}}"), "* Robert Jones: Test\n  Conference I\n");
+        xassert_eqq($mailer->expand("* {{TITLE}}: {{CONFLONGNAME}}"), "* {{TITLE}}: Test\n  Conference I\n");
+        xassert_eqq($mailer->expand("  {{NAME}}: {{CONFLONGNAME}}"), "  {{NAME}}: Test\n            Conference\n            I\n");
+    }
+
     function test_mailer_expand_halfbrace() {
         $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
         xassert_eqq($mailer->expand("{{CONFNAME%//%CONFLONGNAME}}"),

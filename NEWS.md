@@ -13,11 +13,11 @@ HotCRP NEWS
           administrator site access. Without a site URL, HotCRP will not send
           password reset or account creation email, and other email will contain
           unexpanded `{{URL}}` keywords.
-        * Sites with a contact database MUST set `$Opt["paperSite"]` or
-          `$Opt["defaultPaperSite"]`. On other sites, the Site URL setting is
-          filled in the first time an administrator visits the site after
-          upgrading. Administrators should check that the URL shown in Settings
-          > Basics is correct.
+        * Sites with a contact database or with `$Opt["chairHidePasswords"]`
+          MUST set `$Opt["paperSite"]` or `$Opt["defaultPaperSite"]`.
+        * On other sites, the Site URL setting is filled in the first time an
+          administrator visits the site after upgrading. Administrators should
+          check that the URL shown in Settings > Basics is correct.
     * LDAP and htauth usernames are newly restricted to ASCII characters only.
       LDAP users with non-ASCII usernames will be unable to sign in.
     * New sites that use a contact database do not automatically assign
