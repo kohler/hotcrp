@@ -5529,13 +5529,15 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         return $rights->scope_allows(TS::S_REV_ADMIN)
             && ($rights->allow_admin()
                 || ($this->contactId > 0 /* not a capability user */
-                    && ($rights->reviewType >= REVIEW_PC
+                    && (($rights->reviewType >= REVIEW_PC
+                         && !$rights->via_capability())
                         || ($this->isPC
                             && $prow->leadContactId === $this->contactXid))
                     && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0)
                     && ($round === null
                         || $round === $this->conf->assignment_round(true)
                         || ($rights->reviewType >= REVIEW_PC
+                            && !$rights->via_capability()
                             && $round === $rights->reviewRound)))
             && (!$check_time
                 || $rights->is_admin()
@@ -5552,7 +5554,8 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $eknown = false;
         if (!$rights->allow_admin()) {
             if ($this->contactId <= 0
-                || ($rights->reviewType < REVIEW_PC
+                || (($rights->reviewType < REVIEW_PC
+                     || $rights->via_capability())
                     && (!$this->isPC
                         || $prow->leadContactId !== $this->contactXid))
                 || ($this->conf->setting("extrev_chairreq") ?? 0) < 0) {
@@ -5561,6 +5564,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             } else if ($round !== null
                        && $round !== $this->conf->assignment_round(true)
                        && ($rights->reviewType < REVIEW_PC
+                           || $rights->via_capability()
                            || $round !== $rights->reviewRound)) {
                 $whyNot["wrongReviewRound"] = true;
                 $eknown = true;

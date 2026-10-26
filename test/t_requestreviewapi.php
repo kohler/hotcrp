@@ -389,6 +389,25 @@ class RequestReviewAPI_Tester {
             $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
         }
 
+        // ...including when its holder is signed in
+        $holder = $conf->fresh_user_by_email("van@ee.lbl.gov");
+        xassert(!$holder->isPC);
+        $holder->set_capability("@ra{$this->pid}", $this->u_hidden->contactId);
+        $prow = $conf->checked_paper_by_id($this->pid, $holder);
+        xassert(!$prow->has_conflict($holder));
+        xassert($holder->can_edit_review($prow, $prow->review_by_user($this->u_hidden)));
+        xassert(!$holder->can_request_review($prow, null, true));
+        $jr = call_api_result("=requestreview", $holder,
+            ["email" => $email, "given_name" => "Link", "family_name" => "Holder"], $prow);
+        xassert_eqq($jr->status, 403);
+        $t = json_encode($jr->content["message_list"] ?? [], JSON_UNESCAPED_UNICODE);
+        xassert_str_contains($t, "aren’t allowed to request reviews");
+        xassert(!$conf->fresh_user_by_email($email));
+        if (($u = $conf->fresh_user_by_email($email))) {
+            $conf->qe("delete from PaperReview where contactId=?", $u->contactId);
+            $conf->qe("delete from ContactInfo where contactId=?", $u->contactId);
+        }
+
         // other users without request rights get the same reason
         $whynot = $this->u_author->perm_request_review($prow, null, true);
         xassert_str_contains(json_encode($whynot->message_list(), JSON_UNESCAPED_UNICODE),
