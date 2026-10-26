@@ -318,6 +318,11 @@ class Upload_API {
     /** Reclaim a canceled upload unless another request is transferring
      * it. The caller must hold the upload lock. */
     private function try_reclaim() {
+        // An upload already reclaimed has no files; taking the S3 lock would
+        // only re-create its lock file.
+        if (!$this->_capd || ($this->_capd->deleted ?? false)) {
+            return;
+        }
         // Try the S3 lock: `s3_transfer_segment` creates the multipart
         // upload under it, so this is what keeps a concurrent transfer from
         // stranding one after `delete_all` aborts it. That transfer polls
@@ -1270,14 +1275,17 @@ class Upload_API {
         $up->_cap = $cap;
         $up->_capd = $cap->data();
         // A request completing an expired upload may still hold its lock
-        // and need its files. Never wait: a token this GC sweep skips is
-        // cleaned by whoever holds it, or by the next sweep.
+        // and need its files. Never wait: if the lock is busy, push back the
+        // token’s expiration so the next sweep cleans it.
         if ($up->lock_token($cap->salt, 0)) {
             try {
                 $up->delete_all();
             } finally {
                 $up->unlock_token();
             }
+        } else if (!$up->canceled()) {
+            $cap->conf->qe("update Capability set timeExpires=? where salt=? and timeExpires=?",
+                Conf::$now + 3600, $cap->salt, $cap->timeExpires);
         }
     }
 }

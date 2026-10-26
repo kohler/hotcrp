@@ -792,6 +792,10 @@ In thee!
 
         $this->xassert_reclaimed($token);
 
+        // the token GC leaves no files behind
+        Upload_API::cleanup(TokenInfo::find($token, $this->conf));
+        xassert_eqq($this->upload_files($token), []);
+
         // the upload cannot be resumed
         $jr = call_api_result("=upload", $user, $this->finish_upload_qreq($token), null);
         xassert_eqq($jr->status, 404);
@@ -1522,6 +1526,31 @@ In thee!
         $ha = new HashAnalysis($this->conf->content_hash_algorithm());
         xassert_eqq($jr->content["hash"] ?? null,
                     $ha->prefix() . hash($this->conf->content_hash_algorithm(), self::TEXT));
+    }
+
+    /** The token GC skips an expired upload whose lock is busy, but keeps
+     * its token so a later sweep can delete its files. */
+    function test_cleanup_defers_locked_upload() {
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $token = $this->start_partial_upload($user, "lockedgc.txt");
+        TokenInfo::find($token, $this->conf)->set_expires_at(Conf::$now - 1)->update();
+        $clean_tokens = new ReflectionMethod($this->conf, "clean_tokens");
+
+        $db2 = $this->conf->dbparams->connect();
+        xassert(!!$db2);
+        xassert_eqq(Dbl::fetch_ivalue($db2, "select get_lock(?,0)", $token), 1);
+        $clean_tokens->invoke($this->conf);
+        $tok = TokenInfo::find($token, $this->conf);
+        xassert(!!$tok);
+        xassert_gt($tok->timeExpires, Conf::$now);
+        xassert(!empty($this->upload_files($token)));
+        xassert_eqq(Dbl::fetch_ivalue($db2, "select release_lock(?)", $token), 1);
+        $db2->close();
+
+        $tok->set_expires_at(Conf::$now - 1)->update();
+        $clean_tokens->invoke($this->conf);
+        xassert(!TokenInfo::find($token, $this->conf));
+        xassert_eqq($this->upload_files($token), []);
     }
 
     /** Cancellation waits for the upload lock too. */
