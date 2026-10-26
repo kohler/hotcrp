@@ -297,14 +297,13 @@ class Home_Page {
                 $this->_rf_means[] = ScoreInfo::mean_of($sarr, true);
             }
         }
-        $has_rinfo = $this->_r_num_needs_submit > 0;
 
         // Information about PC reviews
         $npc = $sumpc_submit = $npc_submit = 0;
         $pc_rf_means = [];
         if ($user->isPC || $user->privChair) {
             $rfs = $this->default_review_fields();
-            $q = "select count(reviewId) num_submitted";
+            $q = "select ContactInfo.contactId, count(reviewId) num_submitted";
             $scores = [];
             foreach ($rfs as $rf) {
                 $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->short_id}Scores";
@@ -314,12 +313,19 @@ class Home_Page {
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0 group by ContactInfo.contactId");
             while (($row = $result->fetch_row())) {
                 ++$npc;
-                if ($row[0]) {
-                    $npc_submit += 1;
-                    $sumpc_submit += (int) $row[0];
-                    for ($i = 0; $i !== count($rfs); ++$i) {
-                        $scores[$i][] = ScoreInfo::mean_of($row[1 + $i], true);
-                    }
+                if (($ns = (int) $row[1]) === 0) {
+                    continue;
+                }
+                $npc_submit += 1;
+                $sumpc_submit += $ns;
+                if ((int) $row[0] === $user->contactId
+                    && $ns > $this->_r_num_submitted) {
+                    // include submitted reviews on withdrawn papers
+                    $this->_r_num_needs_submit += $ns - $this->_r_num_submitted;
+                    $this->_r_num_submitted = $ns;
+                }
+                for ($i = 0; $i !== count($rfs); ++$i) {
+                    $scores[$i][] = ScoreInfo::mean_of($row[$i + 2], true);
                 }
             }
             Dbl::free($result);
@@ -327,6 +333,8 @@ class Home_Page {
                 $pc_rf_means[] = ScoreInfo::mean_of($sarr, true);
             }
         }
+
+        $has_rinfo = $this->_r_num_needs_submit > 0;
 
         echo '<div class="homegrp" id="homerev">';
 

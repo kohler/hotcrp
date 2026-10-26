@@ -2450,4 +2450,49 @@ class Search_Tester {
 
         xassert_assign($this->u_root, "paper,action,email\n{$pid},clearreview,chair@_.com\n{$pid},clearreview,estrin@usc.edu\n");
     }
+
+    /** The home page counts submitted reviews on withdrawn papers. */
+    function test_home_counts_withdrawn_reviews() {
+        $conf = $this->conf;
+        $old_rev_open = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        $summary = function ($email) use ($conf) {
+            $user = $conf->fresh_user_by_email($email);
+            $rc = RenderCapture::make(TestQreq::get_page("index")->set_user($user));
+            if (preg_match('/You have submitted (?:(\d+) of )?<a[^>]*>(\d+) reviews?</', $rc->content, $m)) {
+                return ($m[1] === "" ? $m[2] : $m[1]) . "/" . $m[2];
+            }
+            return null;
+        };
+
+        // a PC member with an outstanding review keeps it
+        $pc = $conf->checked_user_by_email("estrin@usc.edu");
+        $pid1 = $this->unreviewed_submitted_pid($pc);
+        xassert_assign($this->u_root, "paper,action,email\n{$pid1},primary,{$pc->email}\n");
+        save_review($pid1, $pc, ["s01" => 4, "s02" => 2, "ready" => true]);
+        $pid2 = $this->unreviewed_submitted_pid($pc);
+        xassert_assign($this->u_root, "paper,action,email\n{$pid2},primary,{$pc->email}\n");
+        $before = $summary($pc->email);
+        xassert_neqq($before, null);
+        xassert_assign($this->u_root, "paper,action\n{$pid1},withdraw\n");
+        xassert_eqq($summary($pc->email), $before);
+        xassert_assign($this->u_root, "paper,action\n{$pid1},revive\n");
+        $conf->qe("delete from PaperReview where paperId?a and contactId=?", [$pid1, $pid2], $pc->contactId);
+
+        // a PC member whose only review is on a withdrawn paper
+        $email = $conf->fetch_value("select email from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0 and not exists (select * from PaperReview where contactId=ContactInfo.contactId) limit 1");
+        xassert_neqq($email, null);
+        $u = $conf->checked_user_by_email($email);
+        $pid = $this->unreviewed_submitted_pid($u);
+        xassert_assign($this->u_root, "paper,action,email\n{$pid},primary,{$email}\n");
+        save_review($pid, $u, ["s01" => 4, "s02" => 2, "ready" => true]);
+        xassert_eqq($summary($email), "1/1");
+        xassert_assign($this->u_root, "paper,action\n{$pid},withdraw\n");
+        xassert_eqq($summary($email), "1/1");
+        xassert_assign($this->u_root, "paper,action\n{$pid},revive\n");
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $u->contactId);
+
+        $conf->save_refresh_setting("rev_open", $old_rev_open);
+        $conf->invalidate_caches("users");
+    }
 }
