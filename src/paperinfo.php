@@ -148,6 +148,7 @@ final class PaperContactInfo {
     const CIFSHIFT_VIEW_AUTHORS_STATE = 20; // === log2(CIF_ALLOW_VIEW_AUTHORS)
     const CIF_SET3 = 0x400000;
     const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x800000;
+    const CIF_VIA_CAPABILITY = 0x1000000;
     /** @var int */
     public $scope_bits;
     /** @var bool */
@@ -327,6 +328,13 @@ final class PaperContactInfo {
     /** @return bool */
     function can_view_decision() {
         return ($this->ciflags & self::CIF_CAN_VIEW_DECISION) !== 0;
+    }
+
+    /** This reviewer role came from a review-accept link and is confined
+     * to its own review.
+     * @return bool */
+    function via_capability() {
+        return ($this->ciflags & self::CIF_VIA_CAPABILITY) !== 0;
     }
 
     /** @param int $ct */

@@ -3930,9 +3930,16 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             if ($rci->review_status === 0) {
                 $rci->review_status = PCI::CIRS_DECLINED;
             }
+            // A review-accept link lends its reviewer's role so the holder can
+            // read and write their own review. For a PC reviewer, confine the
+            // link to that review (CIF_VIA_CAPABILITY): a signed-out holder
+            // must not inherit external reviewers' laxer view of OTHER reviews.
             $ci->reviewType = $rci->reviewType;
             $ci->reviewRound = $rci->reviewRound;
             $ci->review_status = $rci->review_status;
+            if (!$allow_pc_broad && $ru->is_pc_member()) {
+                $cif |= PCI::CIF_VIA_CAPABILITY;
+            }
         }
 
         // check author allowance
@@ -5233,6 +5240,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         if (!$rights->scope_allows(TS::S_REV_READ)) {
             return false;
         }
+        // a review-accept link never sees reviews generally
+        if ($rights->via_capability()) {
+            return false;
+        }
         if ($rights->is_admin()
             || $rights->reviewType === REVIEW_META
             || ($rights->act_author_view()
@@ -5286,6 +5297,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         // cannot view ghost reviews unless admin
         if ($rrow && $rrow->is_ghost()) {
             return false;
+        }
+        // a review-accept link grants access to its own review only
+        if ($rights->via_capability()) {
+            return $rrow
+                && $this->is_owned_review($prow, $rrow)
+                && $viewscore >= VIEWSCORE_REVIEWERONLY;
         }
         // can view if is metareviewer, own review
         if ($rights->reviewType === REVIEW_META
@@ -5443,6 +5460,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         if ($rbase && $rbase->is_ghost()) {
             return false;
+        }
+        // a review-accept link reveals only its own review's identity
+        if ($rights->via_capability()) {
+            return $rbase && $this->is_owned_review($prow, $rbase);
         }
         if (($rights->reviewType === REVIEW_META
              && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
@@ -6253,6 +6274,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             return true;
         }
         $rights = $this->rights($prow);
+        // a review-accept link reveals only its own comment's identity
+        if ($rights->via_capability()) {
+            return $this->is_my_comment($prow, $crow);
+        }
         if ($rights->is_admin()
             || ($rights->reviewType === REVIEW_META
                 && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))

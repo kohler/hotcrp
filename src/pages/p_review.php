@@ -304,6 +304,11 @@ class Review_Page {
                 $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . $this->conf->hotlink("Sign in to the site", "signin", ["email" => $u->email, "cap" => null], ["class" => "nw"]);
             }
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
+
+            if ($u->can_view_submitted_review($this->prow)
+                && !$this->user->can_view_submitted_review($this->prow)) {
+                $this->pt()->add_pre_status_feedback(MessageItem::warning_note("<0>More review information may become visible when you sign in as {$u->email}."));
+            }
         } else {
             $m = $this->conf->_("<0>Your reviewer link is no longer active");
             $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));

@@ -1033,9 +1033,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
     }
 
     function test_review_capability_conflict() {
-        // A review acceptance capability grants the reviewer's rights on
-        // the paper; if the reviewer is conflicted, it must grant no more
-        // than the conflicted reviewer would have when signed in.
+        // A review-accept capability for an external reviewer lends that
+        // reviewer's role and is NOT confined (confinement is PC-only): the
+        // holder sees exactly what the signed-in external account sees on the
+        // paper. Unconflicted that includes other reviews; conflicted the
+        // conflict -- not the token -- walls off other reviews, identities,
+        // and reviewer comments, for the link just as for the account.
         $conf = $this->conf;
         $rev_open = $conf->setting("rev_open");
         $conf->save_refresh_setting("rev_open", 1);
@@ -1067,8 +1070,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $tf->parse_qreq(new Qrequest("POST", ["ovemer" => 2, "revexp" => 2, "ready" => true]));
         xassert($tf->check_and_save($prow, $rrow));
 
-        // unconflicted: both the account and the link see the other review
-        // and the comment
+        // unconflicted: the external link is not confined, so account and
+        // link alike see the paper, their own review, and -- since the
+        // external reviewer may -- the other review, its identity, and the
+        // reviewer comment
         $prow = $conf->checked_paper_by_id(17);
         $rrow = $prow->review_by_user($ext);
         $rrow17m = $prow->review_by_user($this->u_mgbaker);
@@ -4237,5 +4242,96 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rrow->reviewId);
         $conf->qe("delete from ContactInfo where email=?", $email);
         $conf->invalidate_caches("users");
+    }
+
+    function test_review_accept_link_sees_only_its_own_review() {
+        // A review-accept link lends a reviewer's role to a signed-out holder
+        // so they can read and write their own review -- but the lent role is
+        // a token confined to that one review. However permissive the
+        // external-reviewer rules are, the holder never sees another review,
+        // who wrote it, or a reviewer comment; and whatever the reviewer could
+        // see of other reviews when signed in, the token never grants it.
+        $conf = $this->conf;
+        $floyd = $this->u_floyd;
+        $mjh = $this->u_mjh;
+
+        // scratch paper #19: floyd and mjh each hold a submitted review
+        $save_revopen = $conf->setting("rev_open");
+        $conf->save_refresh_setting("rev_open", 1);
+        $conf->qe("delete from PaperReview where paperId=19");
+        $conf->qe("delete from PaperReviewHistory where paperId=19");
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,{$floyd->email}\n19,review,{$mjh->email}\n");
+        save_review(19, $floyd, ["ovemer" => 4, "revexp" => 2, "ready" => true]);
+        save_review(19, $mjh, ["ovemer" => 5, "revexp" => 3, "ready" => true]);
+        $prow = $conf->checked_paper_by_id(19, $conf->root_user());
+        $mjh_rrow = $prow->fresh_review_by_user($mjh);
+        xassert(!!$mjh_rrow);
+
+        // an in-memory PC-visible comment by mjh
+        $mjh_crow = new CommentInfo($prow);
+        $mjh_crow->commentType = CommentInfo::CTVIS_REVIEWER;
+        $mjh_crow->contactId = $mjh->contactId;
+
+        // evaluate review-visibility globally, with no per-round override
+        $save_rs = [$conf->setting("round_settings"), $conf->setting_data("round_settings")];
+        $conf->save_refresh_setting("round_settings", null);
+        $save = [];
+        foreach (["viewrev", "viewrevid", "viewrev_ext", "viewrevid_ext"] as $k) {
+            $save[$k] = $conf->setting($k);
+        }
+        // $who is "reviewer" (floyd himself, signed in) or "holder" (signed-out
+        // holder of floyd's review-accept link); $whose selects mjh's review
+        // (another review) or floyd's own; build the user fresh so no cached
+        // rights outlive a settings change
+        $view = function ($who, $whose) use ($conf, $floyd, $mjh, $mjh_crow) {
+            $prow = $conf->paper_by_id(19, $conf->root_user());
+            $rrow = $prow->fresh_review_by_user($whose === "mjh" ? $mjh : $floyd);
+            if ($who === "holder") {
+                $u = Contact::make($conf);
+                $u->set_capability("@ra19", $floyd->contactId);
+            } else {
+                $u = $conf->fresh_user_by_email($floyd->email);
+            }
+            return [$u->can_view_review($prow, $rrow),
+                    $u->can_view_review_identity($prow, $rrow),
+                    $u->can_view_comment_identity($prow, $mjh_crow)];
+        };
+        $set = function ($vr, $vri, $vre, $vrie) use ($conf) {
+            $conf->save_refresh_setting("viewrev", $vr);
+            $conf->save_refresh_setting("viewrevid", $vri);
+            $conf->save_refresh_setting("viewrev_ext", $vre);
+            $conf->save_refresh_setting("viewrevid_ext", $vrie);
+        };
+
+        // Whatever the settings, the holder sees its own review (content and
+        // own identity) and nothing of mjh's review, identity, or comment.
+        $configs = [
+            [null, null, null, null],                                   // default
+            [null, Conf::VIEWREV_NEVER, null, null],                    // PC identities hidden
+            [Conf::VIEWREV_NEVER, null, null, null],                    // PC reviews hidden
+            [Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS, Conf::VIEWREV_ALWAYS] // everything open
+        ];
+        foreach ($configs as $c) {
+            $set($c[0], $c[1], $c[2], $c[3]);
+            xassert_eqq($view("holder", "mjh"), [false, false, false]);
+            $own = $view("holder", "floyd");
+            xassert_eqq($own[0], true);
+            xassert_eqq($own[1], true);
+        }
+
+        // The signed-in reviewer, by contrast, still follows the settings:
+        // the confinement is a property of the token, not of floyd.
+        $set(null, null, null, null);
+        xassert_eqq($view("reviewer", "mjh"), [true, true, true]);
+        $set(null, Conf::VIEWREV_NEVER, null, null);
+        xassert_eqq($view("reviewer", "mjh"), [true, false, false]);
+        $set(Conf::VIEWREV_NEVER, null, null, null);
+        xassert_eqq($view("reviewer", "mjh"), [false, true, true]);
+
+        $set($save["viewrev"], $save["viewrevid"], $save["viewrev_ext"], $save["viewrevid_ext"]);
+        $conf->save_refresh_setting("round_settings", $save_rs[0], $save_rs[1]);
+        $conf->save_refresh_setting("rev_open", $save_revopen);
+        $conf->qe("delete from PaperReview where paperId=19");
+        $conf->qe("delete from PaperReviewHistory where paperId=19");
     }
 }
