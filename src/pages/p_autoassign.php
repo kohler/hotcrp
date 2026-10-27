@@ -616,7 +616,8 @@ class Autoassign_Page {
             }
         }
 
-        $argv[] = $qreq->a;
+        // `--` ensures remaining arguments are not parsed as options
+        array_push($argv, "--", $qreq->a);
 
         $pfx = "{$qreq->a}:";
         $argmap = (object) [];

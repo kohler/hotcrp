@@ -91,6 +91,27 @@ class Getopt_Tester {
         xassert_eqq(json_encode($arg), '"Unknown option `-d`"');
     }
 
+    function test_getopt_cluster() {
+        $getopt = (new Getopt)->long("a", "b", "c:", "long")->interleave(true);
+        $arg = self::getopt_parse($getopt, ["fart", "-abab", "-abc=x", "y"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"b":false,"c":"x","_":["y"]}');
+        $arg = self::getopt_parse($getopt, ["fart", "-abcab", "-ba-long"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"b":false,"c":"ab","long":false,"_":[]}');
+        $arg = self::getopt_parse($getopt, ["fart", "-abx"]);
+        xassert_eqq($arg, "Unknown option `-x`");
+        $arg = self::getopt_parse((new Getopt)->long("a", "b")->otheropt(true),
+            ["fart", "-abxa"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"b":false,"-":["-xa"],"_":[]}');
+
+        // parsing time is linear in cluster length
+        $t0 = microtime(true);
+        self::getopt_parse($getopt, ["fart", "-" . str_repeat("a", 25000)]);
+        $t1 = microtime(true);
+        self::getopt_parse($getopt, ["fart", "-" . str_repeat("a", 400000)]);
+        $t2 = microtime(true);
+        xassert_lt($t2 - $t1, 64 * ($t1 - $t0) + 0.05);
+    }
+
     function test_getopt_count() {
         $arg = (new Getopt)->short("vV#x")->parse(["fart", "-vVVxV"]);
         xassert_eqq(json_encode($arg), '{"v":false,"V":3,"x":false,"_":[]}');

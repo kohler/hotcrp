@@ -92,7 +92,8 @@ class Autoassign_API {
         if ($params === null) {
             return JsonResult::make_parameter_error("param");
         }
-        array_push($argv, ...$params);
+        // `--` ensures parameters are not parsed as options
+        array_push($argv, "--", ...$params);
 
         if (isset($qreq->count)) {
             if (($n = stoi($qreq->count)) === null) {

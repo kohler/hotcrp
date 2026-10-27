@@ -518,8 +518,12 @@ class Getopt {
         $subcommand = "";
         $want_subcommand = $this->subcommand !== null;
         $order = $this->order ? [] : null;
+        $next_pos = 1;
         for ($i = $first_arg ?? 1; $i !== count($argv); ++$i) {
             $arg = $argv[$i];
+            // position of current short option in a cluster like `-abc`
+            $pos = $next_pos;
+            $next_pos = 1;
             $po = null;
             $wantpo = $value = false;
 
@@ -569,19 +573,24 @@ class Getopt {
                     }
                 }
                 $wantpo = true;
-            } else if (ctype_alnum($arg[1])) { // short option
-                $oname = "-{$arg[1]}";
-                $po = $this->find_option($arg[1], $subcommand);
+            } else if (ctype_alnum($arg[$pos])) { // short option
+                $oname = "-{$arg[$pos]}";
+                $po = $this->find_option($arg[$pos], $subcommand);
                 if ($po) {
                     $name = $po->name;
                     $pot = $po->arg;
-                    if (strlen($arg) > 2) {
-                        if ($arg[2] === "=") {
-                            $value = (string) substr($arg, 3);
+                    if (strlen($arg) > $pos + 1) {
+                        if ($arg[$pos + 1] === "=") {
+                            $value = (string) substr($arg, $pos + 2);
                         } else if (($pot & self::SOMEARGMASK) !== 0) {
-                            $value = substr($arg, 2);
+                            $value = substr($arg, $pos + 1);
+                        } else if (ctype_alnum($arg[$pos + 1])) {
+                            // advance in place: copying the rest of the
+                            // cluster per option takes quadratic time
+                            $next_pos = $pos + 1;
+                            --$i;
                         } else {
-                            $argv[$i] = "-" . substr($arg, 2);
+                            $argv[$i] = "-" . substr($arg, $pos + 1);
                             --$i;
                         }
                     } else if (($pot & self::ARG) !== 0
@@ -589,6 +598,8 @@ class Getopt {
                         $value = $argv[$i + 1];
                         ++$i;
                     }
+                } else if ($pos !== 1) {
+                    $arg = "-" . substr($arg, $pos);
                 }
                 $wantpo = true;
             } else {

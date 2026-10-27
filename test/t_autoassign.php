@@ -618,6 +618,26 @@ class Autoassign_Tester {
         xassert_eqq(call_api_result("autoassigners", $chair, [])->status ?? 200, 200);
     }
 
+    function test_api_param_not_option() {
+        // `param` values are autoassigner parameters, never command-line
+        // options, even when they start with `-`
+        $this->setup_clear();
+        xassert_assign($this->user, "paper,action,user\n1,primary,lixia@cs.ucla.edu\n2,primary,lixia@cs.ucla.edu\n");
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $args = ["autoassigner" => "clear", "q" => "1", "t" => "all", "minimal_dry_run" => "1"];
+        foreach (["-q=2", "--search=2", "-dq=2"] as $p) {
+            $this->conf->qe("delete from Capability where capabilityType=?", TokenInfo::JOB);
+            $resp = call_api_result("=autoassign", $chair, $args + ["param" => json_encode(["type=primary", $p])]);
+            xassert_eqq($resp->content["ok"] ?? false, true);
+            $salt = Dbl::fetch_value($this->conf->dblink, "select salt from Capability where capabilityType=?", TokenInfo::JOB);
+            $j = call_api("job", $chair, ["job" => $salt, "output" => "string"]);
+            xassert_eqq($j->status ?? null, "done");
+            xassert_eqq($j->output ?? null, "paper,action,email\n1,noreview,lixia@cs.ucla.edu\n");
+        }
+        $this->conf->qe("delete from Capability where capabilityType=?", TokenInfo::JOB);
+        $this->setup_clear();
+    }
+
     function test_cost_option_max_enforced() {
         // A cost above the schema max is rejected (parse returns null, so the
         // default is used); otherwise a pathological cost could stall MCMF.
