@@ -616,27 +616,27 @@ class Login_Tester {
                 xassert($sv->execute());
                 return $sv->full_feedback_text();
             };
-            xassert_str_contains($set_json("https://lastyear.example/test"), "not changed");
+            xassert_str_contains($set_json("https://lastyear.example/test"), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "https://other.example/test");
             $sv = SettingValues::make_request($this->user_chair, ["site_url" => "https://lastyear.example/test"]);
             xassert($sv->execute());
             xassert_str_contains($sv->full_feedback_text(), "force https://lastyear.example/test");
             xassert_eqq($conf->safe_baseurl(), "https://other.example/test");
             // ...unless forced
-            xassert_not_str_contains($set_json("force https://lastyear.example/test"), "not changed");
+            xassert_not_str_contains($set_json("force https://lastyear.example/test"), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "https://lastyear.example/test");
-            xassert_not_str_contains($set_json(" FORCE https://other.example/test/"), "not changed");
+            xassert_not_str_contains($set_json(" FORCE https://other.example/test/"), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "https://other.example/test");
             // the current value and the URL in use need no force
-            xassert_not_str_contains($set_json("https://OTHER.example/test"), "not changed");
+            xassert_not_str_contains($set_json("https://OTHER.example/test"), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "https://OTHER.example/test");
             $this->derive_paper_site("http://real.example/test/");
-            xassert_not_str_contains($set_json("http://Real.Example/test/"), "not changed");
+            xassert_not_str_contains($set_json("http://Real.Example/test/"), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "http://Real.Example/test");
             // `site_url_force` cannot be set in JSON
             $sv = (new SettingValues($this->user_chair))->add_json_string('{"site_url": "https://other.example/test", "site_url_force": true}');
             xassert($sv->execute());
-            xassert_str_contains($sv->full_feedback_text(), "not changed");
+            xassert_str_contains($sv->full_feedback_text(), ["not changed", "ignored"]);
             xassert_eqq($conf->safe_baseurl(), "http://Real.Example/test");
             xassert($set_json("force https://other.example/test") === "");
             xassert_eqq($conf->safe_baseurl(), "https://other.example/test");

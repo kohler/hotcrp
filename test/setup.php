@@ -742,11 +742,15 @@ function xassert_str_contains($haystack, $needle) {
  * @param string $needle
  * @return bool */
 function xassert_not_str_contains($haystack, $needle) {
-    $ok = strpos($haystack, $needle) === false;
+    $ok = true;
+    foreach (is_array($needle) ? $needle : [$needle] as $str) {
+        $ok = $ok && !str_contains($haystack, $str);
+    }
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("expected `{$haystack}` to not contain `{$needle}`");
+        $expect = join("` or `", is_array($needle) ? $needle : [$needle]);
+        Xassert::fail_with("expected `{$haystack}` to not contain `{$expect}`");
     }
     return $ok;
 }
