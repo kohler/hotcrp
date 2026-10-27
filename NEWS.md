@@ -3,7 +3,7 @@ HotCRP NEWS
 
 ## Version 3.5
 
-* Upgrade notes
+* Upgrade notes: changes from prior behavior
 
     * Most sites should set `$Opt["paperSite"]` explicitly (it was previously
       optional).
@@ -23,6 +23,8 @@ HotCRP NEWS
     * New sites that use a contact database do not automatically assign
       administrator privilege to the first account to sign in. Use `php
       batch/saveusers.php` to assign administrator privilege to an account.
+    * The `preferred_email` user property is only obeyed on LDAP and htauth
+      sites.
 
 * Security updates
 
@@ -44,8 +46,8 @@ HotCRP NEWS
     * Harden code previously vulnerable to denial-of-service attacks
       (medium severity; GHSA-84xx-cv82-jqv8).
     * Fix missing permission checks (GHSA-7xrm-6p9c-4wmj).
-    * Fix stored and reflected XSS issues (GHSA-xfq9-h3px-hv62 [high
-      severity], GHSA-h778-cp46-448g [low severity, reported by Mingi Jung]).
+    * Fix stored and reflected XSS issues (GHSA-xfq9-h3px-hv62 - high severity,
+      GHSA-h778-cp46-448g - low severity, reported by Mingi Jung).
     * Fix information exposure bugs associated with formula graphs.
 
 * Accounts
@@ -91,6 +93,8 @@ HotCRP NEWS
     * Add `before:TIME` and `after:TIME` search terms. They accept dates and
       the deadline names `register`, `submit`, `resubmit`, and `final`, with
       optional offsets (`after:submit+2d`).
+    * The new `view:` search keyword sets a column’s view options without
+      changing that column’s visibility.
     * “Named searches” are now called “saved searches” on the search page.
     * Speed up parsing and running very long searches.
     * Remove the undocumented `perm:` search term.
@@ -137,10 +141,14 @@ HotCRP NEWS
     * Introduce `settings:{read/write/admin}`, `preference:{read/write/admin}`,
       and `reaction:{read/write/admin}` scopes.
     * Report scope errors more thoroughly.
-    * A single request can upload at most 100 documents.
+    * A single request can upload at most 100 documents, and a paper can have at
+      most 1000 authors and 32 KiB worth of collaborators.
+    * The `POST /assigntags` response now matches the shape of `POST /assign`.
 
 * Other changes
 
+    * Removing a user from the PC also removes them as administrator of any
+      submissions they managed.
     * The `batch/savepapers.php` script gains `--trust-document-metadata`,
       which subsumes the old `--skip-document-verify`,
       `--skip-document-content`, and `--ignore-content-file` flags.
@@ -150,14 +158,15 @@ HotCRP NEWS
     * Document downloads are logged regardless of the requested byte range.
       Downloads through reviewer links are attributed to the reviewer, and
       downloads by anonymous review-token holders aren’t logged.
-    * Add `batch/db.php`, which runs SQL against a conference database.
-      `lib/runsql.sh` is deprecated.
     * A user’s last-activity time is updated at most once every two hours.
-    * Removing a user from the PC also removes them as administrator of any
-      submissions they managed.
-    * Transient database errors return 503 errors, not 404.
     * `{{PASSWORDLINK}}` mail keywords only expand if surrounded by
       whitespace or on their own line.
+    * Add `batch/db.php`, which runs SQL against a conference database.
+      `lib/runsql.sh` is deprecated.
+    * Transient database errors return 503 errors, not 404.
+    * A new `$Opt["s3Clients"]` setting can support fallback buckets, and S3
+      secrets can be set in external files (rather than a PHP `options.php`
+      file).
 
 
 ## Version 3.4 – 5.Aug.2026
