@@ -124,8 +124,8 @@ class Tags_API {
         $assigner = new AssignmentSet($user);
         $assigner->enable_papers($prow);
         $assigner->parse(join("\n", $x));
-        $mlist = $assigner->message_list();
         $ok = $assigner->execute();
+        $mlist = $assigner->message_list();
 
         // execute
         if (!$ok) {
@@ -170,8 +170,8 @@ class Tags_API {
 
         $assigner = new AssignmentSet($user);
         $assigner->parse(join("\n", $x));
-        $mlist = $assigner->message_list();
         $ok = $assigner->execute();
+        $mlist = $assigner->message_list();
 
         // execute
         if (!$ok) {

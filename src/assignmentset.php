@@ -2572,6 +2572,7 @@ class AssignmentSet {
             $tables[] = "{$t} {$type}";
         }
         $this->conf->qe("lock tables " . join(", ", $tables));
+        $old_nerrors = Dbl::$nerrors;
 
         $progresscadence = 1000;
         $this->progress_phase = self::PROGPHASE_SAVE;
@@ -2595,7 +2596,12 @@ class AssignmentSet {
         if ($this->qe_stager) {
             call_user_func($this->qe_stager, null);
         }
+        $db_error = Dbl::$nerrors !== $old_nerrors;
         $this->conf->qe("unlock tables");
+        if ($db_error) {
+            $this->append_item_near(MessageItem::error("<0>Database error; some changes may not have been saved"), "");
+            $this->user->log_activity("Assignment database error", array_keys($pids));
+        }
 
         // clean up
         foreach ($this->assigners as $assigner) {
@@ -2616,7 +2622,7 @@ class AssignmentSet {
         }
         $this->conf->resume_log();
 
-        return true;
+        return !$db_error;
     }
 
     function stage_qe($query, ...$args) {
