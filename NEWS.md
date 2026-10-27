@@ -1,9 +1,9 @@
 HotCRP NEWS
 ===========
 
-## Version 3.5
+## Version 3.5 – 27.Oct.2026
 
-* Upgrade notes: changes from prior behavior
+* Upgrade notes
 
     * Most sites should set `$Opt["paperSite"]` explicitly (it was previously
       optional).
@@ -20,11 +20,11 @@ HotCRP NEWS
           check that the URL shown in Settings > Basics is correct.
     * LDAP and htauth usernames are newly restricted to ASCII characters only.
       LDAP users with non-ASCII usernames will be unable to sign in.
+    * The `preferred_email` user property is only obeyed on LDAP and htauth
+      sites.
     * New sites that use a contact database do not automatically assign
       administrator privilege to the first account to sign in. Use `php
       batch/saveusers.php` to assign administrator privilege to an account.
-    * The `preferred_email` user property is only obeyed on LDAP and htauth
-      sites.
 
 * Security updates
 
@@ -47,7 +47,7 @@ HotCRP NEWS
       (medium severity; GHSA-84xx-cv82-jqv8).
     * Fix missing permission checks (GHSA-7xrm-6p9c-4wmj).
     * Fix stored and reflected XSS issues (GHSA-xfq9-h3px-hv62 - high severity,
-      GHSA-h778-cp46-448g - low severity, reported by Mingi Jung).
+      GHSA-h778-cp46-448g - low severity, thanks to Mingi Jung for the report).
     * Fix information exposure bugs associated with formula graphs.
 
 * Accounts
