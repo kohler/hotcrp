@@ -121,6 +121,10 @@ class CheckUpdates_Page {
             }
         }
 
-        json_exit(empty($ml) ? ["ok" => true] : ["ok" => true, "message_list" => $ml]);
+        if (empty($ml)) {
+            json_exit(["ok" => true]);
+        }
+        $qreq->unset_gsession("updatecheck");
+        json_exit(["ok" => true, "message_list" => $ml]);
     }
 }
