@@ -626,6 +626,19 @@ class Unit_Tester {
             . "+------------+\n");
     }
 
+    function test_csv_table_many_lines() {
+        // rendering is linear in the text, even for many short lines
+        $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
+        $t->select(["w"]);
+        $t->add_row(["w" => "a" . str_repeat("\n", 100000) . "a"]);
+        $t0 = microtime(true);
+        xassert_eqq($t->unparse(),
+            "+---+\n| w |\n+---+\n| a |\n"
+            . str_repeat("|   |\n", 99999)
+            . "| a |\n+---+\n");
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_csv_table_truncate() {
         // TABLE_TRUNCATE limits each cell to one line; a multi-line cell is
         // clipped to its first line with "..." (column sized to fit the "...")
@@ -2437,6 +2450,22 @@ class Unit_Tester {
                     "+ This\n- is\n- a thing\n- to\n- be \n- wrapped.\n");
         xassert_eqq(prefix_word_wrap("+ long lengthy long long ", "This is a thing to be wrapped.", "- ", 10),
                     "+ long lengthy long long\n- This is\n- a thing\n- to be\n- wrapped.\n");
+    }
+
+    function test_prefix_word_wrap_many_lines() {
+        // wrapping is linear in the text, even for many short lines
+        $text = "a" . str_repeat("\n", 100000) . "a";
+        $t0 = microtime(true);
+        xassert_eqq(prefix_word_wrap("They supplied this note: ", $text, 0, 75),
+                    "They supplied this note: {$text}\n");
+        xassert_lt(microtime(true) - $t0, 1.0);
+        $t0 = microtime(true);
+        xassert_eqq(prefix_word_wrap("* ", $text, 2, 75, true),
+                    "* a\n" . str_repeat("  \n", 99999) . "  a\n");
+        xassert_lt(microtime(true) - $t0, 1.0);
+        $t0 = microtime(true);
+        xassert_eqq(prefix_word_wrap("", $text, 0, 10000000), "{$text}\n");
+        xassert_lt(microtime(true) - $t0, 1.0);
     }
 
     function test_star_text_pregexes() {

@@ -2029,12 +2029,13 @@ class UnicodeHelper {
 
     /** @param string $str
      * @param int $len  maximum prefix length; > 65535 means ∞
+     * @param int $pos  byte offset at which the prefix starts
      * @return string|false */
-    static function utf8_prefix($str, $len) {
+    static function utf8_prefix($str, $len, $pos = 0) {
         if ($len > 65535) {
-            return is_valid_utf8($str) ? $str : false;
+            return preg_match('/\G/u', $str, $m, 0, $pos) ? substr($str, $pos) : false;
         }
-        preg_match('/\A\X{0,' . $len . '}+/u', $str, $m);
+        preg_match('/\G\X{0,' . $len . '}+/u', $str, $m, 0, $pos);
         return isset($m[0]) ? $m[0] : false;
     }
 
@@ -2065,28 +2066,31 @@ class UnicodeHelper {
 
     /** @param string $str
      * @param int $len  maximum prefix length in Unicode grapheme clusters; > 65535 means ∞
+     * @param int $pos  byte offset at which the prefix starts
      * @return string|false */
-    static function utf8_word_prefix($str, $len) {
-        if (strlen($str) <= $len || $len > 65535) {
-            return is_valid_utf8($str) ? $str : false;
+    static function utf8_word_prefix($str, $len, $pos = 0) {
+        // match at `$pos` rather than on `substr($str, $pos)`: PHP caches
+        // UTF-8 validity per string, so `$str` is validated only once
+        if (strlen($str) - $pos <= $len || $len > 65535) {
+            return preg_match('/\G/u', $str, $m, 0, $pos) ? substr($str, $pos) : false;
         }
         // possessive matches only: backtracking into `\X` is quadratic on
         // long clusters (e.g., thousands of combining marks)
         // `$m[1]` is the first `$len` clusters; `$m[0]` adds one character
-        $mok = preg_match('/\A(\X{1,' . max($len, 1) . '}+).?/su', $str, $m);
+        $mok = preg_match('/\G(\X{1,' . max($len, 1) . '}+).?/su', $str, $m, 0, $pos);
         if ($mok === false) { // input string was not UTF-8 -- should not happen!
             return false;
-        } else if ($mok === 0 || strlen($m[1]) === strlen($str)) {
-            return $str;
+        } else if ($mok === 0 || $pos + strlen($m[1]) === strlen($str)) {
+            return substr($str, $pos);
         }
         // If `$m[1]` contains a word break, return through the last one,
         // i.e., up to the last space run that follows a non-space
         if (preg_match('/\A(?:[^\pZ\s]*+([\pZ\s]++))++/u', $m[0], $mm)
             && strlen($mm[0]) !== strlen($mm[1])) {
-            return substr($str, 0, strlen($mm[0]) - strlen($mm[1]));
+            return substr($str, $pos, strlen($mm[0]) - strlen($mm[1]));
         }
         // Otherwise, complete its last word
-        if (preg_match('/\G[^\pZ\s]++/u', $str, $mm, 0, strlen($m[1]))) {
+        if (preg_match('/\G[^\pZ\s]++/u', $str, $mm, 0, $pos + strlen($m[1]))) {
             return $m[1] . $mm[0];
         }
         return $m[1];
@@ -2112,26 +2116,45 @@ class UnicodeHelper {
      * @param bool $preserve_space
      * @return string|false */
     static function utf8_line_break(&$str, $len, $preserve_space = false) {
-        if ($str === "") {
+        $pos = 0;
+        $line = self::utf8_line_break_at($str, $pos, $len, $preserve_space);
+        if ($line !== false) {
+            $str = substr($str, $pos);
+        }
+        return $line;
+    }
+
+    /** Like `utf8_line_break`, but the line starts at byte offset `$pos`,
+     * which is advanced past the line. Breaking a text into lines this way
+     * takes linear time.
+     * @param string &$str
+     * @param int &$pos
+     * @param int $len
+     * @param bool $preserve_space
+     * @return string|false */
+    static function utf8_line_break_at(&$str, &$pos, $len, $preserve_space = false) {
+        if ($pos >= strlen($str)) {
             return false;
         }
-        $line = self::utf8_word_prefix($str, $len);
-        if ($line === false) { // input string was not UTF-8 -- should not happen!
-            $str = convert_to_utf8($str);
-            $line = self::utf8_word_prefix($str, $len);
+        if (!preg_match('/\G/u', $str, $m, 0, $pos)) { // input string was not UTF-8 -- should not happen!
+            $str = substr($str, 0, $pos) . convert_to_utf8(substr($str, $pos));
         }
-        if (($nl = strpos($line, "\n")) !== false) {
-            $line = substr($line, 0, $nl);
+        if ($len > 65535) {
+            $nl = strpos($str, "\n", $pos);
+            $line = $nl === false ? substr($str, $pos) : substr($str, $pos, $nl - $pos);
+        } else {
+            $line = self::utf8_word_prefix($str, $len, $pos);
+            if (($nl = strpos($line, "\n")) !== false) {
+                $line = substr($line, 0, $nl);
+            }
         }
-        $pos = strlen($line);
+        $pos += strlen($line);
         if (preg_match('/\G(?:\pZ|[\t\f\r])*\n?/u', $str, $m, 0, $pos)) {
             $pos += strlen($m[0]);
+            if ($preserve_space) {
+                $line .= rtrim($m[0], "\n");
+            }
         }
-        if ($preserve_space && $pos !== strlen($line)) {
-            $ends_nl = $str[$pos - 1] === "\n" ? 1 : 0;
-            $line .= substr($str, strlen($line), $pos - strlen($line) - $ends_nl);
-        }
-        $str = substr($str, $pos);
         return $line;
     }
 
@@ -2151,18 +2174,35 @@ class UnicodeHelper {
      * @param bool $preserve_space
      * @return string|false */
     static function utf8_hard_line_break(&$str, $len, $preserve_space = false) {
-        if ($str === "") {
+        $pos = 0;
+        $line = self::utf8_hard_line_break_at($str, $pos, $len, $preserve_space);
+        if ($line !== false) {
+            $str = substr($str, $pos);
+        }
+        return $line;
+    }
+
+    /** Like `utf8_hard_line_break`, but the line starts at byte offset `$pos`,
+     * which is advanced past the line. Breaking a text into lines this way
+     * takes linear time.
+     * @param string &$str
+     * @param int &$pos
+     * @param int $len
+     * @param bool $preserve_space
+     * @return string|false */
+    static function utf8_hard_line_break_at(&$str, &$pos, $len, $preserve_space = false) {
+        if ($pos >= strlen($str)) {
             return false;
         }
-        $line = self::utf8_prefix($str, $len);
+        $line = self::utf8_prefix($str, $len, $pos);
         if ($line === false) {
-            $str = convert_to_utf8($str);
-            $line = self::utf8_prefix($str, $len);
+            $str = substr($str, 0, $pos) . convert_to_utf8(substr($str, $pos));
+            $line = self::utf8_prefix($str, $len, $pos);
         }
         if (($nl = strpos($line, "\n")) !== false) {
             $line = substr($line, 0, $nl);
-        } else if (strlen($line) !== strlen($str)) {
-            if (preg_match('/\G(?!\pZ|\s)/u', $str, $m, 0, strlen($line))) {
+        } else if ($pos + strlen($line) !== strlen($str)) {
+            if (preg_match('/\G(?!\pZ|\s)/u', $str, $m, 0, $pos + strlen($line))) {
                 // The cut falls inside a word (a non-space follows). Back up to
                 // the last break point in the line, dropping the partial word;
                 // with none (a single word wider than `$len`) the hard cut at
@@ -2173,15 +2213,13 @@ class UnicodeHelper {
                 $line = preg_replace('/(?:\pZ|\s)+\z/u', "", $line, 1);
             }
         }
-        $pos = strlen($line);
+        $pos += strlen($line);
         if (preg_match('/\G(?:\pZ|[\t\f\r])*\n?/u', $str, $m, 0, $pos)) {
             $pos += strlen($m[0]);
+            if ($preserve_space) {
+                $line .= rtrim($m[0], "\n");
+            }
         }
-        if ($preserve_space && $pos !== strlen($line)) {
-            $ends_nl = $str[$pos - 1] === "\n" ? 1 : 0;
-            $line .= substr($str, strlen($line), $pos - strlen($line) - $ends_nl);
-        }
-        $str = substr($str, $pos);
         return $line;
     }
 

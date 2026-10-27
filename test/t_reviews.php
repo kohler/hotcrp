@@ -1894,6 +1894,40 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
     }
 
+    // Review-request and decline reasons are truncated to fit the database
+    function test_review_request_reason_truncated() {
+        $conf = $this->conf;
+        $conf->save_refresh_setting("rev_open", 1);
+        Contact::update_rights();
+        MailChecker::clear();
+        $long = str_repeat("é", 20000);
+        $trunc = substr($long, 0, 32766);
+
+        $paper19 = $conf->checked_paper_by_id(19);
+        $xqreq = new Qrequest("POST", ["email" => "longreason@_.com", "name" => "Lon Greason", "reason" => $long]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $paper19);
+        xassert($result->content["ok"]);
+        xassert_eqq(count(MailChecker::$preps), 1);
+        xassert_str_contains(MailChecker::$preps[0]->body, "ééé");
+        MailChecker::clear();
+
+        $reviewer = $conf->checked_user_by_email("longreason@_.com");
+        $paper19 = $conf->checked_paper_by_id(19);
+        $rid = $paper19->review_by_user($reviewer)->reviewId;
+
+        $xqreq = new Qrequest("POST", ["r" => $rid, "reason" => $long]);
+        $result = RequestReview_API::declinereview($reviewer, $xqreq, $paper19);
+        xassert($result->content["ok"]);
+        MailChecker::clear();
+        $paper19 = $conf->checked_paper_by_id(19);
+        xassert(!$paper19->fresh_review_by_id($rid));
+        xassert_eqq($paper19->review_refusal_by_id($rid)->reason, $trunc);
+
+        // clean up
+        $conf->qe("delete from PaperReviewRefused where paperId=? and refusedReviewId=?", $paper19->paperId, $rid);
+        $conf->qe("delete from PaperReviewHistory where paperId=? and reviewId=?", $paper19->paperId, $rid);
+    }
+
     // An anonymous user holding a review-accept capability can decline a
     // review, and can later use the same capability to accept it after all.
     function test_capability_decline_then_accept() {

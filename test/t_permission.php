@@ -2830,6 +2830,23 @@ class Permission_Tester {
         xassert($paper16->timeWithdrawn <= 0);
     }
 
+    function test_withdraw_reason_normalized() {
+        // like PaperStatus, store at most 1024 bytes of valid UTF-8
+        $reason = str_repeat("é ", 40000);
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,{$reason}\n");
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert($paper16->timeWithdrawn > 0);
+        xassert_eqq($paper16->withdrawReason, substr($reason, 0, 1023));
+
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,caf\xE9\n");
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert_eqq($paper16->withdrawReason, "café");
+
+        xassert_assign($this->u_mogul, "paper,action\n16,revive\n");
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert($paper16->timeWithdrawn <= 0);
+    }
+
     function test_withdraw_nonauthor() {
         xassert_assign_fail($this->u_estrin, "paper,action,reason\n16,withdraw,Fucker\n");
     }

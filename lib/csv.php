@@ -1641,15 +1641,18 @@ class CsvGenerator {
         $ncol = count($widths);
         $truncate = ($this->flags & self::TABLE_TRUNCATE) !== 0;
         $lines = "";
+        $pos = array_fill(0, $ncol, 0);
+        for ($i = 0; $i !== $ncol; ++$i) {
+            $cells[$i] = (string) ($cells[$i] ?? "");
+        }
         while (true) {
-            $next_cells = [];
+            $more = false;
             for ($i = 0; $i !== $ncol; ++$i) {
-                $s = (string) ($cells[$i] ?? "");
-                $x = UnicodeHelper::utf8_hard_line_break($s, $widths[$i]);
-                if ($truncate && $s !== "") {
+                $x = UnicodeHelper::utf8_hard_line_break_at($cells[$i], $pos[$i], $widths[$i]);
+                if ($truncate && $pos[$i] < strlen($cells[$i])) {
                     // more content remains; clip this cell to one line + "..."
                     $x = self::table_ellipsize($x, $widths[$i]);
-                    $s = "";
+                    $pos[$i] = strlen($cells[$i]);
                 }
                 $x = $this->table_pad($x, $widths[$i], $this->cell_flags[$i]);
                 if ($rule) {
@@ -1657,11 +1660,8 @@ class CsvGenerator {
                 } else {
                     $lines .= "{$v} {$x} ";
                 }
-                if ($s !== "") {   // leftover text for next line
-                    while (count($next_cells) < $i) {
-                        $next_cells[] = "";
-                    }
-                    $next_cells[] = $s;
+                if ($pos[$i] < strlen($cells[$i])) { // leftover text for next line
+                    $more = true;
                 }
             }
             if ($rule) {
@@ -1669,10 +1669,9 @@ class CsvGenerator {
             } else {
                 $lines .= $v . "\n";
             }
-            if (empty($next_cells)) {
+            if (!$more) {
                 return $lines;
             }
-            $cells = $next_cells;
         }
     }
 

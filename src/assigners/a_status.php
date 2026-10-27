@@ -116,8 +116,10 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                     $state->callable("WithdrawVotesAssigner")->add_paper($prow);
                 }
             }
-            $r = $req["withdraw_reason"];
-            if ((string) $r !== ""
+            // see also PaperStatus::_prepare_withdraw
+            $r = convert_to_utf8((string) $req["withdraw_reason"]);
+            $r = UnicodeHelper::utf8_truncate_invalid(substr($r, 0, 1024));
+            if ($r !== ""
                 && $state->user->can_withdraw_paper($prow)) {
                 $res->_withdraw_reason = $r;
             }
