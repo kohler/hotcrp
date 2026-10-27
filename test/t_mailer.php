@@ -890,6 +890,54 @@ class Mailer_Tester {
         }
     }
 
+    function test_keyword_nesting_is_bounded() {
+        $conf = $this->conf;
+        $mailer = new HotCRPMailer($conf->root_user(), null, ["width" => 0]);
+        $site = $conf->safe_baseurl();
+        xassert_eqq($mailer->expand("{{OPT(LINK({{OPT(LINK(x))}}))}}", "body"), "{$site}/{$site}/x\n");
+        xassert_eqq($mailer->expand("{{IF(LINK(x))}}yes{{ELSE}}no{{ENDIF}}", "body"), "yes\n");
+        xassert_eqq($mailer->expand("{{OPT(URLENC(URLENC(OPT(CONFSHORTNAME))))}}", "body"),
+            urlencode(urlencode($conf->short_name)) . "\n");
+
+        // `OPT` evaluates its argument twice (probe, then text), so nesting
+        // it must not take exponential time; too-deep nests are left unexpanded
+        $nest = str_repeat("{{OPT(LINK(", 20) . "x" . str_repeat("))}}", 20);
+        $t0 = microtime(true);
+        $t = $mailer->expand($nest, "body");
+        xassert_lt(microtime(true) - $t0, 1.0);
+        xassert_str_contains($t, "{{OPT(LINK(");
+        $t = $mailer->expand("{{" . str_repeat("OPT(", 40) . "CONFSHORTNAME" . str_repeat(")", 40) . "}}", "body");
+        xassert_eqq($t, "");
+
+        $mailer = new HotCRPMailer($conf->root_user(), $conf->checked_user_by_email("marina@poema.ru"));
+        $prep = $mailer->prepare(["subject" => "Test", "body" => $nest]);
+        xassert_str_contains($prep->full_feedback_text(), "nested too deeply");
+    }
+
+    function test_mailtext_expansion_is_bounded() {
+        $user = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $rest = ["subject" => "", "body" => ""];
+        $j = call_api("mailtext", $user, ["text" => "{{REASON}}{{REASON}}", "reason" => "xy"] + $rest);
+        xassert($j->ok);
+        xassert_eqq($j->text, "xyxy");
+
+        // caller-supplied templates cannot multiply caller-supplied text
+        // without bound
+        $long = str_repeat("x", 5000);
+        foreach ([["REASON", "reason"], ["OPT(REASON)", "reason"], ["LAST", "family_name"]] as $kp) {
+            $j = call_api("mailtext", $user, ["text" => str_repeat("{{{$kp[0]}}}", 5000), $kp[1] => $long] + $rest);
+            xassert($j->ok);
+            xassert_lt(strlen($j->text), Mailer::PREVIEW_EXPANSION_LIMIT + 100000);
+            xassert(str_starts_with($j->text, $long . $long));
+            xassert(str_ends_with($j->text, "{{{$kp[0]}}}"));
+        }
+
+        // other mail is not limited
+        $mailer = new HotCRPMailer($this->conf->root_user(), $user, ["reason" => $long, "width" => 0]);
+        $t = $mailer->expand(str_repeat("{{REASON}}", 300), "body");
+        xassert_eqq($t, str_repeat($long, 300) . "\n");
+    }
+
     function test_preview_expands_field_with_phase_condition() {
         // A chair’s mail preview evaluates field conditions for both sender and
         // recipient. A compound condition involving `phase:` must work there.
@@ -1264,6 +1312,47 @@ class Mailer_Tester {
         foreach ($old as $k => $v) {
             $conf->save_refresh_setting($k, $v);
         }
+        MailChecker::clear();
+    }
+
+    function test_conditional_expansion_long_whitespace() {
+        // a long run of whitespace followed by many conditionals expands in
+        // time linear in the length of the template
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $u = $conf->checked_user_by_email("estrin@usc.edu");
+        $mailer = new HotCRPMailer($chair, $u);
+        $sp = str_repeat(" ", 50000);
+        $ifs = str_repeat("%IF(NULL)%%ENDIF%", 3000);
+        $time0 = microtime(true);
+        $t = $mailer->expand("x{$sp}{$ifs}y", "subject");
+        xassert_eqq($t, "x{$sp}y");
+        $t = $mailer->expand("x{$sp}%IF(URL)%%IF(URL)%{$ifs}%ENDIF%%ENDIF%y", "subject");
+        xassert_eqq($t, "x{$sp}y");
+        xassert_lt(microtime(true) - $time0, 2.0);
+
+        // expanding a conditional does not copy the text before it
+        $sp = str_repeat(" ", 1700000);
+        $ifs = str_repeat(" %IF(NULL)%%ENDIF%", 100000);
+        $time0 = microtime(true);
+        $t = $mailer->expand("x{$sp}{$ifs}y", "subject");
+        xassert_eqq($t, "x{$sp} y");
+        xassert_lt(microtime(true) - $time0, 2.0);
+    }
+
+    function test_conditional_nesting_limit() {
+        // templates whose conditionals nest too deeply are left unexpanded
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $u = $this->conf->checked_user_by_email("estrin@usc.edu");
+        $mailer = new HotCRPMailer($chair, $u);
+        $d = Mailer::MAX_IF_DEPTH;
+        $t = str_repeat("%IF(CONFNAME)%", $d) . "x" . str_repeat("%ENDIF%", $d);
+        xassert_eqq($mailer->expand($t, "subject"), "x");
+        $t = str_repeat("%IF(CONFNAME)%", $d + 1) . "x" . str_repeat("%ENDIF%", $d + 1);
+        xassert_eqq($mailer->expand($t, "subject"), $t);
+        MailChecker::clear();
+        $fb = $this->preview_feedback($chair, "pc", ["body" => $t]);
+        xassert_str_contains($fb, "Too many nested {{IF}}s");
         MailChecker::clear();
     }
 }

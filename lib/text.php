@@ -720,7 +720,18 @@ class Text {
      * @param string $b
      * @return string */
     static function merge_whitespace($a, $b) {
-        $al = strlen($a);
+        list($apx, $bpx) = self::merge_whitespace_offsets($a, strlen($a), $b);
+        return substr($a, 0, $apx) . substr($b, $bpx);
+    }
+
+    /** Return offsets `[$apx, $bpx]` such that
+     * `merge_whitespace(substr($a, 0, $al), $b)` equals
+     * `substr($a, 0, $apx) . substr($b, $bpx)`.
+     * @param string $a
+     * @param int $al
+     * @param string $b
+     * @return array{int,int} */
+    static function merge_whitespace_offsets($a, $al, $b) {
         $bl = strlen($b);
         $ap = $apx = $al;
         $bp = $bpx = 0;
@@ -728,14 +739,16 @@ class Text {
 
         while (true) {
             // skip whitespace
-            while ($bp !== $bl && ($b[$bp] === " " || $b[$bp] === "\t")) {
-                ++$bp;
-            }
-            while ($ap !== 0 && ($a[$ap - 1] === " " || $a[$ap - 1] === "\t")) {
+            $bp += strspn($b, " \t", $bp);
+            $bnl = $bp !== $bl && ($b[$bp] === "\r" || $b[$bp] === "\n");
+            // unless `$b` continues with a newline, at most `$bp - $bpx` bytes
+            // of `$a` will be removed; do not rescan whitespace that stays
+            $ap0 = $bnewline || $bnl ? 0 : max($apx - ($bp - $bpx), 0);
+            while ($ap !== $ap0 && ($a[$ap - 1] === " " || $a[$ap - 1] === "\t")) {
                 --$ap;
             }
 
-            if ($bp !== $bl && ($b[$bp] === "\r" || $b[$bp] === "\n")) {
+            if ($bnl) {
                 // consume trailing whitespace
                 if (!$bnewline) {
                     $bpx = $bp;
@@ -764,7 +777,7 @@ class Text {
             } else if ($ap < $apx && $bp > $bpx) {
                 $apx -= min($apx - $ap, $bp - $bpx);
             }
-            return substr($a, 0, $apx) . substr($b, $bpx);
+            return [$apx, $bpx];
         }
     }
 

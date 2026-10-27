@@ -46,6 +46,8 @@ class Mail_API {
             }
         }
         $mailer = new HotCRPMailer($user, $recipient, $mailinfo);
+        // the caller can supply both template and keyword values
+        $mailer->set_expansion_limit(Mailer::PREVIEW_EXPANSION_LIMIT);
 
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
             $j = ["ok" => true];

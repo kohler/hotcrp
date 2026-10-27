@@ -2917,6 +2917,23 @@ class Unit_Tester {
             "Hello  Goodbye\n");
     }
 
+    function test_mailer_expand_unbalanced() {
+        $mailer = new HotCRPMailer($this->u_root, null, ["width" => 0]);
+        xassert_eqq($mailer->expand("{{OPT(CONFSHORTNAME)}} {{B( {{OPT(CONFSHORTNAME)}}"),
+            "Testconf I {{B( Testconf I\n");
+        xassert_eqq($mailer->expand("{{IF(NULL)}}A{{ELSE}}Y{{ENDIF}} {{IF("),
+            "Y {{IF(\n");
+        // repeated scans of unbalanced arguments eventually give up
+        foreach (["{{B(", "%B(", "{{IF(", "{{B(\\\""] as $t) {
+            $t = str_repeat($t, 1000);
+            xassert_eqq($mailer->expand("{$t} {{CONFSHORTNAME}} {{OPT(CONFSHORTNAME)}}"),
+                "{$t} Testconf I {{OPT(CONFSHORTNAME)}}\n");
+        }
+        // but balanced arguments are not affected
+        xassert_eqq($mailer->expand(str_repeat("* {{OPT(CONFSHORTNAME)}}: {{URLENC(OPT(CONFSHORTNAME))}}\n", 1000)),
+            str_repeat("* Testconf I: Testconf+I\n", 1000));
+    }
+
     function test_collator() {
         $collator = $this->conf->collator();
         xassert($collator->compare("aé", "af") < 0);
@@ -3216,6 +3233,25 @@ class Unit_Tester {
         xassert_eqq($enc("Bob <a@b>"), "<0>Invalid email address");
     }
 
+    function test_encode_email_header_unclosed_delimiters() {
+        $mt = new MimeText("\r\n");
+        // an unclosed delimiter does not affect earlier words
+        xassert_eqq($mt->encode_email_header("Cc", "\"A, B\" <a@b.com>, “C” <c@d.com>, \"D <d@e.com>"), false);
+        xassert_eqq($mt->mi->pos1, 37);
+        // a straight quote with no straight close can be closed by a curly quote
+        xassert_eqq($mt->encode_email_header("Cc", "\"A” <a@b.com>, “B\\\"C” <c@d.com>"), "Cc: \"A\" <a@b.com>, \"B\\\"C\" <c@d.com>");
+        // an unclosed encoded-word does not affect later words
+        xassert_eqq($mt->encode_email_header("Cc", "=?utf-8?q?a@b.com, é =?utf-8?q?C?= <c@d.com>"), "Cc: =?utf-8?q?a@b.com, =?utf-8?q?=C3=A9_C?= <c@d.com>");
+
+        // searching for closing delimiters must not take quadratic time
+        $t0 = microtime(true);
+        foreach (["\\\"", "\\“", "\"a” \\", "<", "=?utf-8?q?a,"] as $s) {
+            xassert_eqq($mt->encode_email_header("Cc", str_repeat($s, 20000)), false);
+        }
+        xassert_neqq($mt->encode_email_header("Cc", str_repeat("=?utf-8?q?a@b.com,", 20000)), false);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_encode_email_header_encoded_words() {
         // Unquoted encoded-words are decoded anywhere in a display name;
         // adjacent ones join without the whitespace between them
@@ -3365,6 +3401,20 @@ class Unit_Tester {
                   "Re: 100% =?utf-8?q?not_encoded?=", "\"Jones, Kö\" <a@b.com>", "tab\there"] as $subj) {
             xassert_eqq($dec($enc($subj)), $subj);
         }
+    }
+
+    function test_text_header_folding_linear() {
+        // folding does not recopy the rest of the value for each skipped
+        // space or each output line
+        $mt = new MimeText("\r\n");
+        $t0 = microtime(true);
+        $hdr = $mt->encode_text_header("Subject", "a" . str_repeat(" ", 800000) . "b");
+        xassert_lt(microtime(true) - $t0, 1.0);
+        xassert_eqq($hdr, "Subject: a" . str_repeat(" ", 67) . "\r\n b");
+        $t0 = microtime(true);
+        $hdr = $mt->encode_text_header("Subject", str_repeat("ab ", 1000000) . "c");
+        xassert_lt(microtime(true) - $t0, 1.0);
+        xassert_eqq(str_replace("\r\n", "", $hdr), "Subject: " . str_repeat("ab ", 1000000) . "c");
     }
 
     function test_expand_email_header_macros() {
@@ -3561,11 +3611,33 @@ class Unit_Tester {
         xassert_eqq(Text::merge_whitespace("a", "b"), "ab");
         xassert_eqq(Text::merge_whitespace("a ", "b"), "a b");
         xassert_eqq(Text::merge_whitespace("a  ", " b"), "a  b");
+        xassert_eqq(Text::merge_whitespace("a   ", ""), "a   ");
+        xassert_eqq(Text::merge_whitespace("a \t ", " b"), "a \t b");
+        xassert_eqq(Text::merge_whitespace("a ", "   b"), "a   b");
+        xassert_eqq(Text::merge_whitespace("  ", "   "), "   ");
+        xassert_eqq(Text::merge_whitespace("a   ", " \nb"), "a\nb");
+        xassert_eqq(Text::merge_whitespace("a  \n  ", " \n b"), "a\n b");
         xassert_eqq(Text::merge_whitespace("a\n", "b"), "a\nb");
         xassert_eqq(Text::merge_whitespace("a\n", "   b"), "a\n   b");
         xassert_eqq(Text::merge_whitespace("a\n\n", "\nb"), "a\n\nb");
         xassert_eqq(Text::merge_whitespace("a\n", "\n\nb"), "a\n\nb");
         xassert_eqq(Text::merge_whitespace("a\n", "\n   b"), "a\n   b");
+    }
+
+    function test_merge_whitespace_long() {
+        // whitespace that remains in the result is not rescanned on every call
+        $sp = str_repeat(" ", 100000);
+        $time0 = microtime(true);
+        $a = "a{$sp}";
+        for ($i = 0; $i !== 2000; ++$i) {
+            $a = Text::merge_whitespace($a, "");
+        }
+        xassert_eqq($a, "a{$sp}");
+        for ($i = 0; $i !== 2000; ++$i) {
+            $a = Text::merge_whitespace("a", $sp);
+        }
+        xassert_eqq($a, "a{$sp}");
+        xassert_lt(microtime(true) - $time0, 2.0);
     }
 
     function test_search_word_unquote() {

@@ -74,8 +74,10 @@ class MimeText {
         }
 
         // append words to the line
-        while ($xstr !== "") {
-            $z = strlen($xstr);
+        $pos = 0;
+        $len = strlen($xstr);
+        while ($pos !== $len) {
+            $z = $len - $pos;
             assert($z > 0);
 
             // add a line break
@@ -84,9 +86,10 @@ class MimeText {
                 || ($utf8 > 0 && substr($this->out, strlen($this->out) - 2) === "?=")) {
                 $this->out .= $this->eol . " ";
                 $this->linelen = 1;
-                while ($utf8 === 0 && $xstr !== "" && ctype_space($xstr[0])) {
-                    $xstr = substr($xstr, 1);
-                    --$z;
+                if ($utf8 === 0) {
+                    $sp = strspn($xstr, self::WSP, $pos);
+                    $pos += $sp;
+                    $z -= $sp;
                 }
             }
 
@@ -94,19 +97,19 @@ class MimeText {
             // otherwise, try to break at a space
             if ($utf8 > 0 && $this->linelen + $z > $maxlinelen) {
                 $z = $maxlinelen - $this->linelen;
-                if ($xstr[$z - 1] === "=") {
+                if ($xstr[$pos + $z - 1] === "=") {
                     $z -= 1;
-                } else if ($xstr[$z - 2] === "=") {
+                } else if ($xstr[$pos + $z - 2] === "=") {
                     $z -= 2;
                 }
                 while ($z > 3
-                       && $xstr[$z] === "="
-                       && ($chr = hexdec(substr($xstr, $z + 1, 2))) >= 128
+                       && $xstr[$pos + $z] === "="
+                       && ($chr = hexdec(substr($xstr, $pos + $z + 1, 2))) >= 128
                        && $chr < 192) {
                     $z -= 3;
                 }
             } else if ($this->linelen + $z > $maxlinelen) {
-                $y = strrpos(substr($xstr, 0, $maxlinelen - $this->linelen), " ");
+                $y = strrpos(substr($xstr, $pos, $maxlinelen - $this->linelen), " ");
                 if ($y > 0) {
                     $z = $y;
                 }
@@ -114,15 +117,15 @@ class MimeText {
 
             // append
             if ($utf8 > 0) {
-                $astr = "=?utf-8?q?" . substr($xstr, 0, $z) . "?=";
+                $astr = "=?utf-8?q?" . substr($xstr, $pos, $z) . "?=";
             } else {
-                $astr = substr($xstr, 0, $z);
+                $astr = substr($xstr, $pos, $z);
             }
 
             $this->out .= $astr;
             $this->linelen += strlen($astr);
 
-            $xstr = substr($xstr, $z);
+            $pos += $z;
         }
     }
 
@@ -176,6 +179,14 @@ class MimeText {
         $inpos = 0;
         $inlen = strlen($in);
         $words = [];
+        // A search for a closing delimiter that fails from one position
+        // would also fail from any later position it scanned past, so
+        // remember failures rather than rescanning (which is quadratic).
+        // Quoted-string searches stop only at the end of `$in`, which has no
+        // newlines (see `reset`). Encoded-word searches stop at whitespace;
+        // `$qencpos` is the end of the last failed one.
+        $dquote = $cquote = $angle = true;
+        $qencpos = 0;
 
         // separate $str into words
         // This is like RFC 5322 parsing, but slightly more liberal; we
@@ -190,18 +201,25 @@ class MimeText {
                 $words[] = new MimeText_Word($ch, $inpos, self::ENCWORD_SEP);
                 ++$inpos;
             } else if ($ch === "\""
-                       && preg_match('/\G"[^"\\\\]*+(?:\\\\.|[^"\\\\]*+)*+"/', $in, $m, 0, $inpos)) {
+                       && $dquote
+                       && ($dquote = !!preg_match('/\G"[^"\\\\]*+(?:\\\\.|[^"\\\\]*+)*+"/', $in, $m, 0, $inpos))) {
                 $words[] = new MimeText_Word($m[0], $inpos, self::ENCWORD_QUOTED);
                 $inpos += strlen($m[0]);
-            } else if ($ch === "<" && ($gt = strpos($in, ">", $inpos + 1)) !== false) {
+            } else if ($ch === "<"
+                       && $angle
+                       && ($angle = ($gt = strpos($in, ">", $inpos + 1)) !== false)) {
                 $words[] = new MimeText_Word(substr($in, $inpos, $gt + 1 - $inpos), $inpos, self::ENCWORD_EMAIL);
                 $inpos = $gt + 1;
             } else if (($ch === "\xE2" || $ch === "\"")
-                       && preg_match('/\G(?:\"|“|”)[^"\\\\\xE2]*+(?:\\\\.|(?!“|”)\xE2|[^"\\\\\xE2]*+)*+(?:\"|“|”)/', $in, $m, 0, $inpos)) {
+                       && $cquote
+                       && preg_match('/\G(?:\"|“|”)[^"\\\\\xE2]*+(?:\\\\.|(?!“|”)\xE2|[^"\\\\\xE2]*+)*+(\"|“|”)?+/', $in, $m, 0, $inpos)
+                       && ($cquote = isset($m[1]))) {
                 $words[] = new MimeText_Word($m[0], $inpos, self::ENCWORD_QUOTED);
                 $inpos += strlen($m[0]);
             } elseif ($ch === "="
-                      && preg_match('/\G=\?utf-8\?q\?(?:[^?\s]*+(?:\?(?!=)|[^?\s]*+)*+)\?=/i', $in, $m, 0, $inpos)) {
+                      && $inpos >= $qencpos
+                      && preg_match('/\G=\?utf-8\?q\?(?:[^?\s]*+(?:\?(?!=)|[^?\s]*+)*+)(\?=)?+/i', $in, $m, 0, $inpos)
+                      && ($qencpos = isset($m[1]) ? 0 : $inpos + strlen($m[0])) === 0) {
                 $words[] = new MimeText_Word($m[0], $inpos, self::ENCWORD_QENC);
                 $inpos += strlen($m[0]);
             } else if (preg_match('/\G(?!“|”)\xE2?+[^\x00-\x20()\[\\]<>,;:\\\\"\xE2]*+((?:\\\\\'|(?!“|”)\xE2|[^\000-\040()\[\\]<>,;:\\\\"\xE2]*+)*+)/', $in, $m, 0, $inpos)
