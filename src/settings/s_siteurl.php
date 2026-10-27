@@ -107,8 +107,8 @@ class SiteURL_SettingParser extends SettingParser {
             && strcasecmp($v, $sv->oldv($si) ?? "") !== 0
             && ($obsurl = self::observed_site_url($sv->conf)) !== null
             && strcasecmp($v, $obsurl) !== 0) {
-            $sv->warning_at($si, "<0>Site URL incompatible with current URL, not changed");
-            $sv->inform_at($si, "<5>“{desired}” differs from the URL you are using to access the site, “{expected}”. To set it anyway, use “<code>force {desired}</code>”.",
+            $sv->warning_at($si, "<0>Site URL ignored because it’s incompatible with the current URL");
+            $sv->inform_at($si, "<5>“{desired}” differs from the URL you are using to access the site, “{expected}”. To force the change, use the value “force {desired}”.",
                 new FmtArg("desired", $v, 0), new FmtArg("expected", $obsurl, 0));
             return true;
         }
