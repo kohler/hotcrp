@@ -45,7 +45,8 @@ class APIToken_Batch {
         $this->cdb = isset($arg["cdb"]);
         $this->note = simplify_whitespace(convert_to_utf8($arg["note"] ?? ""));
         $this->scope = simplify_whitespace($arg["scope"] ?? "");
-        if (!preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)*+\z/', $this->scope)) {
+        if (strlen($this->scope) > 1024
+            || !preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)*+\z/', $this->scope)) {
             throw new CommandLineException("Bad `--scope`");
         }
         $this->active_only = isset($arg["active"]);

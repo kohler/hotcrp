@@ -94,19 +94,18 @@ final class TokenScope {
      * @param int $oidc */
     function __construct($all_bits, $rest = null, $user = null, $oidc = 0) {
         $this->_all_bits = $this->_any_bits = $all_bits;
+        $index = [];
         foreach ($rest ?? [] as $tss) {
             if (($this->_all_bits & $tss->bits) === $tss->bits) {
                 continue;
             }
             $this->_any_bits |= $tss->bits;
-            foreach ($this->_rest ?? [] as $xtss) {
-                if ($xtss->type === $tss->type
-                    && $xtss->selector === $tss->selector) {
-                    $xtss->bits |= $tss->bits;
-                    continue 2;
-                }
+            $k = "{$tss->type} {$tss->selector}";
+            if (($xtss = $index[$k] ?? null)) {
+                $xtss->bits |= $tss->bits;
+            } else {
+                $this->_rest[] = $index[$k] = clone $tss;
             }
-            $this->_rest[] = clone $tss;
         }
         $this->_user = $user;
         $this->_oidc_bits = $oidc;

@@ -532,8 +532,17 @@ class Developer_UserInfo {
         }
 
         $scope = simplify_whitespace($us->qreq["bearer_token/new/scope"] ?? "");
-        if ($scope !== ""
-            && preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
+        if ($scope === "") {
+            // unrestricted token
+        } else if (strlen($scope) > 1024) {
+            // a scope is parsed on every request that presents its token, so
+            // it has the length limit `Authorize_Page` puts on OAuth scopes
+            $us->error_at("bearer_token/new/scope", "<0>Scope too long");
+            $this->_new_token = null;
+        } else if (!preg_match('/\A(?:[a-z][!\#-\x5b\x5d-~]*+\s*+)++\z/', $scope)) {
+            $us->error_at("bearer_token/new/scope", "<0>Invalid scope");
+            $this->_new_token = null;
+        } else {
             $token->change_data("scope", $scope);
         }
     }

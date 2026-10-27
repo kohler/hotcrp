@@ -593,6 +593,35 @@ class UserStatus_Tester {
         $conf->invalidate_caches("users", "pc");
     }
 
+    /** A token's scope is parsed on every request that presents the token, so
+     * its length is limited, as it is for OAuth clients. A malformed scope is
+     * an error, not an unrestricted token. */
+    function test_token_scope_checked() {
+        $email = "mgbaker@cs.stanford.edu";
+        $uid = $this->conf->checked_user_by_email($email)->contactId;
+        $long = [];
+        for ($i = 1; $i <= 200; ++$i) {
+            $long[] = "read#{$i}";
+        }
+        foreach ([[join(" ", $long), 0], ["read#1 read#2", 1], ["read Paper:read", 0],
+                  ["read \"x\"", 0], ["", 1]] as [$scope, $want]) {
+            $this->conf->qe("delete from Capability where capabilityType=? and contactId=?", TokenInfo::BEARER, $uid);
+            list($u, $qreq) = $this->make_qreq_for($email, [
+                "bearer_token/new/enable" => 1,
+                "bearer_token/new/sites" => "here",
+                "bearer_token/new/scope" => $scope
+            ]);
+            $us = (new UserStatus($u))->set_qreq($qreq);
+            $us->start_update();
+            $us->set_user($u);
+            $us->request_group("");
+            xassert_eqq($us->has_error_at("bearer_token/new/scope"), $want === 0);
+            $us->execute_update();
+            xassert_eqq($this->conf->fetch_ivalue("select count(*) from Capability where capabilityType=? and contactId=?", TokenInfo::BEARER, $uid), $want);
+        }
+        $this->conf->qe("delete from Capability where capabilityType=? and contactId=?", TokenInfo::BEARER, $uid);
+    }
+
     /** A chair minting or revoking a bot's credential is an act on someone
      * else's account,
      * so it must land in the log with the chair as actor and the bot as

@@ -762,6 +762,10 @@ class Scope_Tester {
         $s = TokenScope::parse("all#r2-forced", $this->u_chair);
         xassert_eqq(TokenScope::unparse($s), "all#r2-forced");
 
+        // equal selectors merge; selectors of different types stay distinct
+        $s = TokenScope::parse("tag:read#1 tag:read#x comment:read#1 tag:read?q=1 tag:write#x tag:read#01", $this->u_chair);
+        xassert_eqq(TokenScope::unparse($s), "tag:read#1 comment:read#1 tag:write#x tag:read?q=1");
+
         // a scope reparsed from its unparsing (as when an api/autoassign
         // job replays the requesting token’s scope) grants what the
         // original did
