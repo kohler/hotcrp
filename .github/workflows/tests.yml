@@ -24,7 +24,11 @@ jobs:
     - name: Start mysql
       run: |
         (echo '[mysqld]'; echo 'default-authentication-plugin=mysql_native_password') | sudo sh -c "cat > /etc/mysql/conf.d/nativepassword.cnf"
-        sudo systemctl start mysql
+        if ! sudo systemctl start mysql; then
+            # newer MySQL versions removed default-authentication-plugin
+            sudo rm -f /etc/mysql/conf.d/nativepassword.cnf
+            sudo systemctl start mysql
+        fi
         mysql -V
 
     - name: Prepare the application
