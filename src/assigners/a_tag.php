@@ -414,7 +414,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // if adding, check tag
         if (!$piece->allow_wildcard()) {
             $tagger = new Tagger($state->user);
-            if (!$tagger->check_syntax($piece->xtag)) {
+            if (!$tagger->check_syntax($piece->xuser . $piece->xtag, Tagger::ALLOWCONTACTID)) {
                 $state->error($tagger->error_ftext(true));
                 return false;
             }

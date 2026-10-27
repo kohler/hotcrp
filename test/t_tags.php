@@ -630,6 +630,20 @@ seqnexttag,6,altorder\n");
         xassert_assign_fail($this->u_chair, "action,paper,tag,new_tag,tag_value\ncopytag,all,{$vcid}*,{$fcid}*,max\n");
     }
 
+    function test_private_tag_length() {
+        // TAG_MAXLEN applies to the stored tag, including the user prefix
+        $vcid = $this->u_varghese->contactId;
+        $tag = str_repeat("a", TAG_MAXLEN - strlen("{$vcid}~"));
+        xassert_assign($this->u_varghese, "paper,tag\n1,~{$tag}\n");
+        xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("{$vcid}~{$tag}"), 0.0);
+        xassert_assign_fail($this->u_varghese, "paper,tag\n1,~{$tag}a\n");
+        xassert_assign_fail($this->u_varghese, "paper,tag\n1,{$vcid}~{$tag}a\n");
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,{$vcid}~{$tag}a\n");
+        xassert_assign_fail($this->u_chair, "paper,tag\n1,varghese~{$tag}a\n");
+        xassert_assign($this->u_varghese, "paper,tag\n1,~{$tag}#clear\n");
+        xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("{$vcid}~{$tag}"), null);
+    }
+
     function test_assign_sorted_search() {
         $root = $this->conf->root_user();
         xassert_assign($this->u_chair, "action,paper,tag,tag_value\ntag,1-10 sort:title,tiorder,seqnext\ntag,1,XFART,4\n");
