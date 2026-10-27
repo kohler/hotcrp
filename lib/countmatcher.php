@@ -170,7 +170,7 @@ class CountMatcher {
     /** @param string $s
      * @return ?array{int,float} */
     static function parse_comparison($s) {
-        if (preg_match('/\A(|[=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\z/', $s, $m)) {
+        if (preg_match('/\A(|[=!<>]=?+|≠|≤|≥)\s*+([-+]?+(?:\d++\.?+\d*+|\.\d++))\z/', $s, $m)) {
             return [self::$opmap[$m[1]], (float) $m[2]];
         }
         return null;
@@ -195,7 +195,7 @@ class CountMatcher {
     /** @param string $s
      * @return ?array{string,int,float} */
     static function unpack_comparison($s) {
-        if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $s, $m)) {
+        if (preg_match('/(?::\s*+|(?=[=!<>\xE2]))(|[=!<>]=?+|≤|≥|≠)\s*+([-+]?+(?:\d++\.?+\d*+|\.\d++))\s*+\z/', $s, $m)) {
             $p = rtrim(substr($s, 0, -strlen($m[0])));
             return [$p, self::$opmap[$m[1]], (float) $m[2]];
         }
@@ -293,7 +293,7 @@ class CountMatcher {
     static function compare_using($x, $compar_y) {
         if (is_array($compar_y)) {
             return in_array($x, $compar_y);
-        } else if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m)) {
+        } else if (preg_match('/\A([=!<>]=?+|≠|≤|≥)\s*+(-?+(?:\.\d++|\d++\.?+\d*+))\z/', $compar_y, $m)) {
             return self::compare($x, $m[1], (float) $m[2]);
         }
         return false;

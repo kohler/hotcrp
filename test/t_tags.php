@@ -251,6 +251,19 @@ class Tags_Tester {
         xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\n");
     }
 
+    function test_search_value_ranges() {
+        xassert_assign($this->u_chair, "paper,tag\n1,rangetest#1\n2,rangetest#1.5\n3,rangetest#2\n4,rangetest#5\n5,rangetest#-1\n");
+        xassert_search($this->u_chair, "#rangetest#1..2", "1 2 3");
+        xassert_search($this->u_chair, "#rangetest#1...2", "1 2 3");
+        xassert_search($this->u_chair, "#rangetest#1.-2", "1 2 3");
+        xassert_search($this->u_chair, "#rangetest#1.5-5", "2 3 4");
+        xassert_search($this->u_chair, "#rangetest#1.5..", "2 3 4");
+        xassert_search($this->u_chair, "#rangetest#.5..1.5", "1 2");
+        xassert_search($this->u_chair, "#rangetest=-1..1", "5 1");
+        xassert_assign($this->u_chair, "paper,tag\n1,rangetest#clear\n2,rangetest#clear\n3,rangetest#clear\n4,rangetest#clear\n5,rangetest#clear\n");
+        xassert_search($this->u_chair, "#rangetest", "");
+    }
+
     function test_assign_override_conflicts() {
         xassert_search($this->u_chair, "conf:me", "");
 

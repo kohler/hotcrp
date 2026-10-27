@@ -1769,6 +1769,38 @@ class Unit_Tester {
         xassert_eqq(CountMatcher::unpack_comparison("x 200"), null);
     }
 
+    function test_comparison_long_number() {
+        // a long almost-number is rejected in linear time
+        $w = str_repeat("1", 100000) . "a";
+        $t0 = microtime(true);
+        xassert_eqq(CountMatcher::parse_comparison($w), null);
+        xassert_eqq(CountMatcher::unpack_comparison("x:{$w}"), null);
+        xassert_eqq(CountMatcher::compare_using(1, "<{$w}"), false);
+        xassert_lt(microtime(true) - $t0, 0.5);
+
+        // so is a comparison with long runs of spaces
+        $sp = str_repeat(" ", 50000);
+        $t0 = microtime(true);
+        xassert_eqq(CountMatcher::unpack_comparison("x:{$sp}a"), null);
+        xassert_eqq(CountMatcher::unpack_comparison("x:{$sp}1{$sp}a"), null);
+        xassert_eqq(CountMatcher::unpack_comparison("x:{$sp}1{$sp}"), ["x", 2, 1.0]);
+        xassert_lt(microtime(true) - $t0, 0.5);
+    }
+
+    function test_parse_dimen() {
+        xassert_eq(FormatSpec::parse_dimen("1in"), 72);
+        xassert_eq(FormatSpec::parse_dimen("8.5in x 11in"), [612, 792]);
+        xassert_eq(FormatSpec::parse_dimen("8.5 × 11 in"), [612, 792]);
+        xassert_eq(FormatSpec::parse_dimen("Letter"), [612, 792]);
+        xassert_eqq(FormatSpec::parse_dimen("5"), false);
+        xassert_eqq(FormatSpec::parse_dimen("5in y 6in"), false);
+        // newlines are whitespace
+        xassert_eq(FormatSpec::parse_dimen("8.5in\nx\n11in"), [612, 792]);
+        // a long number is rejected without backtracking
+        xassert_eqq(FormatSpec::parse_dimen(str_repeat("1", 100000) . "a\nb"), false);
+        xassert_eqq(preg_last_error(), PREG_NO_ERROR);
+    }
+
     function test_flip_relation() {
         xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELEQ), CountMatcher::RELEQ);
         xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELNE), CountMatcher::RELNE);

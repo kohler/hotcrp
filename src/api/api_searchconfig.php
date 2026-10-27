@@ -295,7 +295,7 @@ class SearchConfig_API {
     static function name_error($name, $type) {
         if ($name === "") {
             return "Name required";
-        } else if (preg_match('/\A(?:formula[:\d].*|[fs]:.*|ss:.*|search:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown|new)\z|[()\[\]\{\}\\\\"\'\#]|\A(?:~.|\d+~|(?=[^~\d])).*~|~\z|\pZ/u', $name)) {
+        } else if (preg_match('/\A(?:formula[:\d].*+|[fs]:.*+|ss:.*+|search:.*+|[-+]?+(?:\d++\.?+\d*+|\.\d++)(?:e[-+]?+\d*+)?+|none|any|all|unknown|new)\z|[()\[\]\{\}\\\\"\'\#]|\A(?:~.|\d++~|(?=[^~\d]))[^~]*+~|~\z|\pZ/u', $name)) {
             return "Name reserved";
         }
         return null;

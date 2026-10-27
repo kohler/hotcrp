@@ -261,7 +261,7 @@ class FormatSpec {
         $n = $text;
         $a = [];
         $unit = [];
-        while (preg_match('/\A\s*+(\d+\.?\d*|\.\d+)\s*("|″|in?|cm?|mm|pt|)\s*+(.*+)\z/', $n, $m)) {
+        while (preg_match('/\A\s*+(\d++\.?+\d*+|\.\d++)\s*+("|″|in?+|cm?+|mm|pt|)\s*+(.*+)\z/s', $n, $m)) {
             $a[] = $m[1];
             if ($m[2] === "i" || $m[2] === "in" || $m[2] === "\"" || $m[2] === "″") {
                 $unit[] = 72;

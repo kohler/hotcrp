@@ -79,7 +79,7 @@ class TagRankParser {
                 } else if (strspn($idxs, ">") === strlen($idxs)) {
                     $curIndex += strlen($idxs);
                     $idx = $curIndex;
-                } else if (preg_match('/\A[-+]?(?:\d+\.?\d*|\.\d*)\z/', $idxs)) {
+                } else if (preg_match('/\A[-+]?+(?:\d++\.?+\d*+|\.\d*+)\z/', $idxs)) {
                     if (strpos($idxs, ".") === false) {
                         $curIndex = $idx = intval($idxs);
                     } else {

@@ -13,8 +13,11 @@
 // dictionary's `/N` is not used; readers ignore it, so it could be edited
 // without changing what a viewer shows.) Input is untrusted, so every kind of
 // work is bounded by an explicit budget: file reads and bytes read, inflated
-// bytes, cross-reference sections and entries, object-resolution depth,
-// page-tree size, and syntactic nesting. Exceeding a budget also yields null.
+// bytes, cross-reference sections and entries, object numbers,
+// object-resolution depth, page-tree size, syntactic nesting, dictionary size,
+// and tokenizing. (Object numbers and dictionary names become PHP array keys,
+// so bounding them also bounds the cost of hash collisions.) Exceeding a
+// budget also yields null.
 
 namespace HotCRP;
 use Mimetype;
@@ -43,6 +46,8 @@ class PDFMimetype implements \JsonSerializable {
     private $depth = 0;
     /** @var int */
     private $nentries = 0;
+    /** @var int */
+    private $ntokens = 0;
 
     /** @var array<int,int> */
     private $xref = [];   // see `xref_offset`, `xref_stream`
@@ -70,6 +75,9 @@ class PDFMimetype implements \JsonSerializable {
     const MAX_INFLATE_TOTAL = 33554432;
     const MAX_XREF_SECTIONS = 64;
     const MAX_ENTRIES = 524288;           // xref rows plus object-stream offsets
+    // A conforming file has an entry for each object number up to its highest
+    const MAX_OBJECT_NUMBER = self::MAX_ENTRIES - 1;
+    const MAX_TOKENS = 16777216;          // tokenizing cost; see `PDFTokenizer`
     const MAX_DEPTH = 16;
     const MAX_TREE_DEPTH = 64;
     const MAX_TREE_NODES = 16384;
@@ -157,7 +165,7 @@ class PDFMimetype implements \JsonSerializable {
             if ($s === null) {
                 return null;
             }
-            $tok = new PDFTokenizer($s, $pos, $pos + strlen($s) >= $this->bound);
+            $tok = new PDFTokenizer($s, $pos, $pos + strlen($s) >= $this->bound, $this);
             try {
                 return $f($tok);
             } catch (PDFIncompleteException $e) {
@@ -249,7 +257,9 @@ class PDFMimetype implements \JsonSerializable {
                 $this->log("unsupported filter %s", self::unparse($f));
                 return null;
             }
-            $x = @gzuncompress($data, min(self::MAX_INFLATE, self::MAX_INFLATE_TOTAL - $this->ninflated));
+            // NB `gzuncompress` treats a `max_length` of 0 as unlimited
+            $budget = min(self::MAX_INFLATE, self::MAX_INFLATE_TOTAL - $this->ninflated);
+            $x = $budget > 0 ? @gzuncompress($data, $budget) : false;
             if ($x === false) {
                 $this->log("stream decode failed or inflate budget exhausted");
                 return null;
@@ -290,7 +300,7 @@ class PDFMimetype implements \JsonSerializable {
         $rowlen = $columns * $colors;
         $nrows = intdiv(strlen($data), $rowlen + 1);
         $prev = str_repeat("\0", $rowlen);
-        $out = [];
+        $out = "";
         for ($r = 0; $r !== $nrows; ++$r) {
             $base = $r * ($rowlen + 1);
             $ft = ord($data[$base]);
@@ -329,10 +339,10 @@ class PDFMimetype implements \JsonSerializable {
             } else if ($ft !== 0) {
                 return null;
             }
-            $out[] = $row;
+            $out .= $row;
             $prev = $row;
         }
-        return join("", $out);
+        return $out;
     }
 
 
@@ -351,7 +361,10 @@ class PDFMimetype implements \JsonSerializable {
     /** @param int $num
      * @return mixed */
     private function object($num) {
-        if (array_key_exists($num, $this->objects)) {
+        if ($num > self::MAX_OBJECT_NUMBER) {
+            $this->log("object %d: number out of range", $num);
+            return null;
+        } else if (array_key_exists($num, $this->objects)) {
             return $this->objects[$num];
         }
         if ($this->depth >= self::MAX_DEPTH) {
@@ -384,7 +397,7 @@ class PDFMimetype implements \JsonSerializable {
         }
         $stream = (-1 - $x) >> 24;
         $os = $this->objstm($stream);
-        $v = $os ? $os->object($num, (-1 - $x) & 0xFFFFFF) : null;
+        $v = $os ? $os->object($num, (-1 - $x) & 0xFFFFFF, $this) : null;
         if ($v === null) {
             $this->log("object %d: not found in object stream %d", $num, $stream);
             return null;
@@ -417,7 +430,7 @@ class PDFMimetype implements \JsonSerializable {
         $os->data = $data;
         $os->first = $first;
         try {
-            $tok = new PDFTokenizer(substr($data, 0, $first), 0, true);
+            $tok = new PDFTokenizer(substr($data, 0, $first), 0, true, $this);
             for ($i = 0; $i !== $n; ++$i) {
                 $onum = $tok->next();
                 $off = $tok->next();
@@ -455,7 +468,7 @@ class PDFMimetype implements \JsonSerializable {
      * @param int $index
      * @return ?int */
     static private function xref_stream($stream, $index) {
-        if ($stream < 0 || $stream >= (1 << 38) || $index < 0 || $index >= (1 << 24)) {
+        if ($stream < 0 || $stream > self::MAX_OBJECT_NUMBER || $index < 0 || $index >= (1 << 24)) {
             return null;
         }
         return -1 - (($stream << 24) | $index);
@@ -467,6 +480,18 @@ class PDFMimetype implements \JsonSerializable {
         $this->nentries += $n;
         if ($this->nentries > self::MAX_ENTRIES) {
             $this->log("entry budget exhausted");
+            return false;
+        }
+        return true;
+    }
+
+    /** Called by this analysis's tokenizers.
+     * @param int $n
+     * @return bool */
+    function charge_tokens($n) {
+        $this->ntokens += $n;
+        if ($this->ntokens > self::MAX_TOKENS) {
+            $this->log("tokenizing budget exhausted");
             return false;
         }
         return true;
@@ -501,6 +526,10 @@ class PDFMimetype implements \JsonSerializable {
                 if (!array_key_exists($k, $this->trailer)) {
                     $this->trailer[$k] = $v;
                 }
+            }
+            if (count($this->trailer) > PDFTokenizer::MAX_DICT_ENTRIES) {
+                $this->log("trailer too large");
+                return false;
             }
             // hybrid files: /XRefStm takes precedence over /Prev
             foreach (["XRefStm", "Prev"] as $k) {
@@ -540,7 +569,10 @@ class PDFMimetype implements \JsonSerializable {
             }
             $start = $t;
             $count = $tok->next();
-            if (!is_int($count) || $count < 0) {
+            if (!is_int($count)
+                || $count < 0
+                || $start < 0
+                || $start + $count - 1 > self::MAX_OBJECT_NUMBER) {
                 return null;
             }
             for ($i = 0; $i !== $count; ++$i) {
@@ -570,7 +602,7 @@ class PDFMimetype implements \JsonSerializable {
             return null;
         }
         $w = $this->resolve($d["W"] ?? null);
-        if (!is_array($w) || count($w) < 3) {
+        if (!is_array($w) || !array_is_list($w) || count($w) !== 3) {
             return null;
         }
         $w = array_map(function ($x) { return is_int($x) && $x >= 0 && $x <= 8 ? $x : 0; }, $w);
@@ -589,14 +621,15 @@ class PDFMimetype implements \JsonSerializable {
         for ($ii = 0; $ii + 1 < count($index); $ii += 2) {
             $start = $index[$ii];
             $count = $index[$ii + 1];
-            if (!is_int($start) || $start < 0 || !is_int($count)) {
+            if (!is_int($start) || $start < 0 || !is_int($count) || $count < 0) {
                 break;
             }
-            $nrows = max(min($count, intdiv($dlen - $pos, $rowlen)), 0);
-            if (!$this->charge_entries($nrows)) {
+            $nrows = min($count, intdiv($dlen - $pos, $rowlen));
+            if ($start + $nrows - 1 > self::MAX_OBJECT_NUMBER
+                || !$this->charge_entries($nrows)) {
                 return null;
             }
-            for ($i = 0; $i !== $count && $pos + $rowlen <= $dlen; ++$i, $pos += $rowlen) {
+            for ($i = 0; $i !== $nrows; ++$i, $pos += $rowlen) {
                 $f = [];
                 $p = $pos;
                 foreach ($w as $wi) {
@@ -873,14 +906,15 @@ class PDFObjectStream {
 
     /** @param int $num
      * @param int $index
+     * @param PDFMimetype $pm
      * @return mixed */
-    function object($num, $index) {
+    function object($num, $index, PDFMimetype $pm) {
         $x = $this->offsets[$index] ?? null;
         if ($x === null || ($x >> 24) !== $num) {
             return null;
         }
         try {
-            $tok = new PDFTokenizer($this->data, 0, true);
+            $tok = new PDFTokenizer($this->data, 0, true, $pm);
             $tok->pos = $this->first + ($x & 0xFFFFFF);
             return $tok->parse_value();
         } catch (PDFException $e) {
@@ -892,6 +926,12 @@ class PDFObjectStream {
 // Tokenizer over a buffer that starts at file offset `$base`. Throws
 // PDFIncompleteException when a token might extend past the buffer end and
 // the buffer does not reach the end of the file.
+//
+// Buffers can overlap (object offsets need not be distinct) and can inflate
+// from very little input, so tokenizing is charged to the analysis's token
+// budget: each token read, including by lookahead, costs TOKEN_COST plus the
+// number of bytes scanned, and each value stored in a container costs
+// ELEMENT_COST, which bounds the memory parsed values can occupy.
 class PDFTokenizer {
     /** @var string */
     public $s;
@@ -903,20 +943,27 @@ class PDFTokenizer {
     public $len;
     /** @var bool */
     public $eof;
+    /** @var PDFMimetype */
+    private $pm;
     /** @var int */
     private $depth = 0;
 
     const DELIMITERS = "()<>[]{}/%";
     const MAX_NESTING = 64;
+    const MAX_DICT_ENTRIES = 4095;        // PDF 1.7 Annex C
+    const TOKEN_COST = 8;
+    const ELEMENT_COST = 64;
 
     /** @param string $s
      * @param int $base
-     * @param bool $eof */
-    function __construct($s, $base, $eof) {
+     * @param bool $eof
+     * @param PDFMimetype $pm */
+    function __construct($s, $base, $eof, PDFMimetype $pm) {
         $this->s = $s;
         $this->base = $base;
         $this->len = strlen($s);
         $this->eof = $eof;
+        $this->pm = $pm;
     }
 
     /** @param int $pos */
@@ -952,6 +999,27 @@ class PDFTokenizer {
      * for `null` or end of buffer.
      * @return mixed */
     function next() {
+        $pos = $this->pos;
+        try {
+            $t = $this->scan();
+        } catch (PDFException $e) {
+            // a failed scan might have reached the end of the buffer
+            $this->charge(self::TOKEN_COST + $this->len - $pos);
+            throw $e;
+        }
+        $this->charge(self::TOKEN_COST + $this->pos - $pos);
+        return $t;
+    }
+
+    /** @param int $cost */
+    private function charge($cost) {
+        if (!$this->pm->charge_tokens($cost)) {
+            throw new PDFParseException("tokenizing budget exhausted");
+        }
+    }
+
+    /** @return mixed */
+    private function scan() {
         $this->skip_space();
         $s = $this->s;
         $p = $this->pos;
@@ -1025,7 +1093,7 @@ class PDFTokenizer {
         $w = substr($s, $p, $e - $p);
         if (preg_match('/\A[-+]?\d{1,18}\z/', $w)) {
             return (int) $w;
-        } else if (preg_match('/\A[-+]?(?:\d+\.?\d*|\.\d+)\z/', $w)) {
+        } else if (preg_match('/\A[-+]?+(?:\d++\.?+\d*+|\.\d++)\z/', $w)) {
             return (float) $w;
         } else if ($w === "true") {
             return true;
@@ -1064,6 +1132,9 @@ class PDFTokenizer {
             return $this->parse_container("]");
         } else if ($t->name === "<<") {
             $a = $this->parse_container(">>");
+            if (count($a) > 2 * self::MAX_DICT_ENTRIES) {
+                throw new PDFParseException("dictionary too large");
+            }
             $d = [];
             for ($i = 0; $i + 1 < count($a); $i += 2) {
                 if (is_string($a[$i]) && strlen($a[$i]) > 1) {
@@ -1097,6 +1168,7 @@ class PDFTokenizer {
                 break;
             }
             $a[] = $this->parse_value();
+            $this->charge(self::ELEMENT_COST);
         }
         --$this->depth;
         return $a;
