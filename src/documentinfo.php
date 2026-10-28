@@ -17,6 +17,8 @@ class DocumentInfo implements JsonSerializable {
     public $timestamp;
     /** @var ?int */
     public $timeReferenced;
+    /** @var ?int */
+    public $timeChecked;
     /** @var string */
     public $mimetype;
     /** @var ?string */
@@ -32,6 +34,8 @@ class DocumentInfo implements JsonSerializable {
     public $filename;
     /** @var ?string|false */
     private $infoJson;
+    /** @var ?string */
+    private $infoJsonOverflow;
     /** @var int */
     private $size = -1;
     /** @var ?int */
@@ -94,6 +98,9 @@ class DocumentInfo implements JsonSerializable {
         if (isset($this->timeReferenced)) {
             $this->timeReferenced = (int) $this->timeReferenced;
         }
+        if (isset($this->timeChecked)) {
+            $this->timeChecked = (int) $this->timeChecked;
+        }
         $this->documentType = (int) $this->documentType;
         $this->size = (int) $this->size;
         $this->filterType = (int) $this->filterType ? : null;
@@ -111,6 +118,16 @@ class DocumentInfo implements JsonSerializable {
         if (isset($this->height)) {
             $this->height = (int) $this->height;
         }
+        if (isset($this->infoJsonOverflow)) {
+            $this->infoJson = $this->infoJsonOverflow;
+            $this->infoJsonOverflow = null;
+        }
+    }
+
+    /** @param ?string $s
+     * @return bool */
+    static private function info_json_overflows($s) {
+        return $s !== null && strlen($s) > 32768;
     }
 
     /** @param mysqli_result|Dbl_Result $result
@@ -773,12 +790,14 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         if ($this->_metadata) {
-            $upd["infoJson"] = json_encode_db($this->_metadata);
-        } else if ($this->infoJson) {
-            $upd["infoJson"] = $this->infoJson;
+            $ijstr = json_encode_db($this->_metadata);
+        } else {
+            $ijstr = $this->infoJson ? : null;
         }
-        if (($upd["infoJson"] ?? "") === "{}") {
-            unset($upd["infoJson"]);
+        if ($ijstr !== null && $ijstr !== "{}") {
+            $overflow = self::info_json_overflows($ijstr);
+            $upd["infoJson"] = $overflow ? null : $ijstr;
+            $upd["infoJsonOverflow"] = $overflow ? $ijstr : null;
         }
 
         if ($this->paperStorageId > 1) {
@@ -1937,7 +1956,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function save_prop($quiet = false) {
+    function save_prop() {
         if ($this->paperStorageId <= 1 || empty($this->_old_prop)) {
             return false;
         }
@@ -1953,30 +1972,25 @@ class DocumentInfo implements JsonSerializable {
                 $qv[] = $this->$prop;
             }
         }
-        $qv[] = $this->_old_prop["paperId"] ?? $this->paperId;
-        $qv[] = $this->paperStorageId;
         // XXX this might fail because of a concurrent update to paperId
-        if (empty($metadata)) {
+        $ok = true;
+        if (!empty($qf)) {
+            $qv[] = $this->_old_prop["paperId"] ?? $this->paperId;
+            $qv[] = $this->paperStorageId;
             $result = $this->conf->qe("update PaperStorage set " . join(", ", $qf) . " where paperId=? and paperStorageId=?", ...$qv);
             $ok = !Dbl::is_error($result);
-        } else {
-            $ok = true;
-            $qf[] = "infoJson=?{desired}";
+        }
+        if ($ok && !empty($metadata)) {
             $ijstr = Dbl::compare_exchange($this->conf->dblink,
-                "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
+                "select coalesce(infoJsonOverflow, infoJson) from PaperStorage where paperId=? and paperStorageId=?",
                 [$this->paperId, $this->paperStorageId],
-                function ($oldstr) use ($metadata, &$ok) {
-                    $newstr = json_object_replace_recursive($oldstr, $metadata);
-                    $ok = $newstr === null || strlen($newstr) <= 32768;
-                    return $ok ? $newstr : $oldstr;
+                function ($oldstr) use ($metadata) {
+                    return json_object_replace_recursive($oldstr, $metadata);
                 },
-                "update PaperStorage set " . join(", ", $qf) . " where paperId=? and paperStorageId=? and infoJson?{expected}e",
-                $qv);
+                "update PaperStorage join (select ?{desired} ij) x set infoJson=if(length(x.ij)>32768,null,x.ij), infoJsonOverflow=if(length(x.ij)>32768,x.ij,null) where paperId=? and paperStorageId=? and coalesce(infoJsonOverflow, infoJson)?{expected}e",
+                [$this->paperId, $this->paperStorageId]);
             $this->infoJson = $ijstr;
             $this->_metadata = null;
-            if (!$ok && !$quiet) {
-                error_log(caller_landmark() . ": {$this->conf->dbname}: save_prop(paper {$this->paperId}, dt {$this->documentType}): infoJson too long, delta " . json_encode($metadata));
-            }
         }
         if ($ok) {
             $this->_old_prop = null;
@@ -2025,12 +2039,10 @@ class DocumentInfo implements JsonSerializable {
                 "select " . $this->conf->document_metadata_query_fields() . " from PaperStorage where paperId=? and paperStorageId=?",
                 $this->paperId, $this->paperStorageId)
             ?? (object) ["infoJson" => null, "npages" => -1, "width" => -1, "height" => -1];
-        foreach ((array) $row as $prop => $v) {
-            if ($prop !== "infoJson") {
-                $v = (int) $v;
-            }
-            $this->$prop = $v;
-        }
+        $this->infoJson = $row->infoJsonOverflow ?? $row->infoJson;
+        $this->npages = (int) $row->npages;
+        $this->width = (int) $row->width;
+        $this->height = (int) $row->height;
         $this->_metadata = null;
     }
 

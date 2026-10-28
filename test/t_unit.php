@@ -323,10 +323,26 @@ class Unit_Tester {
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"foo":"bar"}');
 
-        $doc->set_prop("too_long", str_repeat("!", 32768));
-        xassert(!$doc->save_prop(true));
+        $long = str_repeat("!", 32768);
+        $doc->set_prop("too_long", $long);
+        xassert($doc->save_prop());
+        xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+                    null);
+        xassert_eqq(Dbl::fetch_value("select infoJsonOverflow from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+                    '{"foo":"bar","too_long":"' . $long . '"}');
+
+        $doc = $user_chair->checked_paper_by_id(1)->document(DTYPE_SUBMISSION);
+        xassert_eqq($doc->metadata()->too_long ?? null, $long);
+        xassert_eqq($doc->metadata()->foo ?? null, "bar");
+        $doc = $user_chair->checked_paper_by_id(1)->document(DTYPE_SUBMISSION, $doc->paperStorageId, true);
+        xassert_eqq($doc->metadata()->too_long ?? null, $long);
+
+        $doc->set_prop("too_long", null);
+        xassert($doc->save_prop());
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"foo":"bar"}');
+        xassert_eqq(Dbl::fetch_value("select infoJsonOverflow from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+                    null);
 
         $this->conf->qe("update PaperStorage set infoJson=null where paperStorageId=?", $doc->paperStorageId);
     }

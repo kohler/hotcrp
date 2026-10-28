@@ -507,6 +507,7 @@ CREATE TABLE `PaperStorage` (
   `paperStorageId` int NOT NULL AUTO_INCREMENT,
   `timestamp` bigint NOT NULL,
   `timeReferenced` bigint DEFAULT NULL,
+  `timeChecked` bigint DEFAULT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `paper` longblob DEFAULT NULL,
   `compression` tinyint NOT NULL DEFAULT 0,
@@ -515,6 +516,7 @@ CREATE TABLE `PaperStorage` (
   `documentType` int NOT NULL DEFAULT 0,
   `filename` varbinary(255) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
+  `infoJsonOverflow` longblob DEFAULT NULL,
   `size` bigint NOT NULL DEFAULT -1,
   `filterType` int DEFAULT NULL,
   `originalStorageId` int DEFAULT NULL,
@@ -682,7 +684,7 @@ CREATE TABLE `WorkItem` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 334, null),   -- schema version
+  ('allowPaperOption', 335, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

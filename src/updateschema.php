@@ -3426,6 +3426,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v333_refold_unaccented_name("DeletedContactInfo")) {
             $conf->update_schema_version(334);
         }
+        if ($conf->sversion === 334
+            && $conf->ql_ok("alter table PaperStorage add `infoJsonOverflow` longblob DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperStorage add `timeChecked` bigint DEFAULT NULL")) {
+            $conf->update_schema_version(335);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

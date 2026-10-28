@@ -426,7 +426,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             foreach ($docs as $doc) {
                 $active_docids[] = $doc->paperStorageId;
             }
-            $result = $this->conf->qe("select paperId, paperStorageId, timestamp, timeReferenced, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null and paperStorageId?A",
+            $ijo = $this->conf->sversion >= 335 ? ", infoJsonOverflow" : "";
+            $result = $this->conf->qe("select paperId, paperStorageId, timestamp, timeReferenced, mimetype, sha1, filename, infoJson{$ijo}, size from PaperStorage where paperId=? and documentType=? and filterType is null and paperStorageId?A",
                 $this->prow->paperId, $this->dtype, $active_docids);
             $inactive_docs = [];
             while (($doc = DocumentInfo::fetch($result, $this->conf, $this->prow))) {

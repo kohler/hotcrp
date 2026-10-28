@@ -370,6 +370,56 @@ class DocumentBasics_Tester {
         xassert_eqq(count(array_unique($ufns)), 5000);
     }
 
+    function test_save_prop_columns_and_metadata() {
+        $conf = $this->conf;
+        $doc = DocumentInfo::make_content($conf, "%PDF-1.4\nsave_prop columns and metadata\n", "application/pdf")
+            ->set_paper_id(1)
+            ->set_document_type(DTYPE_SUBMISSION);
+        xassert($doc->save());
+        $psid = $doc->paperStorageId;
+
+        // a column change is saved alongside a metadata change that is
+        // already in the database
+        $doc1 = $conf->checked_paper_by_id(1)->document(DTYPE_SUBMISSION, $psid);
+        $doc2 = $conf->checked_paper_by_id(1)->document(DTYPE_SUBMISSION, $psid);
+        $doc1->metadata();
+        $doc2->metadata();
+        $doc1->set_prop("xtest", 1);
+        xassert($doc1->save_prop());
+        $doc2->set_prop("xtest", 1);
+        $doc2->set_prop("width", 100);
+        xassert($doc2->save_prop());
+        xassert_eqq($conf->fetch_ivalue("select width from PaperStorage where paperStorageId=?", $psid), 100);
+        xassert_eqq(json_decode($conf->fetch_value("select infoJson from PaperStorage where paperStorageId=?", $psid))->xtest ?? null, 1);
+
+        // and alongside a change of paper
+        $doc2->set_prop("paperId", 2);
+        $doc2->set_prop("xtest", 2);
+        xassert($doc2->save_prop());
+        xassert_eqq($conf->fetch_ivalue("select paperId from PaperStorage where paperStorageId=?", $psid), 2);
+        xassert_eqq(json_decode($conf->fetch_value("select infoJson from PaperStorage where paperStorageId=?", $psid))->xtest ?? null, 2);
+
+        $conf->qe("delete from PaperStorage where paperStorageId=?", $psid);
+    }
+
+    function test_save_metadata_overflow() {
+        $conf = $this->conf;
+        $long = str_repeat("!", 40000);
+        $doc = DocumentInfo::make_content($conf, "%PDF-1.4\nsave metadata overflow\n", "application/pdf")
+            ->set_paper_id(1)
+            ->set_document_type(DTYPE_SUBMISSION)
+            ->set_metadata("xlong", $long);
+        xassert($doc->save());
+        $psid = $doc->paperStorageId;
+        xassert_eqq($conf->fetch_value("select infoJson from PaperStorage where paperStorageId=?", $psid), null);
+        xassert_eqq(json_decode($conf->fetch_value("select infoJsonOverflow from PaperStorage where paperStorageId=?", $psid))->xlong ?? null, $long);
+
+        $doc1 = $conf->checked_paper_by_id(1)->document(DTYPE_SUBMISSION, $psid, true);
+        xassert_eqq($doc1->metadata()->xlong ?? null, $long);
+
+        $conf->qe("delete from PaperStorage where paperStorageId=?", $psid);
+    }
+
     function test_content_binary_hash() {
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
