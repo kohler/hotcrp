@@ -2763,6 +2763,16 @@ class Unit_Tester {
         xassert_eqq(Qrequest::mangle_key("a[[b"), "a__b");
         xassert_eqq(Qrequest::mangle_key("a]b"), "a]b");
         xassert_eqq(Qrequest::mangle_key("a\x80b"), "a\x80b");
+        xassert_eqq(Qrequest::mangle_key("a[b]c[d"), "a[b]c_d");
+        xassert_eqq(Qrequest::mangle_key("a[b.c]"), "a[b_c]");
+        xassert_eqq(Qrequest::mangle_key("]a[b"), "]a_b");
+        xassert_eqq(Qrequest::mangle_key(""), "");
+    }
+
+    function test_qrequest_mangle_key_linear_time() {
+        $t0 = microtime(true);
+        xassert_eqq(Qrequest::mangle_key(str_repeat("[", 200000)), str_repeat("_", 200000));
+        xassert_lt(microtime(true) - $t0, 1.0);
     }
 
     function test_qrequest_nested_file_array() {

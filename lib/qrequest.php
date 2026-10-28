@@ -399,7 +399,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * Mangling removes leading spaces and replaces `.`, space, and unmatched
      * `[` with `_`. */
     static function mangle_key($name) {
-        return preg_replace('/[ .]|\[(?=[^\\]]*+\z)/', "_", ltrim($name, " "));
+        $name = strtr(ltrim($name, " "), " .", "__");
+        // a `[` is unmatched iff it follows the last `]`
+        $rbr = strrpos($name, "]");
+        $rbr = $rbr === false ? 0 : $rbr + 1;
+        return substr($name, 0, $rbr) . strtr(substr($name, $rbr), "[", "_");
     }
 
     #[\ReturnTypeWillChange]
