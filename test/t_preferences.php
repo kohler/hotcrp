@@ -49,7 +49,7 @@ class Preferences_Tester {
         call_api("=pref", $this->u_chair, ["p" => 1, "pref" => "0"]);
     }
 
-    function test_preference_parse_long_whitespace() {
+    function test_preference_parse_whitespace() {
         // whitespace is accepted where it was
         $conf = $this->conf;
         xassert_eqq(Preference_AssignmentParser::parsef("1  y"), [1.0, 0]);
@@ -58,7 +58,11 @@ class Preferences_Tester {
         xassert_str_contains(Preference_AssignmentParser::parse_check("a -  2  y!", $conf), "‘-2Y’");
         xassert_str_contains(Preference_AssignmentParser::parse_check("a-  2!", $conf), "‘-2’");
         xassert_str_contains(Preference_AssignmentParser::parse_check("-a  2!", $conf), "‘2’");
+    }
 
+    #[RequirePhp("8.5")]
+    function test_preference_parse_long_whitespace() {
+        $conf = $this->conf;
         // invalid preferences with long runs of whitespace are rejected in
         // linear time
         require_once(SiteLoader::resolve("src/listactions/la_revpref.php"));

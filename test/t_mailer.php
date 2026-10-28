@@ -902,9 +902,7 @@ class Mailer_Tester {
         // `OPT` evaluates its argument twice (probe, then text), so nesting
         // it must not take exponential time; too-deep nests are left unexpanded
         $nest = str_repeat("{{OPT(LINK(", 20) . "x" . str_repeat("))}}", 20);
-        $t0 = microtime(true);
         $t = $mailer->expand($nest, "body");
-        xassert_lt(microtime(true) - $t0, 1.0);
         xassert_str_contains($t, "{{OPT(LINK(");
         $t = $mailer->expand("{{" . str_repeat("OPT(", 40) . "CONFSHORTNAME" . str_repeat(")", 40) . "}}", "body");
         xassert_eqq($t, "");
@@ -912,6 +910,15 @@ class Mailer_Tester {
         $mailer = new HotCRPMailer($conf->root_user(), $conf->checked_user_by_email("marina@poema.ru"));
         $prep = $mailer->prepare(["subject" => "Test", "body" => $nest]);
         xassert_str_contains($prep->full_feedback_text(), "nested too deeply");
+    }
+
+    #[RequirePhp("8.5")]
+    function test_keyword_nesting_complexity() {
+        $mailer = new HotCRPMailer($this->conf->root_user(), null, ["width" => 0]);
+        $nest = str_repeat("{{OPT(LINK(", 20) . "x" . str_repeat("))}}", 20);
+        $t0 = microtime(true);
+        $mailer->expand($nest, "body");
+        xassert_lt(microtime(true) - $t0, 1.0);
     }
 
     function test_mailtext_expansion_is_bounded() {
@@ -1319,6 +1326,7 @@ class Mailer_Tester {
         MailChecker::clear();
     }
 
+    #[RequirePhp("8.5")]
     function test_conditional_expansion_long_whitespace() {
         // a long run of whitespace followed by many conditionals expands in
         // time linear in the length of the template

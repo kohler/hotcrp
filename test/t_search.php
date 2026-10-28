@@ -2523,8 +2523,12 @@ class Search_Tester {
         xassert(in_array(100000, $pids, true));
         xassert(!in_array(100300, $pids, true));
         xassert_le(count($pids), 200);
+    }
 
-        // which bounds the work in linear time
+    #[RequirePhp("8.5")]
+    function test_allow_deleted_listed_ids_complexity() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        // listed-ID bounds keep the work linear
         $q = [];
         for ($i = 0; $i !== 100; ++$i) {
             $q[] = (100000 + 1000 * $i) . "-" . (100999 + 1000 * $i);

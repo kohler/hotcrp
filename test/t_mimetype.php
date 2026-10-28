@@ -293,12 +293,6 @@ class Mimetype_Tester {
     }
 
     function test_pdf_number_token() {
-        // a long almost-number is rejected in linear time
-        $s = "%PDF-1.4\n" . str_repeat("1", 100000) . "a\nstartxref\n9\n%%EOF\n";
-        $t0 = microtime(true);
-        xassert(!isset(HotCRP\PDFMimetype::make_string($s)->content_info()["npages"]));
-        xassert_lt(microtime(true) - $t0, 0.5);
-
         // number syntax
         $pm = HotCRP\PDFMimetype::make_string("");
         foreach (["1.5" => 1.5, "1." => 1.0, ".5" => 0.5, "-3.25" => -3.25, "+12345678901234567890" => 12345678901234567890.0] as $w => $v) {
@@ -307,6 +301,15 @@ class Mimetype_Tester {
         foreach (["1.0.0", "1a", ".", "1.5a"] as $w) {
             xassert((new HotCRP\PDFTokenizer("{$w} ", 0, true, $pm))->next() instanceof HotCRP\PDFKeyword);
         }
+    }
+
+    #[RequirePhp("8.5")]
+    function test_pdf_number_token_complexity() {
+        // a long almost-number is rejected in linear time
+        $s = "%PDF-1.4\n" . str_repeat("1", 100000) . "a\nstartxref\n9\n%%EOF\n";
+        $t0 = microtime(true);
+        xassert(!isset(HotCRP\PDFMimetype::make_string($s)->content_info()["npages"]));
+        xassert_lt(microtime(true) - $t0, 0.5);
     }
 
     /** A PDF whose `$n` pages all start at offset 0 of one object stream,

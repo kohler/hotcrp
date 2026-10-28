@@ -34,6 +34,10 @@ class Ht_Tester {
         // but a boundary character before the scheme still links
         xassert_eqq(Ht::link_urls("(http://foo.com)"),
             '(<a href="http://foo.com" rel="noreferrer">http://foo.com</a>)');
+    }
+
+    #[RequirePhp("8.5")]
+    function test_link_urls_complexity() {
         // no catastrophic backtracking: a crafted run finishes fast
         $evil = str_repeat("ftp://", 20000) . '"x';
         $t0 = microtime(true);

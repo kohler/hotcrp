@@ -102,7 +102,11 @@ class Getopt_Tester {
         $arg = self::getopt_parse((new Getopt)->long("a", "b")->otheropt(true),
             ["fart", "-abxa"]);
         xassert_eqq(json_encode($arg), '{"a":false,"b":false,"-":["-xa"],"_":[]}');
+    }
 
+    #[RequirePhp("8.5")]
+    function test_getopt_cluster_complexity() {
+        $getopt = (new Getopt)->long("a", "b", "c:", "long")->interleave(true);
         // parsing time is linear in cluster length
         $t0 = microtime(true);
         self::getopt_parse($getopt, ["fart", "-" . str_repeat("a", 25000)]);

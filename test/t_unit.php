@@ -626,6 +626,7 @@ class Unit_Tester {
             . "+------------+\n");
     }
 
+    #[RequirePhp("8.5")]
     function test_csv_table_many_lines() {
         // rendering is linear in the text, even for many short lines
         $t = new CsvGenerator(CsvGenerator::TYPE_TABLE | CsvGenerator::TABLE_ASCII);
@@ -1356,6 +1357,10 @@ class Unit_Tester {
     function test_parse_time_long() {
         $t = $this->conf->parse_time(str_repeat(" ", 1000) . "29 May 2018 11:00:00 EDT" . str_repeat(" ", 1000));
         xassert_eqq($t, 1527606000);
+    }
+
+    #[RequirePhp("8.5")]
+    function test_parse_time_long_complexity() {
         foreach (["-", "+", "utc+", "aoe "] as $w) {
             $t0 = microtime(true);
             xassert_eqq($this->conf->parse_time(str_repeat($w, 50000) . "\nx"), false);
@@ -1779,6 +1784,7 @@ class Unit_Tester {
         xassert_eqq(CountMatcher::unpack_comparison("x 200"), null);
     }
 
+    #[RequirePhp("8.5")]
     function test_comparison_long_number() {
         // a long almost-number is rejected in linear time
         $w = str_repeat("1", 100000) . "a";
@@ -2494,6 +2500,7 @@ class Unit_Tester {
                     "+ long lengthy long long\n- This is\n- a thing\n- to be\n- wrapped.\n");
     }
 
+    #[RequirePhp("8.5")]
     function test_prefix_word_wrap_many_lines() {
         // wrapping is linear in the text, even for many short lines
         $text = "a" . str_repeat("\n", 100000) . "a";
@@ -2538,7 +2545,10 @@ class Unit_Tester {
         $adopted->merge_all(Text::star_text_pregexes("qux"));
         $direct->merge_all(Text::star_text_pregexes("qux"));
         xassert_eqq($adopted->preg_utf8(), $direct->preg_utf8());
+    }
 
+    #[RequirePhp("8.5")]
+    function test_text_pregexes_merge_all_complexity() {
         // merging many patterns must not take quadratic time
         $t0 = microtime(true);
         $pregex = TextPregexes::make_empty();
@@ -2582,7 +2592,13 @@ class Unit_Tester {
         $dashes = str_repeat("-", 100);
         xassert_eqq(Text::highlight("{$dashes}baz -x-b", $hl),
                     $dashes . '<em class="match">baz</em> <em class="match">-x-b</em>');
+    }
 
+    #[RequirePhp("8.5")]
+    function test_text_pregexes_merge_wildcards_complexity() {
+        $hl = TextPregexes::make_empty();
+        $hl->merge_any(Text::star_text_pregexes("-*-b"));
+        $hl->merge_any(Text::star_text_pregexes("baz"));
         // matching is linear in the length of a long token
         $long = str_repeat("-", 50000) . " b";
         $t0 = microtime(true);
@@ -2769,6 +2785,7 @@ class Unit_Tester {
         xassert_eqq(Qrequest::mangle_key(""), "");
     }
 
+    #[RequirePhp("8.5")]
     function test_qrequest_mangle_key_linear_time() {
         $t0 = microtime(true);
         xassert_eqq(Qrequest::mangle_key(str_repeat("[", 200000)), str_repeat("_", 200000));
@@ -3101,6 +3118,10 @@ class Unit_Tester {
         xassert_eqq(Text::split_name("\"Bob Kennedy\" bob@kennedy.org", true), ["Bob", "Kennedy", "bob@kennedy.org"]);
         xassert_eqq(Text::split_name("\"Bob Kennedy\" @b@c", true), ["Bob", "Kennedy", "@b@c"]);
         xassert_eqq(Text::split_name("\"Bob Kennedy\" bob@", true), ["\"Bob", "Kennedy\"", "bob@"]);
+    }
+
+    #[RequirePhp("8.5")]
+    function test_split_name_quoted_email_complexity() {
         // long runs of `@` split in linear time
         $ats = str_repeat("@", 100000);
         $t0 = microtime(true);
@@ -3360,7 +3381,11 @@ class Unit_Tester {
         xassert_eqq($mt->encode_email_header("Cc", "\"A” <a@b.com>, “B\\\"C” <c@d.com>"), "Cc: \"A\" <a@b.com>, \"B\\\"C\" <c@d.com>");
         // an unclosed encoded-word does not affect later words
         xassert_eqq($mt->encode_email_header("Cc", "=?utf-8?q?a@b.com, é =?utf-8?q?C?= <c@d.com>"), "Cc: =?utf-8?q?a@b.com, =?utf-8?q?=C3=A9_C?= <c@d.com>");
+    }
 
+    #[RequirePhp("8.5")]
+    function test_encode_email_header_unclosed_delimiters_complexity() {
+        $mt = new MimeText("\r\n");
         // searching for closing delimiters must not take quadratic time
         $t0 = microtime(true);
         foreach (["\\\"", "\\“", "\"a” \\", "<", "=?utf-8?q?a,"] as $s) {
@@ -3521,6 +3546,7 @@ class Unit_Tester {
         }
     }
 
+    #[RequirePhp("8.5")]
     function test_text_header_folding_linear() {
         // folding does not recopy the rest of the value for each skipped
         // space or each output line
@@ -3742,6 +3768,7 @@ class Unit_Tester {
         xassert_eqq(Text::merge_whitespace("a\n", "\n   b"), "a\n   b");
     }
 
+    #[RequirePhp("8.5")]
     function test_merge_whitespace_long() {
         // whitespace that remains in the result is not rescanned on every call
         $sp = str_repeat(" ", 100000);

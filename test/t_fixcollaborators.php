@@ -368,6 +368,10 @@ Gee Ho (I) - etc. Jo Ko (L)");
     function test_unmatched_close_parens() {
         xassert_eqq(AuthorMatcher::fix_collaborators("John ) Smith"), "John Smith");
         xassert_eqq(AuthorMatcher::fix_collaborators("John Smith () ) Jr )"), "John Smith Jr");
+    }
+
+    #[RequirePhp("8.5")]
+    function test_unmatched_close_parens_complexity() {
         // removed parentheses must not leave a long run of spaces, which the
         // separator regex matches quadratically
         $t0 = microtime(true);

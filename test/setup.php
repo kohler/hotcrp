@@ -272,6 +272,16 @@ class RequireClass {
 }
 
 #[Attribute]
+class RequirePhp {
+    /** @var string */
+    public $version;
+    /** @param string $version */
+    function __construct($version) {
+        $this->version = $version;
+    }
+}
+
+#[Attribute]
 class RequireDb {
     /** @var bool|'fresh' */
     public $required;
@@ -1259,6 +1269,10 @@ class TestRunner {
     private $need_newline = false;
     /** @var ?string */
     private $verbose_test;
+    /** @var ?string */
+    private $current_test;
+    /** @var int */
+    private $current_test_memory = 0;
     /** @var ?object */
     private $save_stack;
     /** @var int */
@@ -1503,6 +1517,17 @@ class TestRunner {
         }
     }
 
+    function report_fatal_error() {
+        $e = error_get_last();
+        if (!$e || ($e["type"] & (E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR)) === 0) {
+            return;
+        }
+        $this->will_print();
+        fwrite(STDERR, sprintf("!!! Fatal error during %s (%.1fMB in use at test start)\n",
+                               $this->current_test ?? "startup",
+                               $this->current_test_memory / 1048576));
+    }
+
     /** @param object $testo
      * @param string $methodmatch */
     private function run_object_tests($testo, $methodmatch) {
@@ -1515,6 +1540,8 @@ class TestRunner {
                 || !$m->isPublic()) {
                 continue;
             }
+            $this->current_test = $ro->getName() . "::" . $m->name;
+            $this->current_test_memory = memory_get_usage();
             $this->set_verbose_test($ro, $m);
             if (!$this->check_test_attributes($m)) {
                 if ($this->verbose) {
@@ -1584,6 +1611,10 @@ class TestRunner {
         }
         foreach ($class->getAttributes("RequireClass") ?? [] as $attr) {
             if (!class_exists($attr->newInstance()->class, false))
+                return false;
+        }
+        foreach ($class->getAttributes("RequirePhp") ?? [] as $attr) {
+            if (version_compare(PHP_VERSION, $attr->newInstance()->version, "<"))
                 return false;
         }
         if ($require_db === false) {
@@ -1719,6 +1750,8 @@ class TestRunner {
         }
 
         ++$this->test_index;
+        $this->current_test = $test;
+        $this->current_test_memory = memory_get_usage();
 
         $methodmatch = "";
         if (($pos = strpos($test, "::")) !== false) {
@@ -1888,6 +1921,7 @@ class TestRunner {
 
         $tr = new TestRunner($conf, $arg);
         Xassert::$test_runner = $tr;
+        register_shutdown_function([$tr, "report_fatal_error"]);
         $tr->run_hooks("startup");
         $test_list = $arg["_"];
         if (empty($test_list)) {

@@ -39,6 +39,10 @@ class AuthorMatch_Tester {
         // trailing text may span lines
         xassert_eqq(Author::split_string("D. Thin (Captain Poop) - yes\nno"), ["D. Thin", "Captain Poop", "yes\nno"]);
         xassert_eqq(Author::split_string("D. (The Man) Thin (Captain Poop (Esquire)) - yes\nno"), ["D. (The Man) Thin", "Captain Poop (Esquire)", "yes\nno"]);
+    }
+
+    #[RequirePhp("8.5")]
+    function test_split_string_complexity() {
         $t0 = microtime(true);
         xassert_eqq(strlen(Author::split_string(str_repeat("()-", 100000) . "\n")[0]), 0);
         xassert_lt(microtime(true) - $t0, 1.0);
@@ -133,6 +137,7 @@ class AuthorMatch_Tester {
         xassert_lt(microtime(true) - $t0, 1.0);
     }
 
+    #[RequirePhp("8.5")]
     function test_repeated_affiliation_words() {
         // repeating a word with alternates must not take quadratic time
         $t0 = microtime(true);
@@ -143,14 +148,6 @@ class AuthorMatch_Tester {
     }
 
     function test_many_last_name_words() {
-        // match time must not be (last name words) x (tested name length)
-        $aum = AuthorMatcher::make_collaborator_line(str_repeat("a ", 5400) . ", J Q (zz)");
-        $ln = str_repeat("x", 100000) . " a";
-        $t0 = microtime(true);
-        xassert_eqq($aum->test(Author::make_nae("Bob", $ln, "", "")), 0);
-        xassert_eqq($aum->test(Author::make_nae("J Q", $ln, "", "")), AuthorMatcher::MATCH_NAME);
-        xassert_lt(microtime(true) - $t0, 0.5);
-
         $ws = [];
         for ($i = 0; $i !== 800; ++$i) {
             $ws[] = "w{$i}";
@@ -165,6 +162,17 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("J. J. Garcia-Luna-Aceves"), true);
         xassert_eqq(!!$aum->test("J. J. Aceves-Garcia-Luna"), true);
         xassert_eqq(!!$aum->test("J. J. Garcia-Luna"), false);
+    }
+
+    #[RequirePhp("8.5")]
+    function test_many_last_name_words_complexity() {
+        // match time must not be (last name words) x (tested name length)
+        $aum = AuthorMatcher::make_collaborator_line(str_repeat("a ", 5400) . ", J Q (zz)");
+        $ln = str_repeat("x", 100000) . " a";
+        $t0 = microtime(true);
+        xassert_eqq($aum->test(Author::make_nae("Bob", $ln, "", "")), 0);
+        xassert_eqq($aum->test(Author::make_nae("J Q", $ln, "", "")), AuthorMatcher::MATCH_NAME);
+        xassert_lt(microtime(true) - $t0, 0.5);
     }
 
     function test_affiliation_alternates() {

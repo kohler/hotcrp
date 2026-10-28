@@ -354,7 +354,10 @@ class DocumentBasics_Tester {
         foreach ($ufns as $i => $ufn) {
             xassert_eqq($ds->document_by_filename($ufn)->content(), "doc{$i}");
         }
+    }
 
+    #[RequirePhp("8.5")]
+    function test_docset_unique_filenames_complexity() {
         // many identical names must not take cubic time: this is a few
         // milliseconds, but took about a minute when each probe rescanned
         // all prior names from `(1)` (under test/run.php that surfaces as
@@ -703,7 +706,11 @@ class DocumentBasics_Tester {
             xassert_eqq($j["dt"], $x[2]);
             xassert_eqq($j["attachment"] ?? null, $x[3]);
         }
+    }
 
+    #[RequirePhp("8.5")]
+    function test_document_request_path_complexity() {
+        $user = $this->conf->checked_user_by_email("chair@_.com");
         // rejecting a long invalid path must not take quadratic time
         $t0 = microtime(true);
         foreach (["p1", "1", "a1", "a"] as $s) {
