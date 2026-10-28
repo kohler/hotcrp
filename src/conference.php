@@ -3481,6 +3481,10 @@ class Conf {
             $d = preg_replace($this->opt["dateFormatTimezoneRemover"], "", $d);
         }
         $d = trim($d);
+        if (strlen($d) > 200) {
+            // no valid time is this long; avoid superlinear `strtotime` behavior
+            return false;
+        }
         if (str_ends_with($d, " ago")) {
             [$y, $m, $s] = SettingParser::parse_duration_yms(substr($d, 0, -4));
             if ($y === null) {

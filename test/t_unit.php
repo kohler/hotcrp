@@ -1353,6 +1353,16 @@ class Unit_Tester {
         xassert_eqq($this->conf->unparse_time($t0), "Sep 1, 2010, 12 PM EDT");
     }
 
+    function test_parse_time_long() {
+        $t = $this->conf->parse_time(str_repeat(" ", 1000) . "29 May 2018 11:00:00 EDT" . str_repeat(" ", 1000));
+        xassert_eqq($t, 1527606000);
+        foreach (["-", "+", "utc+", "aoe "] as $w) {
+            $t0 = microtime(true);
+            xassert_eqq($this->conf->parse_time(str_repeat($w, 50000) . "\nx"), false);
+            xassert_lt(microtime(true) - $t0, 0.1);
+        }
+    }
+
     function test_timezones() {
         $t = $this->conf->parse_time("29 May 2018 11:00:00 EDT");
         xassert_eqq($t, 1527606000);
