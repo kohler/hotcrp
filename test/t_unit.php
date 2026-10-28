@@ -2549,6 +2549,53 @@ class Unit_Tester {
         xassert_lt(microtime(true) - $t0, 1.0);
     }
 
+    function test_text_pregexes_merge_wildcards() {
+        // merges match exactly when their members do
+        $pats = ["foo", "b*r", "-*-b", "qúx", "ba*", "x*y*z", "j*n smith"];
+        $texts = ["foo bar", "-x-b", "fooxbaz -x-b", "qux", "QÚX foo", "bar", "xayaz",
+                  "nothing", "bazaar -y-b", "John Smith", "Jón Smith"];
+        foreach ($pats as $p1) {
+            foreach ($pats as $p2) {
+                $a1 = Text::star_text_pregexes($p1);
+                $a2 = Text::star_text_pregexes($p2);
+                $any = TextPregexes::make_empty();
+                $any->merge_any($a1);
+                $any->merge_any($a2);
+                $all = TextPregexes::make_empty();
+                $all->merge_all($a1);
+                $all->merge_all($a2);
+                foreach ($texts as $t) {
+                    xassert_eqq($any->match($t), $a1->match($t) || $a2->match($t));
+                    xassert_eqq($all->match($t), $a1->match($t) && $a2->match($t));
+                }
+            }
+        }
+
+        // a long token does not hide other members’ matches
+        $all = TextPregexes::make_empty();
+        $all->merge_all(Text::star_text_pregexes("j*n"));
+        $all->merge_all(Text::star_text_pregexes("smith"));
+        xassert($all->match("John Smith j" . str_repeat("x", 70)));
+        $hl = TextPregexes::make_empty();
+        $hl->merge_any(Text::star_text_pregexes("-*-b"));
+        $hl->merge_any(Text::star_text_pregexes("baz"));
+        $dashes = str_repeat("-", 100);
+        xassert_eqq(Text::highlight("{$dashes}baz -x-b", $hl),
+                    $dashes . '<em class="match">baz</em> <em class="match">-x-b</em>');
+
+        // matching is linear in the length of a long token
+        $long = str_repeat("-", 50000) . " b";
+        $t0 = microtime(true);
+        xassert(!Text::star_text_pregexes("-*-b")->match($long));
+        xassert(!$hl->match($long));
+        xassert_eqq(Text::highlight($long, $hl), $long);
+        $all = TextPregexes::make_empty();
+        $all->merge_all(Text::star_text_pregexes("-*-b"));
+        $all->merge_all(Text::star_text_pregexes("b"));
+        xassert(!$all->match($long));
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
         xassert($pregex->match_da("foo", null));
