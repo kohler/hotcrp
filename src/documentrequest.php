@@ -104,17 +104,17 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             }
             $pidstr = $dtname = "";
             $encattachment = null;
-            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $path, $m)) {
+            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/++(.*)\z/', $path, $m)) {
                 $pidstr = $m[1];
-                if (preg_match('/\A([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
+                if (preg_match('/\A(?=[^\/]*+\z)([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
-                } else if (preg_match('/\A([^\/]+)\/+(.*)\z/', $m[2], $mm)) {
+                } else if (preg_match('/\A([^\/]+)\/++(.*)\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
                     $encattachment = $mm[2];
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
@@ -124,12 +124,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 if ($m[1] !== "") {
                     $base_dtname = $m[1] === "final" ? "final" : "paper";
                 }
-            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
+            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(?<!\d)(\d+)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[1];
                 $encattachment = $m[3] ?? null;
             } else if ($this->paperId === null
-                       && preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $path, $m)) {
+                       && preg_match('/\A(?|([^\/]++)\/++(.*)|([^\/][^\/.]*+)\.[^\/]++|([^\/]++))\z/', $path, $m)) {
                 $pidstr = "-2";
                 $dtname = $m[1];
                 $encattachment = $m[2] ?? null;

@@ -683,6 +683,40 @@ class DocumentBasics_Tester {
         }
     }
 
+    function test_document_request_path() {
+        $user = $this->conf->checked_user_by_email("chair@_.com");
+        $prefix = $this->conf->download_prefix;
+        foreach ([
+            ["paper1.pdf", 1, DTYPE_SUBMISSION, null],
+            ["{$prefix}paper1.pdf", 1, DTYPE_SUBMISSION, null],
+            ["final1.pdf", 1, DTYPE_FINAL, null],
+            ["1", 1, DTYPE_SUBMISSION, null],
+            ["p1/final.pdf", 1, DTYPE_FINAL, null],
+            ["p1//final//a%20b.txt", 1, DTYPE_FINAL, "a b.txt"],
+            ["paper1-final//a/b.txt", 1, DTYPE_FINAL, "a/b.txt"],
+            ["final-12.pdf", 12, DTYPE_FINAL, null],
+            ["final12//x", 12, DTYPE_FINAL, "x"],
+            ["comment-c3-12/x.txt", 12, DTYPE_COMMENT, "x.txt"]
+        ] as $x) {
+            $j = (new DocumentRequest(["doc" => $x[0]], $user))->jsonSerialize();
+            xassert_eqq($j["pid"], $x[1]);
+            xassert_eqq($j["dt"], $x[2]);
+            xassert_eqq($j["attachment"] ?? null, $x[3]);
+        }
+
+        // rejecting a long invalid path must not take quadratic time
+        $t0 = microtime(true);
+        foreach (["p1", "1", "a1", "a"] as $s) {
+            $dr = new DocumentRequest(["doc" => $s . str_repeat("/", 80000) . "\n"], $user);
+            xassert($dr->has_error());
+            xassert_eqq($dr->response_code(), 404);
+        }
+        $dr = new DocumentRequest(["doc" => "a" . str_repeat("1", 80000) . "!/\n"], $user);
+        xassert($dr->has_error());
+        xassert_eqq($dr->response_code(), 404);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_create_s3() {
         if (!$this->s3c) {
             return;
