@@ -94,7 +94,7 @@ class Revpref_SearchTerm extends SearchTerm {
 
         // how many users must match?
         $ucount = "";
-        if (preg_match('/\A:?\s*((?:[=!<>]=?|≠|≤|≥|)\s*\d+|any|none)\s*((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
+        if (preg_match('/\A:?\s*+((?:[=!<>]=?|≠|≤|≥|)\s*+\d++|any|none)\s*+((?:[:=!<>]|≠|≤|≥).*)\z/si', $word, $m)) {
             if (strcasecmp($m[1], "any") == 0) {
                 $ucount = ">0";
             } else if (strcasecmp($m[1], "none") == 0) {
@@ -117,7 +117,7 @@ class Revpref_SearchTerm extends SearchTerm {
         $value = new RevprefSearchMatcher($ucount, $contacts, $utype >= 0);
         if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0) {
             $value->is_any = true;
-        } else if (preg_match('/\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z/is', $word, $m)
+        } else if (preg_match('/\A\s*+([=!<>]=?|≠|≤|≥|)\s*+(-?\d*+)\s*+([xyz]?)\z/is', $word, $m)
                    && ($m[2] !== "" || $m[3] !== "")) {
             if ($m[2] !== "") {
                 $value->preference_match = new CountMatcher($m[1] . $m[2]);

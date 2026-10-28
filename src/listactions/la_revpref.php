@@ -175,7 +175,7 @@ class Revpref_ListAction extends ListAction {
             $csv->set_header($line);
             $csv->next_list();
         } else if (count($line) >= 2 && ctype_digit($line[0])) {
-            if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1])) {
+            if (preg_match('/\A\s*+\d++\s*+[XYZ]?\s*+\z/i', $line[1])) {
                 $csv->set_header(["paper", "preference"]);
             } else {
                 $csv->set_header(["paper", "title", "preference"]);

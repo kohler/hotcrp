@@ -49,6 +49,34 @@ class Preferences_Tester {
         call_api("=pref", $this->u_chair, ["p" => 1, "pref" => "0"]);
     }
 
+    function test_preference_parse_long_whitespace() {
+        // whitespace is accepted where it was
+        $conf = $this->conf;
+        xassert_eqq(Preference_AssignmentParser::parsef("1  y"), [1.0, 0]);
+        xassert_eqq(Preference_AssignmentParser::parsef("' - 2 x '"), [-2.0, 1]);
+        xassert_eqq(Preference_AssignmentParser::parsef("-  -  -"), [-3.0, null]);
+        xassert_str_contains(Preference_AssignmentParser::parse_check("a -  2  y!", $conf), "‘-2Y’");
+        xassert_str_contains(Preference_AssignmentParser::parse_check("a-  2!", $conf), "‘-2’");
+        xassert_str_contains(Preference_AssignmentParser::parse_check("-a  2!", $conf), "‘2’");
+
+        // invalid preferences with long runs of whitespace are rejected in
+        // linear time
+        require_once(SiteLoader::resolve("src/listactions/la_revpref.php"));
+        $this->u_chair->set_scope();
+        $ws = str_repeat(" ", 100000);
+        $t0 = microtime(true);
+        xassert_eqq(Preference_AssignmentParser::parsef("1{$ws}!"), null);
+        xassert_str_contains(Preference_AssignmentParser::parse_check("1{$ws}!", $conf), "Invalid preference");
+        xassert_eqq(Preference_AssignmentParser::parsef("1{$ws}x"), [1.0, 1]);
+        xassert_eqq((new PaperSearch($this->u_chair, "pref:\"pc:{$ws}1{$ws}a\""))->paper_ids(), []);
+        xassert_eqq((new PaperSearch($this->u_chair, "pref:\"={$ws}a\""))->paper_ids(), []);
+        $la = new Revpref_ListAction($conf, (object) ["name" => "uploadpref"]);
+        $qreq = TestQreq::post(["preffile" => "1,1{$ws}!\n", "dry_run" => 1])->set_page("api");
+        $jr = $la->run_uploadpref($this->u_chair, $qreq, new SearchSelection([1]), $this->u_chair);
+        xassert($jr instanceof JsonResult && !$jr->content["valid"]);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_preference_export_obeys_scope() {
         // The preference emitters (get/allrevpref, get/revpref, the
         // preference-list column) must respect the preference scope: a chair

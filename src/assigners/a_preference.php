@@ -100,7 +100,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         if (strpos($str, "\xE2") !== false) {
             $str = preg_replace('/\xE2(?:\x88\x92|\x80\x93|\x80\x94)/', "-", $str);
         }
-        if (preg_match('/\A(?:[\"\'`]\s*+|)(-\s*+(?:-\s*+|)(?=[\d.])|\+\s*+(?:\+\s*+|)(?=[\d.])|)(\d++(?:\.\d*+|)|\.\d++|(?=[cnx-z]))\s*([x-z]?|c|conflict|none|n\/a|)(?:\s*+[\"\'`]|)\z/i', $str, $m)) {
+        if (preg_match('/\A(?:[\"\'`]\s*+|)(-\s*+(?:-\s*+|)(?=[\d.])|\+\s*+(?:\+\s*+|)(?=[\d.])|)(\d++(?:\.\d*+|)|\.\d++|(?=[cnx-z]))\s*+([x-z]?|c|conflict|none|n\/a|)(?:\s*+[\"\'`]|)\z/i', $str, $m)) {
             // $m[1] sign; $m[2] preference; $m[3] expertise
             $exp = null;
             if ($m[3] !== "") {
@@ -123,7 +123,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             }
             return [$pref, $exp];
         }
-        $str = preg_replace('/\s++(?=[-+])/', "", $str);
+        $str = preg_replace('/(?<!\s)\s++(?=[-+])/', "", $str);
         if (strspn($str, "-") === strlen($str)) {
             return [(float) -strlen($str), null];
         } else if (strspn($str, "+") === strlen($str)) {
@@ -136,7 +136,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     static function parse_check($str, Conf $conf) {
         $ppref = self::parsef($str);
         if ($ppref === null) {
-            if (preg_match('/([-+]?)\s*(\d+)\s*([xyz]?)/i', $str, $m)) {
+            if (preg_match('/(?:([-+])\s*+|)(\d++)\s*+([xyz]?)/i', $str, $m)) {
                 return $conf->_("<0>Invalid preference ‘{}’. Did you mean ‘{}’?", $str, $m[1] . $m[2] . strtoupper($m[3]));
             } else {
                 return $conf->_("<0>Invalid preference ‘{}’", $str);
