@@ -1145,19 +1145,28 @@ class PaperSearch extends MessageSet {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    /** @param SearchTerm $qe */
-    private function _add_deleted_papers($qe) {
-        if ($qe->type === "or" || $qe->type === "then") {
-            assert($qe instanceof Op_SearchTerm);
-            foreach ($qe->child as $subt) {
-                $this->_add_deleted_papers($subt);
-            }
-        } else if ($qe->type === "pn") {
+    /** Add papers listed by number, whether or not they exist: at most
+     * 1000 papers per term, from at most `$nterms` terms.
+     * @param SearchTerm $qe
+     * @param int &$nterms */
+    private function _add_deleted_papers($qe, &$nterms) {
+        if (($qe->type !== "or" && $qe->type !== "then" && $qe->type !== "pn")
+            || --$nterms < 0) {
+            return;
+        }
+        if ($qe->type === "pn") {
             assert($qe instanceof PaperID_SearchTerm);
             foreach ($qe->id_set()->ids(1000) ?? [] as $p) {
-                if (array_search($p, $this->_matches) === false)
-                    $this->_matches[] = (int) $p;
+                if (!isset($this->_then_map[$p])) {
+                    $this->_matches[] = $p;
+                    $this->_then_map[$p] = 0;
+                }
             }
+            return;
+        }
+        assert($qe instanceof Op_SearchTerm);
+        foreach ($qe->child as $subt) {
+            $this->_add_deleted_papers($subt, $nterms);
         }
     }
 
@@ -1173,7 +1182,7 @@ class PaperSearch extends MessageSet {
             assert($qe instanceof PaperID_SearchTerm);
             foreach ($qe->id_set()->ranges() as $r) {
                 for ($p = $r->first; $p < $r->last && $r->explicit; ++$p) {
-                    if (array_search($p, $this->_matches) === false) {
+                    if (!isset($this->_then_map[$p])) {
                         $ps[] = $p;
                     }
                 }
@@ -1437,7 +1446,8 @@ class PaperSearch extends MessageSet {
 
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted) {
-            $this->_add_deleted_papers($qe);
+            $nterms = 200;
+            $this->_add_deleted_papers($qe, $nterms);
         } else if ($this->_warn_missing
                    && ($missing = $this->_check_missing_papers($qe))) {
             $this->_warn_missing_papers($missing);

@@ -2495,4 +2495,44 @@ class Search_Tester {
         $conf->save_refresh_setting("rev_open", $old_rev_open);
         $conf->invalidate_caches("users");
     }
+
+    function test_allow_deleted_listed_ids() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $srch = new PaperSearch($chair, ["q" => "3 THEN 100005 1 THEN 100001-100003 OR 100003 3", "t" => "all"]);
+        $srch->set_allow_deleted(true);
+        $pids = $srch->paper_ids();
+        sort($pids);
+        xassert_eqq($pids, [1, 3, 100001, 100002, 100003, 100005]);
+        $groups = array_keys($srch->groups_by_paper_id());
+        sort($groups);
+        xassert_eqq($groups, $pids);
+
+        // at most 1000 papers per term
+        $srch = new PaperSearch($chair, ["q" => "3 OR 100000-101000", "t" => "all"]);
+        $srch->set_allow_deleted(true);
+        xassert_eqq($srch->paper_ids(), [3]);
+
+        // and at most 200 terms
+        $q = [];
+        for ($i = 0; $i !== 1200; ++$i) {
+            $q[] = 100000 + $i;
+        }
+        $srch = new PaperSearch($chair, ["q" => join(" THEN ", $q), "t" => "all"]);
+        $srch->set_allow_deleted(true);
+        $pids = $srch->paper_ids();
+        xassert(in_array(100000, $pids, true));
+        xassert(!in_array(100300, $pids, true));
+        xassert_le(count($pids), 200);
+
+        // which bounds the work in linear time
+        $q = [];
+        for ($i = 0; $i !== 100; ++$i) {
+            $q[] = (100000 + 1000 * $i) . "-" . (100999 + 1000 * $i);
+        }
+        $t0 = microtime(true);
+        $srch = new PaperSearch($chair, ["q" => join(" THEN ", $q), "t" => "all"]);
+        $srch->set_allow_deleted(true);
+        xassert_eqq(count($srch->paper_ids()), 100000);
+        xassert_lt(microtime(true) - $t0, 2.0);
+    }
 }
