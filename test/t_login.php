@@ -237,6 +237,48 @@ class Login_Tester {
         $this->conf->invalidate_caches("users");
     }
 
+    /** A forgot-password request takes only the email from the request: the
+     * reset mail for an account with no name carries none of the request’s
+     * text. */
+    function test_forgot_password_ignores_request_name() {
+        if (!$this->cdb) {
+            return;
+        }
+        $email = "cdbonly@hotcrp.com";
+        $reqfirst = "URGENT: call +1-555-0100";
+
+        // make a nameless contactdb-only, non-placeholder account
+        $this->us1->save_user((object) ["email" => $email]);
+        Dbl::qe($this->cdb, "update ContactInfo set cflags=cflags&~?, firstName='', lastName='' where email=?",
+                Contact::CF_PLACEHOLDER, $email);
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users");
+        xassert_eqq($this->conf->fresh_user_by_email($email), null);
+        $cdbu = $this->conf->fresh_cdb_user_by_email($email);
+        xassert(!$cdbu->is_placeholder());
+        xassert_eqq($cdbu->firstName, "");
+
+        $qreq = TestQreq::post([
+            "email" => $email, "firstName" => $reqfirst, "lastName" => "", "affiliation" => "Phish Inc."
+        ])->set_user(Contact::make($this->conf))->set_page("forgotpassword");
+        $info = LoginHelper::forgot_password_info($this->conf, $qreq, false);
+        xassert_eqq($info["ok"], true);
+        $u = $info["user"];
+        xassert_eqq($u->email, $email);
+        xassert_eqq($u->firstName, "");
+        xassert_eqq($u->lastName, "");
+        xassert_eqq($u->affiliation, "");
+
+        $prep = $u->prepare_mail($info["mailtemplate"], []);
+        $to = (new MimeText("\r\n"))->encode_email_header("To", join(", ", $prep->recipient_texts()));
+        xassert_eqq($to, "To: {$email}");
+        xassert(!str_contains($prep->body, $reqfirst));
+
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+        Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);
+        $this->conf->invalidate_caches("users");
+    }
+
     function test_reset_request_with_email() {
         // Entering an *email* (not a reset code) in the `resetpassword` page's
         // reset-code field triggers the forgot-password flow on a freshly

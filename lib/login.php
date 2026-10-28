@@ -55,8 +55,9 @@ class LoginHelper {
         }
     }
 
-    /** @return array{ok:true,user:Contact}|array{ok:false} */
-    static private function user_lookup(Conf $conf, Qrequest $qreq) {
+    /** @param ?list<string> $keys
+     * @return array{ok:true,user:Contact}|array{ok:false} */
+    static private function user_lookup(Conf $conf, Qrequest $qreq, $keys = null) {
         // Look up the account information
         // to determine if the user is registered
         if (isset($qreq->email)) {
@@ -73,7 +74,7 @@ class LoginHelper {
         }
         $u = $conf->user_by_email($qreq->email);
         if (!$u) {
-            $keys = ["firstName", "first", "lastName", "last", "name", "email", "affiliation", "country"];
+            $keys = $keys ?? ["email", "firstName", "first", "lastName", "last", "name", "affiliation", "country"];
             // maybe include preferredEmail
             $lt = $conf->login_type();
             if ($lt === "htauth") {
@@ -290,7 +291,8 @@ class LoginHelper {
             return ["ok" => false, "noreset" => true];
         }
 
-        $info = self::user_lookup($conf, $qreq);
+        // take nothing but the email from the request
+        $info = self::user_lookup($conf, $qreq, ["email"]);
         if (!$info["ok"]) {
             return $info;
         }
