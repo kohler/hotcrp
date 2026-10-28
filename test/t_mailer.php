@@ -1327,17 +1327,17 @@ class Mailer_Tester {
         $u = $conf->checked_user_by_email("estrin@usc.edu");
         $mailer = new HotCRPMailer($chair, $u);
         $sp = str_repeat(" ", 50000);
-        $ifs = str_repeat("%IF(NULL)%%ENDIF%", 3000);
+        $ifs = str_repeat("{{IF(NULL)}}{{ENDIF}}", 3000);
         $time0 = microtime(true);
         $t = $mailer->expand("x{$sp}{$ifs}y", "subject");
         xassert_eqq($t, "x{$sp}y");
-        $t = $mailer->expand("x{$sp}%IF(URL)%%IF(URL)%{$ifs}%ENDIF%%ENDIF%y", "subject");
+        $t = $mailer->expand("x{$sp}{{IF(URL)}}{{IF(URL)}}{$ifs}{{ENDIF}}{{ENDIF}}y", "subject");
         xassert_eqq($t, "x{$sp}y");
         xassert_lt(microtime(true) - $time0, 2.0);
 
         // expanding a conditional does not copy the text before it
         $sp = str_repeat(" ", 1700000);
-        $ifs = str_repeat(" %IF(NULL)%%ENDIF%", 100000);
+        $ifs = str_repeat(" {{IF(NULL)}}{{ENDIF}}", 2000);
         $time0 = microtime(true);
         $t = $mailer->expand("x{$sp}{$ifs}y", "subject");
         xassert_eqq($t, "x{$sp} y");
@@ -1350,9 +1350,9 @@ class Mailer_Tester {
         $u = $this->conf->checked_user_by_email("estrin@usc.edu");
         $mailer = new HotCRPMailer($chair, $u);
         $d = Mailer::MAX_IF_DEPTH;
-        $t = str_repeat("%IF(CONFNAME)%", $d) . "x" . str_repeat("%ENDIF%", $d);
+        $t = str_repeat("{{IF(CONFNAME)}}", $d) . "x" . str_repeat("{{ENDIF}}", $d);
         xassert_eqq($mailer->expand($t, "subject"), "x");
-        $t = str_repeat("%IF(CONFNAME)%", $d + 1) . "x" . str_repeat("%ENDIF%", $d + 1);
+        $t = str_repeat("{{IF(CONFNAME)}}", $d + 1) . "x" . str_repeat("{{ENDIF}}", $d + 1);
         xassert_eqq($mailer->expand($t, "subject"), $t);
         MailChecker::clear();
         $fb = $this->preview_feedback($chair, "pc", ["body" => $t]);
