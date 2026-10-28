@@ -120,6 +120,7 @@ class TextPregexes {
         } else if ($this->is_empty()) {
             $this->preg_utf8 = $r->preg_utf8;
             $this->preg_raw = $r->preg_raw;
+            $this->_is_merge_and = $r->_is_merge_and;
         } else {
             $this->preg_utf8 .= "|{$r->preg_utf8}";
             if ($r->preg_raw === null) {
@@ -144,14 +145,21 @@ class TextPregexes {
         } else if ($this->is_empty()) {
             $this->preg_utf8 = $r->preg_utf8;
             $this->preg_raw = $r->preg_raw;
+            $this->_is_merge_and = $r->_is_merge_and;
         } else {
-            $this->preg_utf8 = "\\A" . $this->wrap_all($this->preg_utf8) . $r->wrap_all($r->preg_utf8);
+            if (!$this->_is_merge_and) {
+                $this->preg_utf8 = "\\A" . $this->wrap_all($this->preg_utf8);
+                if ($this->preg_raw !== null) {
+                    $this->preg_raw = "\\A" . $this->wrap_all($this->preg_raw);
+                }
+                $this->_is_merge_and = true;
+            }
+            $this->preg_utf8 .= $r->wrap_all($r->preg_utf8);
             if ($r->preg_raw === null) {
                 $this->preg_raw = null;
             } else if ($this->preg_raw !== null) {
-                $this->preg_raw = "\\A" . $this->wrap_all($this->preg_raw) . $r->wrap_all($r->preg_raw);
+                $this->preg_raw .= $r->wrap_all($r->preg_raw);
             }
-            $this->_is_merge_and = true;
         }
     }
 }
@@ -315,7 +323,7 @@ class Text {
             } else if (strpos($name, "@") === false) {
                 /* skip */;
             } else if ($name[0] === "\""
-                       && preg_match('/\A\s*\"(.*)\"\s+(\S+@\S+)\z/', $name, $m)) {
+                       && preg_match('/\A\s*\"(.*)\"\s+(\S[^\s@]*+@\S++)\z/', $name, $m)) {
                 [$name, $email] = [$m[1], $m[2]];
             } else if (!preg_match('/\A(.*?)\s+(\S+)\z/', $name, $m)) {
                 return ["", "", trim($name)];

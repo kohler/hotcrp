@@ -173,7 +173,7 @@ class Author {
      * @return array{string,string,string} */
     static function split_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
-            if (preg_match('/\G([^()]*+)(?:\)|\z)\s*+(?:[\s,;.]*|(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $paren + 1)) {
+            if (preg_match('/\G([^()]*+)(?:\)|\z)\s*+(?:[\s,;.]*|(?:-+|–|—|[\#:])\s*+(.*))\z/s', $s, $m, 0, $paren + 1)) {
                 return [trim(substr($s, 0, $paren)), trim($m[1]), $m[2] ?? ""];
             }
             $len = strlen($s);
@@ -181,7 +181,7 @@ class Author {
                 $rparen = self::skip_balanced_parens($s, $paren);
                 if ($rparen === $len) {
                     return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1)), ""];
-                } else if (preg_match('/\G(?:[\s,:.]*|\s*+(?:-+|–|—|[\#:])\s*+(.*))\z/', $s, $m, 0, $rparen + 1)) {
+                } else if (preg_match('/\G(?:[\s,:.]*|\s*+(?:-+|–|—|[\#:])\s*+(.*))\z/s', $s, $m, 0, $rparen + 1)) {
                     return [trim(substr($s, 0, $paren)), trim(substr($s, $paren + 1, $rparen - $paren - 1)), $m[1] ?? ""];
                 }
                 $paren = strpos($s, "(", $rparen + 1);

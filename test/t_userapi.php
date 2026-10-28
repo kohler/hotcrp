@@ -71,4 +71,34 @@ class UserAPI_Tester {
         $j = call_api("user", $pc, ["email" => "estrin@usx"]);
         xassert_eqq($j->email ?? null, null);
     }
+
+    function test_potential_conflict_list_bounded() {
+        // every collaborator matches every author, so the number of matching
+        // pairs is the product of the list lengths; record a few per author
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $old_collaborators = $pc->collaborators();
+        $old_authors = $this->conf->fetch_value("select authorInformation from Paper where paperId=1");
+        $collab = $authors = [];
+        for ($i = 0; $i !== 40; ++$i) {
+            $collab[] = "Ann Bee (Org{$i})";
+            $authors[] = "Ann\tBee\t\tZ{$i}\n";
+        }
+        $pc->set_prop("collaborators", join("\n", $collab));
+        $pc->save_prop();
+        $this->conf->qe("update Paper set authorInformation=? where paperId=1", join("", $authors));
+
+        $n = 40 * PaperInfoPotentialConflictList::MAX_MATCHES_PER_AUTHOR;
+        $prow = $this->user->checked_paper_by_id(1);
+        $potconf = $prow->potential_conflict_list($pc);
+        xassert(!!$potconf);
+        xassert_eqq(count($potconf->list()), $n);
+        xassert_eqq($potconf->description_text(), "Possible conflict with authors #1–40");
+        $j = call_api("user", $this->user, ["email" => $pc->email, "potential_conflict" => 1], $prow);
+        xassert($j->ok);
+        xassert_eqq(substr_count($j->potential_conflict ?? "", "<em>author</em>"), $n);
+
+        $this->conf->qe("update Paper set authorInformation=? where paperId=1", $old_authors);
+        $pc->set_prop("collaborators", $old_collaborators);
+        $pc->save_prop();
+    }
 }

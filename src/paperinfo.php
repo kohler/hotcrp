@@ -4098,6 +4098,8 @@ class PaperInfoPotentialConflict {
 }
 
 class PaperInfoPotentialConflictList {
+    const MAX_MATCHES_PER_AUTHOR = 5;
+
     /** @var PaperInfo
      * @readonly */
     private $_prow;
@@ -4180,20 +4182,26 @@ class PaperInfoPotentialConflictList {
 
     /** @return int */
     private function _reset_authors() {
-        $user = $this->_user;
         $auproblems = 0;
         foreach ($this->_prow->author_list() as $au) {
-            foreach ($user->aucollab_matchers() as $userm) {
-                if (($why = $userm->test($au, $userm->is_nonauthor()))) {
-                    $auproblems |= $why;
-                    $this->_pcs[] = new PaperInfoPotentialConflict($userm, $au, $why);
-                }
-            }
+            $auproblems |= $this->_reset_author($au);
         }
         foreach ($this->_aucontacts ?? [] as $au) {
-            foreach ($user->aucollab_matchers() as $userm) {
-                if (($why = $userm->test($au, $userm->is_nonauthor()))) {
-                    $auproblems |= $why;
+            $auproblems |= $this->_reset_author($au);
+        }
+        return $auproblems;
+    }
+
+    /** @param Author $au
+     * @return int */
+    private function _reset_author($au) {
+        // an author can match many of the user's collaborators; record only
+        // a few matches per author to bound the list
+        $auproblems = $n = 0;
+        foreach ($this->_user->aucollab_matchers() as $userm) {
+            if (($why = $userm->test($au, $userm->is_nonauthor()))) {
+                $auproblems |= $why;
+                if (++$n <= self::MAX_MATCHES_PER_AUTHOR) {
                     $this->_pcs[] = new PaperInfoPotentialConflict($userm, $au, $why);
                 }
             }

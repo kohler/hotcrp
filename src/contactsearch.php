@@ -303,6 +303,10 @@ class ContactSearch {
             $nreg = $nreg ?? TextPregexes::make_empty();
             $nreg->merge_all(Text::star_text_pregexes($nsplit));
         }
+        if ($nreg !== null && !$nreg->compiles()) {
+            // too many words for PCRE: no name matches
+            $nreg = TextPregexes::make_empty();
+        }
         if ($e !== "" && $estar) {
             $ereg = '{\A' . str_replace('\*', '.*', preg_quote($e)) . '\z}i';
         } else if ($e !== "") {

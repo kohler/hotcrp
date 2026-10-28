@@ -891,6 +891,21 @@ class UserStatus_Tester {
         }
     }
 
+    // A name with very many words matches no one, quickly and without
+    // `preg_match` warnings.
+    function test_contactsearch_many_words() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
+        xassert_eqq(ContactSearch::make_pc("floyd sally", $chair)->user_ids(), [$floyd->contactId]);
+        xassert_eqq(ContactSearch::make_pc("floyd sally nobody", $chair)->user_ids(), []);
+
+        $t0 = microtime(true);
+        $cs = ContactSearch::make_pc("floyd" . str_repeat(" sally", 20000), $chair);
+        xassert_eqq($cs->user_ids(), []);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     // `secretPC` hides the PC from everyone outside it; `privatePC` hides it
     // from non-PC users. ContactSearch and the viewable PC list obey both.
     function test_secret_and_private_pc() {

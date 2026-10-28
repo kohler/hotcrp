@@ -473,6 +473,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             [$u->firstName, $u->lastName, $unused] = Text::split_name(convert_to_utf8($args["name"]));
         }
         $u->affiliation = convert_to_utf8(simplify_whitespace($args["affiliation"] ?? ""));
+        // enforce length limits now; `$u` might be used (e.g., mailed) unsaved
+        foreach (["firstName", "lastName", "affiliation"] as $prop) {
+            if (strlen($u->$prop) > self::$prop_max_length[$prop]) {
+                $u->$prop = UnicodeHelper::utf8_truncate($u->$prop, self::$prop_max_length[$prop]);
+            }
+        }
         if (isset($args["orcid"])
             && strlen($args["orcid"]) <= 25
             && preg_match('/\A\s*+[-0-9X]*+\??\s*+\z/i', $args["orcid"])) {

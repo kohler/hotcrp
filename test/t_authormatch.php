@@ -36,6 +36,12 @@ class AuthorMatch_Tester {
         xassert_eqq(Author::split_string("D. Thin (Captain Poop): (Whatever)"), ["D. Thin", "Captain Poop", "(Whatever)"]);
         xassert_eqq(Author::split_string("D. (The Man) Thin (Captain Poop (Esquire)) - yes"), ["D. (The Man) Thin", "Captain Poop (Esquire)", "yes"]);
         xassert_eqq(Author::split_string("G.-Y. (Ken (Butt)) Lueh (France (Crap) Telecom)- Inc."), ["G.-Y. (Ken (Butt)) Lueh", "France (Crap) Telecom", "Inc."]);
+        // trailing text may span lines
+        xassert_eqq(Author::split_string("D. Thin (Captain Poop) - yes\nno"), ["D. Thin", "Captain Poop", "yes\nno"]);
+        xassert_eqq(Author::split_string("D. (The Man) Thin (Captain Poop (Esquire)) - yes\nno"), ["D. (The Man) Thin", "Captain Poop (Esquire)", "yes\nno"]);
+        $t0 = microtime(true);
+        xassert_eqq(strlen(Author::split_string(str_repeat("()-", 100000) . "\n")[0]), 0);
+        xassert_lt(microtime(true) - $t0, 1.0);
     }
 
     function test_initials() {
@@ -125,6 +131,40 @@ class AuthorMatch_Tester {
             xassert_eqq(!!$aum->test($subj), false);
         }
         xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
+    function test_repeated_affiliation_words() {
+        // repeating a word with alternates must not take quadratic time
+        $t0 = microtime(true);
+        $aum = AuthorMatcher::make_affiliation("USC " . str_repeat("uc ", 8000));
+        xassert_eqq(!!$aum->test("Butt (University of Southern California)"), true);
+        xassert_eqq(!!$aum->test("Butt (Rice)"), false);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
+    function test_many_last_name_words() {
+        // match time must not be (last name words) x (tested name length)
+        $aum = AuthorMatcher::make_collaborator_line(str_repeat("a ", 5400) . ", J Q (zz)");
+        $ln = str_repeat("x", 100000) . " a";
+        $t0 = microtime(true);
+        xassert_eqq($aum->test(Author::make_nae("Bob", $ln, "", "")), 0);
+        xassert_eqq($aum->test(Author::make_nae("J Q", $ln, "", "")), AuthorMatcher::MATCH_NAME);
+        xassert_lt(microtime(true) - $t0, 0.5);
+
+        $ws = [];
+        for ($i = 0; $i !== 800; ++$i) {
+            $ws[] = "w{$i}";
+        }
+        $aum = AuthorMatcher::make_collaborator_line(join(" ", $ws) . ", J Q (zz)");
+        $ln = str_repeat("x", 100000) . " " . join(" ", $ws);
+        xassert_eqq($aum->test(Author::make_nae("Bob", $ln, "", "")), 0);
+        xassert_eqq($aum->test(Author::make_nae("J Q", $ln, "", "")), AuthorMatcher::MATCH_NAME);
+        xassert_eqq($aum->test(Author::make_nae("J Q", str_replace(" w3 ", " ", $ln), "", "")), 0);
+
+        $aum = AuthorMatcher::make_string_guess("J. J. Garcia-Luna-Aceves");
+        xassert_eqq(!!$aum->test("J. J. Garcia-Luna-Aceves"), true);
+        xassert_eqq(!!$aum->test("J. J. Aceves-Garcia-Luna"), true);
+        xassert_eqq(!!$aum->test("J. J. Garcia-Luna"), false);
     }
 
     function test_affiliation_alternates() {

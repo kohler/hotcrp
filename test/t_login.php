@@ -237,6 +237,23 @@ class Login_Tester {
         $this->conf->invalidate_caches("users");
     }
 
+    /** Request-supplied names are bounded like saved ones, since a `Contact`
+     * built from a request can be mailed without being saved. */
+    function test_request_name_length_bounded() {
+        $long = str_repeat("Bob ", 250000);
+        $u = Contact::make_keyed($this->conf, [
+            "email" => "longname@hotcrp.com", "firstName" => $long, "lastName" => $long,
+            "affiliation" => str_repeat("Inst ", 100000)
+        ]);
+        xassert_le(strlen($u->firstName), Contact::$prop_max_length["firstName"]);
+        xassert_le(strlen($u->lastName), Contact::$prop_max_length["lastName"]);
+        xassert_le(strlen($u->affiliation), Contact::$prop_max_length["affiliation"]);
+        xassert(str_starts_with($u->firstName, "Bob Bob"));
+        $u = Contact::make_keyed($this->conf, ["email" => "longname@hotcrp.com", "name" => "{$long}X"]);
+        xassert_le(strlen($u->firstName), Contact::$prop_max_length["firstName"]);
+        xassert_le(strlen($u->lastName), Contact::$prop_max_length["lastName"]);
+    }
+
     /** A forgot-password request takes only the email from the request: the
      * reset mail for an account with no name carries none of the request’s
      * text. */

@@ -136,7 +136,8 @@ class AuthorMatcher extends Author {
 
     private function prepare_affiliation(&$gmatch, &$hlmatch) {
         preg_match_all('/[a-z0-9&]+/', $this->searchable_nea("affiliation"), $m);
-        $aws = $m[0];
+        // repeated words don't affect matching; dropping them bounds `$alts`
+        $aws = array_values(array_unique($m[0]));
         if (empty($aws)) {
             return;
         }
@@ -220,7 +221,8 @@ class AuthorMatcher extends Author {
         if ($this->lastName !== "") {
             preg_match_all('/[a-z0-9]+/', $this->searchable_nea("lastName"), $m);
             $rr = $ur = [];
-            foreach ($m[0] as $w) {
+            // each word costs a scan of the tested name, so bound their number
+            foreach (array_slice(array_unique($m[0]), 0, 8) as $w) {
                 $gmatch[] = $w;
                 $hlmatch[] = $w;
                 $rr[] = '(?=.*\b' . $w . '\b)';
@@ -691,7 +693,9 @@ class AuthorMatcher extends Author {
     /** @param string $line
      * @return string */
     static private function fix_collaborators_line_no_parens($line) {
-        $line = str_replace(")", "", $line);
+        // removing `)` can leave runs of spaces, which the regexes below
+        // assume away (and match quadratically)
+        $line = trim(preg_replace('/  +/', " ", str_replace(")", "", $line)));
         if (preg_match('/\A(|none|n\/a|na|)\s*[.,;\}]?\z/i', $line, $m)) {
             return $m[1] === "" ? "" : "None";
         }

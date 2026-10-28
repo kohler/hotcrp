@@ -364,4 +364,15 @@ Gee Ho (I) - etc. Jo Ko (L)");
         $s = AuthorMatcher::fix_collaborators("Al Bo (C),Di Eff (F),Gee Ho (I),\"{$qq}\" ,Jo Ko (L)");
         xassert_eqq($s, "Al Bo (C)\nDi Eff (F)\nGee Ho (I)\n\"" . str_repeat("\"", 100000) . "\nJo Ko (L)");
     }
+
+    function test_unmatched_close_parens() {
+        xassert_eqq(AuthorMatcher::fix_collaborators("John ) Smith"), "John Smith");
+        xassert_eqq(AuthorMatcher::fix_collaborators("John Smith () ) Jr )"), "John Smith Jr");
+        // removed parentheses must not leave a long run of spaces, which the
+        // separator regex matches quadratically
+        $t0 = microtime(true);
+        $s = AuthorMatcher::fix_collaborators("John Smith " . str_repeat(") ", 100000) . "x");
+        xassert_eqq($s, "John Smith x");
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
 }

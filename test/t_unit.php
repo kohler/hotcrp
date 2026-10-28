@@ -2500,6 +2500,45 @@ class Unit_Tester {
         xassert_lt(microtime(true) - $t0, 1.0);
     }
 
+    function test_text_pregexes_merge_all() {
+        $pregex = TextPregexes::make_empty();
+        foreach (["foo", "bar", "baz"] as $w) {
+            $pregex->merge_all(Text::star_text_pregexes($w));
+        }
+        xassert($pregex->match("baz foo bar"));
+        xassert($pregex->match("bar, Báz foo"));
+        xassert(!$pregex->match("foo bar"));
+        xassert(!$pregex->match("foo barbaz"));
+
+        $pregex->merge_all(Text::star_text_pregexes("qúx"));
+        xassert_eqq($pregex->preg_raw(), null);
+        xassert($pregex->match("qúx baz foo bar"));
+        xassert(!$pregex->match("baz foo bar"));
+
+        // adopting a merged pattern keeps it merged
+        $direct = Text::star_text_pregexes("foo");
+        $direct->merge_all(Text::star_text_pregexes("bar"));
+        $adopted = TextPregexes::make_empty();
+        $adopted->merge_all($direct);
+        $direct->merge_all(Text::star_text_pregexes("baz"));
+        $adopted->merge_all(Text::star_text_pregexes("baz"));
+        xassert_eqq($adopted->preg_utf8(), $direct->preg_utf8());
+        $adopted = TextPregexes::make_empty();
+        $adopted->merge_any($direct);
+        $adopted->merge_all(Text::star_text_pregexes("qux"));
+        $direct->merge_all(Text::star_text_pregexes("qux"));
+        xassert_eqq($adopted->preg_utf8(), $direct->preg_utf8());
+
+        // merging many patterns must not take quadratic time
+        $t0 = microtime(true);
+        $pregex = TextPregexes::make_empty();
+        $a = Text::star_text_pregexes("a");
+        for ($i = 0; $i !== 20000; ++$i) {
+            $pregex->merge_all($a);
+        }
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
         xassert($pregex->match_da("foo", null));
@@ -2989,6 +3028,18 @@ class Unit_Tester {
         xassert_eqq(Text::split_name("A" . str_repeat(" I", 20000) . " Smith"), ["A" . str_repeat(" I", 20000), "Smith", null]);
         $commas = str_repeat(",", 50000);
         xassert_eqq(Text::split_name("{$commas}!"), ["!", substr($commas, 1), null]);
+    }
+
+    function test_split_name_quoted_email() {
+        xassert_eqq(Text::split_name("\"Bob Kennedy\" bob@kennedy.org", true), ["Bob", "Kennedy", "bob@kennedy.org"]);
+        xassert_eqq(Text::split_name("\"Bob Kennedy\" @b@c", true), ["Bob", "Kennedy", "@b@c"]);
+        xassert_eqq(Text::split_name("\"Bob Kennedy\" bob@", true), ["\"Bob", "Kennedy\"", "bob@"]);
+        // long runs of `@` split in linear time
+        $ats = str_repeat("@", 100000);
+        $t0 = microtime(true);
+        xassert_eqq(Text::split_name("\"\" {$ats} b", true), ["", "b", "\"\" {$ats}"]);
+        xassert_eqq(Text::split_name("\"\" {$ats}", true), ["", "", $ats]);
+        xassert_lt(microtime(true) - $t0, 0.5);
     }
 
     function test_le_von() {

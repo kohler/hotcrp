@@ -924,13 +924,17 @@ class Mailer_Tester {
         // caller-supplied templates cannot multiply caller-supplied text
         // without bound
         $long = str_repeat("x", 5000);
-        foreach ([["REASON", "reason"], ["OPT(REASON)", "reason"], ["LAST", "family_name"]] as $kp) {
-            $j = call_api("mailtext", $user, ["text" => str_repeat("{{{$kp[0]}}}", 5000), $kp[1] => $long] + $rest);
+        foreach (["REASON", "OPT(REASON)"] as $kw) {
+            $j = call_api("mailtext", $user, ["text" => str_repeat("{{{$kw}}}", 5000), "reason" => $long] + $rest);
             xassert($j->ok);
             xassert_lt(strlen($j->text), Mailer::PREVIEW_EXPANSION_LIMIT + 100000);
             xassert(str_starts_with($j->text, $long . $long));
-            xassert(str_ends_with($j->text, "{{{$kp[0]}}}"));
+            xassert(str_ends_with($j->text, "{{{$kw}}}"));
         }
+        // and recipient names are bounded
+        $j = call_api("mailtext", $user, ["text" => "{{LAST}}", "family_name" => $long] + $rest);
+        xassert($j->ok);
+        xassert_le(strlen($j->text), Contact::$prop_max_length["lastName"]);
 
         // other mail is not limited
         $mailer = new HotCRPMailer($this->conf->root_user(), $user, ["reason" => $long, "width" => 0]);
