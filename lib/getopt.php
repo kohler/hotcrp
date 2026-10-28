@@ -344,7 +344,7 @@ class Getopt {
         $indent = $indent ?? (24 + strspn($opt, " "));
         if (($help ?? "") === "") {
             $sep = "";
-        } else if (strlen($opt) <= $indent) {
+        } else if (strlen($opt) < $indent) {
             $sep = str_repeat(" ", $indent - strlen($opt));
         } else {
             $sep = "\n" . str_repeat(" ", $indent);

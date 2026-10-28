@@ -155,4 +155,17 @@ class Getopt_Tester {
         $arg = self::getopt_parse($getopt, ["fart", "b", "-y", "-1"]);
         xassert_eqq(json_encode($arg), '{"_subcommand":"b","y":-1,"_":[]}');
     }
+
+    function test_format_help_line() {
+        xassert_eqq(Getopt::format_help_line("  -a, --abc", "Help"),
+                    "  -a, --abc               Help\n");
+        xassert_eqq(Getopt::format_help_line("  -c, --customer SITECLA", "Help"),
+                    "  -c, --customer SITECLA  Help\n");
+        xassert_eqq(Getopt::format_help_line("  -c, --customer SITECLAS", "Help"),
+                    "  -c, --customer SITECLAS Help\n");
+        xassert_eqq(Getopt::format_help_line("  -c, --customer SITECLASS", "Help"),
+                    "  -c, --customer SITECLASS\n                          Help\n");
+        xassert_eqq(Getopt::format_help_line("  -c, --customer SITECLASS", ""),
+                    "  -c, --customer SITECLASS\n");
+    }
 }
