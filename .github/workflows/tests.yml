@@ -40,6 +40,7 @@ jobs:
       with:
         php-version: ${{ matrix.php-versions }}
         extensions: mbstring, intl, mysqlnd
+        ini-values: opcache.enable_cli=1
 
     - name: Install poppler
       run: |
@@ -92,6 +93,7 @@ jobs:
       with:
         php-version: ${{ matrix.php-versions }}
         extensions: mbstring, intl, mysqlnd
+        ini-values: opcache.enable_cli=1
 
     - name: Install poppler
       run: |

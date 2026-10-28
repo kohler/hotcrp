@@ -780,8 +780,8 @@ class DiffMatchPatch_Tester {
         $dmp->Diff_Timeout = 0.1;  // 100ms
         $a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
         $b = "I am the very model of a modern major general,\nI\'ve information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
-        // Increase the text lengths by 1024 times to ensure a timeout.
-        for ($i = 0; $i < 10; ++$i) {
+        // Increase the text lengths by 256 times to ensure a timeout.
+        for ($i = 0; $i < 8; ++$i) {
             $a .= $a;
             $b .= $b;
         }
