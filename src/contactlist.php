@@ -505,8 +505,8 @@ class ContactList {
     function _sort_scores($a, $b) {
         $ai = $this->_sort_data[$a->contactId];
         $bi = $this->_sort_data[$b->contactId];
-        if (!($x = ScoreInfo::compare($bi[1], $ai[1], -1))) {
-            $x = ScoreInfo::compare($bi[0], $ai[0]);
+        if (!($x = ScoreInfo::compare($bi[0], $ai[0], -1))) {
+            $x = ScoreInfo::compare($bi[1], $ai[1]);
         }
         return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
     }

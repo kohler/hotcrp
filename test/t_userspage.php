@@ -161,6 +161,54 @@ class UsersPage_Tester {
         $this->conf->invalidate_caches("users", "pc");
     }
 
+    function test_users_scoresort() {
+        // a score column sorts by the selected score sort, then by average
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $old_rev_open = $this->conf->setting("rev_open");
+        $old_viewrev = $this->conf->setting("viewrev");
+        $this->conf->save_setting("viewrev", Conf::VIEWREV_ALWAYS);
+        $this->conf->save_refresh_setting("rev_open", 1);
+        $us = new UserStatus($this->conf->root_user());
+        $accts = [];
+        foreach (["Steady" => [4, 4], "Varied" => [1, 5]] as $name => $scores) {
+            $email = "scoresort-" . strtolower($name) . "@_.com";
+            $this->conf->qe("delete from ContactInfo where email=?", $email);
+            $acct = $us->save_user((object) ["email" => $email, "name" => "{$name} Scoresort", "roles" => ["pc"]]);
+            xassert(!!$acct, $us->full_feedback_text());
+            $this->conf->invalidate_caches("users", "pc");
+            foreach ($scores as $i => $score) {
+                $pid = $name === "Steady" ? 1 + $i : 3 + $i;
+                xassert_assign($chair, "paper,action,user\n{$pid},primary,{$email}\n");
+                $acct = $this->conf->checked_user_by_email($email);
+                save_review($pid, $acct, ["ovemer" => $score, "revexp" => 1, "ready" => true]);
+            }
+            $accts[] = $acct;
+        }
+
+        $ovemer = $this->conf->find_review_field("ovemer");
+        $order = function ($scoresort) use ($chair, $ovemer) {
+            $qreq = TestQreq::get(["t" => "pc", "sort" => $ovemer->short_id])
+                ->set_conf($this->conf)
+                ->set_user($chair)
+                ->set_qsession(new MemoryQsession);
+            $qreq->set_csession("uldisplay", " {$ovemer->short_id} scoresort={$scoresort} ");
+            $pl = new ContactList($chair, true, $qreq);
+            $h = $pl->table_html("pc", "");
+            return strpos($h, "Steady Scoresort") <=> strpos($h, "Varied Scoresort");
+        };
+        xassert_eqq($order("average"), -1);
+        xassert_eqq($order("variance"), 1);
+        xassert_eqq($order("maxmin"), 1);
+
+        foreach ($accts as $acct) {
+            $this->conf->qe("delete from PaperReview where contactId=?", $acct->contactId);
+            $this->conf->qe("delete from ContactInfo where contactId=?", $acct->contactId);
+        }
+        $this->conf->save_setting("viewrev", $old_viewrev);
+        $this->conf->save_refresh_setting("rev_open", $old_rev_open);
+        $this->conf->invalidate_caches("users", "pc");
+    }
+
     /** @param array<string,string> $args
      * @return list<string> */
     private function selected_emails(Contact $viewer, $args) {
