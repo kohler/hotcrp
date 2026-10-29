@@ -2166,8 +2166,128 @@ class UserStatus_Tester {
         xassert_eqq($this->conf->fresh_user_by_email("csvt17@_.com")->theme(), "dark");
     }
 
+    function test_clean_orcid() {
+        xassert_eqq(Contact::clean_orcid("0000-0002-1825-0097"), "0000-0002-1825-0097");
+        xassert_eqq(Contact::clean_orcid(" 0000000218250097 "), "0000-0002-1825-0097");
+        xassert_eqq(Contact::clean_orcid("https://orcid.org/0000-0002-1694-233x"), "0000-0002-1694-233X");
+        xassert_eqq(Contact::clean_orcid("orcid.org/0000-0001-5109-3700"), "0000-0001-5109-3700");
+        xassert_eqq(Contact::clean_orcid(""), "");
+        xassert_eqq(Contact::clean_orcid("0000-0002-1825-0098"), null);
+        xassert_eqq(Contact::clean_orcid("0000-0002-1825"), null);
+        xassert_eqq(Contact::clean_orcid("0000-0002-1825-0097?"), null);
+        xassert_eqq(Contact::clean_orcid("https://example.com/0000-0002-1825-0097"), null);
+    }
+
+    function test_orcid() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        xassert_eqq($u->orcid(), "");
+        $qreq->orcid = "https://orcid.org/0000-0002-1825-0097";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert(isset($us->diffs["orcid"]));
+
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->orcid(), "0000-0002-1825-0097");
+        xassert_eqq($u->confirmed_orcid(), "0000-0002-1825-0097");
+        if (($cdbu = $this->conf->fresh_cdb_user_by_email("estrin@usc.edu"))) {
+            xassert_eqq($cdbu->orcid(), "0000-0002-1825-0097");
+        }
+
+        // profile form shows it
+        $us = (new UserStatus($u))->set_qreq(new Qrequest("GET"));
+        $us->set_user($u);
+        ob_start();
+        UserStatus::print_orcid($us);
+        $t = ob_get_clean();
+        xassert_str_contains($t, 'name="orcid"');
+        xassert_str_contains($t, 'value="0000-0002-1825-0097"');
+    }
+
+    function test_orcid_invalid() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $qreq->orcid = "0000-0002-1825-0098";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert(!$us->execute_update());
+        xassert($us->has_error_at("orcid"));
+        xassert_eqq($this->conf->fresh_user_by_email("estrin@usc.edu")->orcid(), "0000-0002-1825-0097");
+    }
+
+    function test_orcid_unchanged_keeps_decoration() {
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        $u->set_prop("orcid", "0000-0002-1825-0097?");
+        $u->save_prop();
+
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $qreq->orcid = "0000-0002-1825-0097";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert(!isset($us->diffs["orcid"]));
+
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->decorated_orcid(), "0000-0002-1825-0097?");
+        xassert_eqq($u->confirmed_orcid(), "");
+    }
+
+    function test_orcid_replace_and_clear() {
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $qreq->orcid = "0000-0001-5109-3700";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        $u = $this->conf->fresh_user_by_email("estrin@usc.edu");
+        xassert_eqq($u->decorated_orcid(), "0000-0001-5109-3700");
+        xassert_eqq($u->confirmed_orcid(), "0000-0001-5109-3700");
+
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $qreq->orcid = "";
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update());
+        xassert(isset($us->diffs["orcid"]));
+        xassert_eqq($this->conf->fetch_value("select orcid from ContactInfo where email='estrin@usc.edu'"), null);
+        if (($cdbu = $this->conf->fresh_cdb_user_by_email("estrin@usc.edu"))) {
+            xassert_eqq($cdbu->orcid(), "");
+        }
+    }
+
+    function test_orcid_csv() {
+        $this->delete_users("csvt18%");
+
+        // new accounts get a cleaned ORCID iD
+        $r = $this->csv_save("email,orcid\ncsvt18@_.com,https://orcid.org/0000-0002-1694-233x\n");
+        xassert_eqq($r, ["csvt18@_.com"]);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt18@_.com")->orcid(), "0000-0002-1694-233X");
+
+        // invalid ORCID iDs fail the row
+        $r = $this->csv_save("email,orcid\ncsvt18@_.com,0000-0002-1694-2330\n");
+        xassert_eqq($r, [null]);
+        xassert_str_contains($this->csv_feedback[0], "ORCID");
+
+        // re-uploading a users download with a decorated ORCID iD is OK
+        $u = $this->conf->fresh_user_by_email("csvt18@_.com");
+        $u->set_prop("orcid", "0000-0002-1694-233X?");
+        $u->save_prop();
+        $r = $this->csv_save("email,orcid\ncsvt18@_.com,0000-0002-1694-233X?\n");
+        xassert_eqq($r, ["csvt18@_.com"]);
+        xassert_eqq($this->csv_diffs[0], []);
+        xassert_eqq($this->conf->fresh_user_by_email("csvt18@_.com")->decorated_orcid(), "0000-0002-1694-233X?");
+
+        // a dash clears
+        $this->csv_save("email,orcid\ncsvt18@_.com,-\n");
+        xassert_eqq($this->conf->fresh_user_by_email("csvt18@_.com")->prop("orcid"), null);
+    }
+
     function finalize() {
         $this->delete_users("csvt%");
+        $this->conf->qe("update ContactInfo set orcid=null where email='estrin@usc.edu'");
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
         $this->delete_secondary(false, "yvan@usc.edu");
@@ -2180,6 +2300,7 @@ class UserStatus_Tester {
             $this->delete_secondary(true, "rajuu@watson.edu");
             Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~? where email?a", Contact::CF_PRIMARY, $emails);
             Dbl::qe($cdb, "delete from ContactPrimary where contactId in (select contactDbId from ContactInfo where email?a)", $emails);
+            Dbl::qe($cdb, "update ContactInfo set orcid=null where email='estrin@usc.edu'");
         }
     }
 
