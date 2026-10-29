@@ -41,6 +41,9 @@ class Session_API {
         // independent, so partial application is correct, and lenient parsing
         // keeps clients and servers of different versions interoperable.
         $qreq->open_session();
+        if (strlen($v) > 16384) {
+            return true;
+        }
         $view = $uldisplay = [];
         preg_match_all('/(?:\A|\s)((?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=\s]*+)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
@@ -104,11 +107,12 @@ class Session_API {
         } else {
             $pl->parse_view($view, ViewCommand::ORIGIN_MAX);
         }
-        $vd = $pl->unparse_view(ViewCommand::ORIGIN_REPORT, false);
-        if (!empty($vd)) {
-            $qreq->set_csession("{$report}display", join(" ", $vd));
-        } else {
+        $vd = join(" ", $pl->unparse_view(ViewCommand::ORIGIN_REPORT, false));
+        if ($vd === "") {
             $qreq->unset_csession("{$report}display");
+        } else if (strlen($vd) <= 16384) {
+            // every list parses the saved view, so keep it short
+            $qreq->set_csession("{$report}display", $vd);
         }
     }
 

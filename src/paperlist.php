@@ -257,6 +257,9 @@ final class PaperList extends MessageSet {
     const VIEWORIGIN_REQUEST = 4;
     const VIEWORIGIN_MAX = 5;
 
+    // Each comparison consults sorters until one breaks the tie
+    const MAX_SORTERS = 32;
+
     /** @var ?string */
     private $_table_id;
     /** @var ?string */
@@ -725,19 +728,34 @@ final class PaperList extends MessageSet {
         usort($vcs, function ($a, $b) {
             return $a->origin() <=> $b->origin();
         });
-        $vm = [];
-        foreach ($vcs as $vc) {
-            if ($vc->origin() > $max_origin) {
-                break;
+        // scan for the last `hide:all` to avoid quadratic behavior
+        $last_hide_all = -1;
+        $hide_all_origin = ViewCommand::ORIGIN_REPORT;
+        foreach ($vcs as $i => $vc) {
+            if ($vc->origin() <= $max_origin
+                && $vc->keyword === "all"
+                && $vc->is_hide()) {
+                $last_hide_all = $i;
+                $hide_all_origin = $vc->origin();
             }
-            self::_fold_view($vm, $vc);
+        }
+        // construct actual list
+        $vm = [];
+        $norder = 0;
+        foreach ($vcs as $i => $vc) {
+            if ($vc->origin() <= $max_origin
+                && ($vc->keyword !== "all" || $i === $last_hide_all)) {
+                self::_fold_view($vm, $vc, $norder, $hide_all_origin);
+            }
         }
         return $vm;
     }
 
     /** @param array<string,ViewCommand> &$vm
-     * @param ViewCommand $vc canonical command */
-    static private function _fold_view(&$vm, ViewCommand $vc) {
+     * @param ViewCommand $vc canonical command
+     * @param int &$norder last display order assigned
+     * @param int $hide_all_origin */
+    static private function _fold_view(&$vm, ViewCommand $vc, &$norder, $hide_all_origin) {
         $k = $vc->keyword;
         $origin = $vc->origin();
         $vis = $vc->flags & ViewCommand::FM_VISIBILITY;
@@ -754,6 +772,7 @@ final class PaperList extends MessageSet {
                     $m->order = null;
                 }
                 $vm["all"] = ViewCommand::make_visibility("all", false, $origin);
+                $norder = 0;
             }
             return;
         }
@@ -765,14 +784,11 @@ final class PaperList extends MessageSet {
 
         // at the `hide:all` origin, shown fields are displayed in order
         $m = ViewCommand::merge($vm[$k] ?? null, $vc);
-        $hide_all_origin = isset($vm["all"]) ? $vm["all"]->origin() : ViewCommand::ORIGIN_REPORT;
-        if ($vis === ViewCommand::F_HIDE && $origin === $hide_all_origin) {
-            $m->order = null;
-        } else if ($vis === ViewCommand::F_SHOW && $origin === $hide_all_origin
-                   && $m->order === null) {
-            $m->order = 1;
-            foreach ($vm as $mx) {
-                $m->order = max($m->order, ($mx->order ?? 0) + 1);
+        if ($origin === $hide_all_origin) {
+            if ($vis === ViewCommand::F_HIDE) {
+                $m->order = null;
+            } else if ($vis === ViewCommand::F_SHOW && $m->order === null) {
+                $m->order = ++$norder;
             }
         }
         $vm[$k] = $m;
@@ -781,12 +797,9 @@ final class PaperList extends MessageSet {
     /** @param PaperColumn $col
      * @param 0|1|2|3|4|5 $origin */
     private function _append_sortcol($col, $origin) {
-        $i = count($this->_sortcol);
-        while ($i > 0 && $this->_sort_origin[$i - 1] < $origin) {
-            --$i;
-        }
-        array_splice($this->_sortcol, $i, 0, [$col]);
-        array_splice($this->_sort_origin, $i, 0, [$origin]);
+        // `sorters()` orders by origin
+        $this->_sortcol[] = $col;
+        $this->_sort_origin[] = $origin;
     }
 
     /** @param ViewCommand $svc
@@ -1123,6 +1136,14 @@ final class PaperList extends MessageSet {
             $idcol = ($this->ensure_columns_by_name("id"))[0];
             $this->_append_sortcol($idcol, ViewCommand::ORIGIN_REPORT);
         }
+        // order by decreasing origin, then by order added (sorts are stable)
+        arsort($this->_sort_origin);
+        $sortcol = [];
+        foreach (array_keys($this->_sort_origin) as $i) {
+            $sortcol[] = $this->_sortcol[$i];
+        }
+        $this->_sortcol = array_slice($sortcol, 0, self::MAX_SORTERS);
+        $this->_sort_origin = array_slice(array_values($this->_sort_origin), 0, self::MAX_SORTERS);
         // default editable tag
         $this->_sort_etag = "";
         if ($this->_sortcol[0] instanceof Tag_PaperColumn
@@ -1610,7 +1631,7 @@ final class PaperList extends MessageSet {
             }
         }
 
-        // arrange by view_order, then insert unordered elements
+        // arrange by view_order
         usort($vcols1, function ($a, $b) {
             if ($a->as_row !== $b->as_row) {
                 return $a->as_row ? 1 : -1;
@@ -1618,14 +1639,29 @@ final class PaperList extends MessageSet {
             return $a->view_order <=> $b->view_order
                 ? : strnatcasecmp($a->name, $b->name);
         });
-        foreach ($vcols2 as $vc) {
-            $i1 = count($vcols1);
-            while ($i1 > 0 && self::vcolumn_order_compare($vc, $vcols1[$i1-1]) < 0) {
-                --$i1;
+        // set insertion positions for unordered columns: they are inserted
+        // after the *last* ordered element that they do not precede in
+        // default order
+        $vcols1_min = $vcols1;
+        for ($i1 = count($vcols1) - 2; $i1 >= 0; --$i1) {
+            if (self::vcolumn_order_compare($vcols1_min[$i1 + 1], $vcols1_min[$i1]) < 0) {
+                $vcols1_min[$i1] = $vcols1_min[$i1 + 1];
             }
-            array_splice($vcols1, $i1, 0, [$vc]);
         }
-        $this->_vcolumns = $vcols1;
+        // perform merge
+        usort($vcols2, "PaperList::vcolumn_order_compare");
+        $this->_vcolumns = [];
+        for ($i1 = $i2 = 0; $i1 < count($vcols1) || $i2 < count($vcols2); ) {
+            if ($i1 === count($vcols1)
+                || ($i2 !== count($vcols2)
+                    && self::vcolumn_order_compare($vcols2[$i2], $vcols1_min[$i1]) < 0)) {
+                $this->_vcolumns[] = $vcols2[$i2];
+                ++$i2;
+            } else {
+                $this->_vcolumns[] = $vcols1[$i1];
+                ++$i1;
+            }
+        }
 
         // analyze rows
         foreach ($this->_vcolumns as $f) {

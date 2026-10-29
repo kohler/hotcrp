@@ -17,6 +17,8 @@ class ViewCommand {
     public $sword;
     /** @var ?int */
     public $order;
+    /** @var bool */
+    private $_own_options = false;
 
     const ORIGIN_NONE = -1;
     const ORIGIN_REPORT = 0;
@@ -60,15 +62,24 @@ class ViewCommand {
     /** Return the result of applying `$b` after `$a`. If `$b` shows or hides,
      * its visibility and origin replace `$a`’s; otherwise `$a`’s are kept.
      * Options combine, with `$b`’s taking precedence. The result is a new
-     * object that has `$a`’s keyword and order.
+     * object that has `$a`’s keyword and order. It supersedes `$a`: if `$a`
+     * is itself a merge result, the result may take over `$a`’s option list.
      * @param ?ViewCommand $a
      * @param ViewCommand $b
      * @return ViewCommand */
     static function merge($a, $b) {
         // a null option in `$b` removes that option
         $vol = $b->view_options;
+        $own = true;
         if ($vol) {
-            $vol = $a && $a->view_options ? clone $a->view_options : new ViewOptionList;
+            // copy `$a`’s options only if another command might share them
+            if (!$a || !$a->view_options) {
+                $vol = new ViewOptionList;
+            } else if ($a->_own_options) {
+                $vol = $a->view_options;
+            } else {
+                $vol = clone $a->view_options;
+            }
             foreach ($b->view_options as $n => $x) {
                 if ($x === null) {
                     $vol->remove($n);
@@ -78,6 +89,7 @@ class ViewCommand {
             }
         } else if ($a) {
             $vol = $a->view_options;
+            $own = $a->_own_options;
         }
         $fm = self::FM_VISIBILITY | self::FM_ORIGIN;
         if (($b->flags & self::FM_VISIBILITY) !== 0) {
@@ -88,6 +100,7 @@ class ViewCommand {
         $vc = new ViewCommand($flags, $a ? $a->keyword : $b->keyword, $vol,
                               $b->sword ?? ($a ? $a->sword : null));
         $vc->order = $a ? $a->order : null;
+        $vc->_own_options = $own;
         return $vc;
     }
 

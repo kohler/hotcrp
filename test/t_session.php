@@ -58,6 +58,26 @@ class Session_Tester {
         xassert_str_contains($uld, " collab ");
     }
 
+    function test_change_session_view_length_limit() {
+        // an oversized request is ignored, and an oversized view is not saved
+        $qreq = $this->make_qreq();
+        $v = [];
+        for ($i = 0; $i !== 2000; ++$i) {
+            $v[] = "pldisplay.?c{$i}=0";
+        }
+        Session_API::change_session($qreq, "pldisplay.abstract=0");
+        Session_API::change_session($qreq, join(" ", $v));
+        xassert_eqq($qreq->csession("pldisplay"), "show:abstract");
+        foreach (array_chunk($v, 500) as $vx) {
+            Session_API::change_session($qreq, join(" ", $vx));
+        }
+        xassert_str_contains($qreq->csession("pldisplay"), " show:?c999");
+        xassert_not_str_contains($qreq->csession("pldisplay"), " show:?c1999");
+        xassert_le(strlen($qreq->csession("pldisplay")), 16384);
+        Session_API::change_session($qreq, "pldisplay.abstract=1");
+        xassert_not_str_contains($qreq->csession("pldisplay"), "show:abstract");
+    }
+
     function test_change_session_ulscoresort() {
         $qreq = $this->make_qreq();
         Session_API::change_session($qreq, "ulscoresort=variance");

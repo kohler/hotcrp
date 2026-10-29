@@ -82,6 +82,7 @@ class PaperListView_Tester {
             "default then session" => ["pl", "", [["parse", "show:lead hide:revstat", $D], ["session", "show:abstract hide:lead"]]],
             "hide:all session" => ["pl", "", [["session", "hide:all show:title show:abstract show:id"]]],
             "hide:all then search show" => ["pl", "show:lead", [["session", "hide:all show:title show:abstract"]]],
+            "hide:all then unordered" => ["pl", "show:shepherd show:revstat show:lead show:authors show:id", [["session", "hide:all show:status show:abstract show:title"]]],
             "search anonau/aufull" => ["pl", "show:aufull", []],
             "session aufull" => ["pl", "", [["session", "show:aufull"]]],
             "options: session vs search" => ["pl", "show:authors", [["session", "show:authors[full]"]]],
@@ -107,6 +108,7 @@ class PaperListView_Tester {
         'default then session' => ["show:sel show:id show:title show:abstract show:status show:revtype","show:abstract hide:revstat","show:abstract hide:lead","","sel id title status revtype abstract"],
         'hide:all session' => ["hide:all show:title show:abstract show:id show:sel","hide:all show:title show:abstract show:id","hide:all show:title show:abstract show:id","","sel title id abstract"],
         'hide:all then search show' => ["hide:all show:title show:abstract show:sel show:lead","hide:all show:title show:abstract show:lead","hide:all show:title show:abstract show:lead","show:lead","sel title abstract lead"],
+        'hide:all then unordered' => ["hide:all show:status show:abstract show:title show:sel show:id show:authors show:revstat show:lead show:shepherd","hide:all show:status show:abstract show:title show:id show:authors show:revstat show:lead show:shepherd","hide:all show:status show:abstract show:title show:id show:authors show:revstat show:lead show:shepherd","show:id show:authors show:revstat show:lead show:shepherd","sel id status title revstat abstract authors[anon] lead shepherd"],
         'search anonau/aufull' => ["show:sel show:id show:title show:authors show:aufull show:status show:revtype show:revstat","show:authors show:aufull","show:authors show:aufull","show:authors show:aufull","sel id title status revtype revstat authors[full,anon]"],
         'session aufull' => ["show:sel show:id show:title show:aufull hide:authors show:status show:revtype show:revstat","show:aufull hide:authors","show:aufull hide:authors","","sel id title status revtype revstat"],
         'options: session vs search' => ["show:sel show:id show:title show:authors show:aufull show:status show:revtype show:revstat","show:authors show:aufull","show:authors show:aufull","","sel id title status revtype revstat authors[full,anon]"],
@@ -273,6 +275,32 @@ class PaperListView_Tester {
         xassert_str_contains(json_encode($j->message_list ?? [], JSON_UNESCAPED_UNICODE), "‘nosuchfield’ cannot be sorted");
     }
 
+    function test_merge_option_lists() {
+        // merging never modifies an original command’s option list, but
+        // does not copy the accumulated options for every command either
+        $a = new ViewCommand(ViewCommand::F_SHOW, "x", (new ViewOptionList)->add("a", true));
+        $b = new ViewCommand(0, "x", (new ViewOptionList)->add("b", true));
+        $c = new ViewCommand(0, "x", (new ViewOptionList)->add("c", true)->add("a", null));
+        $hide = ViewCommand::make_visibility("x", false);
+        foreach ([ViewCommand::merge(null, $a), ViewCommand::merge($a, $b),
+                  ViewCommand::merge(ViewCommand::merge($a, $hide), $b)] as $m) {
+            $vol = $m->view_options;
+            xassert($vol !== $a->view_options && $vol !== $b->view_options);
+            $m = ViewCommand::merge(ViewCommand::merge($m, $b), $hide);
+            xassert($m->view_options === $vol);
+            $m = ViewCommand::merge($m, $c);
+            xassert($m->view_options === $vol);
+            xassert_eqq($m->unparse(), "hide:x[b,c]");
+        }
+        xassert_eqq($a->unparse(), "show:x[a]");
+        xassert_eqq($b->unparse(), "view:x[b]");
+
+        $qreq = (new Qrequest("POST", []))->set_user($this->u_chair)
+            ->set_qsession(new MemoryQsession)->approve_token();
+        Session_API::change_session($qreq, "pldisplay.?x[a,b] pldisplay.?x[c] pldisplay.?x=1 pldisplay.?x[-a]");
+        xassert_eqq($qreq->csession("pldisplay"), "show:?x[b,c,a=no]");
+    }
+
     function test_session_changes() {
         $qreq = (new Qrequest("POST", []))->set_user($this->u_chair)
             ->set_qsession(new MemoryQsession)->approve_token();
@@ -302,6 +330,36 @@ class PaperListView_Tester {
             Session_API::change_session($qreq, $v);
             xassert_eqq($qreq->csession("pldisplay"), $want);
         }
+    }
+
+    function test_repeated_hide_all() {
+        // the last `hide:all` restarts display order
+        $pl = $this->make_list("pl", "", [["session", "hide:all show:abstract show:id hide:all hide:all show:title hide:title show:status show:title show:id"]]);
+        xassert_eqq(self::summary($pl), ["hide:all show:status show:title show:id show:sel", "hide:all show:status show:title show:id", "hide:all show:status show:title show:id", "", "sel status title id"]);
+        $pl = $this->make_list("pl", "hide:all show:title show:id", [["session", "hide:all show:abstract show:id"]]);
+        xassert_eqq(self::summary($pl), ["hide:all show:title show:id show:sel", "hide:all show:title show:id", "hide:all show:title show:id", "hide:all show:title show:id", "sel title id"]);
+    }
+
+    function test_long_view_time() {
+        // folding a view takes time roughly linear in its length, with or
+        // without `hide:all`
+        $n = 4000;
+        $shows = [];
+        for ($i = 0; $i !== $n; ++$i) {
+            $shows[] = "show:?c{$i}";
+        }
+        $shows = join(" ", $shows);
+        $t0 = microtime(true);
+        $pl = $this->make_list("pl", "", [["session", "hide:alk {$shows}"]]);
+        xassert_eqq(count($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false)), $n);
+        $tw = microtime(true) - $t0;
+
+        $t0 = microtime(true);
+        $pl = $this->make_list("pl", "", [["session", "hide:all {$shows}"]]);
+        xassert_eqq(join(" ", $pl->unparse_view(ViewCommand::ORIGIN_REPORT, false)), "hide:all {$shows}");
+        $pl = $this->make_list("pl", "", [["session", $shows . str_repeat(" hide:all", $n)]]);
+        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REPORT, false), ["hide:all"]);
+        xassert_lt(microtime(true) - $t0, max(1.0, 10 * $tw));
     }
 
     function test_session_options_combine() {
@@ -399,6 +457,40 @@ class PaperListView_Tester {
         $this->conf->save_refresh_setting("options", $oldv, $oldd);
     }
 
+    /** Sorters are ordered by decreasing origin, then in the order added. */
+    function test_sorter_origin_order() {
+        $srch = new PaperSearch($this->u_chair, ["q" => "1-5 sort:status sort:-id", "t" => "s", "sort" => "title"]);
+        $pl = new PaperList("pl", $srch, ["sort" => true], $this->qreq());
+        $pl->parse_view("sort:-status", ViewCommand::ORIGIN_DEFAULT_DISPLAY);
+        $pl->parse_view("sort:-title sort:status", ViewCommand::ORIGIN_MAX);
+        $pl->parse_view("sort:id sort:title", ViewCommand::ORIGIN_SESSION);
+        $pl->parse_view("sort:title", ViewCommand::ORIGIN_MAX);
+        $pl->parse_view("sort:id", ViewCommand::ORIGIN_DEFAULT_DISPLAY);
+        $x = [];
+        foreach ($pl->sorters() as $s) {
+            $x[] = ($s->sort_descending ? "-" : "") . $s->name;
+        }
+        xassert_eqq(join(" ", $x), "-title status title title status -id id title -status id");
+        xassert_eqq($pl->unparse_view(ViewCommand::ORIGIN_REQUEST, true), ["sort:title[sort=desc]", "sort:status", "sort:title"]);
+
+        // many sorters added above an existing sorter
+        $pl = new PaperList("pl", $srch, ["sort" => true], $this->qreq());
+        $pl->parse_view(str_repeat("sort:-id ", 20) . "sort:id", ViewCommand::ORIGIN_MAX);
+        $x = [];
+        foreach ($pl->sorters() as $s) {
+            $x[] = ($s->sort_descending ? "-" : "") . $s->name;
+        }
+        xassert_eqq(count($x), 24);
+        xassert_eqq(array_slice($x, 19), ["-id", "id", "title", "status", "-id"]);
+        xassert_eqq($pl->paper_ids(), [5, 4, 3, 2, 1]);
+
+        // the number of sorters is limited
+        $pl = new PaperList("pl", $srch, ["sort" => true], $this->qreq());
+        $pl->parse_view(str_repeat("sort:-id ", 100) . "sort:id", ViewCommand::ORIGIN_MAX);
+        xassert_eqq(count($pl->sorters()), PaperList::MAX_SORTERS);
+        xassert_eqq($pl->paper_ids(), [5, 4, 3, 2, 1]);
+    }
+
     /** Text and JSON output of a formula column obey the list's conflict
      * override. */
     function test_formula_text_obeys_force() {
@@ -441,6 +533,32 @@ class PaperListView_Tester {
         xassert_assign($chair, "paper,action,email\n{$pid},clearconflict,{$chair->email}\n", true);
         $this->conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $rev->contactId);
         $this->conf->save_refresh_setting("rev_open", $old_rev_open);
+    }
+
+    /** @param list<string> $names
+     * @return array{float,list<string>} */
+    private function time_unordered_columns($names) {
+        $pl = new PaperList("pl", new PaperSearch($this->u_chair, "1"), ["sort" => true]);
+        $pl->parse_view(join(" ", $names), ViewCommand::ORIGIN_MAX);
+        $tm0 = microtime(true);
+        $pl->prepare_table_view();
+        $elapsed = microtime(true) - $tm0;
+        return [$elapsed, array_map(function ($f) { return $f->name; }, $pl->vcolumns())];
+    }
+
+    function test_many_unordered_columns_linear() {
+        // placing unordered columns in display order must not be quadratic
+        // in the number of columns, whatever order they are requested in
+        $names = [];
+        for ($i = 0; $i < 3000; ++$i) {
+            $names[] = "#t" . (10000 + $i);
+        }
+        list($t_asc, $cols_asc) = $this->time_unordered_columns($names);
+        list($t_desc, $cols_desc) = $this->time_unordered_columns(array_reverse($names));
+        xassert_eqq(count($cols_asc), 3006);
+        xassert_eqq($cols_desc, $cols_asc);
+        xassert_lt($t_desc, 2 * $t_asc + 0.1);
+        $this->conf->invalidate_caches("tags");
     }
 
     function test_chair_default() {
