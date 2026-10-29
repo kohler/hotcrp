@@ -1218,8 +1218,8 @@ class Upload_API {
         }
 
         $blob = $qreq->file("blob");
-        if (!$blob && $qreq->blob !== null) {
-            $blob = QrequestFile::make_string($qreq->blob);
+        if (!$blob && ($bstr = $qreq->get_b("blob")) !== null) {
+            $blob = QrequestFile::make_string($bstr);
         }
         if ($blob && !$this->_capd->hash) {
             if ($blob->size > $this->max_blob) {

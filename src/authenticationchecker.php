@@ -301,7 +301,7 @@ class AuthenticationChecker {
         if (!isset($this->qreq->password)) {
             return JsonResult::make_missing_error("password");
         }
-        $info = $this->user->check_password_info($this->qreq->password);
+        $info = $this->user->check_password_info($this->qreq->get_b("password"));
         foreach ($info["usec"] ?? [] as $use) {
             $use->set_reason(UserSecurityEvent::REASON_REAUTH)
                 ->store($this->qreq);

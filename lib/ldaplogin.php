@@ -34,10 +34,10 @@ class LDAPLogin {
         $qemail = addcslashes((string) $qreq->email, ',=+<>#;\"');
         $dn = $m[3] . $qemail . $m[4];
 
-        $success = @ldap_bind($ldapc, $dn, $qreq->password);
+        $success = @ldap_bind($ldapc, $dn, $qreq->get_b("password"));
         if (!$success && @ldap_errno($ldapc) == 2) {
             @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 2);
-            $success = @ldap_bind($ldapc, $dn, $qreq->password);
+            $success = @ldap_bind($ldapc, $dn, $qreq->get_b("password"));
         }
         if (!$success) {
             $lerrno = ldap_errno($ldapc);

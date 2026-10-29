@@ -50,8 +50,8 @@ class Security_UserInfo {
     }
 
     function parse_qreq_new_password(UserStatus $us) {
-        $pw = trim($us->qreq->upassword ?? "");
-        $pw2 = trim($us->qreq->upassword2 ?? "");
+        $pw = trim($us->qreq->get_b("upassword") ?? "");
+        $pw2 = trim($us->qreq->get_b("upassword2") ?? "");
         $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
         if ($pw === "" && $pw2 === "") {
             return;

@@ -628,8 +628,8 @@ class Signin_Page {
         if (!$info["ok"]) {
             return $info;
         }
-        $p1 = (string) $qreq->password;
-        $p2 = (string) $qreq->password2;
+        $p1 = (string) $qreq->get_b("password");
+        $p2 = (string) $qreq->get_b("password2");
         if ($p1 === "") {
             if ($p2 !== "" || $qreq->autopassword) {
                 $this->ms()->error_at("password", "<0>Password required");

@@ -64,7 +64,7 @@ class LoginHelper {
             if (strpos($qreq->email, "@") === false
                 && strpos($qreq->email, "%40") !== false) {
                 foreach ($qreq->keys() as $k) {
-                    $qreq[$k] = rawurldecode($qreq[$k]);
+                    $qreq->set_b($k, rawurldecode($qreq->get_b($k)));
                 }
             }
             $qreq->email = simplify_whitespace($qreq->email);
@@ -121,7 +121,7 @@ class LoginHelper {
             if ($lt) {
                 $info = self::check_external_login($user);
             } else {
-                $info = $user->check_password_info(trim((string) $qreq->password));
+                $info = $user->check_password_info(trim((string) $qreq->get_b("password")));
             }
         }
 

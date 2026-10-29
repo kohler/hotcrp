@@ -475,6 +475,24 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         unset($this->_a[$name]);
         return $this;
     }
+    /** Return the raw value of request parameter `$name`, which might not
+     * be valid UTF-8. Use this for binary data, such as uploaded content and
+     * passwords.
+     * @param string $name
+     * @return ?string */
+    function get_b($name) {
+        return $this->_v[$name] ?? null;
+    }
+    /** Set request parameter `$name` to `$value`, which might not be valid
+     * UTF-8.
+     * @param string $name
+     * @param string $value
+     * @return $this */
+    function set_b($name, $value) {
+        $this->_v[$name] = $value;
+        unset($this->_a[$name]);
+        return $this;
+    }
     /** @param string $name
      * @return bool */
     function has_a($name) {

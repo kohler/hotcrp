@@ -1065,6 +1065,27 @@ class UserStatus_Tester {
         xassert($us->user->check_password($newpw));
     }
 
+    function test_edit_own_password_binary() {
+        // new passwords must be UTF-8...
+        list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
+        $newpw = "m\xE4ksdfnqw!";
+        $qreq->set_b("upassword", $newpw)->set_b("upassword2", $newpw);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->set_user($u);
+        $us->request_group("");
+        xassert_eqq($us->jval->new_password ?? null, null);
+        xassert_str_contains($us->full_feedback_text(), "Invalid UTF-8");
+
+        // ...but older passwords might not be, and are checked as raw bytes
+        $u->change_password($newpw);
+        $qreq = TestQreq::post(["email" => "estrin@usc.edu", "password" => $newpw])
+            ->set_user(Contact::make($this->conf))->set_page("signin");
+        $info = LoginHelper::login_info($this->conf, $qreq);
+        xassert_eqq($info["ok"], true);
+        xassert(!$this->conf->fresh_user_by_email("estrin@usc.edu")->check_password("m\u{E4}ksdfnqw!"));
+        $u->change_password("maksdfnqw");
+    }
+
     function test_edit_own_password_validation() {
         $cases = [
             ["ééééé", "Password too short"],

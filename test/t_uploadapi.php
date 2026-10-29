@@ -153,6 +153,27 @@ In thee!
             ->set_file_content("blob", $content);
     }
 
+    function test_upload_blob_parameter() {
+        // a `blob` parameter, rather than file, is raw bytes
+        $user = $this->conf->checked_user_by_email("marina@poema.ru");
+        $content = "\xFF\xFEbinary\x00\x80\xC0 content\n";
+        $qreq = (new Qrequest("POST", [
+                "start" => 1,
+                "temp" => 0,
+                "size" => strlen($content),
+                "filename" => "where.txt",
+                "mimetype" => "text/plain",
+                "offset" => 0,
+                "finish" => 1
+            ]))->approve_token()
+            ->set_b("blob", $content);
+        $j = call_api("=upload", $user, $qreq, null);
+        xassert_eqq($j->ok, true);
+        $hash = "sha2-" . hash("sha256", $content);
+        xassert_eqq($j->hash, $hash);
+        xassert_eqq(file_get_contents("{$this->tmpdir}{$hash}.txt"), $content);
+    }
+
     /** Readiness must not wait for S3.
      *
      * When a client uploads faster than parts reach S3, another request holds
