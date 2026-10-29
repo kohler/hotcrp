@@ -1124,7 +1124,14 @@ class Conf {
             fwrite(STDERR, "{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
         } else {
             error_log("{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
-            $this->error_msg("<5><p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+            // query text and error can contain data the user cannot view
+            if (Contact::$main_user !== null
+                && Contact::$main_user->conf === $this
+                && Contact::$main_user->privChair) {
+                $this->error_msg("<5><p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+            } else {
+                $this->error_msg("<0>Database error");
+            }
         }
     }
 
