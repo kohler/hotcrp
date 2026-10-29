@@ -28,7 +28,10 @@ final class DocumentImporter_Analysis {
     function __construct($docj, DocumentImporter $di) {
         // extract mimetype
         if (isset($docj->mimetype) && is_string($docj->mimetype)) {
-            $this->mimetype = $docj->mimetype;
+            $this->mimetype = Mimetype::sanitize($docj->mimetype);
+            if ($this->mimetype === null && $docj->mimetype !== "") {
+                $di->warning("<0>Invalid `mimetype` ignored");
+            }
         }
 
         // extract filename

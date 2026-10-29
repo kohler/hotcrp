@@ -273,10 +273,7 @@ class Db_Batch {
             }
 
             if ($this->json) {
-                if (($j = json_encode_db($row)) === false) {
-                    $j = self::json_encode($row);
-                }
-                echo ($n ? $this->json_sep : $this->json_start), $j;
+                echo ($n ? $this->json_sep : $this->json_start), self::json_encode($row);
             } else {
                 if ($this->totals !== null) {
                     echo ",";

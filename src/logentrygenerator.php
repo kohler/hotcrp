@@ -124,6 +124,9 @@ class LogEntryGenerator {
         } else {
             $ex = [];
             foreach ($matchers as $m) {
+                if (!is_valid_utf8($m)) { // `rlike` rejects invalid UTF-8
+                    $m = UnicodeHelper::utf8_replace_invalid($m);
+                }
                 $t = addcslashes($m, '^$.*+?|(){}[]\\');
                 $ex[] = str_replace('\\*', ".*", $t);
             }

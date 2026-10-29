@@ -69,6 +69,13 @@ class Mimetype_Tester {
         xassert_eqq(Mimetype::type("APPLICATION/OCTET-stream-FOO; crap=barf"), "application/octet-stream-foo");
     }
 
+    function test_base() {
+        xassert_eqq(Mimetype::base("Text/Plain"), "text/plain");
+        xassert_eqq(Mimetype::base("text/plain; charset=utf-8"), "text/plain");
+        xassert_eqq(Mimetype::base("text/plain ; charset=utf-8"), "text/plain");
+        xassert_eqq(Mimetype::base("text/plain x"), "text/plain");
+    }
+
     function test_textual() {
         xassert_eqq(Mimetype::textual("Text/Fart-Stream"), true);
         xassert_eqq(Mimetype::textual("application/json"), true);

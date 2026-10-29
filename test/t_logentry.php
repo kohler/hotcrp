@@ -304,6 +304,19 @@ class LogEntry_Tester {
         $conf->qe("delete from ActionLog where logId>?", $maxlog);
     }
 
+    function test_action_matchers_invalid_utf8() {
+        $conf = $this->conf;
+        $maxlog = $conf->fetch_ivalue("select max(logId) from ActionLog");
+        $conf->log_for($this->u_chair, $this->u_chair, "Entry utf8");
+        $nerrors = Dbl::$nerrors;
+        $leg = (new LogEntryGenerator($this->u_chair, 50))->set_action_matchers(["\xFF"]);
+        xassert_eqq($leg->page_rows(1), []);
+        $leg->set_action_matchers(["\xFF", "utf8"]);
+        xassert_eqq(count($leg->page_rows(1)), 1);
+        xassert_eqq(Dbl::$nerrors, $nerrors);
+        $conf->qe("delete from ActionLog where logId>?", $maxlog);
+    }
+
     function test_csv_role_unlisted_pc() {
         $conf = $this->conf;
         $email = "unlisted-log@_.com";

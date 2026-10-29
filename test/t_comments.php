@@ -492,6 +492,22 @@ class Comments_Tester {
         xassert(!$cmt->has_attachments());
     }
 
+    // An attachment described in JSON must have its MIME type sanitized like
+    // a form upload; a stored non-UTF-8 type makes json_encode fail for the
+    // whole comment list.
+    function test_json_attachment_mimetype_sanitized() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        foreach (["a/\xFF", "x y", "text/html\r\nx-a:b"] as $type) {
+            $qreq = new Qrequest("POST", ["c" => "new", "json" => '{"text":"Hello","docs":[{"content_file":"notes"}]}']);
+            $qreq->approve_token();
+            $qreq->set_file_content("notes", "some notes, some notes", "notes.bin", $type);
+            $j = call_api("=comment", $this->u_chair, $qreq, $paper1);
+            xassert($j->ok);
+            xassert_eqq($j->comment->docs[0]->mimetype ?? null, "text/plain");
+            xassert(json_encode($j) !== false);
+        }
+    }
+
     // A PC-only comment’s attachment must not be reachable by requesting it
     // under a different document type. The /api/document existence oracle came
     // from PaperInfo::document materialising the DTYPE_COMMENT row for a dt=0

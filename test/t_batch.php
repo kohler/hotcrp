@@ -319,6 +319,17 @@ class Batch_Tester {
         fclose($sp[0]);
     }
 
+    function test_db_json_binary() {
+        // binary values that are not UTF-8 are output in base64
+        global $Opt;
+        $db = new Db_Batch(Dbl::parse_connection_params($Opt), "query", [
+            "json" => false, "_" => ["select x'FF41' bin, 'å' txt"]
+        ]);
+        ob_start();
+        xassert_eqq($db->run(), 0);
+        xassert_eqq(ob_get_clean(), "[\n {\"bin\":\"base64:/0E=\",\"txt\":\"å\"}\n]\n");
+    }
+
     /** @param string $output */
     private function run_schema_backup($output) {
         global $Opt;

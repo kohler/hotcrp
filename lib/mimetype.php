@@ -165,7 +165,7 @@ class Mimetype {
         $semi = strpos($type, ";");
         if ($space === false && $semi === false) {
             return strtolower($type);
-        } else if ($space === false || $semi < $space) {
+        } else if ($space === false || ($semi !== false && $semi < $space)) {
             return strtolower(substr($type, 0, $semi));
         }
         return strtolower(substr($type, 0, $space));
