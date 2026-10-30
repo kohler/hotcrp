@@ -114,7 +114,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?((?:[-A-Za-z0-9_]|\.(?=[-A-Za-z0-9_]*+[.\/]))*+)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*+(?:\.[-A-Za-z0-9_]*+(?=[.\/]))*+)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
