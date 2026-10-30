@@ -228,6 +228,24 @@ class Abbreviation_Tester {
         xassert_eqq($am->find_entry_keyword($e, AbbreviationMatcher::KW_CAMEL), "ACMCamCas");
     }
 
+    function test_keyword_number_periods() {
+        $am = new AbbreviationMatcher;
+        $e1 = $am->add_phrase("D1. PDF paper", 1);
+        $e2 = $am->add_phrase("Appendix 2.", 2);
+        $e3 = $am->add_phrase("3. Supplement", 3);
+        $e4 = $am->add_phrase("Paper v1.5 slides", 4);
+        xassert_eqq($am->find_entry_keyword($e1, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE), "d_1_pdf_paper");
+        xassert_eqq($am->find_entry_keyword($e1, AbbreviationMatcher::KW_DASH | AbbreviationMatcher::KW_FULLPHRASE), "d-1-pdf-paper");
+        xassert_eqq($am->find_entry_keyword($e1, AbbreviationMatcher::KW_CAMEL), "D1PDF");
+        xassert_eqq($am->find_entry_keyword($e2, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE), "appendix_2");
+        xassert_eqq($am->find_entry_keyword($e3, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE), "3_supplement");
+        xassert_eqq($am->find_entry_keyword($e4, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE), "paper_v_1.5_slides");
+        xassert_eqq($am->find_all("d_1_pdf_paper"), [1]);
+        xassert_eqq($am->find_all("D1PDF"), [1]);
+        xassert_eqq($am->find_all("appendix_2"), [2]);
+        xassert_eqq($am->find_all("3_supplement"), [3]);
+    }
+
     function test_duplicates() {
         $am = new AbbreviationMatcher;
         $e1 = $am->add_phrase("Comments", 1);

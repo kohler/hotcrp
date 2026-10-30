@@ -614,8 +614,8 @@ class AbbreviationMatcher {
             && $this->test_all_matches($m[0], $e)) {
             $name = $m[0];
         }
-        // Translate to xtester
-        $name = self::make_xtester($name);
+        // Translate to xtester, dropping periods that end numbers
+        $name = preg_replace('/(?<=[0-9])\.+(?= |\z)/', "", self::make_xtester($name));
         $nsp = substr_count($name, " ");
         // Strip stop words when that preserves uniqueness
         if ($nsp > 2

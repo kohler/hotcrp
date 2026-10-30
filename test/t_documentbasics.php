@@ -736,6 +736,45 @@ class DocumentBasics_Tester {
         }
     }
 
+    function test_document_request_title_periods() {
+        $conf = $this->conf;
+        $user = $conf->checked_user_by_email("chair@_.com");
+        $saved_options = $conf->setting_data("options");
+        $conf->save_refresh_setting("options", 1, json_encode([
+            ["id" => 1, "name" => "D1. PDF paper", "type" => "pdf", "order" => 1],
+            ["id" => 2, "name" => "Appendix 2.", "type" => "pdf", "order" => 2],
+            ["id" => 3, "name" => "Paper v1.5 slides", "type" => "pdf", "order" => 3],
+            ["id" => 4, "name" => "Paper v1 notes", "type" => "pdf", "order" => 4]
+        ]));
+
+        try {
+            $prefix = $conf->download_prefix;
+            foreach ([1 => "d_1_pdf_paper", 2 => "appendix_2", 3 => "paper_v_1.5_slides", 4 => "paper_v_1_notes"] as $id => $dtname) {
+                xassert_eqq($conf->checked_option_by_id($id)->dtype_name(), $dtname);
+                $j = (new DocumentRequest(["doc" => "{$prefix}paper1-{$dtname}.pdf"], $user))->jsonSerialize();
+                xassert_eqq($j["pid"], 1);
+                xassert_eqq($j["dt"], $id);
+            }
+
+            // dots before the extension are part of the field name
+            foreach ([
+                ["paper1-d_1._pdf_paper.pdf", 1, null],
+                ["paper1-paper_v_1.5_slides/a.b.txt", 3, "a.b.txt"]
+            ] as $x) {
+                $j = (new DocumentRequest(["doc" => $x[0]], $user))->jsonSerialize();
+                xassert_eqq($j["pid"], 1);
+                xassert_eqq($j["dt"], $x[1]);
+                xassert_eqq($j["attachment"] ?? null, $x[2]);
+            }
+        } finally {
+            if ($saved_options === null) {
+                $conf->save_refresh_setting("options", null);
+            } else {
+                $conf->save_refresh_setting("options", 1, $saved_options);
+            }
+        }
+    }
+
     function test_document_request_path() {
         $user = $this->conf->checked_user_by_email("chair@_.com");
         $prefix = $this->conf->download_prefix;
@@ -769,6 +808,9 @@ class DocumentBasics_Tester {
             xassert_eqq($dr->response_code(), 404);
         }
         $dr = new DocumentRequest(["doc" => "a" . str_repeat("1", 80000) . "!/\n"], $user);
+        xassert($dr->has_error());
+        xassert_eqq($dr->response_code(), 404);
+        $dr = new DocumentRequest(["doc" => "paper1-" . str_repeat("a.", 40000) . "/\n"], $user);
         xassert($dr->has_error());
         xassert_eqq($dr->response_code(), 404);
         xassert_lt(microtime(true) - $t0, 1.0);
