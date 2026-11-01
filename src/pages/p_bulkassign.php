@@ -123,8 +123,10 @@ class BulkAssign_Page {
         if (isset($this->qreq->data)) {
             $content = $this->qreq->data;
         } else if (isset($this->qreq->data_source)
-                   && ($ds = $this->conf->docstore())) {
-            $content = $ds->open_tempfile($this->qreq->data_source, "bulkassign-%s.csv");
+                   && ($ds = $this->conf->docstore())
+                   && ($content = $ds->open_tempfile($this->qreq->data_source, "bulkassign-%s.csv"))) {
+            // `handle_upload` previewed this file through the same filter
+            UTF8ConversionFilter::append($content);
         } else {
             $content = null;
         }

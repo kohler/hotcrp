@@ -298,4 +298,30 @@ class AssignmentSet_Tester {
             xassert_assign($this->u_chair, "paper,action,tag\n{$pid},cleartag,hiddenconflict\n");
         }
     }
+
+    function test_bulkassign_applies_previewed_text() {
+        // a large upload is previewed through the UTF-8 conversion filter,
+        // so it must be applied through that filter too
+        $old_docstore = $this->conf->opt("docstore");
+        $this->conf->set_opt("docstore", tempdir() . "%h%x");
+        $this->conf->refresh_settings();
+        $p1 = $this->conf->checked_paper_by_id(1);
+        $old_lead = $p1->leadContactId;
+        try {
+            $name = "bulkassign-0123456789abcdef.csv";
+            file_put_contents($this->conf->docstore_tempdir() . $name,
+                "\xEF\xBB\xBFaction,paper,tag,assignment,user\ntag,1,bomtest,lead,{$this->u_mgbaker->email}\n");
+            $qreq = TestQreq::user_post($this->u_chair, ["saveassignment" => 1, "data_source" => $name, "p" => "1"]);
+            xassert((new BulkAssign_Page($this->u_chair, $qreq))->complete_assignment(null));
+            $this->conf->claim_saved_messages();
+            $p1 = $this->conf->checked_paper_by_id(1);
+            xassert($p1->has_tag("bomtest"));
+            xassert_eqq($p1->leadContactId, $old_lead);
+        } finally {
+            $this->conf->qe("update Paper set leadContactId=? where paperId=1", $old_lead);
+            xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag,bomtest\n");
+            $this->conf->set_opt("docstore", $old_docstore);
+            $this->conf->refresh_settings();
+        }
+    }
 }
