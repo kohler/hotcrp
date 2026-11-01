@@ -194,9 +194,9 @@ function convert_to_utf8($str) {
     } else if (($has_bom = str_starts_with($str, "\xEF\xBB\xBF"))) {
         $str = substr($str, 3);
     } else if (str_starts_with($str, "\xFE\xFF")) {
-        return UnicodeHelper::to_utf8("UTF-16LE", substr($str, 2));
-    } else if (str_starts_with($str, "\xFF\xFE")) {
         return UnicodeHelper::to_utf8("UTF-16BE", substr($str, 2));
+    } else if (str_starts_with($str, "\xFF\xFE")) {
+        return UnicodeHelper::to_utf8("UTF-16LE", substr($str, 2));
     } else {
         $n = min(strlen($str), 256);
         if (substr_count($str, "\0", 0, $n) >= min(5, $n / 2)) {

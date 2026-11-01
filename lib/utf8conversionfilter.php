@@ -57,10 +57,10 @@ class UTF8ConversionFilter extends php_user_filter {
             $this->state = self::UTF8;
         } else if (str_starts_with($this->buf, "\xFF\xFE")) {
             $this->buf = substr($this->buf, 2);
-            $this->state = self::UTF16BE;
+            $this->state = self::UTF16LE;
         } else if (str_starts_with($this->buf, "\xFE\xFF")) {
             $this->buf = substr($this->buf, 2);
-            $this->state = self::UTF16LE;
+            $this->state = self::UTF16BE;
         } else if (substr_count($this->buf, "\0", 0, min($len, 128)) >= min(5, $len / 2)) {
             $zp = strpos($this->buf, "\0");
             $this->state = $zp & 1 ? self::UTF16LE : self::UTF16BE;

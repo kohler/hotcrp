@@ -3990,12 +3990,12 @@ class Unit_Tester {
 
     function test_convert_to_utf8() {
         $this->one_test_convert_to_utf8("\xEF\xBB\xBFHello", "Hello");
-        $this->one_test_convert_to_utf8("\xFF\xFE\x00H\x00e\x00l\x00l\x00o", "Hello");
-        $this->one_test_convert_to_utf8("\xFE\xFFH\x00e\x00l\x00l\x00o\x00", "Hello");
+        $this->one_test_convert_to_utf8("\xFE\xFF\x00H\x00e\x00l\x00l\x00o", "Hello");
+        $this->one_test_convert_to_utf8("\xFF\xFEH\x00e\x00l\x00l\x00o\x00", "Hello");
         $this->one_test_convert_to_utf8("\x00H\x00e\x00l\x00l\x00o", "Hello");
         $this->one_test_convert_to_utf8("H\x00e\x00l\x00l\x00o\x00", "Hello");
-        $this->one_test_convert_to_utf8("\xFE\xFF\x3D\xD8\x00\xDE", "\xF0\x9F\x98\x80");
-        $this->one_test_convert_to_utf8("\xFF\xFE\xD8\x3D\xDE\x00", "\xF0\x9F\x98\x80");
+        $this->one_test_convert_to_utf8("\xFF\xFE\x3D\xD8\x00\xDE", "\xF0\x9F\x98\x80");
+        $this->one_test_convert_to_utf8("\xFE\xFF\xD8\x3D\xDE\x00", "\xF0\x9F\x98\x80");
         $this->one_test_convert_to_utf8("\xC2llo!", "Âllo!");
     }
 
@@ -4013,7 +4013,11 @@ class Unit_Tester {
             "Hello"
         );
         $this->one_test_streaming_convert_to_utf8(
-            ["\xFE\xFF", $spread_le, "H", "\x00e", "\x00l", "\x00l\x00o", "\x00"],
+            ["\xFF\xFE", $spread_le, "H", "\x00e", "\x00l", "\x00l\x00o", "\x00"],
+            $spread_half . "Hello"
+        );
+        $this->one_test_streaming_convert_to_utf8(
+            ["\xFE\xFF", $spread_be, "\x00", "H\x00e", "\x00l\x00l", "\x00o"],
             $spread_half . "Hello"
         );
     }
