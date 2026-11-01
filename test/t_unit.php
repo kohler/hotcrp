@@ -2785,6 +2785,80 @@ class Unit_Tester {
         xassert_eqq($q->path_component(2), null);
     }
 
+    function test_qrequest_binary() {
+        // values that are not UTF-8 read as converted text; `get_b` returns
+        // their raw bytes
+        $q = new Qrequest("POST", ["a" => "caf\xE9", "b" => "ok", "c" => "x\xFF"]);
+        $q->set_req("d", ["\xE9t\xE9", "f"]);
+        xassert_eqq($q->keys(), ["a", "b", "c", "d"]);
+        xassert_eqq(count($q), 4);
+        xassert(isset($q->a));
+        xassert(isset($q["a"]));
+        xassert($q->has("a"));
+        xassert($q->contains("a"));
+        xassert_eqq($q->get_b("a"), "caf\xE9");
+        xassert_eqq($q->a, "caf\u{E9}");
+        xassert_eqq($q["a"], "caf\u{E9}");
+        xassert_eqq($q->get("a"), "caf\u{E9}");
+        xassert_eqq($q->get_b("a"), "caf\xE9");
+        xassert_eqq($q->get_b("b"), "ok");
+        xassert_eqq($q->subset_as_array("c", "z"), ["c" => "x\u{FF}"]);
+        xassert_eqq($q->as_array(), ["a" => "caf\u{E9}", "b" => "ok", "c" => "x\u{FF}", "d" => Qrequest::ARRAY_MARKER]);
+        xassert_eqq($q->get_a("d"), ["\u{E9}t\u{E9}", "f"]);
+
+        $q->set_b("b", "\x80");
+        xassert(isset($q->b));
+        xassert_eqq($q->get_b("b"), "\x80");
+        $x = [];
+        foreach ($q as $k => $v) {
+            $x[$k] = $v;
+        }
+        xassert_eqq($x, ["a" => "caf\u{E9}", "b" => "\u{20AC}", "c" => "x\u{FF}", "d" => Qrequest::ARRAY_MARKER]);
+        $q->set("b", "plain");
+        xassert_eqq($q->get_b("b"), "plain");
+        unset($q->c);
+        xassert(!$q->has("c"));
+        xassert(!isset($q->c));
+        xassert_eqq($q->get_b("c"), null);
+        $q->set_b("e", "\xFF");
+        unset($q["e"]);
+        xassert_eqq($q->get_b("e"), null);
+        xassert_eqq($q->e, null);
+    }
+
+    function test_qrequest_nested_arrays() {
+        // request arrays must be flat
+        $q = new Qrequest("POST", []);
+        $q->set_req("a", ["x", "y"]);
+        $q->set_req("b", [["x"]]);
+        $q->set_req("c", ["x", ["y" => "z"]]);
+        $q->set_req("d", "plain");
+        $q->set_req("d", ["x", ["y"]]);
+        xassert_eqq($q->keys(), ["a", "d"]);
+        xassert_eqq($q->get_a("a"), ["x", "y"]);
+        xassert(!$q->has("b"));
+        xassert_eqq($q->get_a("b"), null);
+        xassert(!$q->has("c"));
+        xassert_eqq($q->d, "plain");
+        xassert_eqq($q->get_a("d"), null);
+    }
+
+    function test_qrequest_null_unsets() {
+        $q = new Qrequest("POST", ["a" => "1", "b" => null, "c" => "3", "d" => "4"]);
+        xassert_eqq($q->keys(), ["a", "c", "d"]);
+        xassert(!$q->has("b"));
+        $q->a = null;
+        $q["c"] = null;
+        $q->set("d", null);
+        $q->set_a("e", ["x"]);
+        $q->e = null;
+        xassert_eqq($q->keys(), []);
+        xassert_eqq(count($q), 0);
+        xassert(!isset($q->a));
+        xassert(!isset($q["c"]));
+        xassert_eqq($q->get_a("e"), null);
+    }
+
     function test_qrequest_mangle_key() {
         xassert_eqq(Qrequest::mangle_key("paper.pdf"), "paper_pdf");
         xassert_eqq(Qrequest::mangle_key("a b"), "a_b");

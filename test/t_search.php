@@ -1515,16 +1515,18 @@ class Search_Tester {
     }
 
     function test_selection_range_requires_integers() {
-        // request range pairs are strings; only integer pairs are ranges
+        // request arrays are flat, so requests cannot supply range pairs;
+        // only integer pairs are ranges
         $qreq = TestQreq::get()->set_req("p", [["1 or 1=1", "100"]]);
         $ssel = SearchSelection::make_papers($qreq, $this->u_root);
         xassert($ssel->is_empty());
         xassert_eqq($ssel->id_set()->sql_predicate("Paper.paperId"), "false");
         $qreq = TestQreq::get()->set_req("p", [["2", "4"], "7", ["a" => 1, "b" => 2]]);
+        xassert(!$qreq->has("p"));
         $ssel = SearchSelection::make_papers($qreq, $this->u_root);
-        xassert_eqq($ssel->selection(), [7]);
+        xassert($ssel->is_empty());
         $ssel = SearchSelection::make_raw($qreq);
-        xassert_eqq($ssel->selection(), [7]);
+        xassert($ssel->is_empty());
         $ssel = new SearchSelection([[2, 4], 7]);
         xassert_eqq($ssel->selection(), [2, 3, 4, 7]);
     }

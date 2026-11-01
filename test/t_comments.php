@@ -685,6 +685,24 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_comment_form_text_utf8() {
+        // invalid UTF-8 in stored text would break `json_encode` for every
+        // response that includes the comment
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "caf\xE9", "visibility" => "admin"], $paper1);
+        xassert($j->ok);
+        xassert_eqq($j->comment->text, "café");
+        $cid = $j->comment->cid;
+
+        $cmt = ($paper1->fetch_comments("commentId={$cid}"))[0];
+        xassert_eqq($cmt->raw_content(), "café");
+        xassert(json_encode($cmt->unparse_json($this->u_chair)) !== false);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => (string) $cid, "delete" => 1], $paper1);
+        xassert($j->ok);
+        MailChecker::clear();
+    }
+
     function test_comment_delete_flag() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Doomed comment", "visibility" => "rev"], $paper1);

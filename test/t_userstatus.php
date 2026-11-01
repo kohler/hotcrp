@@ -1096,7 +1096,7 @@ class UserStatus_Tester {
         ];
         foreach ($cases as $c) {
             list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu");
-            $qreq->upassword = $qreq->upassword2 = $c[0];
+            $qreq->set_b("upassword", $c[0])->set_b("upassword2", $c[0]);
             $us = (new UserStatus($u))->set_qreq($qreq);
             $us->start_update()->set_user($u);
             $us->request_group("");
@@ -2301,5 +2301,25 @@ class UserStatus_Tester {
             }
         }
         $this->delete_account($email);
+    }
+
+    function test_profile_form_converts_to_utf8() {
+        list($u, $qreq) = $this->make_qreq_for("raju@watson.ibm.com", [
+            "firstName" => "Raj\xFA", "affiliation" => "IBM\xFF"
+        ]);
+        $old_first = $u->firstName;
+        $old_aff = $u->affiliation;
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update();
+        $us->set_user($u);
+        $us->request_group("");
+        xassert($us->execute_update(), $us->full_feedback_text());
+        $u = $this->conf->fresh_user_by_email("raju@watson.ibm.com");
+        xassert_eqq($u->firstName, "Rajú");
+        xassert(is_valid_utf8($u->affiliation));
+
+        (new UserStatus($this->conf->root_user()))->save_user((object) [
+            "email" => $u->email, "given_name" => $old_first, "affiliation" => $old_aff
+        ]);
     }
 }

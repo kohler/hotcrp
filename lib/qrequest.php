@@ -30,7 +30,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @var ?string */
     private $_body_file;
     /** @var array<string,string> */
-    private $_v;
+    private $_v = [];
+    /** @var array<string,string> */
+    private $_bv = [];
     /** @var array<string,list> */
     private $_a = [];
     /** @var array<string,QrequestFile> */
@@ -60,10 +62,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     const BODY_STRING = 2;
 
     /** @param string $method
-     * @param array<string,string> $data */
+     * @param ?array<string,string> $data */
     function __construct($method, $data = []) {
         $this->_method = $method;
-        $this->_v = $data;
+        foreach ($data ?? [] as $k => $v) {
+            $this->_set_value($k, $v);
+        }
         $this->_qsession = new Qsession;
     }
 
@@ -406,26 +410,74 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return substr($name, 0, $rbr) . strtr(substr($name, $rbr), "[", "_");
     }
 
+    // Request values that are not valid UTF-8 are stored in `_bv`. Their
+    // `_v` entries are null until first read, when they are converted from
+    // Latin-1 (or UTF-16); `get_b` returns the original bytes. Every value
+    // in _a or _bv also has a key in _v. Setting a value to null unsets it.
+
+    /** @param string $name
+     * @param mixed $value
+     * @param bool $log_binary */
+    private function _set_value($name, $value, $log_binary = false) {
+        unset($this->_a[$name]);
+        if ($value === null) {
+            unset($this->_v[$name], $this->_bv[$name]);
+        } else if (is_string($value) && !is_valid_utf8($value)) {
+            if ($log_binary) {
+                error_log("binary request value set at " . debug_string_backtrace());
+            }
+            $this->_v[$name] = null;
+            $this->_bv[$name] = $value;
+        } else {
+            $this->_v[$name] = $value;
+            unset($this->_bv[$name]);
+        }
+    }
+
+    /** @param string $name */
+    private function _unset_value($name) {
+        unset($this->_v[$name], $this->_bv[$name], $this->_a[$name]);
+    }
+
+    /** Return `$a` with its strings converted to UTF-8, or null if `$a` is
+     * not flat. HotCRP does not use nested request arrays.
+     * @param array $a
+     * @return ?array */
+    static private function _convert_list($a) {
+        foreach ($a as &$v) {
+            if (is_array($v)) {
+                return null;
+            } else if (is_string($v) && !is_valid_utf8($v)) {
+                $v = convert_to_utf8($v);
+            }
+        }
+        return $a;
+    }
+
+    private function _convert_all() {
+        foreach ($this->_bv as $k => $bv) {
+            $this->_v[$k] = $this->_v[$k] ?? convert_to_utf8($bv);
+        }
+    }
+
     #[\ReturnTypeWillChange]
     function offsetExists($offset) {
         return array_key_exists($offset, $this->_v);
     }
     #[\ReturnTypeWillChange]
     function offsetGet($offset) {
-        return $this->_v[$offset] ?? null;
+        return $this->get($offset);
     }
     #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         if (is_array($value)) {
             error_log("array offsetSet at " . debug_string_backtrace());
         }
-        $this->_v[$offset] = $value;
-        unset($this->_a[$offset]);
+        $this->_set_value($offset, $value, true);
     }
     #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
-        unset($this->_v[$offset]);
-        unset($this->_a[$offset]);
+        $this->_unset_value($offset);
     }
     #[\ReturnTypeWillChange]
     /** @return Iterator<string,mixed> */
@@ -433,46 +485,48 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return new ArrayIterator($this->as_array());
     }
     /** @param string $name
-     * @param int|float|string $value
+     * @param null|int|float|string $value
      * @return void */
     function __set($name, $value) {
         if (is_array($value)) {
             error_log("array __set at " . debug_string_backtrace());
         }
-        $this->_v[$name] = $value;
-        unset($this->_a[$name]);
+        $this->_set_value($name, $value, true);
     }
     /** @param string $name
      * @return ?string */
     function __get($name) {
-        return $this->_v[$name] ?? null;
+        return $this->get($name);
     }
     /** @param string $name
      * @return bool */
     function __isset($name) {
-        return isset($this->_v[$name]);
+        return array_key_exists($name, $this->_v);
     }
     /** @param string $name */
     function __unset($name) {
-        unset($this->_v[$name]);
-        unset($this->_a[$name]);
+        $this->_unset_value($name);
     }
     /** @param string $name
      * @return bool */
     function has($name) {
         return array_key_exists($name, $this->_v);
     }
-    /** @param string $name
+    /** Return the value of request parameter `$name` as UTF-8 text.
+     * @param string $name
      * @return ?string */
     function get($name) {
-        return $this->_v[$name] ?? null;
+        $v = $this->_v[$name] ?? null;
+        if ($v === null && isset($this->_bv[$name])) {
+            $v = $this->_v[$name] = convert_to_utf8($this->_bv[$name]);
+        }
+        return $v;
     }
     /** @param string $name
-     * @param string $value
+     * @param ?string $value
      * @return $this */
     function set($name, $value) {
-        $this->_v[$name] = $value;
-        unset($this->_a[$name]);
+        $this->_set_value($name, $value, true);
         return $this;
     }
     /** Return the raw value of request parameter `$name`, which might not
@@ -481,7 +535,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param string $name
      * @return ?string */
     function get_b($name) {
-        return $this->_v[$name] ?? null;
+        return $this->_bv[$name] ?? $this->_v[$name] ?? null;
     }
     /** Set request parameter `$name` to `$value`, which might not be valid
      * UTF-8.
@@ -489,8 +543,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param string $value
      * @return $this */
     function set_b($name, $value) {
-        $this->_v[$name] = $value;
-        unset($this->_a[$name]);
+        $this->_set_value($name, $value);
         return $this;
     }
     /** @param string $name
@@ -509,16 +562,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_a($name, $value) {
         $this->_v[$name] = self::ARRAY_MARKER;
         $this->_a[$name] = $value;
+        unset($this->_bv[$name]);
         return $this;
     }
     /** @return $this */
     function set_req($name, $value) {
-        if (is_array($value)) {
-            $this->_v[$name] = self::ARRAY_MARKER;
-            $this->_a[$name] = $value;
-        } else {
-            $this->_v[$name] = $value;
-            unset($this->_a[$name]);
+        if (!is_array($value)) {
+            $this->_set_value($name, $value);
+        } else if (($a = self::_convert_list($value)) !== null) {
+            $this->set_a($name, $a);
         }
         return $this;
     }
@@ -533,6 +585,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     /** @return array<string,mixed> */
     function as_array() {
+        $this->_bv && $this->_convert_all();
         return $this->_v;
     }
     /** @param string ...$keys
@@ -541,7 +594,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $d = [];
         foreach ($keys as $k) {
             if (array_key_exists($k, $this->_v))
-                $d[$k] = $this->_v[$k];
+                $d[$k] = $this->get($k);
         }
         return $d;
     }
@@ -1010,7 +1063,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return array<string,string|list> */
     function debug_json() {
         $a = [];
-        foreach ($this->_v as $k => $v) {
+        foreach ($this->as_array() as $k => $v) {
             if ($v === "__array__" && ($av = $this->_a[$k] ?? null) !== null) {
                 if (count($av) > 20) {
                     $av = array_slice($av, 0, 20);

@@ -553,6 +553,29 @@ class PaperStatus_Tester {
         xassert_eqq($newpaperx->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
     }
 
+    function test_save_web_names_convert_to_utf8() {
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobb\xFD Fla\xFF", "authors:1:email" => "flay@_.com", "authors:1:affiliation" => "Caf\xE9", "authors:2:email" => "latin1contact@_.com"]), null));
+        xassert($ps->execute_save());
+        xassert_paper_status($ps);
+        $aus = $this->u_estrin->checked_paper_by_id($ps->paperId)->author_list();
+        xassert_eqq($aus[0]->firstName, "Bobbý");
+        xassert_eqq($aus[0]->lastName, "Flaÿ");
+        xassert_eqq($aus[0]->affiliation, "Café");
+
+        // contact names fill in placeholder accounts
+        $u = $this->conf->fresh_user_by_email("latin1contact@_.com");
+        xassert($u->is_placeholder());
+        xassert_eqq($u->firstName, "");
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_contacts" => 1, "contacts:1:email" => "latin1contact@_.com", "contacts:1:name" => "Ren\xE9e Contact", "contacts:1:affiliation" => "Caf\xE9", "contacts:1:active" => 1]), null));
+        xassert($ps->execute_save());
+        xassert_paper_status($ps);
+        $u = $this->conf->fresh_user_by_email("latin1contact@_.com");
+        xassert_eqq($u->firstName, "Renée");
+        xassert_eqq($u->affiliation, "Café");
+    }
+
     function test_save_draft_new_paper() {
         $ps = new PaperStatus($this->u_estrin);
         // NB old style of entries

@@ -1176,7 +1176,8 @@ class Mailer_Tester {
         xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => ["1 or 1=1", "3", "2"]]), [2, 3]);
         // a selection with no valid entries selects no papers
         xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => ["1*updatexml(1,concat(0x7e,(select 1)),1)", "10x"]]), []);
-        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => [["1 or 1=1", "100"]]]), []);
+        // a nested selection is ignored
+        xassert_eqq($this->mail_tool_paper_ids($chair, $base + ["p" => [["1 or 1=1", "100"]]]), $all);
     }
 
     /** Run the mail page for request `$args` and return its output.

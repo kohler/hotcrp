@@ -245,6 +245,29 @@ class MeetingTracker_Tester {
         xassert_neqq($small_perm->admin_perm(), null);
     }
 
+    function test_invalid_utf8_preserves_trackers() {
+        // a name or logo that is not UTF-8 must not erase other trackers
+        $before = array_keys($this->visible_trackers($this->u_chair));
+        xassert_eqq($before, [$this->tr_blue, $this->tr_red]);
+        $listinfo = json_encode(["listid" => "p/s/", "ids" => "1 3"]);
+        foreach (["name", "logo"] as $k) {
+            $j = $this->trackerconfig($this->u_estrin, ["id" => "new", "listinfo" => $listinfo, "p" => "1", $k => "\xFF"]);
+            xassert($j->ok);
+            $tr = $j->new_trackerid;
+            $tis = $this->visible_trackers($this->u_chair);
+            xassert_eqq(array_keys($tis), [$this->tr_blue, $this->tr_red, $tr]);
+            xassert_eqq($tis[$tr]->$k, "ÿ");
+
+            $j = $this->trackerconfig($this->u_estrin, ["id" => (string) $tr, $k => "a\xC0", "changed" => "1"]);
+            xassert($j->ok);
+            $tis = $this->visible_trackers($this->u_chair);
+            xassert_eqq(array_keys($tis), [$this->tr_blue, $this->tr_red, $tr]);
+            xassert_eqq($tis[$tr]->$k, "aÀ");
+            $this->stop_tracker($tr);
+        }
+        xassert_eqq(array_keys($this->visible_trackers($this->u_chair)), $before);
+    }
+
     /** @param int $trackerid
      * @return ?string */
     private function tracker_visibility($trackerid) {
