@@ -11,13 +11,12 @@ class User_API {
         if (($email = trim($qreq->email ?? "")) === "") {
             return JsonResult::make_missing_error("email");
         }
-        if (!is_valid_utf8($email)) {
-            return JsonResult::make_parameter_error("email");
-        }
-        if (strlen($email) < 8
-            && (($at = strpos($email, "@")) === false
-                || $at === 0
-                || ($dot = strpos($email, ".", $at + 1)) === false)) {
+        // Require ASCII because `like` might ignore accents
+        if (!preg_match('/\A[-!#$%&\'*+.\/0-9=?@A-Z^_`a-z{|}~]+\z/', $email)
+            || (strlen($email) < 8
+                && (($at = strpos($email, "@")) === false
+                    || $at === 0
+                    || ($dot = strpos($email, ".", $at + 1)) === false))) {
             return new JsonResult(["ok" => false]);
         }
 

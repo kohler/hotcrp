@@ -72,6 +72,19 @@ class UserAPI_Tester {
         xassert_eqq($j->email ?? null, null);
     }
 
+    function test_lookup_prefix_lookalikes() {
+        // collations fold look-alike characters to ASCII, so prefixes that
+        // are long in bytes but short in letters must not match
+        $pc = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        foreach (["\u{1D41E}\u{1D42C}",             // mathematical bold "es"
+                  "\u{1E17}\u{1E61}\u{1E6D}",       // accented "est"
+                  "\u{FF45}\u{FF53}\u{FF54}",       // fullwidth "est"
+                  "estri\u{FF4E}\u{FF20}usc"] as $prefix) {
+            $j = call_api("user", $pc, ["email" => $prefix]);
+            xassert_eqq($j->email ?? null, null, $prefix);
+        }
+    }
+
     function test_potential_conflict_list_bounded() {
         // every collaborator matches every author, so the number of matching
         // pairs is the product of the list lengths; record a few per author
