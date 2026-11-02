@@ -565,9 +565,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         unset($this->_bv[$name]);
         return $this;
     }
-    /** @return $this */
+    /** Set request parameter `$name` from incoming request data. Parameters
+     * whose names are not UTF-8 are ignored, and so are nested arrays.
+     * @param string|int $name
+     * @return $this */
     function set_req($name, $value) {
-        if (!is_array($value)) {
+        if (is_string($name) && !is_valid_utf8($name)) {
+            // ignore
+        } else if (!is_array($value)) {
             $this->_set_value($name, $value);
         } else if (($a = self::_convert_list($value)) !== null) {
             $this->set_a($name, $a);

@@ -2871,6 +2871,17 @@ class Unit_Tester {
         xassert_eqq($q->get_a("d"), null);
     }
 
+    function test_qrequest_names_are_utf8() {
+        // request parameters whose names are not UTF-8 are ignored
+        $q = new Qrequest("POST", []);
+        $q->set_req("caf\xE9", "x");
+        $q->set_req("x\xFF", ["y"]);
+        $q->set_req("caf\u{E9}", "z");
+        $q->set_req(12, "w");
+        xassert_eqq($q->keys(), ["caf\u{E9}", 12]);
+        xassert_eqq($q->get("caf\u{E9}"), "z");
+    }
+
     function test_qrequest_null_unsets() {
         $q = new Qrequest("POST", ["a" => "1", "b" => null, "c" => "3", "d" => "4"]);
         xassert_eqq($q->keys(), ["a", "c", "d"]);

@@ -473,7 +473,7 @@ function initialize_user($qreq, $kwarg = null) {
             && $login_bounce[2] === $nav->page) {
             foreach ($login_bounce[3] as $k => $v) {
                 if (!isset($qreq[$k]))
-                    $qreq[$k] = $v;
+                    $qreq->set_req($k, $v);
             }
             $qreq->set_annex("after_login", true);
         }

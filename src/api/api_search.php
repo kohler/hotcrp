@@ -123,7 +123,10 @@ class Search_API {
             }
         }
         if (is_array($param) && isset($param["q"])) {
-            $nqreq = new Qrequest("GET", $param);
+            $nqreq = new Qrequest("GET");
+            foreach ($param as $k => $v) {
+                $nqreq->set_req($k, $v);
+            }
             $nqreq->set_user($user)->set_qsession($qreq->qsession());
             $njr = self::make_search_result($user, $nqreq);
             if ($njr->content["ok"]) {

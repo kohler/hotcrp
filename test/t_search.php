@@ -1595,6 +1595,18 @@ class Search_Tester {
         xassert_eqq($ssel->selection(), [2, 3, 4, 7]);
     }
 
+    function test_api_search_parameter_is_flat() {
+        // a JSON `search` parameter follows request rules: nested arrays
+        // are ignored
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $j = call_api("=assigntags", $chair, [
+            "tagassignment" => "",
+            "search" => json_encode(["q" => "1-3", "format" => ["x" => ["html"]]])
+        ]);
+        xassert($j->ok);
+        xassert_eqq($j->ids, [1, 2, 3]);
+    }
+
     function test_paper_set_large_list_requires_integers() {
         // a `paperId` list longer than 2000 entries becomes a PaperIDSet,
         // whose SQL predicate interpolates IDs; non-integers are dropped
