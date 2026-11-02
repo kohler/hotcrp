@@ -696,11 +696,18 @@ class PaperSearch extends MessageSet {
             ->user_ids();
     }
 
+    /** @var ?AbbreviationMatcher<string> */
+    static private $status_matcher;
+
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
+        if (!self::$status_matcher) {
+            self::$status_matcher = new AbbreviationMatcher;
+            foreach (["withdrawn" => "w", "submitted" => "s", "ready" => "s", "complete" => "s", "in progress" => "u", "unsubmitted" => "u", "not ready" => "u", "incomplete" => "u", "draft" => "u", "active" => "a", "no submission" => "x"] as $name => $k) {
+                self::$status_matcher->add_phrase($name, $k);
+            }
+        }
         if (strlen($word) >= 3
-            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "s2" => "complete", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "u3" => "incomplete", "u4" => "draft", "a0" => "active", "x0" => "no submission"]))) {
-            $k = array_map(function ($x) { return $x[0]; }, array_keys($k));
-            $k = array_unique($k);
+            && ($k = self::$status_matcher->find_all($word))) {
             if (count($k) === 1) {
                 if ($k[0] === "w") {
                     return ["timeWithdrawn", ">0"];

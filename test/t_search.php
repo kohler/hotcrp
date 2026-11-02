@@ -38,6 +38,70 @@ class Search_Tester {
                              array_keys(search_json($this->u_root, "round:R1")));
     }
 
+    function test_wildcard_search_words() {
+        $r1 = $this->conf->round_number("R1");
+        xassert_eqq(ReviewSearchMatcher::parse_round("r*1", $this->conf), [$r1]);
+        xassert_eqq(ReviewSearchMatcher::parse_round("**1", $this->conf), [$r1]);
+        xassert_eqq(ReviewSearchMatcher::parse_round("r*1*x", $this->conf), []);
+        xassert_eqq(ReviewInfo::parse_rating_search("too*short"), ReviewInfo::parse_rating_search("short"));
+        xassert_eqq(ReviewInfo::parse_rating_search("too*shor"), 0);
+        $st = (new PaperSearch($this->u_root, "emoji:*wavy*dash"))->main_term();
+        xassert_eqq($st->debug_json()["match"], [$this->conf->emoji_code_map()["wavy_dash"]]);
+    }
+
+    function test_status_words() {
+        $wd = ["timeWithdrawn", ">0"];
+        $sub = ["timeSubmitted", ">0"];
+        $unsub = ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
+        $nosub = ["timeSubmitted", "<=0", "timeWithdrawn", "<=0", "paperStorageId", "<=1"];
+        $active = ["timeWithdrawn", "<=0"];
+        foreach (["withdrawn" => $wd, "with" => $wd, "WITHDRAWN" => $wd, "w*n" => $wd,
+                  "submitted" => $sub, "sub" => $sub, "subm" => $sub, "ready" => $sub,
+                  "rea" => $sub, "comp" => $sub,
+                  "in progress" => $unsub, "in-progress" => $unsub, "inc" => $unsub,
+                  "not ready" => $unsub, "draft" => $unsub, "unsub" => $unsub, "un*" => $unsub,
+                  "no submission" => $nosub, "no-submission" => $nosub,
+                  "active" => $active, "act" => $active] as $word => $expected) {
+            xassert_eqq(PaperSearch::status_field_matcher($this->conf, $word), $expected, $word);
+        }
+        // other words are decisions
+        xassert_eqq(PaperSearch::status_field_matcher($this->conf, "acc")[0], "outcome");
+        xassert_eqq(PaperSearch::status_field_matcher($this->conf, "su")[0], "outcome");
+    }
+
+    function test_round_completion() {
+        $conf = $this->conf;
+        $old = $conf->setting_data("tag_rounds");
+        try {
+            $conf->save_refresh_setting("tag_rounds", 1, "R1 R2 R3 late-2024");
+            $comp = [];
+            foreach (Completion_API::search_completions($this->u_root, "round") as $c) {
+                if (is_string($c))
+                    $comp[] = $c;
+            }
+            xassert_eqq($comp, ["round:R1", "round:R2", "round:R3", "round:late-2024"]);
+            xassert_search($this->u_root, "round:late-2024", "");
+        } finally {
+            $conf->save_refresh_setting("tag_rounds", 1, $old);
+        }
+    }
+
+    function test_wildcard_search_words_complexity() {
+        $t0 = microtime(true);
+        $st = (new PaperSearch($this->u_root, "emoji:************_"))->main_term();
+        xassert($st instanceof False_SearchTerm);
+        xassert_eqq(ReviewSearchMatcher::parse_round(str_repeat("*", 5000) . "zzq", $this->conf), []);
+        for ($i = 0; $i !== 100; ++$i) {
+            xassert_eqq(ReviewInfo::parse_rating_search("******************o-"), 0);
+        }
+        xassert_eqq(ReviewInfo::parse_rating_search(str_repeat("*", 5000) . "o-"), 0);
+        for ($i = 0; $i !== 100; ++$i) {
+            xassert_eqq(PaperSearch::status_field_matcher($this->conf, "******************b*u")[0], "outcome");
+        }
+        xassert_eqq(PaperSearch::status_field_matcher($this->conf, str_repeat("*", 5000) . "zzq"), ["outcome", []]);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_canonical_query() {
         xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", "", $this->conf),
                     "(a b) OR (c d)");

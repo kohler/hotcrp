@@ -312,15 +312,6 @@ class TextPregexes {
 }
 
 class Text {
-    /** @readonly */
-    static private $boring_words = [
-        "a" => true, "an" => true, "as" => true, "be" => true,
-        "by" => true, "did" => true, "do" => true, "for" => true,
-        "in" => true, "is" => true, "of" => true, "on" => true,
-        "the" => true, "this" => true, "through" => true, "to" => true,
-        "with" => true
-    ];
-
     /** @param string $firstName
      * @param string $lastName
      * @param string $email
@@ -858,48 +849,6 @@ class Text {
             $p += $l;
         }
         return $spans;
-    }
-
-    const SEARCH_UNPRIVILEGE_EXACT = 2;
-
-    static function simple_search($needle, $haystacks, $flags = 0) {
-        if (!($flags & self::SEARCH_UNPRIVILEGE_EXACT)) {
-            $matches = [];
-            foreach ($haystacks as $k => $v) {
-                if (strcasecmp($needle, $v) === 0)
-                    $matches[$k] = $v;
-            }
-            if (!empty($matches)) {
-                return $matches;
-            }
-        }
-
-        $rewords = [];
-        foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word) {
-            if ($word !== "")
-                $rewords[] = str_replace("*", ".*", $word);
-        }
-        $i = $flags & self::SEARCH_UNPRIVILEGE_EXACT ? 1 : 0;
-        for (; $i <= 2; ++$i) {
-            if ($i == 0) {
-                $re = ',\A' . join('\b.*\b', $rewords) . '\z,i';
-            } else if ($i == 1) {
-                $re = ',\A' . join('\b.*\b', $rewords) . '\b,i';
-            } else {
-                $re = ',\b' . join('.*\b', $rewords) . ',i';
-            }
-            $matches = preg_grep($re, $haystacks);
-            if (!empty($matches)) {
-                return $matches;
-            }
-        }
-        return [];
-    }
-
-    /** @param string $word
-     * @return bool */
-    static function is_boring_word($word) {
-        return isset(self::$boring_words[strtolower($word)]);
     }
 
     /** @param string $text

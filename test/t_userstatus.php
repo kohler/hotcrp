@@ -910,6 +910,36 @@ class UserStatus_Tester {
         xassert_lt(microtime(true) - $t0, 1.0);
     }
 
+    function test_contactsearch_email_wildcards() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
+        $mjh = $conf->checked_user_by_email("mjh@isi.edu");
+        $cset = [$floyd->contactId => $floyd, $mjh->contactId => $mjh];
+        foreach (["fl*@*lbl*" => [$floyd], "*floyd@ee.lbl.gov" => [$floyd],
+                  "FL**D@**.gov" => [$floyd], "*@isi.edu" => [$mjh],
+                  "*.*" => [$floyd, $mjh], "*lbl*" => [$floyd],
+                  // wildcard email words match whole addresses
+                  "fl*@*lbl" => [], "loyd@*" => [], "lbl*" => [], "ee*" => [],
+                  "*@" => [], "fl*\xC3@*" => []] as $pat => $expected) {
+            $ids = ContactSearch::make_cset($pat, $chair, $cset)->user_ids();
+            sort($ids);
+            $xids = array_map(function ($u) { return $u->contactId; }, $expected);
+            sort($xids);
+            xassert_eqq($ids, $xids, $pat);
+        }
+    }
+
+    function test_contactsearch_email_wildcards_complexity() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $t0 = microtime(true);
+        for ($i = 0; $i !== 20; ++$i) {
+            xassert_eqq(ContactSearch::make_pc("********@", $chair)->user_ids(), []);
+        }
+        xassert_eqq(ContactSearch::make_pc(str_repeat("*", 5000) . "zzq", $chair)->user_ids(), []);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     // `secretPC` hides the PC from everyone outside it; `privatePC` hides it
     // from non-PC users. ContactSearch and the viewable PC list obey both.
     function test_secret_and_private_pc() {
@@ -1077,13 +1107,16 @@ class UserStatus_Tester {
         xassert_str_contains($us->full_feedback_text(), "Invalid UTF-8");
 
         // ...but older passwords might not be, and are checked as raw bytes
+        $oldpw = $u->check_password("MAKsdfnqw") ? "MAKsdfnqw" : "maksdfnqw";
         $u->change_password($newpw);
+        $this->conf->invalidate_caches("users");
         $qreq = TestQreq::post(["email" => "estrin@usc.edu", "password" => $newpw])
             ->set_user(Contact::make($this->conf))->set_page("signin");
         $info = LoginHelper::login_info($this->conf, $qreq);
         xassert_eqq($info["ok"], true);
         xassert(!$this->conf->fresh_user_by_email("estrin@usc.edu")->check_password("m\u{E4}ksdfnqw!"));
-        $u->change_password("maksdfnqw");
+        $u->change_password($oldpw);
+        $this->conf->invalidate_caches("users");
     }
 
     function test_edit_own_password_validation() {

@@ -178,9 +178,11 @@ class TagInfo {
 
     /** @return string */
     function tag_regex() {
-        $t = preg_quote($this->tag);
         if (($this->flags & self::TF_IS_PATTERN) !== 0) {
-            $t = str_replace("\\*", "[^\\s#~]*", $t);
+            // contexts follow the tag with `#`, whitespace, or the end
+            $t = Text::one_wildcard_regex($this->tag, "", "\\s#~", "(?![^\\s#])");
+        } else {
+            $t = preg_quote($this->tag);
         }
         if (($this->flags & self::TF_PRIVATE) !== 0) {
             $t = "\\d*" . $t;

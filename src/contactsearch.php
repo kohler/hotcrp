@@ -308,7 +308,7 @@ class ContactSearch {
             $nreg = TextPregexes::make_empty();
         }
         if ($e !== "" && $estar) {
-            $ereg = '{\A' . str_replace('\*', '.*', preg_quote($e)) . '\z}i';
+            $ereg = '{\A' . Text::wildcard_pregex($e) . '\z}i';
         } else if ($e !== "") {
             $ereg = str_replace('@\*', '@(?:|.*[.])', preg_quote($e));
             $ereg = preg_replace('/\A\\\\\*/', '(?:.*[@.]|)', $ereg);

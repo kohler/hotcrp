@@ -521,11 +521,8 @@ class Si {
             return $this->name_parts !== null
                 && $this->name2 === "/id";
         }
-        $f = str_replace("\\*", ".*", preg_quote($expr->text, "/"));
-        if (!str_starts_with($f, ".*")) {
-            $f = "\\A" . $f;
-        }
-        return preg_match("/{$f}/", $this->name);
+        $f = Text::one_wildcard_regex($expr->text, "", "", "");
+        return preg_match("{\\A{$f}}", $this->name);
     }
 
     /** @return bool */

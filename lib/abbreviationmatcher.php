@@ -328,7 +328,7 @@ class AbbreviationMatcher {
         $re = strtolower($re);
         $starpos = strpos($upat, "*");
         if ($starpos !== false) {
-            $re = '/' . str_replace('\\*', '.*', $re) . '/s';
+            $re = '/' . preg_replace('/(?:\\\\\*)++/', '.*', $re) . '/s';
         } else if (strpos($lpattern, " ") !== false) {
             $re = '/' . $re . '/s';
         } else {

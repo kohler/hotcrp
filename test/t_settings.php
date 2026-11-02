@@ -1740,6 +1740,24 @@ class Settings_Tester {
         return (new SearchParser($s))->parse_expression(SearchOperatorSet::simple_operators());
     }
 
+    function test_si_name_patterns() {
+        $si = $this->conf->si("review_visibility_author");
+        foreach (["review_visibility_author" => true, "review_vis" => true,
+                  "review_*" => true, "*author" => true, "*visibility*" => true,
+                  "r*_v*_a*" => true, "*_a*r" => true, "visibility" => false,
+                  "Review_*" => false, "r*x" => false] as $pat => $match) {
+            xassert_eqq(!!$si->expr_matches(self::make_si_filter($pat)), $match, $pat);
+        }
+
+        $t0 = microtime(true);
+        $long = self::make_si_filter(str_repeat("*_", 20) . "q");
+        foreach ($this->conf->si_set()->top_list() as $si) {
+            xassert(!$si->expr_matches($long));
+        }
+        xassert(!$si->expr_matches(self::make_si_filter(str_repeat("*", 5000) . "q")));
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_json_export_filter() {
         // tag filter
         $sv = (new SettingValues($this->u_chair))

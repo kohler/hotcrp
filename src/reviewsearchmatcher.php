@@ -224,7 +224,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return null;
             }
         } else {
-            $re = '/\A' . str_replace('\*', '.*', preg_quote($word, '/')) . '\z/is';
+            $re = '{\A' . Text::wildcard_pregex($word) . '\z}i';
             $r = array_keys(preg_grep($re, $conf->defined_rounds()));
         }
         if ($neg) {

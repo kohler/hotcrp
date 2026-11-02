@@ -181,6 +181,33 @@ class Tags_Tester {
         xassert($sv->execute());
     }
 
+    function test_tag_pattern_styles() {
+        $old = $this->conf->setting_data("tag_color");
+        $qtag = str_repeat("q", 75) . "y";
+        try {
+            $this->conf->save_refresh_setting("tag_color", 1, "a*b=red q*q*q*q*q*q*q*q*q*q*q*z=blue");
+            $tags = $this->conf->tags();
+            $styled = function ($tag) use ($tags) {
+                return !empty($tags->find($tag)->styles ?? null);
+            };
+            foreach (["abb" => true, "ab" => true, "axbxb" => true, "abc" => false, "ba" => false] as $tag => $match) {
+                xassert_eqq($styled($tag), $match, $tag);
+                xassert_eqq($tags->color_classes(" x#1 {$tag}#2 y#3") === "tag-red tagbg", $match, $tag);
+            }
+            xassert_eqq($tags->color_classes("abb"), "tag-red tagbg");
+            xassert_eqq($tags->color_classes(" 7~abb#1"), "tag-red tagbg");
+
+            $t0 = microtime(true);
+            for ($i = 0; $i !== 200; ++$i) {
+                xassert(!$styled($qtag . $i));
+                xassert_eqq($tags->color_classes(" {$qtag}{$i}#1 {$qtag}x#2"), "");
+            }
+            xassert_lt(microtime(true) - $t0, 1.0);
+        } finally {
+            $this->conf->save_refresh_setting("tag_color", $old === null ? null : 1, $old);
+        }
+    }
+
     function test_implicit_tag_patterns() {
         $ti = $this->conf->tags()->find("~~fxxxk");
         xassert($ti && $ti->is(TagInfo::TF_CHAIR_HIDDEN));
