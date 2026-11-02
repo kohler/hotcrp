@@ -1120,6 +1120,7 @@ class Conf {
 
     function query_error_handler($dblink, $query) {
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
+        $query = Dbl::loggable_query($query, 4096);
         if (PHP_SAPI === "cli") {
             fwrite(STDERR, "{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
         } else {

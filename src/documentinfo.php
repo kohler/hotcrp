@@ -830,15 +830,19 @@ class DocumentInfo implements JsonSerializable {
             return null;
         }
         $content = $this->content();
-        Dbl::store_blob($this->conf->dblink,
-            "update PaperStorage set paper=?{blob} where paperId=?{pid} and paperStorageId=?{psid}",
-            $content, ["pid" => $this->paperId, "psid" => $this->paperStorageId]);
-        $ssize = $this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
-        $ok = $ssize === strlen($content);
-        if (!$ok) {
-            $this->message_set()->warning_at(".content", "<0>Internal error while saving document content to database");
+        if (!Dbl::store_blob($this->conf->dblink,
+                "update PaperStorage set paper=?{blob} where paperId=?{pid} and paperStorageId=?{psid}",
+                $content, ["pid" => $this->paperId, "psid" => $this->paperStorageId])) {
+            // most likely larger than the database’s `max_allowed_packet`
+            $this->message_set()->warning_at(".content", "<0>Could not store document in the database (it may be too large)");
+            return false;
         }
-        return $ok;
+        $ssize = $this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+        if ($ssize !== strlen($content)) {
+            $this->message_set()->warning_at(".content", "<0>Internal error while saving document content to database");
+            return false;
+        }
+        return true;
     }
 
     /** @param int $savef

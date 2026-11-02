@@ -13,8 +13,6 @@ class Dbl_Result {
     public $warning_count;
     /** @var int */
     public $errno;
-    /** @var ?string */
-    public $query_string;
 
     /** @return Dbl_Result */
     static function make(mysqli $dblink) {
@@ -76,19 +74,23 @@ class Dbl_MultiResult {
     /** @var 0|1|2|3 */
     private $mstate;
     /** @var string */
-    private $query_string;
+    private $query;
+    /** @var ?string */
+    private $argdesc;
     /** @var int */
     public $errno = 0;
 
     /** @param int $flags
-     * @param string $qstr
+     * @param string $query  query template, or query text if raw
+     * @param ?array $argv
      * @param bool $mqresult */
-    function __construct(mysqli $dblink, $flags, $qstr, $mqresult) {
+    function __construct(mysqli $dblink, $flags, $query, $argv, $mqresult) {
         assert(($flags & Dbl::F_MULTI) !== 0);
         $this->dblink = $dblink;
         $this->flags = $flags;
         $this->mstate = $mqresult ? 2 : 1;
-        $this->query_string = $qstr;
+        $this->query = $query;
+        $this->argdesc = $argv !== null ? Dbl::describe_args($argv) : null;
     }
     /** @return bool */
     function had_error() {
@@ -111,7 +113,7 @@ class Dbl_MultiResult {
         // process next result (which might be an error)
         $result = $this->mstate === 2 ? $this->dblink->store_result() : false;
         $this->mstate = 3;
-        $dx = Dbl::do_result($this->dblink, $this->flags, $this->query_string, $result);
+        $dx = Dbl::do_result($this->dblink, $this->flags, $this->query, $this->argdesc, $result);
         if ($this->dblink->errno) {
             $this->errno = $this->dblink->errno;
         }
@@ -270,6 +272,9 @@ class Dbl {
     const F_NOEXEC = 256;
     const F_THROW = 512;
 
+    /** @var int Size of pieces in which `store_blob()` sends blobs. */
+    const BLOB_PIECE = 1 << 20;
+
     /** @var int */
     static public $nqueries = 0;
     /** @var int */
@@ -397,11 +402,88 @@ class Dbl {
         return caller_landmark(1, self::$landmark_sanitizer);
     }
 
+    /** Return `$query` shortened for logs and error messages. Queries can
+     * hold large values (such as document content), which should not be
+     * logged in full.
+     * @param string $query
+     * @param int $max
+     * @return string */
+    static function loggable_query($query, $max = 1024) {
+        if (strlen($query) <= $max) {
+            return $query;
+        }
+        // (byte prefix: queries can hold binary data that is not UTF-8)
+        return UnicodeHelper::utf8_truncate_invalid(substr($query, 0, $max))
+            . "… [" . strlen($query) . " bytes]";
+    }
+
+    /** Return a description of a query for logs and error messages: its
+     * template (with `?` placeholders), then its arguments, abbreviated.
+     * Long and binary arguments appear only as lengths, so descriptions
+     * never hold large values such as document content.
+     * @param string $query  query template, or query text if raw
+     * @param null|array|string $args  arguments, or their description
+     *   from `describe_args()`; null if `$query` is raw
+     * @return string */
+    static function describe_query($query, $args) {
+        $s = self::loggable_query($query);
+        if (is_array($args)) {
+            $args = self::describe_args($args);
+        }
+        return $args === null || $args === "" ? $s : "{$s} [{$args}]";
+    }
+
+    /** Return an abbreviated description of query arguments `$argv`, at
+     * most about 1 KB long.
+     * @param array $argv
+     * @return string */
+    static function describe_args($argv) {
+        $s = "";
+        foreach ($argv as $k => $v) {
+            if (strlen($s) > 1024) {
+                break;
+            }
+            $s .= ($s === "" ? "" : ", ") . (is_int($k) ? $k + 1 : $k) . ": " . self::describe_arg($v);
+        }
+        return self::loggable_query($s);
+    }
+
+    /** @param mixed $v
+     * @param int $depth
+     * @return string */
+    static private function describe_arg($v, $depth = 0) {
+        if ($v === null) {
+            return "NULL";
+        } else if (is_bool($v)) {
+            return $v ? "true" : "false";
+        } else if (is_int($v) || is_float($v)) {
+            return (string) $v;
+        } else if (is_string($v)) {
+            if (strlen($v) <= 64
+                && preg_match('//u', $v)
+                && !preg_match('/[\x00-\x1f\x7f]/', $v)) {
+                return json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            return "<" . strlen($v) . " bytes>";
+        } else if (is_array($v)) {
+            if ($depth > 0 || count($v) > 8) {
+                return "<" . count($v) . " values>";
+            }
+            $xs = [];
+            foreach ($v as $x) {
+                $xs[] = self::describe_arg($x, $depth + 1);
+            }
+            return "[" . join(", ", $xs) . "]";
+        }
+        return "<" . gettype($v) . ">";
+    }
+
     /** @param \mysqli $dblink
      * @param string $query */
     static function default_error_handler($dblink, $query) {
-        error_log(self::landmark() . ": database error: {$dblink->error} in {$query}");
-        trigger_error(self::landmark() . ": database error: {$dblink->error} in {$query}");
+        $q = self::loggable_query($query, 4096);
+        error_log(self::landmark() . ": database error: {$dblink->error} in {$q}");
+        trigger_error(self::landmark() . ": database error: {$dblink->error} in {$q}");
     }
 
     /** @param list $args
@@ -631,7 +713,7 @@ class Dbl {
     /** @return mysqli_result|bool|null */
     static private function call_query($dblink, $flags, $qfunc, $qstr) {
         if (($flags & self::F_ECHO) || self::$verbose) {
-            error_log($qstr);
+            error_log(self::loggable_query($qstr));
         }
         if ($flags & self::F_NOEXEC) {
             return null;
@@ -658,10 +740,13 @@ class Dbl {
 
     /** @return Dbl_Result */
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
+        $query = $qstr;
         if (!($flags & self::F_RAW)) {
             $qstr = self::format_query_args($dblink, $qstr, $argv);
+        } else {
+            $argv = null;
         }
-        return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, $flags, "query", $qstr));
+        return self::do_result($dblink, $flags, $query, $argv, self::call_query($dblink, $flags, "query", $qstr));
     }
 
     /** @param list $args
@@ -680,10 +765,12 @@ class Dbl {
 
     /** @param \mysqli $dblink
      * @param int $flags
-     * @param string $qstr
+     * @param string $query  query template, or query text if raw
+     * @param null|array|string $args  arguments, or their description
+     *   from `describe_args()`; null if `$query` is raw
      * @param null|bool|\mysqli_result|Dbl_Result $result
      * @return Dbl_Result */
-    static function do_result($dblink, $flags, $qstr, $result) {
+    static function do_result($dblink, $flags, $query, $args, $result) {
         if (is_bool($result)) {
             $result = Dbl_Result::make($dblink);
         } else if ($result === null) {
@@ -691,16 +778,17 @@ class Dbl {
             $result->errno = 1002;
         }
         if ($dblink->errno && !($result instanceof \mysqli_result)) {
-            $result->query_string = $qstr;
             if (($flags & self::F_ALLOWERROR) === 0) {
                 ++self::$nerrors;
             }
+            // describe the query for logs, without large argument values
+            $desc = self::describe_query($query, $args);
             if (($flags & self::F_THROW) !== 0) {
                 throw new Error("Database error");
             } else if (($flags & self::F_ERROR) !== 0) {
-                call_user_func(self::$error_handler, $dblink, $qstr);
+                call_user_func(self::$error_handler, $dblink, $desc);
             } else if (($flags & self::F_LOG) !== 0) {
-                error_log(self::landmark() . ": database error: {$dblink->error} in {$qstr}");
+                error_log(self::landmark() . ": database error: {$dblink->error} in {$desc}");
             }
         }
         if (self::$check_warnings
@@ -719,10 +807,13 @@ class Dbl {
      * @return Dbl_MultiResult */
     static private function do_multi_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+        $query = $qstr;
         if (!($flags & self::F_RAW)) {
             $qstr = self::format_query_args($dblink, $qstr, $argv);
+        } else {
+            $argv = null;
         }
-        return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, $flags, "multi_query", $qstr));
+        return new Dbl_MultiResult($dblink, $flags, $query, $argv, self::call_query($dblink, $flags, "multi_query", $qstr));
     }
 
     /** @return Dbl_Result */
@@ -1030,17 +1121,17 @@ class Dbl {
     /** @param mysqli $dblink
      * @param string $query
      * @param array $args
-     * @param string $prefix
+     * @param ?string $prefix
      * @param int $slicelen
-     * @return string */
+     * @return ?string */
     static function fetch_blob($dblink, $query, $args,
-                               $prefix = "", $slicelen = 16 << 20) {
-        if (!preg_match('/\Aselect ([\w.]+) (from.*)/s', $query, $qm)) {
+                               $prefix = null, $slicelen = 16 << 20) {
+        if (!preg_match('/\Aselect ([\w.]+) (from.*)/s', $query, $qm) || $slicelen <= 0) {
             throw new Exception("bad query to Dbl::fetch_blob");
         }
         $qcol = $qm[1];
         while (true) {
-            $pos = strlen($prefix) + 1;
+            $pos = strlen($prefix ?? "") + 1;
             $query = "select substr({$qm[1]},{$pos},{$slicelen}) {$qm[2]}";
             $result = self::qe_apply($dblink, $query, $args);
             if ($dblink->errno
@@ -1048,44 +1139,59 @@ class Dbl {
                 return null;
             }
             $result->close();
-            $prefix .= $row[0];
-            if (strlen($row[0]) < $slicelen) {
+            if ($row[0] !== null) {
+                if ($prefix === null) {
+                    $prefix = "";
+                }
+                $prefix .= $row[0];
+            }
+            if (strlen($row[0] ?? "") < $slicelen) {
                 return $prefix;
             }
         }
     }
 
-    /** @param mysqli $dblink
+    /** Run `$query`, an `update` query in which `?{blob}` stands for
+     * `$blob`, with other arguments from `$args`. Return true on success.
+     *
+     * The blob is sent with a prepared statement in pieces, which avoids
+     * escaping it and sending it all in one packet. A blob larger than the
+     * server’s `max_allowed_packet` fails, leaving the old value in place;
+     * the connection remains usable. Errors are reported as for `qe()`.
+     * @param \mysqli $dblink
      * @param string $query
      * @param string $blob
-     * @param array $args
-     * @param int $pos
-     * @param int $slicelen
+     * @param array<string,mixed> $args
      * @return bool */
-    static function store_blob($dblink, $query, $blob, $args,
-                               $pos = 0, $slicelen = 16 << 20) {
-        if (!preg_match('/\A(update.*?)(\w+)=\?\{blob\}(.*)\z/s', $query, $qm)) {
+    static function store_blob($dblink, $query, $blob, $args) {
+        if (!preg_match('/\A\s*update\b/i', $query)
+            || substr_count($query, "?{blob}") !== 1) {
             throw new Exception("bad query to Dbl::store_blob");
         }
-        $qcol = $qm[2];
-        $first = $pos === 0;
-        while ($first || $pos < strlen($blob)) {
-            $chunklen = min($slicelen, strlen($blob) - $pos);
-            $args["chunk"] = substr($blob, $pos, $chunklen);
-            if ($pos === 0) {
-                $qchunk = "?{chunk}";
-            } else {
-                $qchunk = "concat({$qm[2]},?{chunk})";
-            }
-            $query = $qm[1] . $qm[2] . "=" . $qchunk . $qm[3];
-            $result = self::qe_apply($dblink, $query, $args);
-            if ($result->is_error()) {
-                return false;
-            }
-            $pos += $chunklen;
-            $first = false;
+        if ($blob === "") {
+            // a blob parameter with no data is NULL
+            return !self::qe_apply($dblink, $query, $args + ["blob" => ""])->is_error();
         }
-        return true;
+        // `??` formats as a literal `?`, the statement’s only parameter
+        $qstr = self::format_query_args($dblink, str_replace("?{blob}", "??", $query), $args);
+        if (self::$verbose) {
+            error_log(self::loggable_query($qstr));
+        }
+        ++self::$nqueries;
+        $ok = false;
+        if (($stmt = $dblink->prepare($qstr))) {
+            $null = null;
+            $stmt->bind_param("b", $null);
+            $len = strlen($blob);
+            for ($pos = 0; $pos < $len; $pos += self::BLOB_PIECE) {
+                $stmt->send_long_data(0, substr($blob, $pos, self::BLOB_PIECE));
+            }
+            $ok = $stmt->execute();
+        }
+        // report before closing the statement, which clears the error
+        self::do_result($dblink, self::F_ERROR, $query, $args + ["blob" => $blob], $ok);
+        $stmt && $stmt->close();
+        return $ok;
     }
 
     /** @param null|bool|float|'verbose' $limit

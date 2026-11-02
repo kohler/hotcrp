@@ -94,6 +94,99 @@ class Unit_Tester {
         }
     }
 
+    function test_dbl_loggable_query() {
+        xassert_eqq(Dbl::loggable_query("select 1"), "select 1");
+        $q = "update T set x='" . str_repeat("a", 2000) . "'";
+        xassert_eqq(Dbl::loggable_query($q), substr($q, 0, 1024) . "… [" . strlen($q) . " bytes]");
+        // truncation does not split a UTF-8 character
+        $q = str_repeat("a", 1023) . "é" . str_repeat("b", 100);
+        xassert_eqq(Dbl::loggable_query($q), str_repeat("a", 1023) . "… [" . strlen($q) . " bytes]");
+        // binary data is truncated too
+        $q = "update T set x='%PDF-\xff\xfe" . str_repeat("\x00", 5000) . "'";
+        xassert(strlen(Dbl::loggable_query($q)) < 1100);
+    }
+
+    function test_dbl_describe_query() {
+        xassert_eqq(Dbl::describe_query("select 1", []), "select 1");
+        xassert_eqq(Dbl::describe_query("select * from T where a=? and b?a", [3, ["x", 4]]),
+                    'select * from T where a=? and b?a [1: 3, 2: ["x", 4]]');
+        xassert_eqq(Dbl::describe_query("update T set x=?{blob} where id=?{id}",
+                                        ["blob" => "%PDF-\xff" . str_repeat("y", 100), "id" => 7]),
+                    "update T set x=?{blob} where id=?{id} [blob: <106 bytes>, id: 7]");
+        xassert_eqq(Dbl::describe_query("insert into T values ?v", [array_fill(0, 20, [1, 2])]),
+                    "insert into T values ?v [1: <20 values>]");
+        xassert_eqq(Dbl::describe_query("select ?", [null]), "select ? [1: NULL]");
+        xassert_eqq(Dbl::describe_query("select ?", ["tab\there"]), "select ? [1: <8 bytes>]");
+        xassert_eqq(Dbl::describe_query("select ?", ["José"]), 'select ? [1: "José"]');
+    }
+
+    function test_dbl_error_describes_query() {
+        $described = null;
+        Dbl::set_error_handler(function ($dblink, $query) use (&$described) {
+            $described = $query;
+        });
+        try {
+            $this->conf->qe("select ? from NonexistentTable where x=?", 1, str_repeat("z", 5000));
+        } finally {
+            Dbl::set_error_handler([$this->conf, "query_error_handler"]);
+        }
+        xassert_eqq($described, "select ? from NonexistentTable where x=? [1: 1, 2: <5000 bytes>]");
+    }
+
+    function test_dbl_multi_error_describes_query() {
+        $described = null;
+        Dbl::set_error_handler(function ($dblink, $query) use (&$described) {
+            $described = $query;
+        });
+        try {
+            $mresult = Dbl::multi_qe($this->conf->dblink, "select ?; select ? from NonexistentTable", 1, str_repeat("z", 5000));
+            $mresult->free_all();
+        } finally {
+            Dbl::set_error_handler([$this->conf, "query_error_handler"]);
+        }
+        xassert_eqq($described, "select ?; select ? from NonexistentTable [1: 1, 2: <5000 bytes>]");
+        // descriptions of many arguments stay short
+        xassert(strlen(Dbl::describe_args(array_fill(0, 100000, 12345))) < 1100);
+    }
+
+    function test_dbl_store_blob() {
+        $db = $this->conf->dblink;
+        $psid = $this->conf->fetch_ivalue("select paperStorageId from PaperStorage where paperStorageId>1 order by paperStorageId limit 1");
+        $old = $this->conf->fetch_value("select paper from PaperStorage where paperStorageId=?", $psid);
+        $q = "update PaperStorage set paper=?{blob} where paperStorageId=?{psid} and filename?{fn}e";
+        $fn = $this->conf->fetch_value("select filename from PaperStorage where paperStorageId=?", $psid);
+        $stored = function () use ($psid) {
+            return $this->conf->fetch_value("select paper from PaperStorage where paperStorageId=?", $psid);
+        };
+
+        // content spanning several pieces, with bytes that need escaping
+        $blob = str_repeat("\x00'\"\\?{blob}\xff", (Dbl::BLOB_PIECE >> 3) * 3 + 17);
+        xassert(Dbl::store_blob($db, $q, $blob, ["psid" => $psid, "fn" => $fn]));
+        xassert_eqq($stored(), $blob);
+        // `?` in other arguments is not a parameter
+        xassert(Dbl::store_blob($db, "update PaperStorage set paper=?{blob} where paperStorageId=?{psid} and ?{x}!=''", "abc", ["psid" => $psid, "x" => "?"]));
+        xassert_eqq($stored(), "abc");
+        xassert(Dbl::store_blob($db, $q, "", ["psid" => $psid, "fn" => $fn]));
+        xassert_eqq($stored(), "");
+
+        // too large: fails, keeps the old value, and keeps the connection
+        $described = null;
+        Dbl::set_error_handler(function ($dblink, $query) use (&$described) {
+            $described = $query;
+        });
+        try {
+            $max = $this->conf->fetch_ivalue("select @@max_allowed_packet");
+            xassert(!Dbl::store_blob($db, $q, str_repeat("x", $max + 1), ["psid" => $psid, "fn" => $fn]));
+        } finally {
+            Dbl::set_error_handler([$this->conf, "query_error_handler"]);
+        }
+        xassert_eqq($described, "{$q} [psid: {$psid}, fn: " . ($fn === null ? "NULL" : json_encode($fn)) . ", blob: <" . ($max + 1) . " bytes>]");
+        xassert_eqq($stored(), "");
+        xassert_eqq($this->conf->fetch_ivalue("select 1"), 1);
+
+        $this->conf->qe("update PaperStorage set paper=? where paperStorageId=?", $old, $psid);
+    }
+
     function test_dbl_format_query() {
         xassert_eqq(Dbl::format_query("Hello"), "Hello");
         xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
