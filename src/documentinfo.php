@@ -87,6 +87,10 @@ class DocumentInfo implements JsonSerializable {
     const DF_PREFER_INACTIVE = 4;
     const DF_S3_SIZE_MATCH = 8;
 
+    /** The `size` of a placeholder document, in memory and in the database.
+     * A placeholder has no hash. */
+    const SIZE_PLACEHOLDER = -2;
+
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
@@ -179,6 +183,24 @@ class DocumentInfo implements JsonSerializable {
         $doc->mimetype = $mimetype;
         $doc->content_file = $content_file;
         return $doc->analyze_content();
+    }
+
+    /** Return a new placeholder document.
+     *
+     * A placeholder document has a PaperStorage record, but no content, hash,
+     * or size. When its content is first needed, the document’s field
+     * fetches that content (see `PaperOption::fetch_document`), and the
+     * placeholder is completed: its PaperStorage record gains a hash and
+     * size. A completed document never changes its hash again. As with other
+     * new documents, the caller must set the placeholder’s submission and
+     * document type before saving it.
+     * @param ?string $mimetype
+     * @return DocumentInfo */
+    static function make_placeholder(Conf $conf, $mimetype = null) {
+        $doc = new DocumentInfo($conf);
+        $doc->mimetype = $mimetype;
+        $doc->size = self::SIZE_PLACEHOLDER;
+        return $doc;
     }
 
     /** @param string $hash
@@ -458,10 +480,12 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $content
      * @return $this */
     function set_simple_content($content) {
-        assert($this->paperStorageId <= 0);
+        assert($this->paperStorageId <= 0 || $this->is_placeholder());
         $this->content = $content;
         $this->content_file = $this->filestore = $this->_content_prefix = null;
-        $this->size = strlen($content);
+        if (!$this->is_placeholder()) {
+            $this->size = strlen($content);
+        }
         $this->sha1 = $this->crc32 = "";
         return $this;
     }
@@ -469,10 +493,12 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $content_file
      * @return $this */
     function set_simple_content_file($content_file) {
-        assert($this->paperStorageId <= 0);
+        assert($this->paperStorageId <= 0 || $this->is_placeholder());
         $this->content_file = $content_file;
         $this->content = $this->filestore = $this->_content_prefix = null;
-        $this->size = -1;
+        if (!$this->is_placeholder()) {
+            $this->size = -1;
+        }
         $this->sha1 = $this->crc32 = "";
         return $this;
     }
@@ -616,12 +642,16 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function ensure_content() {
+        // 0. fetch placeholder content from its field
         // 1. check docstore
         // 2. check db
         // 3. check S3
         // 4. check db as last resort
-        if ($this->content_available()
-            || $this->load_docstore()
+        if ($this->content_available()) {
+            return true;
+        } else if ($this->is_placeholder()) {
+            return $this->load_placeholder();
+        } else if ($this->load_docstore()
             || $this->load_database()
             || $this->load_s3()
             || $this->load_database(true)) {
@@ -630,6 +660,161 @@ class DocumentInfo implements JsonSerializable {
         // not found
         $this->error("<0>Cannot load document");
         return false;
+    }
+
+    /** Return true iff this document is a placeholder.
+     *
+     * A placeholder has a PaperStorage record, but its content has not been
+     * fetched, so its hash and size are unknown. `binary_hash()`, `size()`,
+     * and similar functions do not fetch placeholder content; they report
+     * unknown values. `ensure_content()` fetches content and completes the
+     * placeholder.
+     * @return bool */
+    function is_placeholder() {
+        return $this->size === self::SIZE_PLACEHOLDER;
+    }
+
+    /** If this placeholder’s PaperStorage record has been completed, perhaps
+     * by a concurrent request, adopt that record’s hash, size, checksum, and
+     * type, dropping any content that does not match, and return true.
+     * @return bool */
+    private function adopt_completed_record() {
+        $row = $this->conf->fetch_first_row("select sha1, size, crc32, mimetype from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+        if (!$row || (int) $row[1] === self::SIZE_PLACEHOLDER) {
+            return false;
+        }
+        if ($row[0] !== $this->sha1) {
+            $this->content = $this->content_file = $this->filestore = null;
+            $this->_content_prefix = null;
+        }
+        $this->sha1 = $row[0];
+        $this->size = (int) $row[1];
+        $this->crc32 = $row[2];
+        $this->mimetype = $row[3];
+        return true;
+    }
+
+    /** @return bool */
+    private function load_placeholder() {
+        // only saved placeholders can be completed
+        if ($this->paperStorageId <= 1) {
+            $this->error("<0>Cannot load document");
+            return false;
+        }
+
+        // perhaps another request completed the placeholder
+        if ($this->adopt_completed_record()) {
+            return $this->ensure_content();
+        }
+
+        // fetch content from the field
+        $opt = $this->option();
+        if ($opt && $this->paperId > 0) {
+            $this->prow = $this->prow ?? $this->conf->paper_by_id($this->paperId);
+        }
+        if (!$opt
+            || !$this->prow
+            || !$opt->fetch_document($this)
+            || !$this->content_available()
+            || !$this->complete_placeholder()) {
+            if (!$this->has_error()) {
+                $this->error("<0>Cannot load document");
+            }
+            // drop content that did not complete the placeholder
+            if ($this->is_placeholder()) {
+                $this->content = $this->content_file = $this->filestore = null;
+                $this->_content_prefix = null;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /** Complete a placeholder whose content has just been fetched: assign
+     * its hash, size, and checksum, and store its content.
+     *
+     * Two requests might fetch the same placeholder concurrently, perhaps
+     * observing different content. The first to complete wins; the loser
+     * adopts the winner’s content.
+     * @return bool */
+    private function complete_placeholder() {
+        assert($this->is_placeholder() && $this->paperStorageId > 1);
+        $hash = $this->content_binary_hash();
+        $size = $this->content_size();
+        if ($hash === false || $size < 0) {
+            $this->error("<0>Cannot load document");
+            return false;
+        }
+        $crc32 = $this->content_crc32();
+        $mimetype = $this->mimetype; // `analyze_content` may change it
+
+        // the document is no longer a placeholder (unless validation fails)
+        $this->sha1 = $hash;
+        $this->size = $size;
+        $this->crc32 = $crc32 !== false && strlen($crc32) === 4 ? $crc32 : null;
+
+        // check document type, size, etc.
+        $this->analyze_content();
+        if (!$this->filterType
+            && ($opt = $this->option())
+            && !$opt->validate_document($this)) {
+            $this->restore_placeholder($mimetype);
+            return false;
+        }
+
+        // store content in content-addressed stores, then claim the record
+        $sd = $this->store_docstore(0);
+        $ss = $this->store_s3() > 0;
+        $claimed = $this->store_skeleton(self::SAVEF_TRUST_METADATA | self::SAVEF_COMPLETE_PLACEHOLDER);
+        if ($claimed === null) {
+            // another request completed the record first; prefer its content
+            if ($this->adopt_completed_record()) {
+                return $this->ensure_content();
+            }
+            $this->restore_placeholder($mimetype);
+            $this->error("<0>Cannot load document");
+            return false;
+        } else if (!$claimed) {
+            $this->restore_placeholder($mimetype);
+            return false;
+        }
+        try {
+            $sdb = $this->store_database();
+        } catch (Throwable $ex) {
+            $this->unclaim_placeholder($hash, $mimetype);
+            throw $ex;
+        }
+        if (!$sdb && !$sd && !$ss) {
+            $this->unclaim_placeholder($hash, $mimetype);
+            $this->message_set()->prepend_item(MessageItem::error("<0>Document not saved"));
+            return false;
+        }
+
+        // update primary document information
+        if ($this->documentType === DTYPE_SUBMISSION
+            || $this->documentType === DTYPE_FINAL) {
+            $this->prow->update_primary_document($this);
+        }
+        return true;
+    }
+
+    /** Return a record this request claimed (with hash `$hash`) to a
+     * placeholder, because its content could not be stored.
+     * @param string $hash
+     * @param ?string $mimetype */
+    private function unclaim_placeholder($hash, $mimetype) {
+        $this->conf->qe("update PaperStorage set sha1='', size=?, crc32=null, mimetype=? where paperId=? and paperStorageId=? and sha1=?",
+            self::SIZE_PLACEHOLDER, $mimetype ?? "",
+            $this->paperId, $this->paperStorageId, $hash);
+        $this->restore_placeholder($mimetype);
+    }
+
+    /** @param ?string $mimetype */
+    private function restore_placeholder($mimetype) {
+        $this->sha1 = "";
+        $this->size = self::SIZE_PLACEHOLDER;
+        $this->crc32 = null;
+        $this->mimetype = $mimetype;
     }
 
     /** @return int */
@@ -649,7 +834,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return int */
     function size() {
-        if ($this->size < 0) {
+        if ($this->size < 0 && !$this->is_placeholder()) {
             // prefer local content; otherwise ask S3 without downloading
             if (!$this->content_available_locally()
                 && !$this->load_database()) {
@@ -659,7 +844,7 @@ class DocumentInfo implements JsonSerializable {
                 $this->size = $this->content_size();
             }
             if ($this->size >= 0 && $this->paperStorageId >= 1) {
-                $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size<0", $this->size, $this->paperId, $this->paperStorageId);
+                $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size=-1", $this->size, $this->paperId, $this->paperStorageId);
             }
         }
         return $this->size;
@@ -751,13 +936,17 @@ class DocumentInfo implements JsonSerializable {
         return ($this->_dflags & self::DF_PREFER_INACTIVE) !== 0;
     }
 
-    /** @param int $savef
-     * @return bool */
+    /** Store this document’s PaperStorage record. With
+     * SAVEF_COMPLETE_PLACEHOLDER, update the record only if it is still a
+     * placeholder, and return null if it is not.
+     * @param int $savef
+     * @return ?bool */
     private function store_skeleton($savef) {
         if (!$this->timestamp) {
             $this->timestamp = Conf::$now;
         }
-        if (($savef & self::SAVEF_TRUST_METADATA) === 0) {
+        if (($savef & self::SAVEF_TRUST_METADATA) === 0
+            && !$this->is_placeholder()) {
             // populate $this->size and $this->crc32 from content
             $this->size();
             if ($this->size >= 0 && $this->size <= 10000000) {
@@ -766,7 +955,7 @@ class DocumentInfo implements JsonSerializable {
         }
         $upd = [
             "paperId" => $this->paperId,
-            "sha1" => $this->binary_hash(),
+            "sha1" => $this->is_placeholder() ? "" : $this->binary_hash(),
             "timestamp" => $this->timestamp,
             "size" => $this->size,
             "mimetype" => $this->mimetype,
@@ -800,10 +989,25 @@ class DocumentInfo implements JsonSerializable {
             $upd["infoJsonOverflow"] = $overflow ? $ijstr : null;
         }
 
+        if (($savef & self::SAVEF_COMPLETE_PLACEHOLDER) !== 0) {
+            // other requests may change these while content is fetched
+            unset($upd["paperId"], $upd["inactive"], $upd["timeReferenced"]);
+        }
+
         if ($this->paperStorageId > 1) {
             $qv = array_values($upd);
             $qv[] = $this->paperStorageId;
-            $result = $this->conf->qe_apply("update PaperStorage set " . join("=?, ", array_keys($upd)) . "=? where paperStorageId=?", $qv);
+            $where = "paperStorageId=?";
+            if (($savef & self::SAVEF_COMPLETE_PLACEHOLDER) !== 0) {
+                $qv[] = self::SIZE_PLACEHOLDER;
+                $where .= " and size=?";
+            }
+            $result = $this->conf->qe_apply("update PaperStorage set " . join("=?, ", array_keys($upd)) . "=? where {$where}", $qv);
+            if (($savef & self::SAVEF_COMPLETE_PLACEHOLDER) !== 0
+                && !Dbl::is_error($result)
+                && $result->affected_rows === 0) {
+                return null;
+            }
         } else {
             $result = $this->conf->qe_apply("insert into PaperStorage set " . join("=?, ", array_keys($upd)) . "=?", array_values($upd));
             if ($result->affected_rows) {
@@ -1196,6 +1400,8 @@ class DocumentInfo implements JsonSerializable {
     // These properties are defined for convenience in caller code:
     const SAVEF_ANY_CONTENT_FILE = 8;     // allow any content_file
     const SAVEF_ALLOW_HASH_WITHOUT_CONTENT = 32; // allow finding document by hash
+    private const SAVEF_COMPLETE_PLACEHOLDER = 128; // store_skeleton: update
+                                          // only if record is a placeholder
 
     /** Store this new document -- by adopting a stored copy of it on the same
      * submission if there is one, unless `$savef` has SAVEF_SKIP_EXISTING.
@@ -1208,6 +1414,11 @@ class DocumentInfo implements JsonSerializable {
         assert($this->paperStorageId <= 0);
         if ($this->has_error()) {
             return false;
+        }
+
+        // placeholders have no content to deduplicate, check, or store
+        if ($this->is_placeholder()) {
+            return $this->store_skeleton($savef);
         }
 
         // deduplicate to an existing document with same sha1
@@ -1410,7 +1621,8 @@ class DocumentInfo implements JsonSerializable {
         $docstore = ($flags & self::FLAG_NO_DOCSTORE) === 0;
         $pfdocs = [];
         foreach ($docs as $doc) {
-            if (!$doc->content_available_locally()
+            if (!$doc->is_placeholder()
+                && !$doc->content_available_locally()
                 && $doc->conf->s3_client()) {
                 $doc->_s3_index = $doc->_s3_index ?? 0;
                 $pfdocs[] = new DocumentPrefetchInfo($doc);
@@ -1572,7 +1784,9 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return string|false */
     function binary_hash() {
-        if ($this->sha1 === "") {
+        if ($this->is_placeholder()) {
+            return false;
+        } else if ($this->sha1 === "") {
             $this->sha1 = $this->content_binary_hash();
         }
         return $this->sha1;
@@ -1649,15 +1863,12 @@ class DocumentInfo implements JsonSerializable {
         if ($this->crc32 === null && $this->paperStorageId > 0) {
             self::prefetch_crc32([$this]);
         }
-        if ($this->crc32 === null || $this->crc32 === "") {
+        if (($this->crc32 === null || $this->crc32 === "")
+            && $this->is_placeholder()) {
+            return false;
+        } else if ($this->crc32 === null || $this->crc32 === "") {
             $this->ensure_content();
-            if ($this->content !== null) {
-                $c = hash("crc32b", $this->content, true);
-            } else if (($path = $this->available_content_file())) {
-                $c = hash_file("crc32b", $path, true);
-            } else {
-                $c = false;
-            }
+            $c = $this->content_crc32();
             if ($c === false || strlen($c) === 4) {
                 $this->crc32 = $c;
             } else {
@@ -1671,6 +1882,18 @@ class DocumentInfo implements JsonSerializable {
             error_log("{$this->conf->dbname}: #{$this->paperId}/{$this->paperStorageId}: unlikely CRC32 00000000");
         }
         return $this->crc32;
+    }
+
+    /** Return the CRC32 checksum of this document’s available content,
+     * without loading content or saving the result.
+     * @return string|false */
+    private function content_crc32() {
+        if ($this->content !== null) {
+            return hash("crc32b", $this->content, true);
+        } else if (($path = $this->available_content_file())) {
+            return hash_file("crc32b", $path, true);
+        }
+        return false;
     }
 
     /** @return int|false */
@@ -2079,7 +2302,8 @@ class DocumentInfo implements JsonSerializable {
      * @return ?int */
     function npages(?CheckFormat $cf = null) {
         if (($this->mimetype && $this->mimetype !== "application/pdf")
-            || $this->npages === -1000000) {
+            || $this->npages === -1000000
+            || $this->is_placeholder()) {
             return null;
         }
         if ($this->npages === null) {
@@ -2147,6 +2371,12 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function prepare_download(Downloader $dopt) {
+        if ($this->is_placeholder() && !$this->ensure_content()) {
+            if (!$this->has_error()) {
+                $this->error("<0>Document cannot be prepared for download");
+            }
+            return false;
+        }
         if ($this->size() <= 0) {
             $this->message_set()->warning_at(null, "<0>Empty file");
             return false;

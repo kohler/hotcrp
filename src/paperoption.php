@@ -1000,6 +1000,19 @@ class PaperOption implements JsonSerializable {
         return true;
     }
 
+    /** Fetch the content of `$doc`, a placeholder document for this field.
+     *
+     * On success, set `$doc`’s content (with `$doc->set_simple_content()` or
+     * `$doc->set_simple_content_file()`) and return true; HotCRP will then
+     * analyze and validate the content, assign the document a hash and size,
+     * and store it. On failure, return false, perhaps after reporting an error with
+     * `$doc->error()`. `$doc->prow` is set. Fields that create placeholder
+     * documents must override this function.
+     * @return bool */
+    function fetch_document(DocumentInfo $doc) {
+        return false;
+    }
+
     /** @param FieldChangeSet $fcs */
     function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {
     }

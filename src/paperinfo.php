@@ -2757,6 +2757,35 @@ class PaperInfo {
                     && $doc->documentType === DTYPE_FINAL));
     }
 
+    /** Update primary document information, in the database and in memory,
+     * after `$doc`, a placeholder submission or final version, has been
+     * completed. The database is updated only if `$doc` is still the
+     * submission’s main document and the submission still records it as a
+     * placeholder. The in-memory values are already saved, so they are not
+     * recorded as property changes. */
+    function update_primary_document(DocumentInfo $doc) {
+        assert(!$doc->is_placeholder() && $doc->paperId === $this->paperId);
+        $this->conf->qe("update Paper set sha1=?, size=?, mimetype=? where paperId=? and size=? and (case when finalPaperStorageId>1 then finalPaperStorageId else paperStorageId end)=?",
+            $doc->binary_hash(), $doc->size(), $doc->mimetype ?? "",
+            $this->paperId, DocumentInfo::SIZE_PLACEHOLDER, $doc->paperStorageId);
+        if ($this->is_primary_document($doc)
+            && $this->size === DocumentInfo::SIZE_PLACEHOLDER) {
+            $this->sha1 = $doc->binary_hash();
+            $this->size = $doc->size();
+            $this->mimetype = $doc->mimetype;
+        }
+        if ($this->_primary_document
+            && $this->_primary_document !== $doc
+            && $this->_primary_document->paperStorageId === $doc->paperStorageId) {
+            $this->_primary_document = null;
+        }
+        if ($this->_final_document
+            && $this->_final_document !== $doc
+            && $this->_final_document->paperStorageId === $doc->paperStorageId) {
+            $this->_final_document = null;
+        }
+    }
+
     /** @param int $dtype
      * @return list<DocumentInfo> */
     function documents($dtype) {

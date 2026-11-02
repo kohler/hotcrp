@@ -274,6 +274,8 @@ final class DocumentImporter {
 
         // validate JSON
         if ($docj instanceof DocumentInfo) {
+            // caller must set the document's type
+            assert($docj->documentType === $this->dt);
             $doc = $docj;
         } else if (!($doc = $this->_upload_json_document($docj))) {
             return null;

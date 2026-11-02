@@ -501,6 +501,12 @@ class ConfInvariants {
             $this->invariant_error("paper_denormalization", "bad Paper final denormalization, document #{0}.{1} ({{$n}}!={" . ($n+4) . "})");
         }
 
+        // placeholders have no hash
+        $any = $this->invariantq("select paperStorageId from PaperStorage where size=? and sha1!='' limit 1", DocumentInfo::SIZE_PLACEHOLDER);
+        if ($any) {
+            $this->invariant_error("placeholder_hash", "placeholder PaperStorage has hash, id #{0}");
+        }
+
         // filterType is never zero
         $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
         if ($any) {

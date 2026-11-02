@@ -38,6 +38,7 @@
         "members": [
             "PaperStatus_Tester", "AuthorCertification_Tester",
             "Login_Tester", "UserStatus_Tester", "ManageEmail_Tester",
+            "PlaceholderDocuments_Tester",
             "(", "no_cdb", "Login_Tester", "UserStatus_Tester", ")"
         ]
     },

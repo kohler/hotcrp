@@ -120,8 +120,13 @@ class PaperExport {
         if ($doc->mimetype) {
             $d->mimetype = $doc->mimetype;
         }
+        if ($this->include_document_content) {
+            $doc->ensure_content();
+        }
         if ($doc->has_hash()) {
             $d->hash = $doc->text_hash();
+        } else if ($doc->is_placeholder()) {
+            $d->placeholder = true;
         }
         if ($doc->timestamp) {
             $d->timestamp = $doc->timestamp;

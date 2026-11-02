@@ -8,6 +8,8 @@ class PdfSize_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $doc = $state->prow_primary_document();
-        return "({$doc} ? {$doc}->size() : null)";
+        // unknown sizes (including placeholders) are null
+        $sz = $state->define_gvar('$primary_document_size', "{$doc} ? {$doc}->size() : -1");
+        return "({$sz} >= 0 ? {$sz} : null)";
     }
 }

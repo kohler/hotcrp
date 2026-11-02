@@ -55,7 +55,11 @@ class Document_API {
         if ($dtopt) {
             $dj["dt"] = $dtopt;
         }
-        $dj["hash"] = $doc->text_hash();
+        if ($doc->has_hash()) {
+            $dj["hash"] = $doc->text_hash();
+        } else if ($doc->is_placeholder()) {
+            $dj["placeholder"] = true;
+        }
         $dj["mimetype"] = $doc->mimetype;
         $dj["created_at"] = $doc->timestamp;
         $dj["attached_at"] = $doc->timeReferenced ?? $doc->timestamp;

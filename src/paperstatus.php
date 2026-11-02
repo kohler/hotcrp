@@ -1500,7 +1500,7 @@ final class PaperStatus extends MessageSet {
         if ($new_joindoc) {
             $this->prow->set_prop("size", $new_joindoc->size());
             $this->prow->set_prop("mimetype", $new_joindoc->mimetype);
-            $this->prow->set_prop("sha1", $new_joindoc->binary_hash());
+            $this->prow->set_prop("sha1", $new_joindoc->is_placeholder() ? "" : $new_joindoc->binary_hash());
             $this->prow->set_prop("timestamp", $new_joindoc->timestamp);
         } else {
             $this->prow->set_prop("size", -1);

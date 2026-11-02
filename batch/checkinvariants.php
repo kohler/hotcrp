@@ -278,14 +278,16 @@ class CheckInvariants_Batch {
     }
 
     private function fix_document_match() {
-        $result = $this->conf->qe("select * from PaperStorage where paperStorageId>1 and size<0");
+        $result = $this->conf->qe("select * from PaperStorage where paperStorageId>1 and size=-1");
         while (($doc = DocumentInfo::fetch($result, $this->conf))) {
             $doc->size();
         }
         $result->close();
 
-        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.paperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId<=1");
-        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.finalPaperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId>1");
+        // PaperStorage is authoritative (for instance, a request might
+        // complete a placeholder, but fail before updating Paper)
+        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.paperStorageId) set p.sha1=s.sha1, p.size=s.size, p.mimetype=s.mimetype, p.timestamp=s.timestamp where p.finalPaperStorageId<=1 and (p.sha1!=s.sha1 or p.size!=s.size or p.mimetype!=s.mimetype or p.timestamp!=s.timestamp)");
+        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.finalPaperStorageId) set p.sha1=s.sha1, p.size=s.size, p.mimetype=s.mimetype, p.timestamp=s.timestamp where p.finalPaperStorageId>1 and (p.sha1!=s.sha1 or p.size!=s.size or p.mimetype!=s.mimetype or p.timestamp!=s.timestamp)");
     }
 
     private function fix_reviewNeedsSubmit() {

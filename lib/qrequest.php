@@ -1162,11 +1162,11 @@ class QrequestFile {
         $qf = new QrequestFile;
         $qf->name = $doc->filename;
         $qf->type = $doc->mimetype;
-        if (($size = $doc->size()) >= 0) {
-            $qf->size = $size;
-        }
         if (($qf->tmp_name = $doc->content_file()) === null) {
             return null;
+        }
+        if (($size = $doc->size()) >= 0) {
+            $qf->size = $size;
         }
         return $qf;
     }

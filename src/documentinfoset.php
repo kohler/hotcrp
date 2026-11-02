@@ -264,6 +264,22 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return $this->_tempdir;
     }
+    /** Fetch the content of any placeholder documents, which must be
+     * completed before their sizes and checksums are known.
+     * @return bool */
+    private function _complete_placeholders() {
+        $ok = true;
+        foreach ($this->docs as $doc) {
+            if ($doc->is_placeholder() && !$doc->ensure_content()) {
+                foreach ($doc->message_list() as $mi) {
+                    $this->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+                }
+                $ok = false;
+            }
+        }
+        return $ok;
+    }
+
     private function _hotzip_progress() {
         // assign local headers
         $this->_zipi = $this->_zipi ?? [];
@@ -461,6 +477,9 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @return ?DocumentInfo */
     function make_zip_document() {
+        if (!$this->_complete_placeholders()) {
+            return null;
+        }
         if (($dstore_tmp = $this->conf->docstore_tempdir())) {
             $this->_filestore = $dstore_tmp . $this->content_signature() . ".zip";
             // maybe zipfile with that signature already exists
@@ -593,6 +612,9 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             return false;
         }
 
+        if (!$this->_complete_placeholders()) {
+            return false;
+        }
         $dopt->set_mimetype(Mimetype::type_with_charset($this->_mimetype));
         $dopt->set_etag("\"" . $this->content_signature() . "\"");
         $dopt->set_last_modified($this->last_modified());
