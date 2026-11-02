@@ -695,14 +695,24 @@ class Text {
                 // unrolled `\S*` that stops before the next literal. The guard
                 // keeps the possessive scan from swallowing that literal; the
                 // final literal additionally requires the word-boundary $tail.
-                preg_match('/\A(?:[^\\\\\xC0-\xFF]|\\\\.|[\xC0-\xFF][\x80-\xBF]++)/', $next, $m);
+                preg_match('/\A(?:\\\\.|[\xC0-\xFF][\x80-\xBF]++|[\s\S])/', $next, $m);
                 $ch = $m[0];
+                if (strlen($ch) > 1 && ord($ch[0]) >= 0xC0) {
+                    // a multibyte character in a byte class would also reject
+                    // other characters that share its bytes
+                    $notch = "(?:(?!{$ch})" . ($reject === "" ? "[\\s\\S]" : "[^{$reject}]") . ")";
+                } else {
+                    $notch = "[^{$ch}{$reject}]";
+                }
                 $boundary = $i + 2 === $nlitseg ? $tail : "";
-                if ($ch === $next && $boundary === "") {
-                    $pat = "[^{$ch}{$reject}]*+";
+                // if the wildcard rejects $ch, it ends at the first $ch
+                $chx = strlen($ch) === 2 && $ch[0] === "\\" ? $ch[1] : $ch;
+                if (($ch === $next && $boundary === "")
+                    || ($reject !== "" && @preg_match("{\\A[{$reject}]\\z}u", $chx) === 1)) {
+                    $pat = "{$notch}*+";
                 } else {
                     $neg = "(?!{$next}{$boundary})";
-                    $pat = "[^{$ch}{$reject}]*+(?:{$neg}{$ch}[^{$ch}{$reject}]*+)*+";
+                    $pat = "{$notch}*+(?:{$neg}{$ch}{$notch}*+)*+";
                 }
             }
             $out .= $capture ? "({$pat})" : $pat;

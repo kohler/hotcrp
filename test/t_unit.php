@@ -2628,6 +2628,49 @@ class Unit_Tester {
         xassert_lt(microtime(true) - $t0, 1.0);
     }
 
+    function test_wildcard_pregex() {
+        $m = function ($pat, $s) {
+            return preg_match('{\A' . Text::wildcard_pregex($pat) . '\z}i', $s);
+        };
+        xassert_eqq($m("fl*@*lbl*", "floyd@ee.lbl.gov"), 1);
+        xassert_eqq($m("*lbl*", "floyd@ee.lbl.gov"), 1);
+        xassert_eqq($m("lbl*", "floyd@ee.lbl.gov"), 0);
+        xassert_eqq($m("a**b", "axxb"), 1);
+        xassert_eqq($m("a*b", "axxbx"), 0);
+        xassert_eqq($m("a\\*b", "a*b"), 1);
+        xassert_eqq($m("a\\*b", "axb"), 0);
+        // a wildcard followed by a byte that does not start valid UTF-8
+        xassert_eqq($m("fl*\xC3@*", "fl\xC3@x"), 1);
+        xassert_eqq($m("fl*\xC3@*", "floyd@x"), 0);
+        xassert_eqq($m("fl*\xFF", "floyd\xFF"), 1);
+        // a wildcard followed by a multibyte character can match characters
+        // that share its bytes
+        xassert_eqq($m("*é", "èé"), 1);
+        xassert_eqq($m("*é", "èè"), 0);
+        xassert_eqq($m("a*é*b", "aèxéyèb"), 1);
+        xassert_eqq($m("a*éf", "aèéxéf"), 1);
+        xassert_eqq($m("a*éf", "aèéxéx"), 0);
+        xassert_eqq($m("*è", "\xC3è"), 1);
+        // in UTF-8 mode, too
+        $u = function ($pat, $s) {
+            return preg_match('{\A' . Text::wildcard_pregex($pat) . '\z}ui', $s);
+        };
+        xassert_eqq($u("*é", "èé"), 1);
+        xassert_eqq($u("a*éf", "aèéxéf"), 1);
+        xassert_eqq($u("a*éf", "aèéxéx"), 0);
+        xassert(Text::star_text_pregexes("*é")->match("èé"));
+        // a wildcard cannot match rejected characters, even those that start
+        // the next literal
+        $r = function ($pat, $s) {
+            return preg_match('{\A' . Text::one_wildcard_regex($pat, "", "\\s#~", "(?![^\\s#])") . '\z}', $s);
+        };
+        xassert_eqq($r("a*~b", "ax~b"), 1);
+        xassert_eqq($r("a*~b", "ax~y~b"), 0);
+        xassert_eqq($r("*~", "a~"), 1);
+        xassert_eqq($r("*~", "a~b~"), 0);
+        xassert_eqq($r("a*#", "ax#y#"), 0);
+    }
+
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
         xassert($pregex->match_da("foo", null));
