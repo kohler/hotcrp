@@ -17,6 +17,8 @@ class HotCRPMailPreparation extends MailPreparation {
     public $combination_type = 0;
     /** @var bool */
     public $fake = false;
+    /** @var array<int,true> */
+    public $listed_reviews = [];
 
     /** @param Conf $conf
      * @param ?Contact $recipient */
@@ -60,6 +62,15 @@ class HotCRPMailPreparation extends MailPreparation {
             }
         }
         return true;
+    }
+    /** @param MailPreparation $p
+     * @return $this */
+    function merge($p) {
+        parent::merge($p);
+        if ($p instanceof HotCRPMailPreparation) {
+            $this->listed_reviews += $p->listed_reviews;
+        }
+        return $this;
     }
     function finalize() {
         parent::finalize();
@@ -287,14 +298,23 @@ class HotCRPMailer extends Mailer {
      * @return string */
     private function get_assignments($user, $review_round) {
         $lines = [];
+        $listed = [];
         foreach ($this->recip_set->paper_set(true) as $prow) {
+            $any = false;
             foreach ($this->recip_set->reviews_for_recipient($prow, $user) as $rrow) {
                 if ($review_round === null
                     || $rrow->reviewRound === $review_round) {
-                    $lines[] = "#{$prow->paperId} {$prow->title()}";
-                    break;
+                    $any = true;
+                    $listed[$rrow->reviewId] = true;
                 }
             }
+            if ($any) {
+                $lines[] = "#{$prow->paperId} {$prow->title()}";
+            }
+        }
+        // remember listed reviews; the mail tool marks them as notified
+        if ($this->preparation instanceof HotCRPMailPreparation) {
+            $this->preparation->listed_reviews += $listed;
         }
         return join("\n", $lines);
     }
@@ -312,7 +332,12 @@ class HotCRPMailer extends Mailer {
                 return $isbool ? false : null;
             }
         }
-        return $this->get_assignments($this->recipient, $round);
+        $text = $this->get_assignments($this->recipient, $round);
+        if ($text === "" && !$this->conf->time_review_open()) {
+            // assigned reviews are ghosts until reviewing opens
+            $this->warning("<5><a href=\"{}\">Reviewing is disabled</a>, so reviewers can’t see new assignments and {{{{{$uf->name}}}}} may be empty", new FmtArg(0, $this->conf->si("review_open")->hoturl(), 0));
+        }
+        return $text;
     }
 
 

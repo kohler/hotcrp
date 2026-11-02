@@ -1032,6 +1032,9 @@ class Mailer_Tester {
             ->set_user($user)->approve_token();
         MailSender::clean_request($qreq);
         MailChecker::clear();
+        // test_mode 2 routes feedback into the discarded output
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2;
         ob_start();
         try {
             $ms = new MailSender($mr, $qreq, MailSender::PHASE_SEND);
@@ -1039,8 +1042,10 @@ class Mailer_Tester {
             $ms->prepare_sending_mailid();
             $ms->run();
         } catch (PageCompletion $unused) {
+        } finally {
+            ob_end_clean();
+            Navigation::$test_mode = $old_test_mode;
         }
-        ob_end_clean();
         $sent = [];
         foreach (MailChecker::$preps as $prep) {
             $emails = array_map(function ($u) { return $u->email; }, $prep->recipients());
@@ -1260,6 +1265,86 @@ class Mailer_Tester {
         if (!$had_review) {
             xassert_assign($chair, "paper,action,user\n17,clearreview,marina@poema.ru\n");
         }
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        MailChecker::clear();
+    }
+
+    /** Unstarted reviews are ghosts until reviewing opens, so the mail tool
+     * warns if {{NEWASSIGNMENTS}} expands to nothing then. */
+    function test_new_assignments_warns_when_reviewing_closed() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+        $rev_open = $conf->setting("rev_open");
+        $pid = null;
+        foreach ($conf->paper_set(["where" => "timeSubmitted>0"], $chair) as $prow) {
+            if (!$prow->has_conflict($marina) && !$prow->review_by_user($marina)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert_neqq($pid, null);
+        xassert_assign($chair, "paper,action,user\n{$pid},primary,{$marina->email}\n");
+
+        $prepare = function () use ($chair, $marina) {
+            $mr = (new MailRecipients($chair))->set_recipients("newpcrev");
+            $mailer = (new HotCRPMailer($chair, $marina))->set_recip_set($mr);
+            return $mailer->prepare(["subject" => "New", "body" => "{{NEWASSIGNMENTS}}"]);
+        };
+
+        $conf->save_refresh_setting("rev_open", 1);
+        $prep = $prepare();
+        xassert_str_contains($prep->body, "#{$pid} ");
+        xassert_not_str_contains($prep->full_feedback_text(), "Reviewing is disabled");
+
+        $conf->save_refresh_setting("rev_open", null);
+        $prep = $prepare();
+        xassert_not_str_contains($prep->body, "#{$pid} ");
+        xassert_str_contains($prep->full_feedback_text(), "Reviewing is disabled");
+        xassert_str_contains(MessageSet::feedback_html($prep->message_list()), "settings/reviews#review_open");
+
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $marina->contactId);
+        $conf->save_refresh_setting("rev_open", $rev_open);
+        MailChecker::clear();
+    }
+
+    /** Mail to reviewers with new assignments marks assignments as notified
+     * only if the mail lists them. */
+    function test_new_assignment_mail_marks_listed_reviews_notified() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $marina = $conf->checked_user_by_email("marina@poema.ru");
+        $rev_open = $conf->setting("rev_open");
+        $pid = null;
+        foreach ($conf->paper_set(["where" => "timeSubmitted>0"], $chair) as $prow) {
+            if (!$prow->has_conflict($marina) && !$prow->review_by_user($marina)) {
+                $pid = $prow->paperId;
+                break;
+            }
+        }
+        xassert_neqq($pid, null);
+        xassert_assign($chair, "paper,action,user\n{$pid},primary,{$marina->email}\n");
+        $notified = function () use ($conf, $pid, $marina) {
+            return $conf->fetch_ivalue("select timeRequestNotified from PaperReview where paperId=? and contactId=?", $pid, $marina->contactId) > 0;
+        };
+        $conf->qe("update PaperReview set timeRequestNotified=0 where paperId=? and contactId=?", $pid, $marina->contactId);
+
+        // mail without an assignment list does not mark
+        $conf->save_refresh_setting("rev_open", 1);
+        xassert_in_eqq($marina->email, array_merge(...$this->send_mail_tool($chair, "newpcrev", [$pid], "Hello")));
+        xassert(!$notified());
+
+        // while reviewing is closed, unstarted reviews are not listed
+        $conf->save_refresh_setting("rev_open", null);
+        xassert_in_eqq($marina->email, array_merge(...$this->send_mail_tool($chair, "newpcrev", [$pid], "{{NEWASSIGNMENTS}}")));
+        xassert(!$notified());
+
+        // listed reviews are marked
+        $conf->save_refresh_setting("rev_open", 1);
+        xassert_in_eqq($marina->email, array_merge(...$this->send_mail_tool($chair, "newpcrev", [$pid], "{{NEWASSIGNMENTS}}")));
+        xassert($notified());
+
+        $conf->qe("delete from PaperReview where paperId=? and contactId=?", $pid, $marina->contactId);
         $conf->save_refresh_setting("rev_open", $rev_open);
         MailChecker::clear();
     }
