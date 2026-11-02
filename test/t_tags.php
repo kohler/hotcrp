@@ -181,6 +181,39 @@ class Tags_Tester {
         xassert($sv->execute());
     }
 
+    function test_wildcard_tag_search() {
+        $tags = [];
+        for ($i = 0; $i !== 20; ++$i) {
+            $tags[] = "~" . str_repeat("a", 60) . "bc" . sprintf("%02d", $i);
+        }
+        xassert_assign($this->u_chair, "paper,tag\n1," . join(" ", $tags) . "\n");
+        xassert_assign($this->u_chair, "paper,tag\n2,~xab ~xbxc\n");
+        try {
+            // results
+            xassert_search($this->u_chair, "#~a*b*c*0*7", [1]);
+            xassert_search($this->u_chair, "#~a*c19", [1]);
+            xassert_search($this->u_chair, "#~a*c2", []);
+            xassert_search($this->u_chair, "#~x*b", [2]);
+            xassert_search($this->u_chair, "#~x*c", [2]);
+            xassert_search($this->u_chair, "#~x*a", []);
+            xassert_search($this->u_chair, "#~*b*c", [2]);
+            xassert_search($this->u_chair, "#~*b*c*", [1, 2]);
+            xassert_search($this->u_chair, "#~x*", [2]);
+            xassert_search($this->u_chair, "#~a_*", []);
+            xassert_search($this->u_chair, "#chair~a*b*c*0*7", [1]);
+            xassert_search($this->u_chair, "#*~a*b*c*0*7", [1]);
+
+            // near misses do not backtrack, in SQL or in PHP
+            $t0 = microtime(true);
+            xassert_search($this->u_chair, "#~a*a*a*a*a*a*b", []);
+            xassert_eqq(count(search_json($this->u_chair, "-#~a*a*a*a*a*a*a*b")),
+                        count(search_json($this->u_chair, "all")));
+            xassert_lt(microtime(true) - $t0, 1.0);
+        } finally {
+            xassert_assign($this->u_chair, "paper,action,tag\n1,cleartag," . join(" ", $tags) . "\n2,cleartag,~xab ~xbxc\n");
+        }
+    }
+
     function test_tag_pattern_styles() {
         $old = $this->conf->setting_data("tag_color");
         $qtag = str_repeat("q", 75) . "y";

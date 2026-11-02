@@ -127,8 +127,7 @@ class LogEntryGenerator {
                 if (!is_valid_utf8($m)) { // `rlike` rejects invalid UTF-8
                     $m = UnicodeHelper::utf8_replace_invalid($m);
                 }
-                $t = addcslashes($m, '^$.*+?|(){}[]\\');
-                $ex[] = str_replace('\\*', ".*", $t);
+                $ex[] = Text::one_wildcard_regex($m, "", "", "");
             }
             $this->action_regex = str_replace("\x01", ".", '(' . join("|", $ex) . ')');
         }

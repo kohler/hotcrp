@@ -28,7 +28,7 @@ class TagSearchMatcher {
     /** @var list<string> */
     private $_tagregex = [];
     /** @var list<string> */
-    private $_sql_tagregex = [];
+    private $_sql_tagpat = [];
     /** @var ?string */
     private $_tag_exclusion_regex;
     /** @var list<CountMatcher> */
@@ -122,12 +122,16 @@ class TagSearchMatcher {
                     $this->add_tag($xcid . $checktag);
                 }
             } else if ($c === "*") {
-                $ct = str_replace("\\*", "\\S*", preg_quote($checktag));
-                $this->add_tag_regex(" \\d+{$ct}#", "[0-9]+" . str_replace("\\S*", ".*", $ct));
+                $ct = self::pattern_regex($checktag);
+                $this->add_tag_regex(" \\d+{$ct}#", ["*{$checktag}"]);
             } else {
-                $ct = str_replace("\\*", "\\S*", preg_quote($checktag));
+                $ct = self::pattern_regex($checktag);
                 $cidt = join("|", $cids);
-                $this->add_tag_regex(" (?:{$cidt}){$ct}#", "({$cidt})" . str_replace("\\S*", ".*", $ct));
+                $sqlpats = [];
+                foreach ($cids as $xcid) {
+                    $sqlpats[] = $xcid . $checktag;
+                }
+                $this->add_tag_regex(" (?:{$cidt}){$ct}#", $sqlpats);
             }
         } else {
             $this->add_tag($this->user->contactId . $xtag);
@@ -175,13 +179,20 @@ class TagSearchMatcher {
         return $this;
     }
 
+    /** @param string $tp
+     * @return string */
+    static private function pattern_regex($tp) {
+        // wildcards match within one tag, which is followed by `#`
+        return Text::one_wildcard_regex($tp, "", "\\s#", "#");
+    }
+
     /** @param string $regex
-     * @param string $sql_regex */
-    private function add_tag_regex($regex, $sql_regex) {
+     * @param list<string> $sql_patterns */
+    private function add_tag_regex($regex, $sql_patterns) {
         assert($regex[0] === " " && $regex[strlen($regex) - 1] === "#");
         if ($this->_mtype >= 0)  {
             $this->_tagregex[] = $regex;
-            $this->_sql_tagregex[] = $sql_regex;
+            array_push($this->_sql_tagpat, ...$sql_patterns);
             $this->_mtype = 0;
             $this->_re = null;
         }
@@ -227,12 +238,12 @@ class TagSearchMatcher {
                 $starpos = strpos($tp, "*");
                 if ($starpos === 0) {
                     if ($tp !== "*" && $tp[1] === "~") {
-                        $res[] = ' ' . str_replace("\\*", "\\S*", preg_quote($tp)) . "#";
+                        $res[] = ' ' . self::pattern_regex($tp) . "#";
                     } else {
-                        $res[] = ' (?![~\d])' . str_replace("\\*", "\\S*", preg_quote($tp)) . "#";
+                        $res[] = ' (?![~\d])' . self::pattern_regex($tp) . "#";
                     }
                 } else if ($starpos !== false) {
-                    $res[] = ' ' . str_replace('\\*', '\\S*', preg_quote($tp)) . "#";
+                    $res[] = ' ' . self::pattern_regex($tp) . "#";
                 } else {
                     $res[] = ' ' . preg_quote($tp) . "#";
                 }
@@ -262,14 +273,15 @@ class TagSearchMatcher {
         if ($this->_mtype > 0) {
             return Dbl::format_query($this->user->conf->dblink, "{$table}.tag?a", $this->_tagpat);
         } else if ($this->_mtype === 0
-                   && (!empty($this->_sql_tagregex) || !empty($this->_tagpat))) {
-            $res = $this->_sql_tagregex;
-            foreach ($this->_tagpat as $tp) {
-                $res[] = str_replace('\\*', '.*', preg_quote($tp));
-            }
-            $regex = count($res) > 1 ? "^(" . join("|", $res) . ")$" : "^{$res[0]}$";
+                   && (!empty($this->_sql_tagpat) || !empty($this->_tagpat))) {
+            // `like` cannot backtrack; `test()` makes the precise decision
             $dbl = $this->user->conf->dblink;
-            return Dbl::format_query($dbl, "{$table}.tag regexp " . Dbl::utf8ci($dbl, "?"), $regex);
+            $res = [];
+            foreach (array_merge($this->_sql_tagpat, $this->_tagpat) as $tp) {
+                $res[] = Dbl::format_query($dbl, "{$table}.tag like " . Dbl::utf8ci($dbl, "?"),
+                    str_replace("*", "%", Dbl::escape_like($tp)));
+            }
+            return count($res) > 1 ? "(" . join(" or ", $res) . ")" : $res[0];
         }
         return null;
     }

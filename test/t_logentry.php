@@ -317,6 +317,23 @@ class LogEntry_Tester {
         $conf->qe("delete from ActionLog where logId>?", $maxlog);
     }
 
+    function test_action_matchers_wildcards() {
+        $actions = Dbl::fetch_first_columns($this->conf->dblink, "select action from ActionLog");
+        foreach (["Entry 99*", "E*y 99*", "*99", "*1*2*3*", "Entry*0", "entry 5", "y**9"] as $pat) {
+            $re = '{' . str_replace('\*', '.*', preg_quote($pat)) . '}i';
+            $leg = (new LogEntryGenerator($this->u_chair, 3000))
+                ->set_consolidate_mail(false)
+                ->set_action_matchers([$pat]);
+            xassert_eqq(count($leg->page_rows(1)), count(preg_grep($re, $actions)), $pat);
+        }
+
+        $t0 = microtime(true);
+        $leg = (new LogEntryGenerator($this->u_chair, 50))
+            ->set_action_matchers([str_repeat("*", 10) . "ty", "E*n*t*r*y*1*1*1*1*1*1*x"]);
+        xassert_eqq($leg->page_rows(1), []);
+        xassert_lt(microtime(true) - $t0, 1.0);
+    }
+
     function test_csv_role_unlisted_pc() {
         $conf = $this->conf;
         $email = "unlisted-log@_.com";
