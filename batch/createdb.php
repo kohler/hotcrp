@@ -90,7 +90,10 @@ class CreateDB_Batch {
             }
         }
 
-        $this->name = $arg["name"] ?? null;
+        if (isset($arg["name"]) && isset($arg["_"][0]) && $arg["name"] !== $arg["_"][0]) {
+            throw new CommandLineException("`--name` and NAME argument contradict");
+        }
+        $this->name = $arg["name"] ?? $arg["_"][0] ?? null;
         $this->write_config = !isset($arg["no-config"]);
         $this->configfile = $arg["config"] ?? ($this->write_config ? "{$this->root}/conf/options.php" : null);
         $this->grant = !isset($arg["no-grant"]);
