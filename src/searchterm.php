@@ -418,11 +418,33 @@ abstract class Op_SearchTerm extends SearchTerm {
     public $child = [];
     /** @var int */
     public $height = 1;
+    /** @var ?int */
+    private $_nleaves;
 
+    // Deeper or wider operator trees evaluate in PHP; MariaDB cannot parse
+    // very deep SQL, and its memory for one `where` clause grows with the
+    // square of the number of subqueries
     const SQLEXPR_HEIGHT = 100;
+    const SQLEXPR_NLEAVES = 200;
 
     function __construct($type) {
         parent::__construct($type);
+    }
+    /** @return int */
+    final function nleaves() {
+        if ($this->_nleaves === null) {
+            $n = 0;
+            foreach ($this->child as $ch) {
+                $n += $ch instanceof Op_SearchTerm ? $ch->nleaves() : 1;
+            }
+            $this->_nleaves = $n;
+        }
+        return $this->_nleaves;
+    }
+    /** @return bool */
+    final function sqlexpr_too_complex() {
+        return $this->height > self::SQLEXPR_HEIGHT
+            || $this->nleaves() > self::SQLEXPR_NLEAVES;
     }
     /** @param SearchTerm $term
      * @param ?SearchStringContext $context
@@ -507,7 +529,7 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
     }
     function is_sqlexpr_precise() {
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return false;
         }
         foreach ($this->child as $ch) {
@@ -619,7 +641,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         $ctx = $sqi->set_context(SearchQueryInfo::CTX_ANY);
         $ff = $this->child[0]->sqlexpr($sqi);
         $sqi->set_context($ctx);
-        if ($this->height > self::SQLEXPR_HEIGHT
+        if ($this->sqlexpr_too_complex()
             || !$this->child[0]->is_sqlexpr_precise()
             || $ff === "false") {
             return "true";
@@ -688,7 +710,7 @@ class And_SearchTerm extends Op_SearchTerm {
         foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
         }
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return "true";
         }
         return self::andjoin_sqlexpr($ff);
@@ -698,7 +720,7 @@ class And_SearchTerm extends Op_SearchTerm {
         foreach ($this->child as $subt) {
             $ff[] = $subt->precise_sqlexpr($sqi);
         }
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return "true";
         }
         return self::andjoin_sqlexpr($ff);
@@ -838,7 +860,7 @@ class Or_SearchTerm extends Op_SearchTerm {
 
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqlexprs = self::or_sqlexprs($this->child, $sqi);
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return "true";
         }
         return self::orjoin_sqlexpr($sqlexprs, "false");
@@ -909,7 +931,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $ctx = $precise ? SearchQueryInfo::CTX_OPTIONAL : SearchQueryInfo::CTX_ANY;
         $ff = Or_SearchTerm::or_sqlexprs($this->child, $sqi, $ctx);
         $sqi->set_context($ctx);
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return "true";
         } else if (empty($ff)) {
             return "false";
@@ -1144,7 +1166,7 @@ class Then_SearchTerm extends Op_SearchTerm {
             $ff[] = $subt->sqlexpr($sqi);
         }
         $sqi->set_context($ctx);
-        if ($this->height > self::SQLEXPR_HEIGHT) {
+        if ($this->sqlexpr_too_complex()) {
             return "true";
         }
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");

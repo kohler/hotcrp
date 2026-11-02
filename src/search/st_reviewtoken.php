@@ -30,10 +30,11 @@ class ReviewToken_SearchTerm extends SearchTerm {
         if ($this->any === false) {
             return "true";
         }
-        $thistab = "ReviewTokens_" . $this->token;
         $where = "reviewToken" . ($this->token ? "={$this->token}" : "!=0");
-        $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where {$where} and reviewType>0 group by paperId)"]);
-        return "coalesce({$thistab}.count,0)>0";
+        if (($t = $sqi->try_add_table("ReviewTokens_", ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where {$where} and reviewType>0 group by paperId)"]))) {
+            return "coalesce({$t}.count,0)>0";
+        }
+        return "true";
     }
     function test(PaperInfo $prow, $xinfo) {
         $nr = $nt = 0;

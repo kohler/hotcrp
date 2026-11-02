@@ -571,6 +571,54 @@ class Search_Tester {
         xassert_eqq($srch->paper_ids(), [1]);
     }
 
+    function test_wide_search_evaluates() {
+        // Searches with more than SQLEXPR_NLEAVES terms are evaluated in PHP:
+        // many terms become subqueries, and database memory use grows with
+        // the square of the number of subqueries.
+        $u = $this->u_root;
+        $n = Op_SearchTerm::SQLEXPR_NLEAVES;
+        $any = (new PaperSearch($u, "re:any"))->paper_ids();
+        $none = (new PaperSearch($u, "NOT re:any"))->paper_ids();
+        xassert(!empty($any) && !empty($none));
+        foreach ([" ", " OR ", " THEN "] as $op) {
+            $srch = new PaperSearch($u, join($op, array_fill(0, $n, "re:any")));
+            xassert_str_contains($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "PaperReview");
+            xassert_eqq($srch->paper_ids(), $any);
+            $srch = new PaperSearch($u, join($op, array_fill(0, $n + 1, "re:any")));
+            xassert_eqq($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "true");
+            xassert_eqq($srch->main_term()->precise_sqlexpr(new SearchQueryInfo($srch)), "true");
+            xassert(!$srch->has_problem());
+            xassert_eqq($srch->paper_ids(), $any);
+        }
+        // the limit counts every term in the search, not just one operator's
+        $q = "(" . join(" OR ", array_fill(0, $n >> 1, "re:any")) . ")";
+        $srch = new PaperSearch($u, "{$q} {$q} {$q}");
+        xassert_eqq($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "true");
+        xassert_eqq($srch->paper_ids(), $any);
+        // an abandoned prefilter is imprecise, so NOT must not negate it
+        $srch = new PaperSearch($u, "NOT (" . join(" OR ", array_fill(0, $n + 1, "re:any")) . ")");
+        xassert(!$srch->main_term()->is_sqlexpr_precise());
+        xassert_eqq($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "true");
+        xassert_eqq($srch->paper_ids(), $none);
+        // merged terms, such as paper IDs, count once
+        $srch = new PaperSearch($u, join(" ", range(1, 5000)) . " re:any");
+        xassert_str_contains($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "PaperReview");
+        // saved searches count their expansions
+        $before = $this->conf->setting_data("named_searches");
+        $ns = [(object) ["name" => "xwide0", "q" => join(" ", array_fill(0, 20, "re:any")), "owner" => "chair"],
+               (object) ["name" => "xwide1", "q" => join(" ", array_fill(0, 11, "ss:xwide0")), "owner" => "chair"]];
+        $this->conf->save_setting("named_searches", 1, json_encode($ns));
+        $this->conf->load_settings();
+        try {
+            $srch = new PaperSearch($u, "ss:xwide1");
+            xassert_eqq($srch->main_term()->sqlexpr(new SearchQueryInfo($srch)), "true");
+            xassert_eqq($srch->paper_ids(), $any);
+        } finally {
+            $this->conf->save_setting("named_searches", $before === null ? null : 1, $before);
+            $this->conf->load_settings();
+        }
+    }
+
     function test_namedsearch_expansion_limits() {
         // A saved-search chain whose expansions exceed the budget is an
         // error, not a hang; a circular definition is detected at the first
@@ -1963,6 +2011,29 @@ class Search_Tester {
         $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rid);
         $conf->update_rev_tokens_setting(-1);
         $conf->save_refresh_setting("au_seerev", $old_auseerev);
+    }
+
+    function test_many_review_tokens() {
+        $conf = $this->conf;
+        $rid = $conf->fetch_ivalue("select reviewId from PaperReview where paperId=1 and reviewType>0 order by reviewId asc limit 1");
+        $conf->qe("update PaperReview set reviewToken=? where reviewId=?", 8675309, $rid);
+        $conf->update_rev_tokens_setting(1);
+        try {
+            $others = [];
+            for ($i = 1; $i <= 299; ++$i) {
+                $others[] = "token:" . encode_token($i * 7919, 5);
+            }
+            $mine = "token:" . encode_token(8675309, 5);
+            $srch = new PaperSearch($this->u_root, join(" OR ", array_merge(array_slice($others, 0, 99), [$mine])));
+            xassert(!$srch->has_problem());
+            xassert_eqq($srch->paper_ids(), [1]);
+            $srch = new PaperSearch($this->u_root, join(" ", array_merge($others, [$mine])));
+            xassert(!$srch->has_problem());
+            xassert_eqq($srch->paper_ids(), []);
+        } finally {
+            $conf->qe("update PaperReview set reviewToken=0 where reviewId=?", $rid);
+            $conf->update_rev_tokens_setting(-1);
+        }
     }
 
     function test_reviewer_aliases_to_search_user() {
