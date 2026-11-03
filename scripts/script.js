@@ -5711,6 +5711,7 @@ handle_ui.on("input.js-email-populate", function () {
         idx = parseInt(this.name.substring(8));
         nn = f.elements["authors:" + idx + ":name"];
         af = f.elements["authors:" + idx + ":affiliation"];
+        orcid = f.elements["authors:" + idx + ":orcid"];
     } else if (this.name.startsWith("contacts:")) {
         idx = parseInt(this.name.substring(9));
         nn = f.elements["contacts:" + idx + ":name"];

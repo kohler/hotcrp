@@ -4976,8 +4976,13 @@ fieldset.s-sf > legend {
 .author-entry > .flex-grow-1 {
 	min-width: 0;
 }
-.editable-author-name, .editable-author-affiliation, .editable-author-email {
+.editable-author-name, .editable-author-affiliation, .editable-author-email, .editable-author-orcid {
 	margin: 2px 0.5em 2px 0;
+}
+.editable-author-orcid {
+	min-width: min(180px, 100%);
+	width: 180px;
+	max-width: min(600px, 100%);
 }
 .editable-author-name, .editable-author-affiliation {
 	min-width: min(268px, 100%);

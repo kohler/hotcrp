@@ -25,9 +25,21 @@ class Authors_PaperOption extends PaperOption {
     private function make_too_many(PaperInfo $prow) {
         return PaperValue::make_estop($prow, $this, $this->conf->_("<0>A {submission} may have at most {max} authors", new FmtArg("max", $this->effective_max_count())));
     }
-    /** @param string $email
-     * @return bool */
-    private function has_confirmed_orcid($email) {
+    /** @return 0|1|2 */
+    private function orcid_requirement(PaperInfo $prow) {
+        $req = $this->conf->opt("requireOrcid") ?? 0;
+        if ($req === 2
+            && ($prow->outcome_sign <= 0
+                || !$prow->can_author_view_decision())) {
+            return 0;
+        }
+        return $req;
+    }
+    /** Return the account for author `$email`, importing its ORCID iD from
+     * the contactdb if the local account lacks one.
+     * @param string $email
+     * @return Contact */
+    private function author_user($email) {
         $u = $this->conf->user_by_email($email)
             ?? Contact::make_placeholder($this->conf, $email);
         if ($u->confirmed_orcid() === ""
@@ -37,7 +49,88 @@ class Authors_PaperOption extends PaperOption {
                 $u->save_prop();
             }
         }
+        return $u;
+    }
+    /** Return true if `$user` may record `$u`'s ORCID iD from the submission
+     * form: `$u` lacks one, and is `$user` or has never signed in.
+     * @return bool */
+    private function can_set_author_orcid(Contact $u, Contact $user) {
+        if ($u->decorated_orcid() !== "") {
+            return false;
+        } else if (strcasecmp($u->email, $user->email) === 0) {
+            return true;
+        }
+        $cdbu = $u->cdb_user();
+        return $u->is_placeholder() && (!$cdbu || $cdbu->is_placeholder());
+    }
+    /** Check the ORCID iD entered for author `$n`, if any. Return true if
+     * the author will have a confirmed ORCID iD once the submission is saved.
+     * @param int $n
+     * @return bool */
+    private function check_author_orcid(PaperValue $ov, $n, Author $auth, Contact $user) {
+        $u = $this->author_user($auth->email);
+        $input = ($ov->anno("orcid_input") ?? [])[$n] ?? "";
+        if ($input === "") {
+            return $u->confirmed_orcid() !== "";
+        }
+        $orcid = Contact::clean_orcid($input);
+        if ($orcid === null) {
+            $ov->append_item(MessageItem::error_at("authors:{$n}:orcid", "<0>Invalid ORCID iD"));
+        } else if ($orcid === $u->orcid()) {
+            // already recorded
+        } else if ($this->can_set_author_orcid($u, $user)) {
+            $save = $ov->anno("orcid_save") ?? [];
+            $save[strtolower($auth->email)] = $orcid;
+            $ov->set_anno("orcid_save", $save);
+            return true;
+        } else {
+            $ov->append_item(MessageItem::warning_at("authors:{$n}:orcid", "<0>ORCID iD not recorded; this author must add it to their profile"));
+        }
         return $u->confirmed_orcid() !== "";
+    }
+    /** Record ORCID iDs entered for authors (second save pass). */
+    private function save_author_orcids(PaperValue $ov, PaperStatus $ps) {
+        $saved = [];
+        foreach ($ov->anno("orcid_save") ?? [] as $email => $orcid) {
+            // the collation can match a different email; check the result
+            $u = $this->conf->fresh_user_by_email($email);
+            if (!$u
+                || strcasecmp($u->email, $email) !== 0
+                || !$this->can_set_author_orcid($u, $ps->user)) {
+                continue;
+            }
+            $u->set_prop("orcid", $orcid, 2);
+            if ($u->prop_changed()) {
+                $u->save_prop();
+                $u->export_prop(1);
+                $this->conf->invalidate_user($u);
+                $saved[] = $u->email;
+            }
+        }
+        if (!empty($saved)) {
+            $ps->append_item(MessageItem::success($this->conf->_("<0>Recorded ORCID iDs for {:list}", $saved)));
+        }
+    }
+    /** Return author `$email`'s ORCID iD without changing any account, or
+     * null if `$viewer` couldn't look up that account via api/user.
+     * @param string $email
+     * @return ?string */
+    private function visible_account_orcid($email, Contact $viewer) {
+        $u = $this->conf->user_by_email($email)
+            ?? Contact::make_placeholder($this->conf, $email);
+        $orcid = $u->orcid();
+        if ($orcid === "" && ($cdbu = $u->cdb_user())) {
+            $orcid = $cdbu->orcid();
+        }
+        if ($orcid === ""
+            || strcasecmp($email, $viewer->email) === 0
+            || ($viewer->can_lookup_user()
+                && ($viewer->is_track_manager()
+                    || $this->conf->opt("allowLookupUser")
+                    || ($u->roles & $viewer->viewable_roles_mask() & Contact::ROLE_ANYPC) !== 0))) {
+            return $orcid;
+        }
+        return null;
     }
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
@@ -72,12 +165,7 @@ class Authors_PaperOption extends PaperOption {
             $ov->estop($this->conf->_("<0>A {submission} may have at most {max} authors", new FmtArg("max", $this->effective_max_count())));
         }
 
-        $req_orcid = $this->conf->opt("requireOrcid") ?? 0;
-        if ($req_orcid === 2
-            && ($ov->prow->outcome_sign <= 0
-                || !$ov->prow->can_author_view_decision())) {
-            $req_orcid = 0;
-        }
+        $req_orcid = $this->orcid_requirement($ov->prow);
         $base_authors = null;
         if ($req_orcid > 0
             && !$ov->has_error()) {
@@ -121,7 +209,7 @@ class Authors_PaperOption extends PaperOption {
                 if ($auth->email === "") {
                     $msg_missing = true;
                     $ov->append_item(new MessageItem($status, "authors:{$n}:email"));
-                } else if (!$this->has_confirmed_orcid($auth->email)) {
+                } else if (!$this->check_author_orcid($ov, $n, $auth, $user)) {
                     if (!Contact::is_bot_email($auth->email)) {
                         $msg_orcid[] = $auth->email;
                         $ov->append_item(new MessageItem($status, "authors:{$n}"));
@@ -183,6 +271,11 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        // second pass: record entered ORCID iDs once the save is committed
+        if ($ps->save_status_prepared()) {
+            $this->save_author_orcids($ov, $ps);
+            return;
+        }
         // construct property
         $authlist = self::author_list($ov);
         $d = "";
@@ -192,9 +285,16 @@ class Authors_PaperOption extends PaperOption {
             }
         }
         // apply change
-        if ($d !== $ov->prow->base_option($this->id)->data()) {
+        $changed = $d !== $ov->prow->base_option($this->id)->data();
+        if ($changed) {
             $ov->prow->set_prop("authorInformation", $d);
+        }
+        // entered ORCID iDs are recorded on author accounts, which must exist
+        if ($changed || $ov->anno("orcid_save")) {
             $this->value_save_conflict_values($ov, $ps);
+        }
+        if ($ov->anno("orcid_save")) {
+            $ps->request_resave($this);
         }
     }
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
@@ -244,13 +344,17 @@ class Authors_PaperOption extends PaperOption {
         return PaperValue::make($prow, $this, 1, join("\n", $t));
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        $authors = [];
+        $authors = $orcids = [];
         for ($n = 1; true; ++$n) {
             $email = $qreq["authors:{$n}:email"];
             $name = $qreq["authors:{$n}:name"];
             $aff = $qreq["authors:{$n}:affiliation"];
-            if ($email === null && $name === null && $aff === null) {
+            $orcid = $qreq["authors:{$n}:orcid"];
+            if ($email === null && $name === null && $aff === null && $orcid === null) {
                 break;
+            }
+            if (($orcid = trim($orcid ?? "")) !== "") {
+                $orcids[$n] = $orcid;
             }
             $auf = $aul = $aue = $aua = "";
             $name = simplify_whitespace($name ?? "");
@@ -275,17 +379,25 @@ class Authors_PaperOption extends PaperOption {
             }
             $authors[] = Author::make_nae($auf, $aul, $aue, $aua);
         }
-        return $this->resolve_parse($prow, $authors);
+        $ov = $this->resolve_parse($prow, $authors);
+        if (!empty($orcids)) {
+            $ov->set_anno("orcid_input", $orcids);
+        }
+        return $ov;
     }
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (!is_array($j) || !array_is_list($j)) {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
-        $authors = $cemail = [];
+        $authors = $cemail = $orcids = [];
         foreach ($j as $i => $auj) {
             if (is_object($auj) || (is_array($auj) && !array_is_list($auj))) {
                 $auth = Author::make_keyed($auj);
                 $contact = $auj->contact ?? null;
+                $orcid = is_object($auj) ? ($auj->orcid ?? null) : ($auj["orcid"] ?? null);
+                if (is_string($orcid) && ($orcid = trim($orcid)) !== "") {
+                    $orcids[$i + 1] = $orcid;
+                }
             } else if (is_string($auj)) {
                 $auth = Author::make_string($auj);
                 $contact = null;
@@ -300,6 +412,9 @@ class Authors_PaperOption extends PaperOption {
         $ov = $this->resolve_parse($prow, $authors);
         foreach ($cemail as $email) {
             $ov->set_anno("contact:{$email}", true);
+        }
+        if (!empty($orcids)) {
+            $ov->set_anno("orcid_input", $orcids);
         }
         return $ov;
     }
@@ -331,7 +446,25 @@ class Authors_PaperOption extends PaperOption {
         }
         return Ht::entry("authors:{$n}:{$component}", $val, $js);
     }
-    private function echo_editable_authors_line($pt, $n, $au, $reqau, $shownum) {
+    /** @param ?string $reqorcid */
+    private function editable_author_orcid_entry($pt, $n, $au, $reqau, $reqorcid) {
+        $email = $reqau ? $reqau->email : ($au ? $au->email : "");
+        $orcid = $email !== "" ? $this->visible_account_orcid($email, $pt->user) : "";
+        $js = ["size" => "19", "placeholder" => "ORCID iD", "autocomplete" => "off", "spellcheck" => false, "aria-label" => "Author ORCID iD"];
+        if ($orcid === null) {
+            $js["placeholder"] = "ORCID iD on file";
+            $orcid = "";
+        }
+        $val = $reqorcid ?? $orcid;
+        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$n}:orcid"], "need-autogrow js-autosubmit editable-author editable-author-orcid");
+        if ($val !== $orcid) {
+            $js["data-default-value"] = $orcid;
+        }
+        return Ht::entry("authors:{$n}:orcid", $val, $js);
+    }
+    /** @param bool $show_orcid
+     * @param ?string $reqorcid */
+    private function echo_editable_authors_line($pt, $n, $au, $reqau, $shownum, $show_orcid, $reqorcid) {
         // on new paper, default to editing user as first author
         $ignore_diff = false;
         if ($n === 1
@@ -351,6 +484,7 @@ class Authors_PaperOption extends PaperOption {
             $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff), ' ',
             $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff), ' ',
             $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff),
+            $show_orcid ? " " . $this->editable_author_orcid_entry($pt, $n, $au, $reqau, $reqorcid) : "",
             MessageSet::feedback_html($pt->message_list_for("authors:{$n}:*")),
             '</div></div>';
     }
@@ -387,6 +521,20 @@ class Authors_PaperOption extends PaperOption {
         }
         $ndigits = (int) ceil(log10($nau + 1));
 
+        // ORCID iDs can be entered when the site requires them
+        $show_orcid = $this->orcid_requirement($pt->prow) > 0;
+        $reqorcids = $reqov !== $ov ? ($reqov->anno("orcid_input") ?? []) : null;
+        if ($show_orcid) {
+            $emails = [];
+            foreach (array_merge($aulist, $reqaulist) as $au) {
+                if ($au->email !== "") {
+                    $emails[] = $au->email;
+                    $this->conf->prefetch_cdb_user_by_email($au->email);
+                }
+            }
+            $this->conf->prefetch_users_by_email($emails);
+        }
+
         echo '<div class="papev">',
             '<div id="authors:container" class="need-row-order-autogrow';
         if ($pt->has_editable_pc_conflicts()) {
@@ -397,11 +545,12 @@ class Authors_PaperOption extends PaperOption {
             '" data-row-counter-digits="', $ndigits,
             '" data-row-template="authors:row-template">';
         for ($n = 1; $n <= $nau; ++$n) {
-            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1);
+            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1,
+                $show_orcid, $reqorcids === null ? null : ($reqorcids[$n] ?? ""));
         }
         echo '</div>';
         echo '<template id="authors:row-template" class="hidden">';
-        $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1);
+        $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1, $show_orcid, null);
         echo "</template></div></fieldset>\n\n";
     }
     function print_web_edit_hidden(PaperTable $pt, $ov) {
