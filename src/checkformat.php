@@ -149,7 +149,7 @@ class CheckFormat extends MessageSet {
     /** @param string $filename
      * @return ?object */
     function run_banal($filename) {
-        $env = ["PATH" => getenv("PATH")];
+        $env = Subprocess::basic_env();
         $command = $this->banal_command();
         if ($this->banal_command_default
             && ($pdftohtml = $this->conf->opt("pdftohtmlCommand"))) {

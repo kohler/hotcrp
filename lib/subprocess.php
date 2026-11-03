@@ -49,6 +49,17 @@ class Subprocess {
         return $this;
     }
 
+    /** Return a minimal environment for subprocesses: `PATH`, and `TMPDIR`
+     * if set (so temporary files go where this process’s do).
+     * @return array<string,string> */
+    static function basic_env() {
+        $env = ["PATH" => getenv("PATH")];
+        if (($tmpdir = getenv("TMPDIR")) !== false && $tmpdir !== "") {
+            $env["TMPDIR"] = $tmpdir;
+        }
+        return $env;
+    }
+
     /** @param ?array<string,string> $env
      * @return $this */
     function set_env($env) {

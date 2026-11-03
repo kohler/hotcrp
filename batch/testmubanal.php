@@ -349,7 +349,7 @@ class TestMubanal_Batch {
      * @return ?object */
     private function run_json($command) {
         $subp = (new Subprocess($command, SiteLoader::$root))
-            ->set_env(["PATH" => getenv("PATH")]);
+            ->set_env(Subprocess::basic_env());
         $subp->run();
         if (!$subp->ok) {
             return null;
@@ -573,7 +573,7 @@ class TestMubanal_Batch {
                                  "-r", (string) $this->dpi, $fname,
                                  "{$first}-{$last}"],
                                 SiteLoader::$root))
-            ->set_env(["PATH" => getenv("PATH")]);
+            ->set_env(Subprocess::basic_env());
         $subp->run();
         $pngs = [];
         for ($p = $first; $p <= $last; ++$p) {
