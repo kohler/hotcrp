@@ -18,6 +18,7 @@
     {   "name": "__field/email", "label": "Email", "topic": "main"   },
     {   "name": "__field/uemail", "label": "Email", "topic": "main"   },
     {   "name": "__field/affiliation", "label": "Affiliation", "topic": "main"   },
+    {   "name": "__field/orcid", "label": "ORCID iD", "topic": "main"   },
     {   "name": "__field/collaborators", "label": "Collaborators", "topic": "main"   },
     {   "name": "__field/topics", "label": "Topics", "topic": "main"   },
 
@@ -44,6 +45,7 @@
     [   "main/email", 500, "*UserStatus::print_email"   ],
     [   "main/main", 1000, "UserStatus::print_main"   ],
     [   "main/country", 3000, "UserStatus::print_country"   ],
+    [   "main/orcid", 3100, "UserStatus::print_orcid"   ],
     [   "main/roles", 5000, "UserStatus::print_roles"   ],
     [   "main/collaborators", 6000, "UserStatus::print_collaborators"   ],
 
@@ -125,6 +127,7 @@
     {   "name": "__bulk/help/f/first", "order": -85, "description_html": "First name (given name)"   },
     {   "name": "__bulk/help/f/last", "order": -84, "description_html": "Last name (family name)"   },
     {   "name": "__bulk/help/f/affiliation", "order": -83, "description_html": "Affiliation"   },
+    {   "name": "__bulk/help/f/orcid", "order": -82.5, "description_html": "ORCID iD (for example, “<code>0000-0002-1825-0097</code>”)"   },
     {   "name": "__bulk/help/f/collaborators", "order": -82, "description_html": "Collaborators"   },
     {   "name": "__bulk/help/f/user_override", "order": -81, "description_html": "If “<code>yes</code>”, then override existing user profile information (name, affiliation, collaborators)"   },
     {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "Roles: “<code>pc</code>”, “<code>unlistedpc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
