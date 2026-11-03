@@ -187,14 +187,14 @@ class DMPGitStress_Tester {
             return true;
         } catch (dmp\diff_exception $ex) {
             error_log("problem encoding delta: " . $ex->getMessage() . "\n" . $ex->getTraceAsString());
-            file_put_contents("/tmp/hotcrp-baddiff.txt",
+            file_put_contents(sys_get_temp_dir() . "/hotcrp-baddiff.txt",
                 "###### " . $ex->getMessage()
                 . "\n====== " . strlen($a) . "\n" . $a
                 . "\n====== " . strlen($b) . "\n" . $b . "\n\n",
                 FILE_APPEND);
             if ($ex->expected !== null) {
-                file_put_contents("/tmp/hotcrp-baddiff-expected.txt", $ex->expected);
-                file_put_contents("/tmp/hotcrp-baddiff-actual.txt", $ex->actual);
+                file_put_contents(sys_get_temp_dir() . "/hotcrp-baddiff-expected.txt", $ex->expected);
+                file_put_contents(sys_get_temp_dir() . "/hotcrp-baddiff-actual.txt", $ex->actual);
             }
             return false;
         }

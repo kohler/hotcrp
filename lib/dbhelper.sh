@@ -158,7 +158,7 @@ set_myargs () {
         if test "$no_password_file" = true; then
             PASSWORDFILE=
         else
-            PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
+            PASSWORDFILE="`mktemp -q "${TMPDIR:-/tmp}/hotcrptmp.XXXXXX"`"
         fi
         if test -n "$PASSWORDFILE"; then
             echo "[client]" > "$PASSWORDFILE"

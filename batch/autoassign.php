@@ -131,7 +131,7 @@ class Autoassign_Batch {
     /** @param string $msg */
     static private function my_error_log($msg) {
         error_log($msg);
-        file_put_contents("/tmp/hotcrp.log", $msg, FILE_APPEND);
+        file_put_contents(sys_get_temp_dir() . "/hotcrp.log", $msg, FILE_APPEND);
     }
 
     /** @param associative-array $arg */

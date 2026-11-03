@@ -1740,7 +1740,7 @@ class ReviewAPI_Tester {
     /** @param string $zipdata
      * @return array<string,string> */
     static private function zip_contents($zipdata) {
-        $fn = tempnam("/tmp", "hctz");
+        $fn = tempnam(sys_get_temp_dir(), "hctz");
         file_put_contents($fn, $zipdata);
         $zip = new ZipArchive;
         xassert_eqq($zip->open($fn), true);

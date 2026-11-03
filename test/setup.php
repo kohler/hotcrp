@@ -2020,7 +2020,7 @@ class TestQreq {
      * @param array<string,mixed> $args
      * @return Qrequest */
     static function post_zip($contents, $args = []) {
-        if (($fn = tempnam("/tmp", "hctz")) === false) {
+        if (($fn = tempnam(sys_get_temp_dir(), "hctz")) === false) {
             throw new ErrorException("Failed to create temporary file");
         }
         unlink($fn);

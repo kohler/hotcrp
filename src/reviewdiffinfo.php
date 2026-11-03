@@ -101,7 +101,7 @@ class ReviewDiffInfo {
             return $hcdelta;
         } catch (dmp\diff_exception $ex) {
             error_log("problem encoding delta: " . $ex->getMessage());
-            file_put_contents("/tmp/hotcrp-baddiff.txt",
+            file_put_contents(sys_get_temp_dir() . "/hotcrp-baddiff.txt",
                 "###### " . $ex->getMessage()
                 . "\n====== " . strlen($s1) . "\n" . $s1
                 . "\n====== " . strlen($s2) . "\n" . $s2 . "\n\n",

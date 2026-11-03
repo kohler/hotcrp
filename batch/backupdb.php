@@ -416,7 +416,7 @@ class BackupDB_Batch {
         }
         $this->_s3_key = $keys[$this->_s3_listpos];
         ++$this->_s3_listpos;
-        if (($fn = tempnam("/tmp", "hcbu")) === false) {
+        if (($fn = tempnam(sys_get_temp_dir(), "hcbu")) === false) {
             $this->throw_error("Cannot create temporary file");
         }
         register_shutdown_function("unlink", $fn);
@@ -483,7 +483,7 @@ class BackupDB_Batch {
                     $this->_pwfile = $md["uri"];
                     fwrite($this->_pwtmp, $this->connp->client_option_file());
                     fflush($this->_pwtmp);
-                } else if (($fn = tempnam("/tmp", "hcpx")) !== false) {
+                } else if (($fn = tempnam(sys_get_temp_dir(), "hcpx")) !== false) {
                     $this->_pwfile = $fn;
                     file_put_contents($fn, $this->connp->client_option_file());
                     register_shutdown_function("unlink", $fn);

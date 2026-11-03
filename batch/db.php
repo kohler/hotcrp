@@ -98,7 +98,7 @@ class Db_Batch {
                     $this->_pwfile = $md["uri"];
                     fwrite($this->_pwtmp, $this->connp->client_option_file());
                     fflush($this->_pwtmp);
-                } else if (($fn = tempnam("/tmp", "hcpx")) !== false) {
+                } else if (($fn = tempnam(sys_get_temp_dir(), "hcpx")) !== false) {
                     $this->_pwfile = $fn;
                     file_put_contents($fn, $this->connp->client_option_file());
                     register_shutdown_function("unlink", $fn);

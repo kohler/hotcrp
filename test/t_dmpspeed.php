@@ -73,7 +73,7 @@ class DMPSpeed_Tester {
         $diff = $dmp->diff($text1, $text2);
         $us_end = microtime(true);
 
-        file_put_contents("/tmp/x.html", $dmp->diff_prettyHtml($diff));
+        file_put_contents(sys_get_temp_dir() . "/x.html", $dmp->diff_prettyHtml($diff));
         fwrite(STDOUT, sprintf("Elapsed time: %.3f\n", $us_end - $us_start));
     }
 
