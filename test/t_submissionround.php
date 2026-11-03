@@ -213,6 +213,62 @@ class SubmissionRound_Tester {
         xassert($p_main->submission_round()->unnamed);
     }
 
+    /** @param int $pid
+     * @return SubmissionRound */
+    private function sround($pid) {
+        return $this->conf->checked_paper_by_id($pid)->submission_round();
+    }
+
+    function test_json_submission_class() {
+        // `submission_class` (or `sclass`) changes the submission class
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "submission_class" => "R2"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->sround($this->pid_main)->tag, "R2");
+        xassert_eqq($ps->change_list(), ["tags"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "sclass" => "unnamed"]));
+        xassert_paper_status($ps);
+        xassert($this->sround($this->pid_main)->unnamed);
+
+        // the submission class wins over tag changes
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_other, "tags" => ["-all", "-R2", "sctag"], "submission_class" => "R2"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->sround($this->pid_other)->tag, "R2");
+        xassert($this->conf->checked_paper_by_id($this->pid_other)->has_tag("sctag"));
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "add_tags" => "R2", "submission_class" => ""]));
+        xassert_paper_status($ps);
+        xassert($this->sround($this->pid_main)->unnamed);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_other, "reset_tags" => true, "submission_class" => "R2"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->sround($this->pid_other)->tag, "R2");
+        xassert(!$this->conf->checked_paper_by_id($this->pid_other)->has_tag("sctag"));
+
+        // ...including for new submissions
+        $ps = new PaperStatus($this->u_chair);
+        $pid = $ps->save_paper_json((object) [
+            "pid" => "new", "title" => "Class paper", "abstract" => "Abstract",
+            "authors" => [["name" => "Class Author", "email" => "classauthor@_.com"]],
+            "status" => "draft", "reset_tags" => true, "submission_class" => "R2"
+        ]);
+        xassert_paper_status($ps);
+        xassert_eqq($this->sround($pid)->tag, "R2");
+
+        // an unknown class is a warning
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "submission_class" => "R99"]));
+        xassert_eqq($ps->problem_status_at("submission_class"), MessageSet::WARNING);
+        xassert($this->sround($this->pid_main)->unnamed);
+
+        // PC members who cannot change tags cannot change the class
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_estrin, "submission_class" => ""]));
+        xassert_eqq($this->sround($this->pid_estrin)->tag, "R2");
+    }
+
     function test_round_deadline_behavior() {
         $sr = $this->conf->submission_round_by_tag("R2");
         // both deadlines are in the future: registration and submission open

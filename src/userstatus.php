@@ -556,7 +556,10 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @param 'tags'|'add_tags'|'remove_tags'|'change_tags' $key
+    /** Parse a list of tags. In `tags` and `change_tags`, a tag prefixed
+     * with `-` is removed, and one prefixed with `+` is added. Removing
+     * `all` removes all tags.
+     * @param 'tags'|'add_tags'|'remove_tags'|'change_tags' $key
      * @return list<string> */
     private function make_tags_array($x, $key) {
         $t0 = [];
@@ -569,7 +572,7 @@ class UserStatus extends MessageSet {
         }
         $tagger = new Tagger($this->viewer);
         $t1 = [];
-        $change = $key === "change_tags";
+        $change = $key === "tags" || $key === "change_tags";
         foreach ($t0 as $t) {
             if ($t === "") {
                 continue;
@@ -586,7 +589,10 @@ class UserStatus extends MessageSet {
             } else if ($change && strlen($t) > 1 && $t[0] === "+") {
                 $t = substr($t, 1);
             }
-            if (($tx = $tagger->check_syntax($t, $flags))) {
+            if (($pfx === "-" || $key === "remove_tags")
+                && strcasecmp($t, "all") === 0) {
+                $t1[] = "{$pfx}all";
+            } else if (($tx = $tagger->check_syntax($t, $flags))) {
                 $t1[] = $pfx . $tx;
             } else {
                 $this->error_at($key, $tagger->error_ftext(true));
@@ -804,6 +810,14 @@ class UserStatus extends MessageSet {
         }
 
         // Tags
+        if (isset($cj->reset_tags)) {
+            if (($x = friendly_boolean($cj->reset_tags)) !== null) {
+                $cj->reset_tags = $x;
+            } else {
+                $this->error_at("reset_tags", "<0>Format error [reset_tags]");
+                unset($cj->reset_tags);
+            }
+        }
         if (isset($cj->tags)) {
             $cj->tags = $this->make_tags_array($cj->tags, "tags");
         }
@@ -1410,26 +1424,24 @@ class UserStatus extends MessageSet {
             $this->save_follow($cj->follow);
         }
 
-        // Tags
-        if ((isset($cj->tags)
+        // Tags: `reset_tags` removes all tags first; `tags` and
+        // `change_tags` add, change, and (with `-tag`) remove tags
+        if ((!empty($cj->reset_tags)
+             || !empty($cj->tags)
              || !empty($cj->add_tags)
              || !empty($cj->remove_tags)
              || !empty($cj->change_tags))
             && $this->viewer->privChair
             && ($this->if_empty < UserStatus::IF_EMPTY_MOST
                 || $user->contactTags === null)) {
-            if (isset($cj->tags)) {
+            if (!empty($cj->reset_tags)) {
                 $user->set_prop("contactTags", null);
-            }
-            foreach ($cj->tags ?? [] as $t) {
-                list($tag, $value) = Tagger::unpack($t);
-                if (self::check_pc_tag($tag)) {
-                    $user->change_tag_prop($tag, $value ?? 0);
-                }
             }
             foreach ($cj->remove_tags ?? [] as $t) {
                 list($tag, $value) = Tagger::unpack($t);
-                if (self::check_pc_tag($tag)) {
+                if ($tag === "all") {
+                    $user->set_prop("contactTags", null);
+                } else if (self::check_pc_tag($tag)) {
                     $user->change_tag_prop($tag, false);
                 }
             }
@@ -1439,7 +1451,7 @@ class UserStatus extends MessageSet {
                     $user->change_tag_prop($tag, $value ?? $user->tag_value($tag) ?? 0);
                 }
             }
-            foreach ($cj->change_tags ?? [] as $t) {
+            foreach (array_merge($cj->tags ?? [], $cj->change_tags ?? []) as $t) {
                 list($tag, $value) = Tagger::unpack($t);
                 if (str_starts_with($tag, "-")) {
                     $tag = substr($tag, 1);
@@ -1447,7 +1459,9 @@ class UserStatus extends MessageSet {
                 } else {
                     $value = $value ?? $user->tag_value($tag) ?? 0;
                 }
-                if (self::check_pc_tag($tag)) {
+                if ($tag === "all" && $value === false) {
+                    $user->set_prop("contactTags", null);
+                } else if (self::check_pc_tag($tag)) {
                     $user->change_tag_prop($tag, $value);
                 }
             }
@@ -1591,6 +1605,8 @@ class UserStatus extends MessageSet {
         }
 
         if (isset($this->qreq->tags)) {
+            // the form lists all the user’s tags
+            $cj->reset_tags = true;
             $cj->tags = explode(" ", simplify_whitespace($this->qreq->tags));
         }
     }
@@ -1609,7 +1625,7 @@ class UserStatus extends MessageSet {
         "affiliation", "collaborators",
         "address", "address1", "address2", "address3", "address4", "address5",
         "city", "state", "zip", "country",
-        "roles", "follow", "tags", "add_tags", "remove_tags", "change_tags",
+        "roles", "follow", "reset_tags", "tags", "add_tags", "remove_tags", "change_tags",
         "disabled", "theme"
     ];
 
@@ -1636,6 +1652,9 @@ class UserStatus extends MessageSet {
             } else if ($v === "-" || $v === "–" || $v === "—") {
                 if ($k === "roles" || $k === "disabled") {
                     // ignore
+                } else if ($k === "tags") {
+                    // a blank `tags` column clears tags
+                    $cj->reset_tags = true;
                 } else if ($k === "lastName") {
                     $cj->$k = $v;
                 } else {

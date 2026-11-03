@@ -3517,6 +3517,186 @@ Phil Porras.");
         }
     }
 
+    /** @return list<string> */
+    private function pstags($pid) {
+        $prow = $this->conf->checked_paper_by_id($pid);
+        $tl = [];
+        foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
+            if (str_contains($tv[0], "pstag"))
+                $tl[] = "{$tv[0]}#{$tv[1]}";
+        }
+        sort($tl);
+        return $tl;
+    }
+
+    function test_import_tags() {
+        // `tags` adds and changes tags
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstaga", "pstagb#2"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), ["pstaga#0", "pstagb#2"]);
+
+        // `add_tags`, `remove_tags`, and `change_tags` modify them
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "add_tags" => "pstagc#3", "remove_tags" => ["pstaga"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), ["pstagb#2", "pstagc#3"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "change_tags" => ["-pstagb", "+pstagd", "pstagc#4"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), ["pstagc#4", "pstagd#0"]);
+
+        // `tags` can also remove tags; other tags are left alone
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["-pstagc", "pstagh#1"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), ["pstagd#0", "pstagh#1"]);
+
+        // `reset_tags` first removes the tags the user can edit, leaving
+        // other users’ private tags alone
+        $aset = new AssignmentSet($this->u_sally);
+        $aset->parse("paper,action,tag\n8,tag,~pstagsally\n");
+        xassert($aset->execute());
+        $sallytag = "{$this->u_sally->contactId}~pstagsally#0";
+        xassert_eqq($this->pstags(8), [$sallytag, "pstagd#0", "pstagh#1"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "reset_tags" => true, "tags" => "pstage"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, "pstage#0"]);
+
+        // tags may be written with a leading `#`
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["#pstagj#2"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, "pstage#0", "pstagj#2"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "remove_tags" => ["#pstagj"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, "pstage#0"]);
+
+        // so does `-all`, at its point in the list
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstagi", "-all", "pstage"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, "pstage#0"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "remove_tags" => "all", "add_tags" => "pstage"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, "pstage#0"]);
+
+        // exported tags round-trip, even when imported by another user:
+        // private tags are exported with explicit user IDs
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstage", "~pstagchair#1"]]));
+        xassert_paper_status($ps);
+        $before = $this->conf->checked_paper_by_id(8)->all_tags_text();
+        $pj = (new PaperExport($this->u_chair))->paper_json(8);
+        xassert_in_eqq("{$this->u_chair->contactId}~pstagchair#1", $pj->tags);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => $pj->tags]));
+        xassert(!$ps->has_problem_at("tags"));
+        xassert_eqq($this->conf->checked_paper_by_id(8)->all_tags_text(), $before);
+        $ps = new PaperStatus($this->conf->root_user());
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => $pj->tags]));
+        xassert(!$ps->has_problem_at("tags"));
+        xassert_eqq($this->conf->checked_paper_by_id(8)->all_tags_text(), $before);
+
+        // syntax errors prevent saving
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->save_paper_json((object) ["pid" => 8, "title" => "Changed title", "add_tags" => ["pstag bad"]]));
+        xassert($ps->has_error_at("add_tags"));
+        xassert_neqq($this->conf->checked_paper_by_id(8)->title, "Changed title");
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->save_paper_json((object) ["pid" => 8, "remove_tags" => ["pstage#1"]]));
+        xassert($ps->has_error_at("remove_tags"));
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstagf" => 1]]));
+        xassert($ps->has_error_at("tags"));
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->save_paper_json((object) ["pid" => 8, "reset_tags" => "maybe"]));
+        xassert($ps->has_error_at("reset_tags"));
+        $ps = new PaperStatus($this->u_chair);
+        xassert(!$ps->save_paper_json((object) ["pid" => 8, "tags" => ["-pstage#1"]]));
+        xassert($ps->has_error_at("tags"));
+
+        // assignment problems are warnings; the submission is still saved
+        $title8 = $this->conf->checked_paper_by_id(8)->title;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "title" => "Tagged title", "add_tags" => ["pstagg#9999999999"]]));
+        xassert($ps->has_problem_at("tags"));
+        xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+        xassert_eqq(count(iterator_to_array($ps->message_list_at("tags"), false)), 1); // reported once
+        xassert_eqq($this->conf->checked_paper_by_id(8)->title, "Tagged title");
+        xassert(!in_array("pstagg#9999999999", $this->pstags(8)));
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "title" => $title8]));
+
+        // users who cannot edit tags are ignored, like decisions
+        $tags1 = $this->conf->checked_paper_by_id(1)->all_tags_text();
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "tags" => ["pstagz"]]));
+        xassert(!$ps->has_problem_at("tags"));
+        xassert_eqq($this->conf->checked_paper_by_id(1)->all_tags_text(), $tags1);
+
+        // new submissions can have tags
+        $ps = new PaperStatus($this->u_chair);
+        $pid = $ps->save_paper_json((object) [
+            "pid" => "new", "title" => "Tagged paper", "abstract" => "Abstract",
+            "authors" => [["name" => "Tag Author", "email" => "tagauthor@_.com"]],
+            "status" => "draft", "tags" => ["pstagnew#5"]
+        ]);
+        xassert_paper_status($ps);
+        xassert($pid > 0);
+        xassert_eqq($this->pstags($pid), ["pstagnew#5"]);
+
+        // tag changes are in the change list, but are not reported to authors
+        MailChecker::clear();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "add_tags" => "pstagk"]));
+        xassert_eqq($ps->change_list(), ["tags"]);
+        xassert($ps->has_change());
+        $ps->notify_followers();
+        MailChecker::check0();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "add_tags" => "pstagk"]));
+        xassert_eqq($ps->change_list(), []);
+        // ...though other changes still are
+        $title8 = $this->conf->checked_paper_by_id(8)->title;
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "title" => "Retitled", "remove_tags" => "pstagk"]));
+        xassert_eqq($ps->change_list(), ["title", "tags"]);
+        $ps->notify_followers();
+        xassert(!empty(MailChecker::$preps));
+        MailChecker::clear();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "title" => $title8]));
+        MailChecker::clear();
+
+        // dry runs report tag changes and problems without making changes
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 8, "add_tags" => "pstagl"]));
+        xassert_eqq($ps->change_list(), ["tags"]);
+        $ps->abort_save();
+        xassert(!in_array("pstagl#0", $this->pstags(8)));
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 8, "add_tags" => "pstage"]));
+        xassert_eqq($ps->change_list(), []);
+        $ps->abort_save();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) ["pid" => 8, "add_tags" => "pstagg#9999999999"]));
+        xassert_eqq($ps->change_list(), []);
+        xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+        $ps->abort_save();
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->prepare_save_paper_json((object) [
+            "pid" => "new", "title" => "Dry tagged paper", "abstract" => "Abstract",
+            "authors" => [["name" => "Tag Author", "email" => "tagauthor@_.com"]],
+            "status" => "draft", "tags" => ["pstagm"]
+        ]));
+        xassert_in_eqq("tags", $ps->change_list());
+        $ps->abort_save();
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }

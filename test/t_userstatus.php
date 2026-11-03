@@ -1379,6 +1379,20 @@ class UserStatus_Tester {
 
         $globert1 = $this->conf->fresh_user_by_email("globert1@_.com");
         xassert($globert1->has_tag("red"));
+
+        // the profile form lists all tags, so it replaces them
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "globert1@_.com", "tags" => "blue"]
+        );
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->set_follow_primary(true);
+        $us->start_update();
+        $us->request_group("");
+        xassert($us->execute_update());
+        $globert1 = $this->conf->fresh_user_by_email("globert1@_.com");
+        xassert($globert1->has_tag("blue"));
+        xassert(!$globert1->has_tag("red"));
     }
 
     function test_confactions_link() {
@@ -1802,11 +1816,39 @@ class UserStatus_Tester {
         xassert($u->has_tag("red"));
         xassert_eqq($u->tag_value("green"), 3.0);
 
-        // `tags` replaces the whole set
-        $this->csv_save("email,tags\ncsvt6@_.com,blue\n");
+        // `tags` adds, changes, and removes tags, leaving others alone
+        $this->csv_save("email,tags\ncsvt6@_.com,\"blue green#4 -nonexistent\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("blue"));
+        xassert($u->has_tag("red"));
+        xassert_eqq($u->tag_value("green"), 4.0);
+        $this->csv_save("email,tags\ncsvt6@_.com,-green\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert(!$u->has_tag("green"));
+        xassert($u->has_tag("red"));
+
+        // `reset_tags` removes tags first
+        $this->csv_save("email,reset_tags,tags\ncsvt6@_.com,yes,blue\n");
         $u = $this->conf->fresh_user_by_email("csvt6@_.com");
         xassert($u->has_tag("blue"));
         xassert(!$u->has_tag("red"));
+
+        // a `-` in the `tags` column clears tags
+        $this->csv_save("email,tags\ncsvt6@_.com,-\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert(!$u->has_tag("blue"));
+
+        // `-all` removes all tags at that point in the list
+        $this->csv_save("email,tags\ncsvt6@_.com,\"red green\"\n");
+        $this->csv_save("email,tags\ncsvt6@_.com,\"-all blue\"\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert($u->has_tag("blue"));
+        xassert(!$u->has_tag("red"));
+        xassert(!$u->has_tag("green"));
+        $this->csv_save("email,remove_tags\ncsvt6@_.com,ALL\n");
+        $u = $this->conf->fresh_user_by_email("csvt6@_.com");
+        xassert(!$u->has_tag("blue"));
+        $this->csv_save("email,tags\ncsvt6@_.com,blue\n");
 
         // add/remove/change are incremental
         $this->csv_save("email,add_tag,remove_tag\ncsvt6@_.com,red,blue\n");

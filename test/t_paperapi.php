@@ -362,6 +362,23 @@ class PaperAPI_Tester {
         $conf->invalidate_caches("options");
     }
 
+    function test_dry_run_reports_tags() {
+        $pj = (object) ["pid" => 6, "add_tags" => "apidrytag"];
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json($pj, ["p" => 6, "dry_run" => 1]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["tags"]);
+        xassert(!$this->conf->checked_paper_by_id(6)->has_tag("apidrytag"));
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json($pj, ["p" => 6]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["tags"]);
+        xassert($this->conf->checked_paper_by_id(6)->has_tag("apidrytag"));
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json($pj, ["p" => 6, "dry_run" => 1]));
+        xassert_eqq($jr->change_list, []);
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json((object) ["pid" => 6, "tags" => "-apidrytag"], ["p" => 6]));
+        xassert_eqq($jr->change_list, ["tags"]);
+        xassert(!$this->conf->checked_paper_by_id(6)->has_tag("apidrytag"));
+    }
+
     function test_save_submit_new_paper() {
         $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);

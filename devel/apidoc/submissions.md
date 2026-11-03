@@ -139,6 +139,23 @@ $ curl -H "Authorization: bearer hct_XXX" -F "json=<data.json" -F paper.pdf=@pap
 Submission administrators can use this endpoint to set some submission fields,
 such as `decision`, that have other endpoints as well.
 
+Users who can change a submission’s tags can change them here too. `tags`
+adds and changes tags, and removes tags prefixed with `-`, leaving other tags
+alone; `add_tags` and `remove_tags` add and remove tags. Each is a list of
+tags or a space-separated string. Set `reset_tags` to `true` to first remove
+all tags the user can change (tags they cannot change are left alone), or
+include `-all` in `tags` to remove them at that point in the list; for
+instance, `{"reset_tags": true, "tags": ["a", "b"]}` replaces the user’s
+tags with `a` and `b`. Tags are changed after the submission is saved, so tag
+problems are reported as warnings. Tag changes from users who cannot change
+the submission’s tags are ignored. Tag changes appear in the change list as
+`tags` (including for dry runs), but are not reported to authors.
+
+A submission’s class is a tag, so the same users can change it by setting
+`submission_class` (or `sclass`) to a submission class tag, or to `unnamed`
+for the default class. The class is applied after other tag changes, so it
+takes precedence over them.
+
 Site administrators can choose specific IDs for new submissions by setting `p`
 (or JSON `pid`) to the chosen ID. Such a request will either modify an existing
 submission or create a new submission with that ID. To avoid overwriting an

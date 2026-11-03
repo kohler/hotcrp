@@ -91,6 +91,8 @@ final class PaperStatus extends MessageSet {
     private $_importer;
     /** @var list<array{string,float|false}> */
     private $_tags_changed;
+    /** @var list<string> */
+    private $_tag_assignments;
     /** @var int */
     private $_save_status;
 
@@ -240,6 +242,53 @@ final class PaperStatus extends MessageSet {
      * @return MessageItem */
     function syntax_error_at($key) {
         return $this->estop_at($key, "<0>Validation error [{$key}]");
+    }
+
+    /** Parse a list of tags, as in `UserStatus`. In `tags` and `change_tags`,
+     * a tag prefixed with `-` is removed, and one prefixed with `+` is added.
+     * Removing `all` removes all tags the user can edit.
+     * @param mixed $x
+     * @param 'tags'|'add_tags'|'remove_tags'|'change_tags' $key
+     * @return list<string> */
+    private function _normalize_tags($x, $key) {
+        if (is_string($x)) {
+            $x = Tagger::split($x);
+        } else if (!is_array($x) || !array_is_list($x)) {
+            $this->syntax_error_at($key);
+            return [];
+        }
+        $tagger = new Tagger($this->user);
+        $tl = [];
+        foreach ($x as $t) {
+            if (!is_string($t)) {
+                $this->syntax_error_at($key);
+                continue;
+            }
+            $pfx = "";
+            // exports name private tags with explicit user IDs; the
+            // AssignmentSet checks whether this user may change them
+            $flags = Tagger::ALLOWCONTACTID;
+            if (($key === "tags" || $key === "change_tags")
+                && strlen($t) > 1
+                && ($t[0] === "-" || $t[0] === "+")) {
+                $pfx = $t[0] === "-" ? "-" : "";
+                $t = substr($t, 1);
+            }
+            if ($key === "remove_tags" || $pfx === "-") {
+                $flags |= Tagger::NOVALUE;
+            }
+            if ($t === "") {
+                continue;
+            } else if (($flags & Tagger::NOVALUE) !== 0
+                       && strcasecmp($t, "all") === 0) {
+                $tl[] = "{$pfx}all";
+            } else if ($tagger->check_syntax($t, $flags) !== false) {
+                $tl[] = $pfx . $t;
+            } else {
+                $this->error_at($key, $tagger->error_ftext(true));
+            }
+        }
+        return $tl;
     }
 
     /** @param PaperValue $ov */
@@ -435,8 +484,31 @@ final class PaperStatus extends MessageSet {
             }
         }
 
-        // XXX Submission class
-        // XXX Tags
+        // Submission class
+        $isclass = $ipj->submission_class ?? $ipj->sclass ?? null;
+        if ($isclass !== null) {
+            if (!is_string($isclass)) {
+                $this->syntax_error_at("submission_class");
+            } else if (($sr = $this->conf->submission_round_by_tag($isclass))) {
+                $xpj->submission_class = $sr->unnamed ? "" : $sr->tag;
+            } else {
+                $this->warning_at("submission_class", $this->_("<0>Unknown submission class ‘{}’", $isclass));
+            }
+        }
+
+        // Tags
+        if (isset($ipj->reset_tags)) {
+            if (($x = friendly_boolean($ipj->reset_tags)) !== null) {
+                $xpj->reset_tags = $x;
+            } else {
+                $this->syntax_error_at("reset_tags");
+            }
+        }
+        foreach (["tags", "add_tags", "remove_tags", "change_tags"] as $k) {
+            if (isset($ipj->$k)) {
+                $xpj->$k = $this->_normalize_tags($ipj->$k, $k);
+            }
+        }
 
         // Ignore edit conditions during normalization
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
@@ -511,7 +583,7 @@ final class PaperStatus extends MessageSet {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
                 || property_exists($xstatus, $k)
-                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class", "overlong", "truncated"], true)
+                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "reset_tags", "tags", "add_tags", "remove_tags", "change_tags", "submission_class", "sclass", "overlong", "truncated"], true)
                 || $k[0] === "_"
                 || $k[0] === "\$") {
                 continue;
@@ -853,6 +925,35 @@ final class PaperStatus extends MessageSet {
         }
     }
 
+    /** Prepare tag changes, which are applied by an AssignmentSet after the
+     * submission is saved, as in `UserStatus`. `reset_tags` first removes the
+     * tags the user can edit; `tags` and `change_tags` add, change, and (with
+     * `-tag`) remove tags; `add_tags` and `remove_tags` add and remove them.
+     * A submission class, which is a tag, is applied last, so it wins. */
+    private function _prepare_tags($pj) {
+        $tas = [];
+        if (!empty($pj->reset_tags)) {
+            $tas[] = "all#clear";
+        }
+        foreach ($pj->remove_tags ?? [] as $t) {
+            $tas[] = "{$t}#clear";
+        }
+        foreach ($pj->add_tags ?? [] as $t) {
+            $tas[] = $t;
+        }
+        foreach (array_merge($pj->tags ?? [], $pj->change_tags ?? []) as $t) {
+            $tas[] = str_starts_with($t, "-") ? substr($t, 1) . "#clear" : $t;
+        }
+        if (isset($pj->submission_class)) {
+            foreach ($this->conf->submission_round_list() as $sr) {
+                if (!$sr->unnamed) {
+                    $tas[] = strcasecmp($sr->tag, $pj->submission_class) === 0 ? $sr->tag : "{$sr->tag}#clear";
+                }
+            }
+        }
+        $this->_tag_assignments = $tas;
+    }
+
     private function _prepare_final_status($pj) {
         if (!isset($pj->status->final_submitted)
             || !$this->conf->allow_final_versions()
@@ -1167,7 +1268,7 @@ final class PaperStatus extends MessageSet {
         $this->_documents_changed = false;
         $this->_deadline_field_changed = $prow->is_new();
         $this->_exempt_field_changed = false;
-        $this->_docs = $this->_tags_changed = [];
+        $this->_docs = $this->_tags_changed = $this->_tag_assignments = [];
         $this->_importer = null;
         $this->_save_status = 0;
         if ($this->user->can_manage($this->prow)) {
@@ -1285,7 +1386,8 @@ final class PaperStatus extends MessageSet {
             $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true, "allConflictType" => true]);
         }
         if (!$prow) {
-            $prow = PaperInfo::make_new($this->user, $pj->submission_class ?? null);
+            $sclass = $pj->submission_class ?? $pj->sclass ?? null;
+            $prow = PaperInfo::make_new($this->user, is_string($sclass) ? $sclass : null);
             if ($pid !== null) {
                 $prow->set_prop("paperId", $pid);
             }
@@ -1424,6 +1526,8 @@ final class PaperStatus extends MessageSet {
         $this->_prepare_status_change();
         $this->_prepare_decision($pj);
         $this->_prepare_final_status($pj);
+        $this->_prepare_tags($pj);
+        $this->_check_tag_assignments();
 
         // correct blindness setting
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
@@ -1572,6 +1676,74 @@ final class PaperStatus extends MessageSet {
         if (!empty($ins)) {
             $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $ins);
         }
+    }
+
+    /** Return an AssignmentSet that makes this save’s tag changes to `$prow`,
+     * or null if there are none or the user cannot edit `$prow`’s tags. As
+     * with decisions, tag changes from such users are ignored.
+     * @return ?AssignmentSet */
+    private function _tag_assignment_set(?PaperInfo $prow) {
+        if (empty($this->_tag_assignments)
+            || !$prow
+            || !$this->user->can_edit_some_tag($prow)) {
+            return null;
+        }
+        $csv = (new CsvGenerator)->select(["paper", "action", "tag"]);
+        foreach ($this->_tag_assignments as $t) {
+            $csv->add_row([$prow->paperId, "tag", $t]);
+        }
+        $aset = new AssignmentSet($this->user);
+        $aset->enable_papers($prow);
+        $aset->parse($csv->unparse());
+        return $aset;
+    }
+
+    /** Record whether `$aset` changes tags, and report its problems as
+     * warnings (tag changes do not prevent saving).
+     * @param ?AssignmentSet $aset
+     * @param bool $changed */
+    private function _account_tag_assignment_set($aset, $changed) {
+        if ($changed) {
+            $this->status_change_at("tags");
+        } else if (($i = array_search("tags", $this->_xdiffs, true)) !== false) {
+            array_splice($this->_xdiffs, $i, 1);
+        }
+        foreach ($aset ? $aset->message_list() : [] as $mi) {
+            $mi = $mi->with_field("tags")
+                ->with_landmark(null)
+                ->with_max_status(MessageSet::WARNING);
+            if ($this->message_index($mi) === false) {
+                $this->append_item($mi);
+            }
+        }
+    }
+
+    /** Check tag changes before saving, so that the change list (including
+     * for dry runs) reports them. Existing submissions are checked against
+     * their stored tags. The user creating a new submission is provisionally
+     * its author, so new submissions are checked as if conflicts were
+     * overridden; `_execute_tag_assignments` checks the saved submission. */
+    private function _check_tag_assignments() {
+        if (empty($this->_tag_assignments)) {
+            return;
+        }
+        if ($this->prow->is_new()) {
+            $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $aset = $this->_tag_assignment_set($this->prow);
+            $this->user->set_overrides($old_overrides);
+        } else {
+            $aset = $this->_tag_assignment_set($this->conf->paper_by_id($this->prow->paperId, $this->user));
+        }
+        $this->_account_tag_assignment_set($aset, $aset && !$aset->has_error() && !$aset->is_empty());
+    }
+
+    /** Apply tag changes to the saved submission. */
+    private function _execute_tag_assignments() {
+        if (empty($this->_tag_assignments)) {
+            return;
+        }
+        $aset = $this->_tag_assignment_set($this->conf->paper_by_id($this->paperId, $this->user));
+        $this->_account_tag_assignment_set($aset, $aset && $aset->execute() && !$aset->is_empty());
     }
 
     private function _execute_topics() {
@@ -1786,6 +1958,7 @@ final class PaperStatus extends MessageSet {
         $this->_execute_conflicts();
         $this->_execute_author_changes();
         $this->_execute_documents();
+        $this->_execute_tag_assignments();
 
         // maybe update `papersub` and `paperacc` settings
         $was_submitted = $this->prow->base_prop("timeWithdrawn") <= 0
@@ -2034,10 +2207,19 @@ final class PaperStatus extends MessageSet {
         if (!$this->notify) {
             return;
         }
-        if ($this->notify_authors) {
+        if ($this->notify_authors && $this->_has_author_change()) {
             $this->_notify_authors($notes_mi ?? $this->save_notes_message());
         }
         $this->_notify_others();
+    }
+
+    /** Return true if this save changed something authors are told about.
+     * Tag changes are not reported to authors.
+     * @return bool */
+    private function _has_author_change() {
+        return !empty($this->_fdiffs)
+            || !empty(array_diff($this->_xdiffs, ["tags"]))
+            || ($this->_save_status & self::SSF_NEW) !== 0;
     }
 
     private function _notify_authors($notes_mi) {
