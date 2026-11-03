@@ -22,7 +22,7 @@ class Login_Tester {
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
         $this->cdb = $conf->contactdb();
 
-        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com", "firstcdb@hotcrp.com", "freshsite@hotcrp.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com", "cdbonly@hotcrp.com", "resetsid@hotcrp.com", "firstcdb@hotcrp.com", "freshsite@hotcrp.com", "nopassword@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -741,6 +741,50 @@ class Login_Tester {
         $conf->set_opt("paperSite", $old_site);
         Navigation::set($old_nav);
         $conf->refresh_settings();
+    }
+
+    /** @param string $email
+     * @return RenderCapture */
+    private function sign_in_without_password($email) {
+        $user = Contact::make($this->conf);
+        $qreq = TestQreq::post(["email" => $email, "password" => "whatever"])
+            ->set_user($user)->set_page("signin");
+        return RenderCapture::make($qreq);
+    }
+
+    function test_unset_password_offers_reset_only_if_possible() {
+        $conf = $this->conf;
+        $old_site = $conf->opt("paperSite");
+        $old_nav = Navigation::get();
+        $email = "nopassword@hotcrp.com";
+        $this->us1->save_user((object) ["email" => $email, "disablement" => 0]);
+        $conf->qe("update ContactInfo set password='' where email=?", $email);
+        if ($this->cdb) {
+            Dbl::qe($this->cdb, "update ContactInfo set password='' where email=?", $email);
+        }
+        $conf->invalidate_caches("users");
+
+        // with a site URL, sign-in sends the user to the forgot-password form
+        $rc = $this->sign_in_without_password($email);
+        xassert_eqq($rc->status, 302);
+        xassert_str_contains(join("\n", $rc->headers), "forgotpassword");
+
+        // without one, that form is unavailable, so the error doesn’t offer it
+        $this->derive_paper_site("http://unknown.example/test/");
+        xassert_eqq($conf->safe_baseurl(), null);
+        $rc = $this->sign_in_without_password($email);
+        xassert_not_str_contains(join("\n", $rc->headers), "forgotpassword");
+        xassert_str_contains($rc->content, "has not set a password");
+        xassert_not_str_contains($rc->content, "Use this form");
+
+        $conf->qe("delete from ContactInfo where email=?", $email);
+        if ($this->cdb) {
+            Dbl::qe($this->cdb, "delete from ContactInfo where email=?", $email);
+        }
+        $conf->set_opt("paperSite", $old_site);
+        Navigation::set($old_nav);
+        $conf->refresh_settings();
+        $conf->invalidate_caches("users");
     }
 
     function test_external_login_requires_ascii() {

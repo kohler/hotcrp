@@ -435,7 +435,9 @@ class LoginHelper {
         if ($email !== "") {
             $args[] = new FmtArg("email", $email, 0);
             $args[] = new FmtArg("signin", $conf->hoturl("signin", ["email" => $email]), 0);
-            if ($info["can_reset"] ?? false) {
+            // offer password reset only if the site can send reset links
+            if (($info["can_reset"] ?? false)
+                && $conf->safe_baseurl() !== null) {
                 $args[] = new FmtArg("forgotpassword", $conf->hoturl("forgotpassword", ["email" => $email]), 0);
             }
         }
