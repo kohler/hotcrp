@@ -58,7 +58,7 @@ class Tag_SearchTerm extends SearchTerm {
 
         // expand automatic tags if requested
         $allterms = [];
-        if ($srch->expand_automatic > 0) {
+        if ($srch->expand_automatic > 0 && !($sword->kwdef->no_expand_automatic ?? false)) {
             $allterms = self::expand_automatic($tsm, $sword, $srch);
         }
 

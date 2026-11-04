@@ -167,6 +167,11 @@
         "negated": false, "sorting": false, "is_hash": false, "has": "any"
     },
     {
+        "name": "storedtag",
+        "parse_function": "Tag_SearchTerm::parse",
+        "negated": false, "sorting": false, "is_hash": false, "no_expand_automatic": true, "has": "any"
+    },
+    {
         "name": "sclass",
         "parse_function": "Sclass_SearchTerm::parse", "has": "any"
     },

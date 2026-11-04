@@ -2955,6 +2955,26 @@ class Settings_Tester {
         xassert_search($this->u_chair, "#AutoDel", "");
     }
 
+    function test_automatic_tag_clears_manual_tags() {
+        // manually applied tags that disagree with a new automatic tag's
+        // search are removed
+        $aset = (new AssignmentSet($this->u_chair))->set_override_conflicts(true);
+        $aset->parse("paper,tag\n1,AutoManual\n2,AutoManual\n3,AutoManual\n");
+        xassert($aset->execute());
+        xassert_search($this->u_chair, "#AutoManual", "1 2 3");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"tag":"AutoManual","search":"1 4"}]}');
+        xassert($sv->execute());
+        xassert_search($this->u_chair, "#AutoManual", "1 4");
+        xassert_search($this->u_chair, "#AutoManual#0", "1 4");
+
+        $sv = (new SettingValues($this->u_chair))->set_use_req(true);
+        $sv->add_json_string('{"automatic_tag":[{"id":"automanual","delete":true}]}');
+        xassert($sv->execute());
+        xassert_search($this->u_chair, "#AutoManual", "");
+    }
+
     function test_automatic_tag_search_newlines() {
         // newlines in automatic tag searches are preserved
         $sv = SettingValues::make_request($this->u_chair, [
