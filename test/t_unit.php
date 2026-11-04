@@ -174,11 +174,18 @@ class Unit_Tester {
         Dbl::set_error_handler(function ($dblink, $query) use (&$described) {
             $described = $query;
         });
+        // (MySQL's default `max_allowed_packet` is 64 MiB, so make room)
+        $max = $this->conf->fetch_ivalue("select @@max_allowed_packet");
+        $memory_limit = ini_get("memory_limit");
+        $need = memory_get_usage(true) + 2 * $max + (16 << 20);
+        if (($cur = ini_get_bytes("memory_limit")) >= 0 && $cur < $need) {
+            ini_set("memory_limit", (string) $need);
+        }
         try {
-            $max = $this->conf->fetch_ivalue("select @@max_allowed_packet");
             xassert(!Dbl::store_blob($db, $q, str_repeat("x", $max + 1), ["psid" => $psid, "fn" => $fn]));
         } finally {
             Dbl::set_error_handler([$this->conf, "query_error_handler"]);
+            ini_set("memory_limit", $memory_limit);
         }
         xassert_eqq($described, "{$q} [psid: {$psid}, fn: " . ($fn === null ? "NULL" : json_encode($fn)) . ", blob: <" . ($max + 1) . " bytes>]");
         xassert_eqq($stored(), "");
