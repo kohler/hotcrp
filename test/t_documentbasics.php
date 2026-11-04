@@ -736,6 +736,78 @@ class DocumentBasics_Tester {
         }
     }
 
+    function test_document_request_filters() {
+        $conf = $this->conf;
+        $user = $conf->checked_user_by_email("chair@_.com");
+        $saved_options = $conf->setting_data("options");
+        $saved_filters = $conf->opt("documentFilters");
+        $conf->save_refresh_setting("options", 1, json_encode([
+            ["id" => 2, "name" => "Appendix", "type" => "pdf", "order" => 1],
+            ["id" => 3, "name" => "Attachments", "type" => "attachments", "order" => 2]
+        ]));
+        $conf->set_opt("documentFilters", [
+            (object) ["name" => "stamp", "function" => "+FileFilter"],
+            (object) ["name" => "render", "function" => "+FileFilter"]
+        ]);
+        $conf->_file_filters = null;
+
+        try {
+            $prefix = $conf->download_prefix;
+            $parse = function ($req) use ($user) {
+                $dr = new DocumentRequest(is_string($req) ? ["doc" => $req] : $req, $user);
+                return $dr->has_error() ? null : $dr->jsonSerialize();
+            };
+
+            // filters are introduced by `--` and apply in order
+            $doc = DocumentInfo::make_content($conf, "%PDF-1.4", "application/pdf")
+                ->set_paper_id(1)->set_document_type(2);
+            $stamp = FileFilter::find_by_name($conf, "stamp");
+            $render = FileFilter::find_by_name($conf, "render");
+            $fn = $doc->export_filename([$stamp, $render]);
+            xassert_eqq($fn, "{$prefix}paper1-appendix--stamp--render.pdf");
+            $j = $parse($fn);
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, 2, ["stamp", "render"]]);
+
+            $doc = DocumentInfo::make_content($conf, "%PDF-1.4", "application/pdf")
+                ->set_paper_id(1)->set_document_type(DTYPE_SUBMISSION);
+            xassert_eqq($doc->export_filename([$stamp]), "{$prefix}paper1--stamp.pdf");
+            $j = $parse("{$prefix}paper1--stamp.pdf");
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, DTYPE_SUBMISSION, ["stamp"]]);
+            $j = $parse("p1/appendix--render.pdf");
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, 2, ["render"]]);
+            $j = $parse(["p" => 1, "dt" => "appendix--stamp"]);
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, 2, ["stamp"]]);
+
+            // `--` always means filters: unknown or empty filters are errors
+            xassert_eqq($parse("{$prefix}paper1--nonesuch.pdf"), null);
+            xassert_eqq($parse("{$prefix}paper1-appendix--.pdf"), null);
+            xassert_eqq($parse("{$prefix}paper1-appendix--stamp--.pdf"), null);
+            xassert_eqq($parse("{$prefix}paper1-appendix--Appendix.pdf"), null);
+
+            // `-` still introduces filters, for compatibility, but only in
+            // names without `--` filters
+            $j = $parse("{$prefix}paper1-stamp.pdf");
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, DTYPE_SUBMISSION, ["stamp"]]);
+            $j = $parse("{$prefix}paper1-appendix-stamp-render.pdf");
+            xassert_eqq([$j["pid"], $j["dt"], $j["filters"] ?? null], [1, 2, ["stamp", "render"]]);
+            xassert_eqq($parse("{$prefix}paper1-appendix-stamp--render.pdf"), null);
+            xassert_eqq($parse("{$prefix}paper1-stamp--render.pdf"), null);
+
+            // attachment names are not split
+            $j = $parse("{$prefix}paper1-attachments/my--notes.pdf");
+            xassert_eqq([$j["pid"], $j["dt"], $j["attachment"] ?? null, $j["filters"] ?? null],
+                        [1, 3, "my--notes.pdf", null]);
+        } finally {
+            $conf->set_opt("documentFilters", $saved_filters);
+            $conf->_file_filters = null;
+            if ($saved_options === null) {
+                $conf->save_refresh_setting("options", null);
+            } else {
+                $conf->save_refresh_setting("options", 1, $saved_options);
+            }
+        }
+    }
+
     function test_document_request_title_periods() {
         $conf = $this->conf;
         $user = $conf->checked_user_by_email("chair@_.com");

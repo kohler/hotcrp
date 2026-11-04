@@ -114,7 +114,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*+(?:\.[-A-Za-z0-9_]*+(?=[.\/]))*+)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)(?:-(?!-))?([-A-Za-z0-9_]*+(?:\.[-A-Za-z0-9_]*+(?=[.\/]))*+)(?:|\.[^\/]+|\/++(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
@@ -145,7 +145,21 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             }
         }
 
-        // parse options and filters
+        // `--` separates a document name from its filters, as in
+        // “paper1--stamp.pdf” or “paper1-appendix--stamp--render.png”
+        if (($ddpos = strpos($dtname, "--")) !== false) {
+            foreach (explode("--", substr($dtname, $ddpos + 2)) as $filtername) {
+                if (!($filter = FileFilter::find_by_name($this->conf, $filtername))) {
+                    $this->error_at("filter", "<0>Document filter ‘{:nonempty}’ not found", $filtername);
+                    return;
+                }
+                $this->filters[] = $filter;
+            }
+            $dtname = substr($dtname, 0, $ddpos);
+        }
+
+        // parse options and filters (if there are no `--` filters, `-` also
+        // introduces a filter, for compatibility with older filenames)
         $this->opt = $this->dtype = null;
         while ($dtname !== "" && $this->dtype === null) {
             if ((str_starts_with($dtname, "comment-")
@@ -160,6 +174,9 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
             if (($opt = self::parse_option($this->conf, $dtname, $this->paperId))) {
                 $this->opt = $opt;
                 $this->dtype = $this->opt->id;
+                break;
+            }
+            if ($ddpos !== false) {
                 break;
             }
             $filter = null;
