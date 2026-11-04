@@ -1000,6 +1000,40 @@ class PaperOption implements JsonSerializable {
         return true;
     }
 
+    /** Return the filename for `$doc`, a document in this field, in
+     * downloads, or null to use the default (such as
+     * “testconf-paper1-attachments/file.pdf”). A non-null filename is used
+     * as is, without the site’s download prefix or a MIME-type suffix;
+     * filters, if any, are noted before its extension. Filenames should
+     * be unique within the submission, and should not reveal information
+     * that downloaders cannot see. `$flags` are as for
+     * `DocumentInfo::export_filename` (for instance, pass them to
+     * `DocumentInfo::member_filename`). Fields that choose filenames
+     * should also parse them (see `parse_export_filename`), so that
+     * export filenames can be requested from the `doc` page and API.
+     * @param int $flags
+     * @return ?string */
+    function export_filename_for(DocumentInfo $doc, $flags) {
+        return null;
+    }
+
+    /** Parse `$fn`, a filename that `export_filename_for` might have
+     * returned for a document in this field. Return null if `$fn` is not
+     * such a filename, and otherwise an array with keys `pid`, the
+     * submission ID, and optionally `attachment`, a key that selects one of
+     * the field’s documents (it is passed to this field’s `attachment`
+     * method; omit it to select the field’s main document). Other keys are
+     * reserved for future use. `DocumentRequest` calls this only for
+     * names it cannot otherwise parse, and removes any `--` filters first
+     * (except from attachment names, which contain `/`); since filters can
+     * change the extension, any extension should be accepted. Permissions
+     * are checked later.
+     * @param string $fn
+     * @return ?array{pid:int,attachment?:?string} */
+    function parse_export_filename($fn) {
+        return null;
+    }
+
     /** Fetch the content of `$doc`, a placeholder document for this field.
      *
      * On success, set `$doc`’s content (with `$doc->set_simple_content()` or

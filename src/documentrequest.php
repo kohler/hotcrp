@@ -200,7 +200,8 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         if ($this->dtype === null && $dtname === "") {
             $this->opt = $this->conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
-        } else if ($this->dtype === null) {
+        } else if ($this->dtype === null
+                   && (!$want_path || !$this->parse_field_filename($this->req_filename))) {
             $this->error_at("dt", "<0>Document type not found");
             return;
         }
@@ -277,6 +278,47 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 $this->_error_status = 403;
             }
         }
+    }
+
+    /** Parse `$fn` as a filename chosen by a document’s field (see
+     * `PaperOption::export_filename_for`). As in other names, `--` before
+     * the extension introduces filters, except in attachment names (which
+     * contain `/`); the fields parse the name without its filters. Return
+     * true if some field accepts it.
+     * @param string $fn
+     * @return bool
+     * @suppress PhanAccessReadOnlyProperty */
+    private function parse_field_filename($fn) {
+        $this->paperId = $this->opt = $this->dtype = null;
+        $this->linkid = $this->attachment = null;
+        $this->filters = [];
+
+        [$base, $ext] = DocumentInfo::split_extension($fn);
+        $filters = [];
+        if (strpos($base, "/") === false
+            && ($ddpos = strpos($base, "--")) !== false) {
+            foreach (explode("--", substr($base, $ddpos + 2)) as $filtername) {
+                if (!($filter = FileFilter::find_by_name($this->conf, $filtername))) {
+                    return false;
+                }
+                $filters[] = $filter;
+            }
+            $fn = substr($base, 0, $ddpos) . $ext;
+        }
+
+        foreach ($this->conf->options()->document_fields() as $opt) {
+            if (($x = $opt->parse_export_filename($fn)) !== null
+                && is_int($x["pid"] ?? null)
+                && (!isset($x["attachment"]) || is_string($x["attachment"]))) {
+                $this->paperId = $x["pid"];
+                $this->attachment = $x["attachment"] ?? null;
+                $this->opt = $opt;
+                $this->dtype = $opt->id;
+                $this->filters = $filters;
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @param int|string $dtname

@@ -93,7 +93,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             assert(!$doc->has_error() && $fn !== "");
             $slash = strpos($fn, "/");
             if (strlen($fn) > 1000
-                || preg_match('/[\000]|\/\/|\/\z/', $fn)) {
+                || preg_match('/[\000]|\/\/|\/\z|\A\/|(?:\A|\/)\.\.?(?:\/|\z)/', $fn)) {
                 return $this->_add_fail($doc, $fn);
             }
             while ($slash !== false) {

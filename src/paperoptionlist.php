@@ -337,6 +337,23 @@ class PaperOptionList implements IteratorAggregate {
         return $list;
     }
 
+    /** Return all fields that can hold documents: intrinsic fields, such as
+     * the submission and final version, then configured paper and
+     * nonpaper fields.
+     * @return array<int,PaperOption> */
+    function document_fields() {
+        $list = [];
+        foreach (array_keys($this->intrinsic_json_map()) as $id) {
+            if (($o = $this->option_by_id($id)) && $o->has_document())
+                $list[$id] = $o;
+        }
+        foreach ($this->universal() as $id => $o) {
+            if ($o->has_document())
+                $list[$id] = $o;
+        }
+        return $list;
+    }
+
     private function _get_field($id, $oj, $nonfinal) {
         if (($oj->nonpaper ?? false) !== true
             && !($nonfinal && ($oj->final ?? false) === true)) {

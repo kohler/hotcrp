@@ -1960,11 +1960,16 @@ class DocumentInfo implements JsonSerializable {
      * @param int $flags
      * @return string */
     function export_filename($filters = null, $flags = 0) {
+        if ($this->documentType >= DTYPE_FINAL
+            && ($o = $this->option())
+            && ($fn = $o->export_filename_for($this, $flags)) !== null) {
+            return $this->filtered_export_filename($fn, $filters ?? $this->filters_applied);
+        }
         $fn = $this->conf->download_prefix;
         if ($this->documentType == DTYPE_SUBMISSION) {
-            $fn .= "paper" . $this->paperId;
+            $fn .= "paper{$this->paperId}";
         } else if ($this->documentType == DTYPE_FINAL) {
-            $fn .= "final" . $this->paperId;
+            $fn .= "final{$this->paperId}";
         } else if ($this->documentType == DTYPE_COMMENT) {
             if (!$this->_owner) {
                 $this->find_owner();
@@ -1989,7 +1994,7 @@ class DocumentInfo implements JsonSerializable {
                 $fn .= $o->dtype_name();
                 $oabbr = "";
             } else {
-                $fn .= "paper" . $this->paperId;
+                $fn .= "paper{$this->paperId}";
                 $oabbr = $o ? "-" . $o->dtype_name() : "-unknown";
             }
             if ($o && $o->has_attachments()) {
@@ -1999,40 +2004,80 @@ class DocumentInfo implements JsonSerializable {
             }
             $fn .= $oabbr;
         }
-        $mimetype = $this->mimetype;
         $filters = $filters ?? $this->filters_applied;
-        if ($filters) {
-            foreach (is_array($filters) ? $filters : [$filters] as $filter) {
-                if (is_string($filter)) {
-                    error_log("filter should not be string: " . debug_string_backtrace());
-                    $filter = FileFilter::find_by_name($this->conf, $filter);
-                }
-                if ($filter instanceof FileFilter) {
-                    $fn .= "--" . $filter->name;
-                    $mimetype = $filter->mimetype($this, $mimetype);
-                }
-            }
-        }
+        [$fsuffix, $mimetype] = $this->apply_filter_names($filters);
+        $fn .= $fsuffix;
         if ($mimetype) {
             if (($ext = Mimetype::extension($mimetype))) {
                 $fn .= $ext;
             } else if ($this->filename
-                       && preg_match('/(\.[A-Za-z0-9]{1,5})\z/', $this->filename, $m)
                        && (!$filters || $mimetype === $this->mimetype)) {
-                $fn .= $m[1];
+                $fn .= self::split_extension($this->filename)[1];
             }
         }
         return $fn;
     }
 
-    /** @param string $suffix
+    /** Return the filename suffix for `$filters` (such as “--stamp”) and
+     * the resulting MIME type.
+     * @param null|FileFilter|list<FileFilter> $filters
+     * @return array{string,?string} */
+    private function apply_filter_names($filters) {
+        $fsuffix = "";
+        $mimetype = $this->mimetype;
+        foreach (is_array($filters) ? $filters : ($filters ? [$filters] : []) as $filter) {
+            if (is_string($filter)) {
+                error_log("filter should not be string: " . debug_string_backtrace());
+                $filter = FileFilter::find_by_name($this->conf, $filter);
+            }
+            if ($filter instanceof FileFilter) {
+                $fsuffix .= "--" . $filter->name;
+                $mimetype = $filter->mimetype($this, $mimetype);
+            }
+        }
+        return [$fsuffix, $mimetype];
+    }
+
+    /** Return `$fn`, a field-supplied export filename, with `$filters`
+     * noted before its extension, and the extension changed if the filters
+     * change the MIME type.
+     * @param string $fn
+     * @param null|FileFilter|list<FileFilter> $filters
+     * @return string */
+    private function filtered_export_filename($fn, $filters) {
+        [$fsuffix, $mimetype] = $this->apply_filter_names($filters);
+        if ($fsuffix === "") {
+            return $fn;
+        }
+        [$base, $ext] = self::split_extension($fn);
+        if ($mimetype !== $this->mimetype
+            && ($mext = Mimetype::extension($mimetype))) {
+            $ext = $mext;
+        }
+        return $base . $fsuffix . $ext;
+    }
+
+    /** Split filename `$fn` into a base and an extension. The extension
+     * is usually the last `.` and up to 5 letters or digits, but includes
+     * the inner extension of common compressed formats (“.tar.gz”,
+     * “.csv.xz”). It may be empty, and is never a whole path component
+     * (“dir/.pdf” has no extension).
+     * @param string $fn
+     * @return array{string,string} */
+    static function split_extension($fn) {
+        if (preg_match('/(?<=[^\/])(?:\.(?:tar|csv|tsv|jsonl?|txt|log|sql|ps)\.(?:gz|bz2|xz|zst)|\.[A-Za-z0-9]{1,5})\z/i', $fn, $m)) {
+            return [substr($fn, 0, -strlen($m[0])), $m[0]];
+        }
+        return [$fn, ""];
+    }
+
+    /** Return the export filename with `$suffix` inserted before its
+     * extension.
+     * @param string $suffix
      * @return string */
     function suffixed_export_filename($suffix, $filters = null) {
-        $fn = $this->export_filename($filters);
-        if (preg_match('/(\.[A-Za-z0-9]{1,5}(?:\.[A-Za-z0-9]{1,3})?)\z/', $fn, $m)) {
-            return substr($fn, 0, -strlen($m[0])) . $suffix . $m[0];
-        }
-        return $fn . $suffix;
+        [$base, $ext] = self::split_extension($this->export_filename($filters));
+        return $base . $suffix . $ext;
     }
 
     const DOCURL_INCLUDE_DOCID = 1024;

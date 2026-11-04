@@ -691,6 +691,14 @@ class DocumentBasics_Tester {
         ]));
 
         try {
+            // document fields: intrinsic and configured, paper and nonpaper
+            $dfids = array_keys($conf->options()->document_fields());
+            xassert_eqq(array_values(array_intersect($dfids, [DTYPE_SUBMISSION, DTYPE_FINAL, 1, 2, 3])),
+                        [DTYPE_SUBMISSION, DTYPE_FINAL, 2, 3]);
+            foreach ($conf->options()->document_fields() as $o) {
+                xassert($o->has_document());
+            }
+
             // `dt` names a document type; no `dt` means the submission
             $dr = new DocumentRequest(["p" => 1], $user);
             xassert(!$dr->has_error());

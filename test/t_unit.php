@@ -194,6 +194,40 @@ class Unit_Tester {
         $this->conf->qe("update PaperStorage set paper=? where paperStorageId=?", $old, $psid);
     }
 
+    function test_document_split_extension() {
+        xassert_eqq(DocumentInfo::split_extension("paper1.pdf"), ["paper1", ".pdf"]);
+        xassert_eqq(DocumentInfo::split_extension("a.b.pdf"), ["a.b", ".pdf"]);
+        xassert_eqq(DocumentInfo::split_extension("code.tar.gz"), ["code", ".tar.gz"]);
+        xassert_eqq(DocumentInfo::split_extension("code.TAR.XZ"), ["code", ".TAR.XZ"]);
+        xassert_eqq(DocumentInfo::split_extension("data.csv.gz"), ["data", ".csv.gz"]);
+        xassert_eqq(DocumentInfo::split_extension("log.JSONL.zst"), ["log", ".JSONL.zst"]);
+        xassert_eqq(DocumentInfo::split_extension("paper.ps.bz2"), ["paper", ".ps.bz2"]);
+        xassert_eqq(DocumentInfo::split_extension("paper.pdf.gz"), ["paper.pdf", ".gz"]);
+        xassert_eqq(DocumentInfo::split_extension("data.csv.zip"), ["data.csv", ".zip"]);
+        xassert_eqq(DocumentInfo::split_extension("data.gz"), ["data", ".gz"]);
+        xassert_eqq(DocumentInfo::split_extension("README"), ["README", ""]);
+        xassert_eqq(DocumentInfo::split_extension("dir/.pdf"), ["dir/.pdf", ""]);
+        xassert_eqq(DocumentInfo::split_extension("v1.2/notes"), ["v1.2/notes", ""]);
+        xassert_eqq(DocumentInfo::split_extension("x.toolongext"), ["x.toolongext", ""]);
+    }
+
+    function test_document_set_rejects_unsafe_paths() {
+        $doc = DocumentInfo::make_content($this->conf, "Hello", "text/plain");
+        $docset = new DocumentInfoSet("test.zip");
+        xassert(!!$docset->add_as($doc, "a/b.txt"));
+        xassert(!!$docset->add_as($doc, "a/.hidden.txt"));
+        xassert(!!$docset->add_as($doc, "a..b/c..txt"));
+        // (each refusal is logged; keep the expected failures out of stderr)
+        $old_error_log = ini_set("error_log", "/dev/null");
+        try {
+            foreach (["/abs.txt", "../up.txt", "a/../up.txt", "./here.txt", "a/./b.txt", "a/..", "a//b.txt", "a/"] as $fn) {
+                xassert_eqq($docset->add_as($doc, $fn), null);
+            }
+        } finally {
+            ini_set("error_log", $old_error_log);
+        }
+    }
+
     function test_dbl_format_query() {
         xassert_eqq(Dbl::format_query("Hello"), "Hello");
         xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
