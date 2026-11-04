@@ -144,6 +144,7 @@ class Tag_SearchTerm extends SearchTerm {
 
 
     const SQLEXPR_PREFIX = 'exists (select * from PaperTag where paperId=Paper.paperId';
+    const SQLEXPR_SUFFIX = ')=1';
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {
             return "true";
@@ -151,7 +152,7 @@ class Tag_SearchTerm extends SearchTerm {
             return "false";
         }
         $sql = $this->tsm->sqlexpr("PaperTag");
-        return self::SQLEXPR_PREFIX . ($sql ? " and {$sql}" : "") . ')';
+        return self::SQLEXPR_PREFIX . ($sql ? " and {$sql}" : "") . self::SQLEXPR_SUFFIX;
     }
     function is_sqlexpr_precise() {
         return $this->tsm->is_sqlexpr_precise() && $this->tsm->user->is_root_user();
@@ -164,16 +165,18 @@ class Tag_SearchTerm extends SearchTerm {
         }
         $x = [];
         foreach ($ff as $f) {
-            if ($f === "true" || !str_starts_with($f, self::SQLEXPR_PREFIX)) {
+            if ($f === "true"
+                || !str_starts_with($f, self::SQLEXPR_PREFIX)
+                || !str_ends_with($f, self::SQLEXPR_SUFFIX)) {
                 return "true";
-            } else if ($f === self::SQLEXPR_PREFIX . ")") {
+            } else if ($f === self::SQLEXPR_PREFIX . self::SQLEXPR_SUFFIX) {
                 $x = null;
             } else if ($x !== null) {
-                $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -1);
+                $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -strlen(self::SQLEXPR_SUFFIX));
             }
         }
         $sfx = $x === null ? "" : " and (" . join(" or ", $x) . ")";
-        return self::SQLEXPR_PREFIX . $sfx . ")";
+        return self::SQLEXPR_PREFIX . $sfx . self::SQLEXPR_SUFFIX;
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->tsm->test($row->searchable_tags($this->tsm->user));

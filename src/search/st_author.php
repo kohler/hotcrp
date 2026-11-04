@@ -54,7 +54,7 @@ class Author_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->csm->has_contacts() && !$this->csm->test(0)) {
-            return "exists (select * from PaperConflict where PaperConflict.paperId=Paper.paperId and " . $this->csm->contact_match_sql("contactId") . " and conflictType>=" . CONFLICT_AUTHOR . ")";
+            return "exists (select * from PaperConflict where PaperConflict.paperId=Paper.paperId and " . $this->csm->contact_match_sql("contactId") . " and conflictType>=" . CONFLICT_AUTHOR . ")=1";
         } else if ($this->csm->has_contacts()) {
             $sqi->add_allConflictType_column();
             return "true";

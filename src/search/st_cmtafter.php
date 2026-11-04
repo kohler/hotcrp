@@ -31,7 +31,7 @@ class CmtAfter_SearchTerm extends SearchTerm {
         if ($this->cm->test(0)) {
             return "true";
         }
-        return "exists(select * from PaperComment where paperId=Paper.paperId and timeModified>={$this->time})";
+        return "exists (select * from PaperComment where paperId=Paper.paperId and timeModified>={$this->time})=1";
     }
     function test(PaperInfo $row, $xinfo) {
         $n = 0;

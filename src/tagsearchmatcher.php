@@ -305,7 +305,7 @@ class TagSearchMatcher {
         if ($sqle === null) {
             return null;
         }
-        return "exists (select * from PaperTag where paperId={$base_table}.paperId and {$sqle})";
+        return "exists (select * from PaperTag where paperId={$base_table}.paperId and {$sqle})=1";
     }
 
     /** @return bool */

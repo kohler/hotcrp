@@ -18,7 +18,7 @@ class Color_SearchTerm extends SearchTerm {
         if (!$this->user->can_view_tags()) {
             return "false";
         }
-        return 'exists (select * from PaperTag where paperId=Paper.paperId)';
+        return 'exists (select * from PaperTag where paperId=Paper.paperId)=1';
     }
     function test(PaperInfo $row, $xinfo) {
         $tags = $row->viewable_tags($this->user);

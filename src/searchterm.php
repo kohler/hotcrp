@@ -202,7 +202,16 @@ abstract class SearchTerm {
     }
 
 
-    /** @return string */
+    /** Return an SQL expression that is true for every paper this term
+     * might match.
+     *
+     * Correlated `exists` subqueries should be compared with 1, as in
+     * `exists (select * from ...)=1`. Searches can combine many terms, and
+     * MySQL 8 converts each bare ANDed `exists` into a semijoin; planning a
+     * join with more than about 10 semijoins takes exponential time. The
+     * comparison keeps each `exists` a dependent subquery, which is also
+     * fast on MariaDB.
+     * @return string */
     function sqlexpr(SearchQueryInfo $sqi) {
         return "true";
     }
@@ -1695,7 +1704,7 @@ class Limit_SearchTerm extends SearchTerm {
             if ($q === "false") {
                 $arf[] = "false";
             } else if ($rtable === "PaperReview") {
-                $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$q})";
+                $arf[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$q})=1";
             } else {
                 $sqi->add_table("MyReviews", [$need_ar === 3 ? "left join" : "join", "PaperReview", $q]);
                 $arf[] = ($need_ar === 3 ? "MyReviews.reviewType is not null" : "true");
@@ -1718,7 +1727,7 @@ class Limit_SearchTerm extends SearchTerm {
                 && (($this->lflag & self::LFLAG_REVIEWER) === 0
                     || $this->user->is_manager())) {
                 $reviewable_sql = $this->reviewer->act_reviewer_sql("PaperReview", true);
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$reviewable_sql})";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$reviewable_sql})=1";
             }
             break;
         case "a":
@@ -1774,7 +1783,7 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "(" . join(" or ", $fx) . ")";
             break;
         case "req":
-            $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";
+            $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})=1";
             break;
         default:
             $ff[] = "false";

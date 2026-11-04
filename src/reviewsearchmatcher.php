@@ -396,7 +396,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             }
         }
         if ($this->rate_bits > 0) {
-            $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)";
+            $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)=1";
         }
         if ($this->requester !== null) {
             $where[] = "requestedBy=" . $this->requester;

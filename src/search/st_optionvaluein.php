@@ -23,9 +23,9 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
             $op = count($this->values) === 1 ? "=" : " in ";
             $values = join(",", $this->values);
             if ($this->option->id > 0) {
-                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id} and value{$op}({$values}))";
+                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id} and value{$op}({$values}))=1";
             } else if ($this->option->id === PaperOption::TOPICSID) {
-                return "exists (select * from PaperTopic where paperId=Paper.paperId and topicId{$op}({$values}))";
+                return "exists (select * from PaperTopic where paperId=Paper.paperId and topicId{$op}({$values}))=1";
             }
         }
         return "true";

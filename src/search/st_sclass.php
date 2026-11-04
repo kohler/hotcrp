@@ -35,7 +35,7 @@ class Sclass_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!$this->sr->unnamed) {
             return Dbl::format_query($sqi->srch->conf->dblink,
-                "exists (select * from PaperTag where paperId=Paper.paperId and tag=?)",
+                "exists (select * from PaperTag where paperId=Paper.paperId and tag=?)=1",
                 $this->sr->tag);
         }
         return "true";

@@ -40,11 +40,11 @@ abstract class Option_SearchTerm extends SearchTerm {
         if ($this->option->id > 0) {
             $sqi->add_options_columns();
             if (!$this->option->include_empty) {
-                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
+                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})=1";
             }
         } else if ($this->option->id === PaperOption::TOPICSID) {
             $sqi->add_topics_columns();
-            return "exists (select * from PaperTopic where paperId=Paper.paperId)";
+            return "exists (select * from PaperTopic where paperId=Paper.paperId)=1";
         }
         return "true";
     }

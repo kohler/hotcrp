@@ -106,7 +106,7 @@ class Proposal_SearchTerm extends SearchTerm {
         if ($this->rqsm->conservative_nonnegative_comparison() === ">=0") {
             return "true";
         }
-        return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
+        return "exists (select * from ReviewRequest where paperId=Paper.paperId)=1";
     }
     function test(PaperInfo $prow, $xinfo) {
         $n = 0;
