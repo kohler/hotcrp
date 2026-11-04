@@ -174,8 +174,9 @@ class CdbUserUpdate {
         $updatef = Dbl::make_multi_qe_stager($this->conf->dblink);
         while (($row = $result->fetch_row())) {
             $n = Contact::make_db_searchable_name($row[1], $row[2], $row[3]);
-            $updatef("update ContactInfo set unaccentedName=? where contactId=? and firstName=? and lastName=? and affiliation=?",
-                $n, (int) $row[0], $row[1], $row[2], $row[3]);
+            $nonascii = is_usascii($row[1] . $row[2] . $row[3]) ? 0 : Contact::CF_NEANONASCII;
+            $updatef("update ContactInfo set unaccentedName=?, cflags=(cflags&~?)|? where contactId=? and firstName=? and lastName=? and affiliation=?",
+                $n, Contact::CF_NEANONASCII, $nonascii, (int) $row[0], $row[1], $row[2], $row[3]);
         }
         $updatef(null);
         $result->close();

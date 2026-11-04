@@ -820,9 +820,11 @@ class Cdb_Tester {
         $gussie = $this->conf->user_by_email("gussie@cat.com");
         xassert_eqq($gussie->firstName, "");
         xassert_eqq($gussie->lastName, "");
+        xassert_eqq($gussie->affiliation, "");
+        xassert(!$gussie->is_nea_nonascii());
 
         // update CDB user name, add fake role
-        Dbl::qe($this->conf->contactdb(), "update ContactInfo set firstName='Gussie', lastName='Onufryk', orcid='XXXX-9999-CATK-ITTY', updateTime=? where email='gussie@cat.com'", Conf::$now);
+        Dbl::qe($this->conf->contactdb(), "update ContactInfo set firstName='Gussie', lastName='Onufryk', affiliation='Université d’Orléans', orcid='XXXX-9999-CATK-ITTY', updateTime=? where email='gussie@cat.com'", Conf::$now);
         Dbl::qe($this->conf->contactdb(), "insert into ConferenceUpdates (confid, user_update_at) values (?,?) on duplicate key update user_update_at=greatest(?,user_update_at)", $this->conf->cdb_confid(), Conf::$now, Conf::$now);
 
         Conf::advance_current_time(Conf::$now + 5);
@@ -831,7 +833,9 @@ class Cdb_Tester {
         $gussie = $this->conf->user_by_email("gussie@cat.com");
         xassert_eqq($gussie->firstName, "Gussie");
         xassert_eqq($gussie->lastName, "Onufryk");
-        xassert_eqq($gussie->unaccentedName, "gussie onufryk");
+        xassert_eqq($gussie->affiliation, "Université d’Orléans");
+        xassert_eqq($gussie->unaccentedName, "gussie onufryk (universite d'orleans)");
+        xassert($gussie->is_nea_nonascii());
         xassert_ge($this->conf->setting("__cdb_user_update_at"), Conf::$now - 3);
 
         // if no recent updates, CdbUserUpdate does nothing
