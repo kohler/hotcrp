@@ -480,7 +480,7 @@ class CheckInvariants_Batch {
     }
 
     static function list_fixes() {
-        return prefix_word_wrap("", "PROBLEMs for `--fix` include summary, autosearch, inactive, document-match, whitespace, reviews, roles, user_nonascii, and cdbroles.", 0);
+        return prefix_word_wrap("", "PROBLEMs for `--fix` include summary, autosearch, inactive, document-match, whitespace, reviews, roles, user_nonascii, cdbroles, authors, and unnamed_authors.", 0);
     }
 
     /** @return CheckInvariants_Batch */

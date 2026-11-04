@@ -320,7 +320,7 @@ class UserActions extends MessageSet {
         Dbl::free($result);
 
         // delete conflicts except for author conflicts
-        $this->conf->qe("delete from PaperConflict where contactId=? and conflictType!=?",
+        $this->conf->qe("delete from PaperConflict where contactId=? and (conflictType&?)=0",
             $user->contactId, CONFLICT_AUTHOR);
         $this->conf->qe("update PaperConflict set conflictType=? where contactId=?",
             CONFLICT_AUTHOR, $user->contactId);

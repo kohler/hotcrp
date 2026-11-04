@@ -2336,6 +2336,30 @@ class UserStatus_Tester {
         $this->delete_account($email);
     }
 
+    function test_delete_contact_author_keeps_authorship() {
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        $ps = new PaperStatus($chair);
+        xassert($ps->save_paper_json((object) [
+            "id" => "new", "title" => "Deleted contact author", "abstract" => "Abstract",
+            "authors" => [
+                (object) ["email" => "estrin@usc.edu", "name" => "Deborah Estrin"],
+                (object) ["email" => "delauthor@_.com", "name" => "Del Author"]
+            ],
+            "contacts" => [(object) ["email" => "estrin@usc.edu"], (object) ["email" => "delauthor@_.com"]]
+        ]), $ps->full_feedback_text());
+        $pid = $ps->paperId;
+        $u = $this->conf->checked_user_by_email("delauthor@_.com");
+        $cfltq = "select conflictType from PaperConflict where paperId=? and contactId=?";
+        xassert_eqq($this->conf->fetch_ivalue($cfltq, $pid, $u->contactId), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+
+        // deleting a contact author keeps authorship, removes contact status
+        (new UserActions($chair))->delete($u);
+        $u = $this->conf->fresh_user_by_email("delauthor@_.com");
+        xassert($u->is_deleted());
+        xassert_eqq($this->conf->fetch_ivalue($cfltq, $pid, $u->contactId), CONFLICT_AUTHOR);
+        xassert((new ConfInvariants($this->conf))->check_users()->ok());
+    }
+
     function test_profile_form_converts_to_utf8() {
         list($u, $qreq) = $this->make_qreq_for("raju@watson.ibm.com", [
             "firstName" => "Raj\xFA", "affiliation" => "IBM\xFF"
