@@ -1045,6 +1045,14 @@ class Options_SettingParser extends SettingParser {
             $this->_apply_req_values_text($si, $fs, $sv);
             return true;
         }
+        if ($si->name2 === "/page_group") {
+            $pg = $sv->base_parse_req($si);
+            if (($pg ?? "") !== "" && !PaperOption::valid_page_group($pg)) {
+                $sv->error_at($si, "<0>Page group names must start with a lowercase letter and contain only lowercase letters and digits");
+            }
+            $sv->save($si, $pg);
+            return true;
+        }
         if ($si->name2 === "/values") {
             $this->_apply_req_values($si, $fs, $sv);
             return true;

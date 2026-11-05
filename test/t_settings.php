@@ -2670,6 +2670,68 @@ class Settings_Tester {
         xassert(!$this->conf->options()->find("Status"));
     }
 
+    function test_sf_page_group() {
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [
+                {"id": "new", "name": "Street", "type": "text", "order": 300, "display": "left", "page_group": "contact"},
+                {"id": "new", "name": "Phone Number", "type": "text", "order": 301, "display": "left", "page_group": "contact"},
+                {"id": "new", "name": "Elsewhere", "type": "text", "order": 302, "display": "rest"}
+            ]
+        }');
+        xassert($sv->execute());
+        $ostreet = $this->conf->options()->find("Street");
+        $ophone = $this->conf->options()->find("Phone Number");
+        $oelse = $this->conf->options()->find("Elsewhere");
+        xassert($ostreet && $ophone && $oelse);
+        xassert_eqq($ostreet->page_group(), "contact");
+        xassert_eqq($ophone->page_group(), "contact");
+        // the implicit topics group is not a setting
+        xassert_eqq($oelse->page_group(), "topics");
+        xassert_eqq($oelse->jsonSerialize()->page_group ?? null, null);
+        xassert_eqq($oelse->export_setting()->page_group, null);
+
+        // invalid groups are rejected by settings (but are not checked when
+        // configured directly)
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [{"id": "new", "name": "Badgroup", "type": "text", "order": 303, "display": "right", "page_group": "no spaces"}]
+        }');
+        xassert(!$sv->execute());
+        xassert($sv->has_error_at("sf/1/page_group"));
+        xassert(!$this->conf->options()->find("Badgroup"));
+        xassert(!PaperOption::valid_page_group("no spaces"));
+        xassert(!PaperOption::valid_page_group("no-dashes"));
+        xassert(!PaperOption::valid_page_group("no_underscores"));
+        xassert(!PaperOption::valid_page_group("Uppercase"));
+        xassert(!PaperOption::valid_page_group("1st"));
+        xassert(PaperOption::valid_page_group("group2"));
+        xassert_eqq(PaperOption::make($this->conf, (object) ["id" => 1000, "name" => "Bad", "type" => "text", "display" => "right", "page_group" => "no spaces"])->page_group(), "no spaces");
+
+        // groups survive export and reimport
+        $j = (new SettingValues($this->u_chair))->all_jsonv();
+        $groups = [];
+        foreach ($j->sf as $sfj) {
+            $groups[$sfj->name] = $sfj->page_group ?? null;
+        }
+        xassert_eqq($groups["Street"], "contact");
+        xassert_eqq($groups["Elsewhere"], null);
+
+        // moving a field out of the rest position leaves the topics group
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1, "sf/1/id" => $oelse->id, "sf/1/display" => "right"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($this->conf->options()->find("Elsewhere")->page_group(), null);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $ostreet->id, "sf/1/delete" => 1,
+            "sf/2/id" => $ophone->id, "sf/2/delete" => 1,
+            "sf/3/id" => $oelse->id, "sf/3/delete" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$this->conf->options()->find("Street"));
+    }
+
     function test_sf_name_json_reserved_grandfathered() {
         // install fields with reserved-looking names behind the settings UI’s back
         $old_sv = $this->conf->setting("options");

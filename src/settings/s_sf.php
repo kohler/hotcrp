@@ -10,6 +10,8 @@ class Sf_Setting {
     public $type;
     public $description;
     public $display;
+    /** @var ?string */
+    public $page_group;
     public $visibility;
     public $required;
     public $exists_if;

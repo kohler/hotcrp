@@ -414,9 +414,9 @@ class PaperTable {
                 || ($o->id > 0 && !$this->user->allow_view_option($this->prow, $o))) {
                 continue;
             }
-            if ($o->page_group !== null
-                && !isset($this->_allow_collapse[$o->page_group])) {
-                $this->_allow_collapse[$o->page_group] = true;
+            if (($pg = $o->page_group()) !== null
+                && !isset($this->_allow_collapse[$pg])) {
+                $this->_allow_collapse[$pg] = true;
             }
             if ($o->page_expand
                 && !isset($this->_allow_collapse[$o->formid])) {
@@ -1258,7 +1258,7 @@ class PaperTable {
         $fr->value = $fr->value_html();
         $fr->value_format = 5;
 
-        if ($fr->title !== "" && $o->page_group && !$fr->value_long) {
+        if ($fr->title !== "" && $o->page_group() && !$fr->value_long) {
             $title = htmlspecialchars($fr->title);
             if ($fr->value === "") {
                 $fr->value = "<h3 class=\"pavfn\">{$title}</h3>";
@@ -1298,7 +1298,7 @@ class PaperTable {
         $t2 !== null && ($group_types[] = $t2);
         $t3 !== null && ($group_types[] = $t3);
         return Ftext::as(5, $this->conf->_i("sfgroup",
-            new FmtArg("group", $rgroup[0]->option->page_group),
+            new FmtArg("group", $rgroup[0]->option->page_group()),
             new FmtArg("sf", $group_names), new FmtArg("types", $group_types)));
     }
 
@@ -1422,12 +1422,19 @@ class PaperTable {
                 continue;
             }
             $o1 = $rgroup[0]->option;
+            $pg1 = $o1->page_group();
+
+            // When folding is allowed, groups are collapsible sections. When
+            // it isn't, groups in the `rest` position are not shown as groups;
+            // other groups show under a heading, without collapsing.
+            $grouped = $pg1 !== null
+                && ($this->allow_folds || $o1->display() !== PaperOption::DISP_REST);
 
             // collect group
-            if ($o1->page_group !== null && $this->allow_folds) {
+            if ($grouped) {
                 for ($j = $i; $j !== $nr; ++$j) {
                     if ($renders[$j]
-                        && $renders[$j]->option->page_group === $o1->page_group) {
+                        && $renders[$j]->option->page_group() === $pg1) {
                         $rgroup[] = $renders[$j];
                         if ($i === $j) {
                             ++$i;
@@ -1474,7 +1481,7 @@ class PaperTable {
             }
 
             // echo start of group
-            if ($o1->page_group !== null && $this->allow_folds) {
+            if ($grouped) {
                 if ($nvos1 === 0 || $nvos1 === count($rgroup)) {
                     $group_html = $this->_group_name_html($rgroup, $nvos1 === 0 ? 2 : 1);
                 } else {
@@ -1489,7 +1496,8 @@ class PaperTable {
                 if ($nvos1 === count($rgroup)) {
                     $class .= " fx8";
                 }
-                $want_fold = $this->_allow_collapse[$o1->page_group] ?? false;
+                $want_fold = $this->allow_folds
+                    && ($this->_allow_collapse[$pg1] ?? false);
                 if ($want_fold && $rgroup[0]->title_html !== "") {
                     $group_html = "<span class=\"ifnx\">{$group_html}</span><span class=\"ifx\">" . $rgroup[0]->title_html . '</span>';
                     $rgroup[0]->title_html = false;
@@ -1499,11 +1507,12 @@ class PaperTable {
                         $class .= " collapsed";
                 }
                 if ($want_fold) {
-                    echo "<div class=\"{$class} collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$o1->page_group}\"><div class=\"pavt ui js-foldup\"><h3 class=\"pavfn\">",
-                        '<button type="button" class="q ui js-foldup" title="Toggle visibility" aria-expanded="false" aria-controls="s-', $o1->page_group, '-body">',
+                    $pg1h = Ht::escape_attr($pg1);
+                    echo "<div class=\"{$class} collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$pg1h}\"><div class=\"pavt ui js-foldup\"><h3 class=\"pavfn\">",
+                        '<button type="button" class="q ui js-foldup" title="Toggle visibility" aria-expanded="false" aria-controls="s-', $pg1h, '-body">',
                         aria_expander(), $group_html,
-                        '</button></h3></div><div class="pg" id="s-', $o1->page_group, '-body" hidden>',
-                        Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-{$o1->page_group}\"))");
+                        '</button></h3></div><div class="pg" id="s-', $pg1h, '-body" hidden>',
+                        Ht::unstash_script("hotcrp.fold_storage.call(\$\$(" . json_encode_browser("s-{$pg1}") . "))");
                 } else {
                     echo "<div class=\"{$class}\"><div class=\"pavt\"><h3 class=\"pavfn\">",
                         $group_html,
@@ -1538,7 +1547,7 @@ class PaperTable {
             }
 
             // echo end of group
-            if ($o1->page_group !== null && $this->allow_folds) {
+            if ($grouped) {
                 echo '</div></div>';
             }
             if ($o1->display() >= PaperOption::DISP_LEFT

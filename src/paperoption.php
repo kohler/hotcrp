@@ -67,9 +67,8 @@ class PaperOption implements JsonSerializable {
     /** @var bool
      * @readonly */
     public $page_expand;
-    /** @var ?string
-     * @readonly */
-    public $page_group;
+    /** @var ?string */
+    private $_page_group;
     private $form_order;
     private $page_order;
     /** @var int */
@@ -223,9 +222,9 @@ class PaperOption implements JsonSerializable {
         $this->page_order = $args->page_order ?? $cfo;
 
         $this->page_expand = !!($args->page_expand ?? false);
-        $this->page_group = $args->page_group ?? null;
-        if ($this->page_group === null && $this->_display === self::DISP_REST) {
-            $this->page_group = "topics";
+        $pg = $args->page_group ?? null;
+        if (is_string($pg) && $pg !== "") {
+            $this->_page_group = $pg;
         }
 
         $this->set_exists_condition($args->exists_if ?? (($args->final ?? false) ? "phase:final" : null));
@@ -265,6 +264,18 @@ class PaperOption implements JsonSerializable {
         if ($this->_exists_state < 0) {
             $this->render_contexts &= ~(FieldRender::CFFORM | FieldRender::CFPAGE);
         }
+    }
+
+    /** Return true iff `$pg` is a valid page group name: a single lowercase
+     * word (letters and digits, starting with a letter). Page group names
+     * are inserted into element IDs as-is, so they must not contain `-`,
+     * which separates ID parts, or `_`, which HotCRP treats as a spelling
+     * of `-`. Settings enforce this; groups configured directly are not
+     * checked.
+     * @param string $pg
+     * @return bool */
+    static function valid_page_group($pg) {
+        return preg_match('/\A[a-z][a-z0-9]*\z/', $pg) === 1;
     }
 
     /** @param stdClass|Sf_Setting $args
@@ -805,6 +816,16 @@ class PaperOption implements JsonSerializable {
     function display() {
         return $this->_display;
     }
+    /** Return the field’s page group. Fields in the same group are shown
+     * together on the paper page. Fields in the `rest` position without an
+     * explicit group are in group `topics`.
+     * @return ?string */
+    function page_group() {
+        if ($this->_page_group === null && $this->_display === self::DISP_REST) {
+            return "topics";
+        }
+        return $this->_page_group;
+    }
     /** @return string */
     function display_name() {
         if ($this->page_order === false) {
@@ -837,6 +858,9 @@ class PaperOption implements JsonSerializable {
             $j->final = true;
         }
         $j->display = $this->display_name();
+        if ($this->_page_group !== null) {
+            $j->page_group = $this->_page_group;
+        }
         if ($this->_visibility !== self::VIS_SUB) {
             $j->visibility = self::$visibility_map[$this->_visibility];
         }
@@ -880,6 +904,7 @@ class PaperOption implements JsonSerializable {
         }
 
         $sfs->display = $this->display_name();
+        $sfs->page_group = $this->_page_group;
         $sfs->order = $this->order;
         $sfs->visibility = $this->unparse_visibility();
         $sfs->required = $this->required;

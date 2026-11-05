@@ -366,6 +366,12 @@
         "type": "radio", "values": ["right", "rest", "top", "left", "title", "none"]
     },
     {
+        "name_pattern": "sf/$/page_group",
+        "title": "/Page group",
+        "type": "simplestring", "required": false,
+        "parser_class": "Options_SettingParser"
+    },
+    {
         "name_pattern": "sf/$/visibility",
         "title": "/Visibility",
         "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"]
