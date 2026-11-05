@@ -3585,7 +3585,7 @@ class Settings_Tester {
         $render = function () use ($conf) {
             $prow = $conf->checked_paper_by_id(1);
             $qreq = TestQreq::get(["p" => 1])->set_user($this->u_chair);
-            $pt = new PaperTable($this->u_chair, $qreq, $prow);
+            $pt = new PaperTable($qreq, $prow);
             $pt->resolve_comments();
             $pt->resolve_review(false);
             ob_start();

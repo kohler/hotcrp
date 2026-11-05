@@ -18,7 +18,7 @@
             "Work_Tester",
             "Mention_Tester", "Search_Tester", "Settings_Tester",
             "UpdateSchema_Tester", "Batch_Tester", "Mimetype_Tester",
-            "PaperListView_Tester"
+            "PaperListView_Tester", "PaperTable_Tester"
         ]
     },
     {

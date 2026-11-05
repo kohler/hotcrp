@@ -448,7 +448,7 @@ class SubmissionRound_Tester {
         xassert($prow->timeSubmitted <= 0 && $prow->timeWithdrawn <= 0);
         xassert(!$this->u_estrin->can_edit_paper($prow));
         $qreq = TestQreq::get_page("paper/{$pid}", ["m" => "edit"])->set_user($this->u_estrin);
-        $pt = new PaperTable($this->u_estrin, $qreq, $prow);
+        $pt = new PaperTable($qreq, $prow);
         $pt->set_edit_status(new PaperStatus($this->u_estrin), false);
         $f = Closure::bind(function () {
             ob_start();

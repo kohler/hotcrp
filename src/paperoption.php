@@ -986,7 +986,7 @@ class PaperOption implements JsonSerializable {
     function web_edit_html(PaperInfo $prow, Contact $user) {
         ob_start();
         $nqreq = (new Qrequest("POST"))->set_user($user);
-        $pt = new PaperTable($user, $nqreq, $prow);
+        $pt = new PaperTable($nqreq, $prow);
         $ov = $prow->force_option($this);
         $this->value_check($ov, $user);
         foreach ($ov->message_list() as $mi) {

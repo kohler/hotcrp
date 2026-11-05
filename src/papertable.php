@@ -89,8 +89,13 @@ class PaperTable {
     public $cf;
     /** @var bool */
     private $quit = false;
+    /** @var bool */
+    private $_page_callable = false;
 
-    function __construct(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+    /** Construct a paper table for `$prow`, viewed by `$qreq`’s user. */
+    function __construct(Qrequest $qreq, PaperInfo $prow) {
+        $user = $qreq->user();
+        assert($user !== null);
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
@@ -1609,63 +1614,7 @@ class PaperTable {
         $this->_ps_start($psid, $extra);
     }
 
-    private function _print_ps_collaborators() {
-        if (!$this->conf->setting("sub_collab")
-            || !$this->prow->collaborators
-            || strcasecmp(trim($this->prow->collaborators), "None") == 0) {
-            return;
-        }
-        $data = $this->highlight($this->prow->collaborators(), "co", $match);
-        $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
-        $this->_ps_start_expandable("collaborators", true, [
-            "data-fold-storage" => "-p.collaborators",
-            "class" => "need-fold-storage fold-storage-hidden",
-            "hidden" => $this->_allow_collapse["anonau"] ?? false
-        ]);
-        echo $this->papt($option->title_html(), [
-                "type" => "ps", "fold" => "x", "open" => true,
-                "aria-controls" => "s-collaborators-body"
-            ]),
-            '<ul id="s-collaborators-body" class="x namelist-columns">',
-            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-collaborators\"))");
-        foreach (explode("\n", $data) as $line) {
-            echo '<li class="od">', $line, '</li>';
-        }
-        echo "</ul></div>\n";
-    }
-
-    private function _print_ps_pc_conflicts() {
-        assert($this->edit_mode === 0 && $this->prow->paperId);
-        $pcconf = [];
-        $pcm = $this->conf->viewable_pc_members($this->user);
-        foreach ($this->prow->conflict_list() as $cu) {
-            if (!$cu->user // XXX should never happen
-                || !($pc = $pcm[$cu->contactId] ?? null)
-                || !Conflict::is_conflicted($cu->conflictType)) {
-                continue;
-            }
-            $h = $this->user->reviewer_extended_html_for($pc);
-            $pcconf[$pc->pc_index] = "<li class=\"odname\">{$h}</li>";
-        }
-        if (empty($pcconf)) {
-            $pcconf[] = '<li class="od">None</li>';
-        }
-        ksort($pcconf);
-        $option = $this->conf->option_by_id(PaperOption::PCCONFID);
-        $this->_ps_start_expandable("pcconf", !$this->allow_folds, [
-            "data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage fold-storage-hidden"
-        ]);
-        echo $this->papt($option->title_html(), [
-                "type" => "ps", "fold" => "x", "open" => !$this->allow_folds,
-                "aria-controls" => "s-pcconf-body"
-            ]),
-            '<ul id="s-pcconf-body" class="x namelist-columns">',
-            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-pcconf\"))"),
-            join("", $pcconf),
-            "</ul></div>\n";
-    }
-
-    private function _papstripLeadShepherd($type, $name) {
+    private function _print_ps_lead_shepherd($type, $name) {
         $editable = $type === "manager" ? $this->user->privChair : $this->admin;
         $extrev_shepherd = $type === "shepherd" && $this->conf->setting("extrev_shepherd");
 
@@ -1706,18 +1655,6 @@ class PaperTable {
         echo "</div>\n";
     }
 
-    private function papstripLead() {
-        $this->_papstripLeadShepherd("lead", "Discussion lead");
-    }
-
-    private function papstripShepherd() {
-        $this->_papstripLeadShepherd("shepherd", "Shepherd");
-    }
-
-    private function papstripManager() {
-        $this->_papstripLeadShepherd("manager", "Paper administrator");
-    }
-
     /** @param ?string $tag
      * @return array{list<MessageItem>,list<MessageItem>} */
     private function tag_messages($tag) {
@@ -1741,7 +1678,7 @@ class PaperTable {
         return [$m0, $m1];
     }
 
-    private function _print_ps_tags() {
+    function print_ps_tags() {
         // Note that tags MUST NOT contain HTML special characters.
         if (!$this->prow->paperId
             || !$this->user->can_view_tags($this->prow)) {
@@ -1816,48 +1753,6 @@ class PaperTable {
             '<span class="hint">', $this->conf->hotlink("Learn more", "help", ["t" => "tags"]), ' <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
             "</form>",
             "</div>\n";
-    }
-
-    function _print_ps_decision() {
-        $sfx = "p{$this->prow->paperId}-decision";
-        $this->_ps_start_expandable("decision", false, [
-            "class" => "need-paper-select-api ui-fold js-fold-focus"
-        ]);
-        echo $this->papt("Decision", [
-                "type" => "ps", "fold" => "x",
-                "aria-controls" => "f-decision"
-            ]),
-            '<p class="odname js-psedit-result ifnx">',
-            $this->prow->decision()->name_as(5),
-            "</p><form id=\"f-decision\" class=\"ui-submit uin\" hidden>";
-        $opts = [];
-        foreach ($this->conf->decision_set() as $dec) {
-            $opts[$dec->id] = $dec->name;
-        }
-        echo Ht::select("decision", $opts,
-                        (string) $this->prow->outcome,
-                        ["class" => "w-99 want-focus", "aria-label" => "Decision"]),
-            "</form></div>\n";
-    }
-
-    function papstripReviewPreference() {
-        $pf = $this->prow->preference($this->user);
-        $editable = $this->user->can_edit_preference_for($this->prow, $this->user);
-        if (!$editable && !$pf->exists()) {
-            return;
-        }
-
-        $this->_ps_start("revpref");
-        echo $this->papt($editable ? Ht::label("Review preference", "k-revpref") : "Review preference",
-                ["type" => "ps"]);
-        if ($editable) {
-            $rp = $pf->exists() ? $pf->unparse() : "";
-            echo "<form class=\"ui\"><input id=\"k-revpref\" type=\"text\" name=\"revpref{$this->prow->paperId}\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\"></form>";
-            Ht::stash_script("hotcrp.add_preference_ajax(\"#k-revpref\",true);hotcrp.shortcut(\"k-revpref\").add()");
-        } else {
-            echo "<p class=\"odname\">", htmlspecialchars($pf->unparse_fancy()), "</p>";
-        }
-        echo "</div>\n";
     }
 
     private function papstrip_onetag_begin($mytag) {
@@ -2035,7 +1930,7 @@ class PaperTable {
             "</div></div>\n";
     }
 
-    private function _print_ps_follow() {
+    function print_ps_follow() {
         if ($this->prow->timeSubmitted <= 0
             || $this->user->contactId <= 0
             || ($this->prow->has_conflict($this->user)
@@ -2430,13 +2325,54 @@ class PaperTable {
 
     // Functions for overall paper table viewing
 
+    /** Return the page components, with this object installed as their
+     * `PaperTable` callable. (A page has one `PaperTable`. Tables that never
+     * use page components, such as settings previews, never install
+     * themselves.)
+     * @return ComponentSet */
+    private function page_components() {
+        $cs = $this->conf->page_components($this->user, $this->qreq);
+        if (!$this->_page_callable) {
+            $cs->set_callable("PaperTable", $this);
+            $this->_page_callable = true;
+        }
+        return $cs;
+    }
+
+    /** Print the sidebar. Its items are the `paper/sidebar` page components
+     * (see `etc/pages.json`), so plugins can remove items (with
+     * `"order": false`) or add their own. Print functions are called with
+     * the viewer, request, component set, and this `PaperTable`; one named
+     * `*PaperTable::method` calls a method of this object. */
     function _papstrip() {
+        $cs = $this->page_components();
+        $cs->enter()->set_context_args($this->user, $this->qreq, $cs, $this);
+        foreach ($cs->members("paper/sidebar", "print_function") as $gj) {
+            $cs->call_function($gj, $gj->print_function, $gj);
+        }
+        $cs->leave();
+    }
+
+    /** Print a sidebar section, as a `paper/sidebar` component might.
+     * `$psid` identifies it (its element ID is `s-{$psid}`), `$title_html` is
+     * its caption, and `$body_html` its content.
+     * @param string $psid
+     * @param string $title_html
+     * @param string $body_html */
+    function print_ps_section($psid, $title_html, $body_html) {
+        $this->_ps_start($psid);
+        echo $this->papt($title_html, ["type" => "ps"]), $body_html, "</div>\n";
+    }
+
+    function print_ps_manager() {
         if (($this->prow->managerContactId > 0
              || ($this->user->privChair && $this->mode === "assign"))
             && $this->user->can_view_manager($this->prow)) {
-            $this->papstripManager();
+            $this->_print_ps_lead_shepherd("manager", "Paper administrator");
         }
-        $this->_print_ps_tags();
+    }
+
+    function print_ps_tag_votes() {
         foreach ($this->conf->tags()->sorted_entries_having(TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT | TagInfo::TF_RANK) as $t) {
             if ($this->user->can_edit_tag($this->prow, "~{$t->tag}", null, 0)) {
                 if ($t->is(TagInfo::TF_APPROVAL)) {
@@ -2448,26 +2384,129 @@ class PaperTable {
                 }
             }
         }
-        $this->_print_ps_follow();
-        if ($this->user->can_view_conflicts($this->prow) && $this->edit_mode === 0) {
-            $this->_print_ps_pc_conflicts();
+    }
+
+    function print_ps_pc_conflicts() {
+        if (!$this->user->can_view_conflicts($this->prow)
+            || $this->edit_mode !== 0
+            || !$this->prow->paperId) {
+            return;
         }
-        if ($this->user->allow_view_authors($this->prow) && $this->edit_mode === 0) {
-            $this->_print_ps_collaborators();
+
+        $pcconf = [];
+        $pcm = $this->conf->viewable_pc_members($this->user);
+        foreach ($this->prow->conflict_list() as $cu) {
+            if (!$cu->user // XXX should never happen
+                || !($pc = $pcm[$cu->contactId] ?? null)
+                || !Conflict::is_conflicted($cu->conflictType)) {
+                continue;
+            }
+            $h = $this->user->reviewer_extended_html_for($pc);
+            $pcconf[$pc->pc_index] = "<li class=\"odname\">{$h}</li>";
         }
-        if ($this->user->can_set_decision($this->prow)) {
-            $this->_print_ps_decision();
+        if (empty($pcconf)) {
+            $pcconf[] = '<li class="od">None</li>';
         }
+        ksort($pcconf);
+        $option = $this->conf->option_by_id(PaperOption::PCCONFID);
+        $this->_ps_start_expandable("pcconf", !$this->allow_folds, [
+            "data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage fold-storage-hidden"
+        ]);
+        echo $this->papt($option->title_html(), [
+                "type" => "ps", "fold" => "x", "open" => !$this->allow_folds,
+                "aria-controls" => "s-pcconf-body"
+            ]),
+            '<ul id="s-pcconf-body" class="x namelist-columns">',
+            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-pcconf\"))"),
+            join("", $pcconf),
+            "</ul></div>\n";
+    }
+
+    function print_ps_collaborators() {
+        if (!$this->conf->setting("sub_collab")
+            || !$this->user->allow_view_authors($this->prow)
+            || $this->edit_mode !== 0
+            || !$this->prow->collaborators
+            || strcasecmp(trim($this->prow->collaborators), "None") == 0) {
+            return;
+        }
+        $data = $this->highlight($this->prow->collaborators(), "co", $match);
+        $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
+        $this->_ps_start_expandable("collaborators", true, [
+            "data-fold-storage" => "-p.collaborators",
+            "class" => "need-fold-storage fold-storage-hidden",
+            "hidden" => $this->_allow_collapse["anonau"] ?? false
+        ]);
+        echo $this->papt($option->title_html(), [
+                "type" => "ps", "fold" => "x", "open" => true,
+                "aria-controls" => "s-collaborators-body"
+            ]),
+            '<ul id="s-collaborators-body" class="x namelist-columns">',
+            Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-collaborators\"))");
+        foreach (explode("\n", $data) as $line) {
+            echo '<li class="od">', $line, '</li>';
+        }
+        echo "</ul></div>\n";
+    }
+
+    function print_ps_decision() {
+        if (!$this->user->can_set_decision($this->prow)) {
+            return;
+        }
+        $this->_ps_start_expandable("decision", false, [
+            "class" => "need-paper-select-api ui-fold js-fold-focus"
+        ]);
+        echo $this->papt("Decision", [
+                "type" => "ps", "fold" => "x",
+                "aria-controls" => "f-decision"
+            ]),
+            '<p class="odname js-psedit-result ifnx">',
+            $this->prow->decision()->name_as(5),
+            "</p><form id=\"f-decision\" class=\"ui-submit uin\" hidden>";
+        $opts = [];
+        foreach ($this->conf->decision_set() as $dec) {
+            $opts[$dec->id] = $dec->name;
+        }
+        echo Ht::select("decision", $opts,
+                        (string) $this->prow->outcome,
+                        ["class" => "w-99 want-focus", "aria-label" => "Decision"]),
+            "</form></div>\n";
+    }
+
+    function print_ps_lead() {
         if ($this->user->can_view_lead($this->prow)) {
-            $this->papstripLead();
+            $this->_print_ps_lead_shepherd("lead", "Discussion lead");
         }
+    }
+
+    function print_ps_shepherd() {
         if ($this->user->can_view_shepherd($this->prow)) {
-            $this->papstripShepherd();
+            $this->_print_ps_lead_shepherd("shepherd", "Shepherd");
         }
-        if ($this->user->is_pc_member()
-            && $this->user->pc_assignable($this->prow)) {
-            $this->papstripReviewPreference();
+    }
+
+    function print_ps_review_preference() {
+        if (!$this->user->is_pc_member()
+            || !$this->user->pc_assignable($this->prow)) {
+            return;
         }
+        $pf = $this->prow->preference($this->user);
+        $editable = $this->user->can_edit_preference_for($this->prow, $this->user);
+        if (!$editable && !$pf->exists()) {
+            return;
+        }
+
+        $this->_ps_start("revpref");
+        echo $this->papt($editable ? Ht::label("Review preference", "k-revpref") : "Review preference",
+                ["type" => "ps"]);
+        if ($editable) {
+            $rp = $pf->exists() ? $pf->unparse() : "";
+            echo "<form class=\"ui\"><input id=\"k-revpref\" type=\"text\" name=\"revpref{$this->prow->paperId}\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\"></form>";
+            Ht::stash_script("hotcrp.add_preference_ajax(\"#k-revpref\",true);hotcrp.shortcut(\"k-revpref\").add()");
+        } else {
+            echo "<p class=\"odname\">", htmlspecialchars($pf->unparse_fancy()), "</p>";
+        }
+        echo "</div>\n";
     }
 
     /** @param string $text

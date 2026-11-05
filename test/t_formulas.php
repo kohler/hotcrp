@@ -1609,7 +1609,7 @@ class Formulas_Tester {
         xassert_eqq($this->formula_as($author, "pdfsize")->eval($p2a, null), $final_size);
 
         // The paper page likewise links only the submission for the reviewer.
-        $pt = new PaperTable($reviewer, TestQreq::get_page("paper/2")->set_user($reviewer), $p2);
+        $pt = new PaperTable(TestQreq::get_page("paper/2")->set_user($reviewer), $p2);
         $fr = new FieldRender(FieldRender::CFHTML | FieldRender::CFPAGE, $reviewer);
         $pt->render_submission($fr, $conf->option_by_id(DTYPE_SUBMISSION));
         xassert_str_contains($fr->value, "Submission");

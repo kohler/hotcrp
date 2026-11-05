@@ -27,7 +27,7 @@ class Paper_Page {
     /** @return PaperTable */
     function pt() {
         if (!$this->pt) {
-            $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
+            $this->pt = new PaperTable($this->qreq, $this->prow);
         }
         return $this->pt;
     }

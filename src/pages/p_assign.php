@@ -45,7 +45,7 @@ class Assign_Page {
             $this->qreq->set_paper($pr->prow);
             $this->prow = $pr->prow;
             if (($whynot = $this->user->perm_request_review($this->prow, null, false))) {
-                $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
+                $this->pt = new PaperTable($this->qreq, $this->prow);
                 throw $whynot;
             }
         } catch (Redirection $redir) {
@@ -496,7 +496,7 @@ class Assign_Page {
     function print() {
         $prow = $this->prow;
         $user = $this->user;
-        $this->pt = new PaperTable($user, $this->qreq, $prow);
+        $this->pt = new PaperTable($this->qreq, $prow);
         $this->pt->resolve_review(false);
         $this->allow_view_authors = $user->allow_view_authors($prow);
         PaperTable::print_header($this->pt, $this->qreq);

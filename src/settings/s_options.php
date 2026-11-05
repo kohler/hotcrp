@@ -58,7 +58,7 @@ class Options_SettingParser extends SettingParser {
         $prow = PaperInfo::make_new($sv->user, null);
         $prow->set_prop("title", "Example paper");
         $prow->set_prop("authorInformation", "Author\tOne\tauthor1@example.com\t\nAuthor\tTwo\tauthor2@example.com\t\n" . Author::make_user($sv->user)->unparse_tabbed());
-        $this->pt = new PaperTable($sv->user, new Qrequest("GET"), $prow);
+        $this->pt = new PaperTable((new Qrequest("GET"))->set_user($sv->user), $prow);
         $this->pt->settings_mode = true;
     }
 
