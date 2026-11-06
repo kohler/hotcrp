@@ -502,6 +502,11 @@ class ManageEmail_API extends MessageSet {
                 on duplicate key update interest=TopicInterest.interest",
                 $this->dstuser->contactId, $this->user->contactId);
         }
+        // the destination’s own values win
+        $this->conf->qe("insert into PaperUserValue (paperId, puoId, contactId, value, timestamp)
+            select paperId, puoId, ?, value, timestamp from PaperUserValue __v where contactId=?
+            on duplicate key update value=PaperUserValue.value",
+            $this->dstuser->contactId, $this->user->contactId);
     }
 
     private function transfer_reviews() {

@@ -575,6 +575,23 @@ CREATE TABLE `PaperTopic` (
 
 
 --
+-- Table structure for table `PaperUserValue`
+--
+
+DROP TABLE IF EXISTS `PaperUserValue`;
+CREATE TABLE `PaperUserValue` (
+  `paperId` int NOT NULL,
+  `puoId` int NOT NULL,
+  `contactId` int NOT NULL,
+  `value` int NOT NULL,
+  `timestamp` bigint NOT NULL,
+  PRIMARY KEY (`paperId`,`puoId`,`contactId`),
+  KEY `puoContact` (`puoId`,`contactId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+--
 -- Table structure for table `PaperWatch`
 --
 
@@ -684,7 +701,7 @@ CREATE TABLE `WorkItem` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 335, null),   -- schema version
+  ('allowPaperOption', 336, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

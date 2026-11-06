@@ -244,6 +244,8 @@ class Conf {
     private $_dkim_signer = false;
     /** @var ?ComponentSet */
     private $_page_components;
+    /** @var ?array<string,PaperUserOption> */
+    private $_paper_user_options;
 
     /** @var Conf */
     static public $main;
@@ -386,7 +388,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 335) {
+        if ($this->sversion < 336) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -756,6 +758,7 @@ class Conf {
         $this->_api_map = null;
         $this->_api_x_map = null;
         $this->_file_filters = null;
+        $this->_paper_user_options = null;
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
         $this->_dtz = null;
@@ -1418,6 +1421,43 @@ class Conf {
         });
     }
 
+
+    /** Return the per-submission, per-user options, by name.
+     * @return array<string,PaperUserOption> */
+    function paper_user_options() {
+        if ($this->_paper_user_options === null) {
+            $js = [];
+            $f = function ($j) use (&$js) {
+                if (PaperUserOption::valid_json($j)) {
+                    $js[$j->name][] = $j;
+                    return true;
+                }
+                return false;
+            };
+            expand_json_includes_callback("etc/paperuseroptions.json", $f);
+            if (($x = $this->opt("paperUserOptions"))) {
+                expand_json_includes_callback($x, $f);
+            }
+            $this->_paper_user_options = [];
+            $xtp = new XtParams($this, null);
+            foreach ($js as $name => $list) {
+                if (($j = $xtp->search_list($list)))
+                    $this->_paper_user_options[$name] = new PaperUserOption($this, $j);
+            }
+        }
+        return $this->_paper_user_options;
+    }
+
+    /** Return the per-submission, per-user option named or numbered `$key`.
+     * @param string|int $key
+     * @return ?PaperUserOption */
+    function paper_user_option($key) {
+        foreach ($this->paper_user_options() as $puo) {
+            if ($puo->name === $key || $puo->id === $key)
+                return $puo;
+        }
+        return null;
+    }
 
     /** @return DecisionSet */
     function decision_set() {
@@ -3354,6 +3394,7 @@ class Conf {
             $this->_named_searches = null;
         }
         if ($all) {
+            $this->_paper_user_options = null;
             $this->_search_keyword_base = null;
             $this->_formula_function_base = null;
             $this->_assignment_parsers = null;

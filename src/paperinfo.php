@@ -914,6 +914,8 @@ class PaperInfo {
     private $_collaborator_array;
     /** @var ?PaperInfoPotentialConflictList */
     private $_potconf;
+    /** @var ?array<int,array<int,PaperUserValue>> */
+    private $_user_values;
     /** @var ?array<int,PaperReviewPreference> */
     private $_prefs_array;
     /** @var ?int */
@@ -2416,6 +2418,61 @@ class PaperInfo {
             $prow->allReviewerPreference = $row[1];
         }
         Dbl::free($result);
+    }
+
+    /** Load per-user values (see `PaperUserValue`) for this paper and, if
+     * they are not loaded, for the other papers in its set. */
+    function load_user_values() {
+        $row_set = $this->_row_set->filter(function ($prow) {
+            return $prow === $this || $prow->_user_values === null;
+        });
+        foreach ($row_set as $prow) {
+            $prow->_user_values = [];
+        }
+        $result = $this->conf->qe("select paperId, puoId, contactId, value, timestamp from PaperUserValue where paperId?a", $row_set->paper_ids());
+        while (($row = $result->fetch_row())) {
+            $puv = new PaperUserValue((int) $row[0], (int) $row[1], (int) $row[2], (int) $row[3], (int) $row[4]);
+            $row_set->get($puv->paperId)->_user_values[$puv->puoId][$puv->contactId] = $puv;
+        }
+        Dbl::free($result);
+    }
+
+    /** Return all users’ values of option `$puoid` for this paper, by user
+     * ID, without checking visibility.
+     * @param int|PaperUserOption $puoid
+     * @return array<int,PaperUserValue> */
+    function all_user_values($puoid) {
+        if ($this->_user_values === null) {
+            $this->load_user_values();
+        }
+        $puoid = is_int($puoid) ? $puoid : $puoid->id;
+        return $this->_user_values[$puoid] ?? [];
+    }
+
+    /** Return the values of option `$puo` for this paper that `$user` can
+     * see, by user ID.
+     * @return array<int,PaperUserValue> */
+    function viewable_user_values(Contact $user, PaperUserOption $puo) {
+        $vs = [];
+        foreach ($this->all_user_values($puo) as $cid => $puv) {
+            if ($puo->can_view($user, $this, $cid))
+                $vs[$cid] = $puv;
+        }
+        return $vs;
+    }
+
+    /** Return user `$contact`’s value of option `$puoid` for this paper,
+     * if any, without checking visibility.
+     * @param int|PaperUserOption $puoid
+     * @param int|Contact $contact
+     * @return ?PaperUserValue */
+    function user_value($puoid, $contact) {
+        $cid = is_int($contact) ? $contact : $contact->contactId;
+        return $this->all_user_values($puoid)[$cid] ?? null;
+    }
+
+    function invalidate_user_values() {
+        $this->_user_values = null;
     }
 
     /** @return array<int,PaperReviewPreference> */
@@ -3922,7 +3979,7 @@ class PaperInfo {
         }
 
         $qs = [];
-        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "DocumentLink", "Capability"] as $table) {
+        foreach (["PaperWatch", "PaperReviewPreference", "PaperUserValue", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "DocumentLink", "Capability"] as $table) {
             $qs[] = "delete from {$table} where paperId={$this->paperId}";
         }
         $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));

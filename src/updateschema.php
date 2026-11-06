@@ -3431,6 +3431,18 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperStorage add `timeChecked` bigint DEFAULT NULL")) {
             $conf->update_schema_version(335);
         }
+        if ($conf->sversion === 335
+            && $conf->ql_ok("create table if not exists `PaperUserValue` (
+  `paperId` int NOT NULL,
+  `puoId` int NOT NULL,
+  `contactId` int NOT NULL,
+  `value` int NOT NULL,
+  `timestamp` bigint NOT NULL,
+  PRIMARY KEY (`paperId`,`puoId`,`contactId`),
+  KEY `puoContact` (`puoId`,`contactId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
+            $conf->update_schema_version(336);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

@@ -149,6 +149,49 @@ class Unit_Tester {
         xassert(strlen(Dbl::describe_args(array_fill(0, 100000, 12345))) < 1100);
     }
 
+    function test_paper_user_values() {
+        $conf = $this->conf;
+        $saved = $conf->opt("paperUserOptions");
+        $conf->set_opt("paperUserOptions", [
+            (object) ["id" => 7, "name" => "mood", "title" => "Mood", "visibility" => "admin",
+                      "values" => [(object) ["value" => 1, "name" => "happy"]]]
+        ]);
+        $conf->invalidate_caches();
+        try {
+            $puo = $conf->paper_user_option("mood");
+            xassert(!!$puo);
+            xassert_eqq($conf->paper_user_option(7), $puo);
+            xassert_eqq($conf->paper_user_option("nonexistent"), null);
+            xassert_eqq($puo->parse_value("happy"), 1);
+            xassert_eqq($puo->parse_value("-3"), -3);
+            xassert_eqq($puo->parse_value("clear"), 0);
+            xassert_eqq($puo->parse_value("sad"), null);
+
+            $chair = $conf->checked_user_by_email("chair@_.com");
+            $pc = $conf->checked_user_by_email("estrin@usc.edu");
+            $pc2 = $conf->checked_user_by_email("marina@poema.ru");
+            $conf->qe("insert into PaperUserValue (paperId, puoId, contactId, value, timestamp) values (1, 7, ?, 1, 100), (1, 7, ?, -1, 200), (2, 7, ?, 1, 300)",
+                $pc->contactId, $pc2->contactId, $pc->contactId);
+
+            // values load for all papers in a set at once
+            $prows = $conf->paper_set(["paperId" => [1, 2]]);
+            $p1 = $prows->get(1);
+            xassert_eqq(count($p1->all_user_values(7)), 2);
+            xassert_eqq($p1->user_value(7, $pc2)->value, -1);
+            xassert_eqq($p1->user_value($puo, $pc)->timestamp, 100);
+            xassert_eqq($prows->get(2)->user_value(7, $pc)->value, 1);
+            xassert_eqq($prows->get(2)->user_value(7, $pc2), null);
+
+            // admin-only options: PC members see only their own values
+            xassert_eqq(array_keys($p1->viewable_user_values($pc, $puo)), [$pc->contactId]);
+            xassert_eqq(count($p1->viewable_user_values($chair, $puo)), 2);
+        } finally {
+            $conf->qe("delete from PaperUserValue where puoId=7");
+            $conf->set_opt("paperUserOptions", $saved);
+            $conf->invalidate_caches();
+        }
+    }
+
     function test_dbl_store_blob() {
         $db = $this->conf->dblink;
         $psid = $this->conf->fetch_ivalue("select paperStorageId from PaperStorage where paperStorageId>1 order by paperStorageId limit 1");

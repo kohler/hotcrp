@@ -326,7 +326,7 @@ class UserActions extends MessageSet {
             CONFLICT_AUTHOR, $user->contactId);
 
         // delete from other database tables
-        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRating", "TopicInterest"] as $table) {
+        foreach (["PaperWatch", "PaperReviewPreference", "PaperUserValue", "PaperReviewRefused", "ReviewRating", "TopicInterest"] as $table) {
             $this->conf->qe_raw("delete from {$table} where contactId={$user->contactId}");
         }
 
