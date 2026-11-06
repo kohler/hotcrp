@@ -1,6 +1,20 @@
 HotCRP NEWS
 ===========
 
+## Version 3.6
+
+* Upgrade notes
+
+    * In user JSON and CSV (for instance, in `batch/saveusers.php` and bulk
+      user updates), `tags` *changes* user tags rather than replacing them.
+      To replace tags, start `tags` with `-all` (or set `reset_tags` to true).
+
+* Features
+
+    * Submission JSON can change tags and submission classes, using the
+      same `tags`, `add_tags`, `remove_tags`, `change_tags`, and `reset_tags`
+      keys as user JSON.
+
 ## Version 3.5 – 27.Oct.2026
 
 * Upgrade notes
