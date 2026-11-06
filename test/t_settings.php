@@ -2732,6 +2732,40 @@ class Settings_Tester {
         xassert(!$this->conf->options()->find("Street"));
     }
 
+    function test_list_default_view() {
+        xassert_eqq($this->conf->setting_data("pldisplay_default"), null);
+
+        // the view can name fields created by the same request
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [{"id": "new", "name": "Listed", "type": "text", "order": 300}],
+            "list_default_view": "show:listed  show:authors hide:revstat"
+        }');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+        xassert_eqq($this->conf->setting_data("pldisplay_default"), "show:listed show:authors hide:revstat");
+        $pl = new PaperList("pl", new PaperSearch($this->u_chair, ["q" => "1", "t" => "s"]));
+        $pl->apply_view_report_default();
+        $cells = paper_list_html_cells($pl);
+        xassert(array_key_exists("authors", $cells[1]));
+        xassert(!array_key_exists("revstat", $cells[1]));
+        xassert_eqq((new SettingValues($this->u_chair))->all_jsonv()->list_default_view,
+                    "show:listed show:authors hide:revstat");
+
+        // unknown columns are reported
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{"list_default_view": "show:nonexistent"}');
+        $sv->execute();
+        xassert_str_contains($sv->full_feedback_text(), "nonexistent");
+
+        // empty means the baseline view
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{"list_default_view": ""}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->setting_data("pldisplay_default"), null);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1, "sf/1/id" => $this->conf->options()->find("Listed")->id, "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_sf_name_json_reserved_grandfathered() {
         // install fields with reserved-looking names behind the settings UI’s back
         $old_sv = $this->conf->setting("options");
