@@ -536,6 +536,69 @@ class Unit_Tester {
         xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024)), str_repeat("i", 252) . "...");
     }
 
+    function test_make_readable_formid() {
+        xassert_eqq(PaperOption::make_readable_formid("Program Committee"), "program-committee");
+        xassert_eqq(PaperOption::make_readable_formid("Résumé (PDF)"), "resume-pdf");
+        // reserved IDs and intrinsic field names
+        xassert_eqq(PaperOption::make_readable_formid("Abstract"), "sf-abstract");
+        xassert_eqq(PaperOption::make_readable_formid("PC 1"), "sf-pc-1");
+        xassert_eqq(PaperOption::make_readable_formid("R1A"), "sf-r1a");
+        xassert_eqq(PaperOption::make_readable_formid("Fold me"), "sf-fold-me");
+        // comment anchors: `#cnew`
+        xassert_eqq(PaperOption::make_readable_formid("New"), "sf-new");
+        xassert_eqq(PaperOption::make_readable_formid("Cnew"), "sf-cnew");
+        xassert_eqq(PaperOption::make_readable_formid("News"), "news");
+        // response anchors: `#response`, `#<ROUND>response`
+        xassert_eqq(PaperOption::make_readable_formid("Response"), "sf-response");
+        xassert_eqq(PaperOption::make_readable_formid("FinalResponse"), "sf-finalresponse");
+        xassert_eqq(PaperOption::make_readable_formid("Final response"), "final-response");
+        xassert_eqq(PaperOption::make_readable_formid("(Response)"), "sf-response");
+        xassert_eqq(PaperOption::make_readable_formid("Responses"), "responses");
+    }
+
+    function test_readable_formid_implies_similar_name() {
+        // Settings reject too-similar field names. For ASCII names, that must
+        // include every pair whose readable form IDs collide.
+        $collator = (new SettingValues($this->u_root))->icollator();
+        $similar = function ($a, $b) use ($collator) {
+            return $collator->compare(Options_SettingParser::name_similarity_key($a),
+                                      Options_SettingParser::name_similarity_key($b)) === 0;
+        };
+        foreach ([["Final response", "Final-Response"], ["(Response)", "Response"],
+                  ["Cnew", "CNEW!"], ["a_b", "a-b"], ["PC 1", "pc-1"],
+                  ["Sf-x", "sf x"], ["Fold 'em", "fold-EM"]] as $p) {
+            xassert_eqq(PaperOption::make_readable_formid($p[0]), PaperOption::make_readable_formid($p[1]));
+            xassert($similar($p[0], $p[1]));
+        }
+
+        // generated names, including characters that reach reserved patterns
+        $alphabet = "aAbB0 -_.'(sfcnewrpo";
+        $x = 1;
+        $byid = [];
+        for ($i = 0; $i !== 5000; ++$i) {
+            $n = "";
+            $x = ($x * 1103515245 + 12345) & 0x7FFFFFFF;
+            for ($len = 1 + $x % 7; $len !== 0; --$len) {
+                $x = ($x * 1103515245 + 12345) & 0x7FFFFFFF;
+                $n .= $alphabet[$x % strlen($alphabet)];
+            }
+            $byid[PaperOption::make_readable_formid($n)][$n] = true;
+        }
+        $npairs = 0;
+        $bad = [];
+        foreach ($byid as $names) {
+            $names = array_keys($names);
+            for ($i = 1; $i < count($names); ++$i) {
+                ++$npairs;
+                if (!$similar($names[0], $names[$i])) {
+                    $bad[] = [$names[0], $names[$i]];
+                }
+            }
+        }
+        xassert_gt($npairs, 100);
+        xassert_array_eqq($bad, []);
+    }
+
     function test_csv_split_lines() {
         xassert_array_eqq(CsvParser::split_lines(""), []);
         xassert_array_eqq(CsvParser::split_lines("\r"), ["\r"]);

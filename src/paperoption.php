@@ -326,11 +326,12 @@ class PaperOption implements JsonSerializable {
     /** @param string $s
      * @return string */
     static function make_readable_formid($s) {
+        // See also `Options_SettingParser::name_similarity_key`
         $s = strtolower(preg_replace('/[^A-Za-z0-9]+/', "-", UnicodeHelper::deaccent($s)));
-        if (str_ends_with($s, "-")) {
-            $s = substr($s, 0, -1);
-        }
-        if (!preg_match('/\A(?:title|paper|submission|final|authors?+|blind|nonblind|contacts?+|abstract|topics?+|pc_conflicts?+|pcconf|collaborators?+|comments?+|reviews?+|sclass|status.*+|submit.*+|fold.*+|[a-z]?+[a-z]?+[-_0-9].*+|has[-_].*+|new|delete|[a-z]id|)\z/', $s)) {
+        $s = trim($s, "-");
+        if (!preg_match('/\A(?:title|paper|submission|final|authors?+|blind|nonblind|contacts?+|abstract|topics?+|pc_conflicts?+|pcconf|collaborators?+|comments?+|reviews?+|sclass|status.*+|submit.*+|fold.*+|[a-z]?+[a-z]?+[-_0-9].*+|has[-_].*+|c?+new|delete|[a-z]id|)\z/', $s)
+            && (!str_ends_with($s, "response")
+                || (strlen($s) > 8 && $s[-9] === "-"))) {
             return $s;
         }
         return "sf-" . $s;

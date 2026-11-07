@@ -573,6 +573,18 @@ class Options_SettingParser extends SettingParser {
     }
 
 
+    /** Return a key for detecting too-similar field names. Runs of ASCII
+     * punctuation and Unicode whitespace become single spaces; other
+     * characters, including non-ASCII punctuation, are significant. Compare
+     * keys with `SettingValues::icollator`.
+     * @param string $n
+     * @return string */
+    static function name_similarity_key($n) {
+        // See also `PaperOption::make_readable_formid`
+        $k = preg_replace('/(?:[\x00-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]|\p{Z})++/u', " ", $n);
+        return trim($k ?? $n);
+    }
+
     private function _apply_req_name(Si $si, Sf_Setting $sfs, SettingValues $sv) {
         $n = $sv->base_parse_req($si);
         if ($n === "") {
@@ -600,9 +612,26 @@ class Options_SettingParser extends SettingParser {
             }
         }
         $sv->save($si, $n);
-        if ($n !== "") {
-            $sv->error_if_duplicate_member($si->name0, $si->name1, $si->name2, "Field name");
+        if ($n === "") {
+            return;
         }
+        // error on identical or too-similar names
+        $collator = $sv->icollator();
+        $dup = $sv->find_duplicate_member($si->name0, $si->name1, $si->name2, function ($n0, $n1) use ($collator) {
+            return $collator->compare(self::name_similarity_key($n0), self::name_similarity_key($n1)) === 0;
+        });
+        if ($dup < 0) {
+            return;
+        }
+        $n2 = $sv->quiet_base_parse_req("sf/{$dup}/name");
+        // backward compat: don’t error on similar names already in database
+        if ($n !== $n2
+            && $n === $sv->oldv("sf/{$si->name1}/name")
+            && $n2 === $sv->oldv("sf/{$dup}/name")) {
+            return;
+        }
+        $sv->error_at($si, $n === $n2 ? "<0>Field name ‘{:nonempty}’ is not unique" : "<0>Field names ‘{:nonempty}’ and ‘{:nonempty}’ are too similar", $n, $n2);
+        $sv->error_at("{$si->name0}{$dup}{$si->name2}");
     }
 
     private function _apply_req_type(Si $si, Sf_Setting $fs, SettingValues $sv) {

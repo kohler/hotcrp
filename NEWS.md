@@ -9,6 +9,15 @@ HotCRP NEWS
       user updates), `tags` *changes* user tags rather than replacing them.
       To replace tags, start `tags` with `-all` (or set `reset_tags` to true).
 
+    * Some HTML element IDs on submission pages have changed, which may
+      affect custom CSS, JavaScript, and plugins. ID suffixes now use `:`
+      rather than `-` (for example, `#s-pcconf:body`, `#s-tags:label`,
+      `#r1A:body`, `#cnew:attachments`); in CSS selectors, escape the `:`
+      (`#s-pcconf\:body`). Collapsible page groups use `#sg-GROUP`, and
+      voting tag sidebar sections are numbered (`#s-tag-N`). Plugins should
+      use `PaperTable::ps_label_id()` for sidebar section labels. See
+      `devel/manual/css.md`.
+
 * Features
 
     * Submission JSON can change tags and submission classes, using the

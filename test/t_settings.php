@@ -1429,6 +1429,26 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "is not unique");
 
+        // names that would share an element ID are too similar
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program!",
+            "sf/1/id" => "new",
+            "sf/1/order" => 102,
+            "sf/1/type" => "text"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "are too similar");
+        xassert($sv->has_error_at("sf/1/name"));
+        xassert(!$sv->conf->find_all_fields("Program!"));
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "sf": [{"id": "new", "name": "Final response", "type": "text", "order": 103},
+                   {"id": "new", "name": "Final-Response", "type": "text", "order": 104}]
+        }');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "‘Final response’ and ‘Final-Response’ are too similar");
+
         // test option values and renumbering
         $sv->conf->qe("delete from PaperOption where optionId=2");
         $sv->conf->qe("insert into PaperOption (paperId, optionId, value, data) values (1, 2, 1, null)");
@@ -2730,6 +2750,63 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert(!$this->conf->options()->find("Street"));
+    }
+
+    function test_sf_similar_names() {
+        $saved_value = $this->conf->setting("options");
+        $saved_data = $this->conf->setting_data("options");
+        $names = function () {
+            return array_map(function ($oj) { return $oj->name; }, json_decode($this->conf->setting_data("options") ?? "[]"));
+        };
+        try {
+            // non-Latin names are compared as written
+            $sv = (new SettingValues($this->u_chair))->add_json_string('{"sf": [
+                {"id": "new", "name": "姓名", "type": "text", "order": 400},
+                {"id": "new", "name": "地址", "type": "text", "order": 401},
+                {"id": "new", "name": "Name：", "type": "text", "order": 402}
+            ]}');
+            xassert($sv->execute());
+            xassert_in_eqq("姓名", $names());
+            xassert_in_eqq("地址", $names());
+            xassert_in_eqq("Name：", $names());
+
+            // case is ignored in any script, and numbers compare numerically
+            $sv = (new SettingValues($this->u_chair))->add_json_string('{"sf": [
+                {"id": "new", "name": "Имя", "type": "text", "order": 403},
+                {"id": "new", "name": "имя", "type": "text", "order": 404}
+            ]}');
+            xassert(!$sv->execute());
+            xassert_str_contains($sv->full_feedback_text(), "‘Имя’ and ‘имя’ are too similar");
+            $sv = (new SettingValues($this->u_chair))->add_json_string('{"sf": [
+                {"id": "new", "name": "Item 01", "type": "text", "order": 403},
+                {"id": "new", "name": "Item 1", "type": "text", "order": 404}
+            ]}');
+            xassert(!$sv->execute());
+            xassert_str_contains($sv->full_feedback_text(), "are too similar");
+
+            // similar names already in the database are allowed...
+            $oj = json_decode($this->conf->setting_data("options"));
+            $oj[] = (object) ["id" => 900, "name" => "Final response", "type" => "text", "order" => 405];
+            $oj[] = (object) ["id" => 901, "name" => "Final-Response", "type" => "text", "order" => 406];
+            $this->conf->save_refresh_setting("options", (int) $this->conf->setting("options") + 1, json_encode_db($oj));
+            $sv = (new SettingValues($this->u_chair))->add_json_string('{"sf": [
+                {"id": 900, "name": "Final response"},
+                {"id": 901, "name": "Final-Response"},
+                {"id": "new", "name": "Unrelated", "type": "text", "order": 407}
+            ]}');
+            xassert($sv->execute());
+            xassert_in_eqq("Unrelated", $names());
+
+            // ...but renaming one to another similar name is an error
+            $sv = (new SettingValues($this->u_chair))->add_json_string('{"sf": [
+                {"id": 901, "name": "FINAL response"}
+            ]}');
+            xassert(!$sv->execute());
+            xassert_str_contains($sv->full_feedback_text(), "are too similar");
+            xassert_str_contains($sv->full_feedback_text(), "‘FINAL response’");
+        } finally {
+            $this->conf->save_refresh_setting("options", $saved_value, $saved_data);
+        }
     }
 
     function test_list_default_view() {

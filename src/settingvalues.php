@@ -1093,13 +1093,23 @@ class SettingValues extends MessageSet {
         return null;
     }
 
-    /** @param string $pfx
+    /** Return a collator for comparing names: it ignores case (but not
+     * accents) and compares digit sequences numerically.
+     * @return Collator */
+    function icollator() {
+        return $this->_icollator;
+    }
+
+    /** Find a later member of list `$pfx` that duplicates member `$ctr`.
+     * Compares the `$sfx` components of undeleted members using `$eq`.
+     * Returns the counter of the first such member, or -1 if there is no
+     * duplicate (or member `$ctr` is deleted).
+     * @param string $pfx
      * @param int|string $ctr
      * @param string $sfx
-     * @param string $description
-     * @param bool $case_sensitive
-     * @return bool */
-    function error_if_duplicate_member($pfx, $ctr, $sfx, $description, $case_sensitive = false) {
+     * @param callable(mixed,mixed):bool $eq
+     * @return int */
+    function find_duplicate_member($pfx, $ctr, $sfx, $eq) {
         // NB: $pfx may or may not end with `/`; $sfx may or may not begin with `/`
         if (!str_ends_with($pfx, "/")) {
             $pfx .= "/";
@@ -1110,28 +1120,44 @@ class SettingValues extends MessageSet {
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
         if ($this->reqstr_boolean("{$pfx}{$ctr}/delete")) {
-            return false;
+            return -1;
         }
         $oim = $this->swap_ignore_messages(true);
-        $collator = $case_sensitive ? $this->conf->collator() : $this->_icollator;
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
-        $badctr = null;
-        for ($ctr1 = $ctr + 1; array_key_exists("{$pfx}{$ctr1}/id", $this->req); ++$ctr1) {
+        $dup = -1;
+        for ($ctr1 = $ctr + 1;
+             $v0 !== null && array_key_exists("{$pfx}{$ctr1}/id", $this->req);
+             ++$ctr1) {
             if (!$this->reqstr_boolean("{$pfx}{$ctr1}/delete")
                 && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
-                && $v0 !== null
-                && $collator->compare($v0, $v1) === 0) {
-                $badctr = $ctr1;
+                && $eq($v0, $v1)) {
+                $dup = $ctr1;
                 break;
             }
         }
         $this->swap_ignore_messages($oim);
-        if ($badctr === null) {
+        return $dup;
+    }
+
+    /** @param string $pfx
+     * @param int|string $ctr
+     * @param string $sfx
+     * @param string $description
+     * @param bool $case_sensitive
+     * @return bool */
+    function error_if_duplicate_member($pfx, $ctr, $sfx, $description, $case_sensitive = false) {
+        $collator = $case_sensitive ? $this->conf->collator() : $this->_icollator;
+        $dup = $this->find_duplicate_member($pfx, $ctr, $sfx, function ($v0, $v1) use ($collator) {
+            return $collator->compare($v0, $v1) === 0;
+        });
+        if ($dup < 0) {
             return false;
         }
-        $v0 = $v0 === "" ? "(empty)" : $v0;
-        $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
-        $this->error_at("{$pfx}{$badctr}{$sfx}");
+        $pfx = rtrim($pfx, "/");
+        $sfx = ltrim($sfx, "/");
+        $n = $this->quiet_base_parse_req("{$pfx}/{$ctr}/{$sfx}");
+        $this->error_at("{$pfx}/{$ctr}/{$sfx}", "<0>{$description} ‘{:nonempty}’ is not unique", $n);
+        $this->error_at("{$pfx}/{$dup}/{$sfx}");
         return true;
     }
 
@@ -1436,6 +1462,15 @@ class SettingValues extends MessageSet {
             return $si->parse_reqv($this->reqstr($si->name), $this);
         }
         return $this->oldv($si);
+    }
+
+    /** @param string|Si $id
+     * @return null|int|string */
+    function quiet_base_parse_req($id) {
+        $oim = $this->swap_ignore_messages(true);
+        $v = $this->base_parse_req($id);
+        $this->swap_ignore_messages($oim);
+        return $v;
     }
 
     /** @param Si $si */

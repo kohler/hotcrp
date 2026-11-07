@@ -66,6 +66,8 @@ class PaperTable {
     private $npapstrip = 0;
     /** @var ?string */
     private $_psid;
+    /** @var int */
+    private $_ntagps = 0;
     /** @var bool */
     private $allow_folds;
     /** @var bool */
@@ -635,7 +637,7 @@ class PaperTable {
             $c .= " " . $extra["fnclass"];
         }
         if ($divclass === "pst") {
-            $c .= "\" id=\"s-{$this->_psid}-label";
+            $c .= "\" id=\"" . self::ps_label_id($this->_psid);
         }
         $c .= '">';
         if ($fold) {
@@ -990,11 +992,11 @@ class PaperTable {
         }
         $extra = [];
         if ($this->_allow_collapse["abstract"] ?? false) {
-            $extra = ["fold" => "x", "aria-controls" => "s-abstract-body", "foldtitle" => "Toggle full abstract"];
+            $extra = ["fold" => "x", "aria-controls" => "s-abstract:body", "foldtitle" => "Toggle full abstract"];
         }
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt($o->title_html(), $extra)
-            . '<div id="s-abstract-body" class="pavb no-fold abstract';
+            . '<div id="s-abstract:body" class="pavb no-fold abstract';
         list($ss, $ls) = FieldRender::split_wordlimit($text, $o->wordlimit, $o->hard_wordlimit);
         if ($ss !== "") {
             $ss = $this->highlight($ss, "ab", $match);
@@ -1013,7 +1015,7 @@ class PaperTable {
         $fr->value .= "</div></div></div>";
         if ($extra) {
             $fr->value .= '<div class="ifnx longtext-fader"></div>'
-                . '<div class="ifnx longtext-expander"><button type="button" class="link ulh ui js-foldup" aria-expanded="false" aria-controls="s-abstract-body">[more]</button></div>'
+                . '<div class="ifnx longtext-expander"><button type="button" class="link ulh ui js-foldup" aria-expanded="false" aria-controls="s-abstract:body">[more]</button></div>'
                 . Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
@@ -1471,6 +1473,8 @@ class PaperTable {
                     }
                     if ($this->_allow_collapse[$o1->formid] ?? false) {
                         echo "<div class=\"paperinfo-i paperinfo-i-expand collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$o1->formid}\">";
+                        // activate the need-fold-storage ASAP
+                        Ht::stash_script("hotcrp.fold_storage()");
                     } else {
                         echo '<div class="paperinfo-i paperinfo-i-expand">';
                     }
@@ -1508,11 +1512,11 @@ class PaperTable {
                 }
                 if ($want_fold) {
                     $pg1h = Ht::escape_attr($pg1);
-                    echo "<div class=\"{$class} collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$pg1h}\"><div class=\"pavt ui js-foldup\"><h3 class=\"pavfn\">",
-                        '<button type="button" class="q ui js-foldup" title="Toggle visibility" aria-expanded="false" aria-controls="s-', $pg1h, '-body">',
+                    echo "<div id=\"sg-{$pg1h}\" class=\"{$class} collapsed need-fold-storage fold-storage-hidden\" data-fold-storage=\"p.{$pg1h}\"><div class=\"pavt ui js-foldup\"><h3 class=\"pavfn\">",
+                        '<button type="button" class="q ui js-foldup" title="Toggle visibility" aria-expanded="false" aria-controls="sg-', $pg1h, ':body">',
                         aria_expander(), $group_html,
-                        '</button></h3></div><div class="pg" id="s-', $pg1h, '-body" hidden>',
-                        Ht::unstash_script("hotcrp.fold_storage.call(\$\$(" . json_encode_browser("s-{$pg1}") . "))");
+                        '</button></h3></div><div class="pg" id="sg-', $pg1h, ':body" hidden>',
+                        Ht::unstash_script("hotcrp.fold_storage.call(\$\$(" . json_encode_browser("sg-{$pg1}") . "))");
                 } else {
                     echo "<div class=\"{$class}\"><div class=\"pavt\"><h3 class=\"pavfn\">",
                         $group_html,
@@ -1612,7 +1616,7 @@ class PaperTable {
                     echo "\" {$k}=\"", Ht::escape_attr($v);
             }
         }
-        echo '" role="group" aria-labelledby="s-', $psid, '-label">';
+        echo '" role="group" aria-labelledby="', self::ps_label_id($psid), '">';
     }
 
     /** @param string $psid
@@ -1764,8 +1768,10 @@ class PaperTable {
             "</div>\n";
     }
 
-    private function papstrip_onetag_begin($mytag) {
-        $this->_ps_start("tag:{$mytag}", ["class" => "s-ps-tag collapsed ui-fold js-fold-focus"]);
+    private function papstrip_onetag_begin() {
+        // Tags can contain ID separators, so number tag sections instead
+        ++$this->_ntagps;
+        $this->_ps_start("tag-{$this->_ntagps}", ["class" => "s-ps-tag collapsed ui-fold js-fold-focus"]);
     }
 
     /** @param string $tag
@@ -1836,7 +1842,7 @@ class PaperTable {
             return;
         }
         $mytag = "{$this->user->contactId}~{$ti->tag}";
-        $this->papstrip_onetag_begin($mytag);
+        $this->papstrip_onetag_begin();
         echo $this->papt($this->papstrip_onetag_heading($ti, $type),
                 ["type" => "ps", "rest" => $this->papstrip_onetag_result($ti->tag, $type)]),
             "</div>\n";
@@ -1850,7 +1856,7 @@ class PaperTable {
         }
 
         $mytag = "{$this->user->contactId}~{$ti->tag}";
-        $this->papstrip_onetag_begin($mytag);
+        $this->papstrip_onetag_begin();
         $myval = $this->prow->tag_value($mytag);
         echo $this->papt(Ht::label($this->papstrip_onetag_heading($ti, "rank"), "tag:~{$ti->tag}#{$this->prow->paperId}"),
                 ["type" => "ps", "fold" => "xx", "fnclass" => "mf",
@@ -1878,7 +1884,7 @@ class PaperTable {
         }
 
         $mytag = "{$this->user->contactId}~{$ti->tag}";
-        $this->papstrip_onetag_begin($mytag);
+        $this->papstrip_onetag_begin();
         $myval = $this->prow->tag_value($mytag);
         [$treport, $treport_warn] = $this->tag_messages($ti->tag);
         if ($ti->allotment === 1.0 && ($myval === null || $myval === 1.0)) {
@@ -1911,7 +1917,7 @@ class PaperTable {
         }
 
         $mytag = "{$this->user->contactId}~{$ti->tag}";
-        $this->papstrip_onetag_begin($mytag);
+        $this->papstrip_onetag_begin();
         $this->papstrip_finish_approval($ti, $mytag, $this->prow->tag_value($mytag), []);
     }
 
@@ -1929,11 +1935,11 @@ class PaperTable {
                          "id" => "tag:~{$ti->tag}#{$this->prow->paperId}"])
                     . "</span>{$xt}</label>",
                 ["type" => "ps", "fold" => "xx",
-                 "aria-controls" => "s-tag:{$mytag}-body",
+                 "aria-controls" => "s-{$this->_psid}:body",
                  "aria-label" => "Show #{$ti->tag} vote details",
                  "divclass" => "mf",
                  "rest" => $this->papstrip_onetag_result($ti->tag, "approval")]),
-            "<div id=\"s-tag:{$mytag}-body\" hidden>",
+            "<div id=\"s-{$this->_psid}:body\" hidden>",
             empty($treport) ? "" : MessageSet::feedback_html($treport),
             $this->conf->hotlink("Edit all", "search", ["q" => "editsort:-#~{$ti->tag}"]),
             "</div></div>\n";
@@ -2362,6 +2368,14 @@ class PaperTable {
         $cs->leave();
     }
 
+    /** Return the ID of the heading of sidebar section `$psid`, for use in
+     * `aria-labelledby`.
+     * @param string $psid
+     * @return string */
+    static function ps_label_id($psid) {
+        return "s-{$psid}:label";
+    }
+
     /** Print a sidebar section, as a `paper/sidebar` component might.
      * `$psid` identifies it (its element ID is `s-{$psid}`), `$title_html` is
      * its caption, and `$body_html` its content.
@@ -2423,9 +2437,9 @@ class PaperTable {
         ]);
         echo $this->papt($option->title_html(), [
                 "type" => "ps", "fold" => "x", "open" => !$this->allow_folds,
-                "aria-controls" => "s-pcconf-body"
+                "aria-controls" => "s-pcconf:body"
             ]),
-            '<ul id="s-pcconf-body" class="x namelist-columns">',
+            '<ul id="s-pcconf:body" class="x namelist-columns">',
             Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-pcconf\"))"),
             join("", $pcconf),
             "</ul></div>\n";
@@ -2448,9 +2462,9 @@ class PaperTable {
         ]);
         echo $this->papt($option->title_html(), [
                 "type" => "ps", "fold" => "x", "open" => true,
-                "aria-controls" => "s-collaborators-body"
+                "aria-controls" => "s-collaborators:body"
             ]),
-            '<ul id="s-collaborators-body" class="x namelist-columns">',
+            '<ul id="s-collaborators:body" class="x namelist-columns">',
             Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"s-collaborators\"))");
         foreach (explode("\n", $data) as $line) {
             echo '<li class="od">', $line, '</li>';

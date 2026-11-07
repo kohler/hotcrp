@@ -6564,7 +6564,7 @@ handle_ui.on("js-leftmenu", function (evt) {
 
 // abstract
 $(function () {
-    const ab = document.getElementById("s-abstract-body"),
+    const ab = document.getElementById("s-abstract:body") || /* XXX backward compat */ document.getElementById("s-abstract-body"),
         abc = ab ? ab.closest(".paperinfo-i-expand") : null;
     function check_abstract_height() {
         if (hasClass(abc, "collapsed")) {
@@ -7005,7 +7005,7 @@ function make_review_h2(rrow, rlink, rdesc, rid) {
     if (rrow.collapsed) {
         ma = $e("button", {
             type: "button", class: "qo ui js-foldup expander",
-            "aria-controls": `r${rid}-body`, "aria-expanded": "false"
+            "aria-controls": `r${rid}:body`, "aria-expanded": "false"
         });
         ma.append(make_expander_element());
     } else {
@@ -7099,7 +7099,7 @@ hotcrp.add_review = function (rrow) {
 
     // body
     const ebody = document.createElement("div");
-    ebody.id = `r${rid}-body`;
+    ebody.id = `r${rid}:body`;
     if (rrow.collapsed) {
         ebody.hidden = true;
     }
@@ -7734,7 +7734,7 @@ function cmt_render_form(cj) {
     const eaa = $e("div", "w-text aabig aab mt-3");
     btnbox.firstChild && eaa.append($e("div", "aabut", btnbox));
     if (cj.response && resp_rounds[cj.response].wl > 0) {
-        eaa.append($e("div", "aabut", $e("div", {class: "words", id: cid + "-wordlimit"})));
+        eaa.append($e("div", "aabut", $e("div", {class: "words", id: cid + ":wordlimit"})));
     }
     const btext = cj.response ? "Submit" : "Save",
         bnote = cmt_is_editable(cj) ? null : $e("div", "hint", "(admin only)");
@@ -7771,8 +7771,8 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     // attachments
     einfo.append($e("div", {class: "cmtprop w-text has-editable-attachments", hidden: true, role: "group", "aria-label": "Attachments"},
         $e("span", {class: "need-tooltip", "data-tooltip": "Attachments"}, $svg_licon("attachment")),
-        $e("div", {id: cid + "-attachments", class: "entry", "data-dt": -2, "data-document-prefix": "attachment"})));
-    btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, $svg_licon("attachment")));
+        $e("div", {id: cid + ":attachments", class: "entry", "data-dt": -2, "data-document-prefix": "attachment"})));
+    btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + ":attachments"}, $svg_licon("attachment")));
 
     // visibility and thread, stated as an editable sentence
     if (!cj.response) {
@@ -7783,7 +7783,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
                 ? [["au", "reviewers and PC"]]
                 : [["au", "authors and reviewers"], ["rev", "reviewers"], ["pc", "PC members"]];
             vopt.push(["admin", "administrators only"]);
-            evis.append("Visible to ", cmt_inline_select("visibility", cid + "-visibility", vopt, "Visible to"), " on the ");
+            evis.append("Visible to ", cmt_inline_select("visibility", cid + ":visibility", vopt, "Visible to"), " on the ");
             if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
                 eblind = $e("div", "checki",
                     $e("label", null,
@@ -7804,7 +7804,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         /*if (tlist.indexOf("dec") >= 0) {
             topt.push(["dec", "decision thread"]);
         }*/
-        evis.append(cmt_inline_select("topic", cid + "-thread", topt, "Thread"));
+        evis.append(cmt_inline_select("topic", cid + ":thread", topt, "Thread"));
         einfo.append($e("div", "cmtprop w-text",
             $e("span", {class: "need-tooltip", "data-tooltip": "Visibility"}, $svg_licon("eye")),
             $e("div", "entry", evis, eblind, $e("div", {class: "cmtvis-hints", "aria-live": "polite"}))));
@@ -7813,8 +7813,8 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     // tags (appended below the sentence)
     if (!cj.response && !cj.by_author) {
         einfo.append($e("div", {class: "cmtprop w-text", hidden: true},
-            $e("label", {for: cid + "-tags", class: "need-tooltip", "data-tooltip": "Tags"}, $svg_licon("tag")),
-            $e("input", {id: cid + "-tags", class: "pled", name: "tags", type: "text", size: 50, placeholder: "Comment tags", "aria-label": "Tags"})));
+            $e("label", {for: cid + ":tags", class: "need-tooltip", "data-tooltip": "Tags"}, $svg_licon("tag")),
+            $e("input", {id: cid + ":tags", class: "pled", name: "tags", type: "text", size: 50, placeholder: "Comment tags", "aria-label": "Tags"})));
         btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, $svg_licon("tag")));
     }
 
@@ -8007,7 +8007,7 @@ function cmt_start_edit(celt, cj) {
         if (resp_rounds[cj.response].hwl > 0) {
             ta.setAttribute("data-hard-wordlimit", resp_rounds[cj.response].hwl);
         }
-        ta.setAttribute("data-wordlimit-details", cj_cid(cj) + "-wordlimit");
+        ta.setAttribute("data-wordlimit-details", cj_cid(cj) + ":wordlimit");
         addClass(ta, "need-wordlimit");
         make_update_words.call(ta);
     }
