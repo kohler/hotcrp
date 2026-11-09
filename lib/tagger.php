@@ -973,6 +973,14 @@ class TagMap {
     function is_hidden($tag) {
         return !!$this->find_having($tag, TagInfo::TF_HIDDEN);
     }
+    /** Return true if `$tag` is public, meaning it is not private (`~tag`
+     * or `N~tag`), chair-only (`~~tag`), or hidden.
+     * @param string $tag
+     * @return bool */
+    function is_public($tag) {
+        return strpos($tag, "~") === false
+            && !$this->find_having($tag, TagInfo::TF_HIDDEN | TagInfo::TF_CHAIR_HIDDEN);
+    }
     /** @param string $tag
      * @return bool */
     function is_admin_public($tag) {
@@ -1559,13 +1567,15 @@ class TagMap {
 }
 
 class Tagger {
-    const ALLOWRESERVED = 1;
-    const NOPRIVATE = 2;
-    const NOVALUE = 4;
-    const NOCHAIR = 8;
-    const ALLOWSTAR = 16;
-    const ALLOWCONTACTID = 32;
-    const ALLOWNONE = 64;
+    const ALLOWRESERVED = 1;   // allow `none`/`any`/`all`/`undefined`/`default`
+    const NOPRIVATE = 2;       // disallow `~TAG` and `[your UID]~TAG`
+    const NOVALUE = 4;         // disallow tag values
+    const NOCHAIR = 8;         // disallow `~~TAG`
+    const ALLOWSTAR = 16;      // allow `*`
+    const ALLOWCONTACTID = 32; // allow `[other UID]~TAG`
+    const ALLOWNONE = 64;      // allow empty string or explicit `none`
+    const ALLOWCHAIR = 128;    // accept chair tags even if the user isn’t chairlike
+
     const EEMPTY = -1;
     const EINVAL = -2;
     const EMULTIPLE = -3;
@@ -1746,7 +1756,8 @@ class Tagger {
             // OK
         } else if ($m[1] === "~~") {
             if (($flags & self::NOCHAIR) !== 0
-                || !$this->user->is_chairlike()) {
+                || (($flags & self::ALLOWCHAIR) === 0
+                    && !$this->user->is_chairlike())) {
                 return $this->set_error_code(self::NOCHAIR, $tag);
             }
         } else {

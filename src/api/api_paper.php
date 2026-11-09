@@ -59,6 +59,8 @@ class Paper_API extends MessageSet {
     private $dry_run_here = false;
     /** @var bool */
     private $ignore_unwritable_fields = false;
+    /** @var bool|'public' */
+    private $include_tags = true;
     /** @var bool */
     private $notify = true;
     /** @var bool */
@@ -97,6 +99,16 @@ class Paper_API extends MessageSet {
             } else if ($qreq->word_limit !== "soft") {
                 JsonResult::make_parameter_error("word_limit")->complete();
             }
+        }
+        if (isset($qreq->tags)) {
+            if ($qreq->tags === "public") {
+                $this->include_tags = "public";
+            } else if (($b = friendly_boolean($qreq->tags)) !== null) {
+                $this->include_tags = $b;
+            } else {
+                JsonResult::make_parameter_error("tags")->complete();
+            }
+            $this->pex->set_include_tags($this->include_tags);
         }
     }
 
@@ -378,6 +390,7 @@ class Paper_API extends MessageSet {
     private function paper_status() {
         return (new PaperStatus($this->user))
             ->set_ignore_unwritable_fields($this->ignore_unwritable_fields)
+            ->set_include_tags($this->include_tags)
             ->set_disable_users($this->disable_users)
             ->set_notify_reason($this->notify_reason)
             ->set_any_content_file(true)

@@ -519,6 +519,17 @@
                     "if_warning"
                 ]
             },
+            "tags_mode": {
+                "oneOf": [
+                    {"type": "boolean"},
+                    {"type": "string", "enum": ["public"]}
+                ],
+                "description": "Boolean, or `public` to include only public tags",
+                "examples": [
+                    false,
+                    "public"
+                ]
+            },
             "pid": {
                 "type": "integer",
                 "description": "Submission ID",

@@ -17,6 +17,15 @@
         "has_attachments": false
     },
     {
+        "name": "get/jsontags", "get": true,
+        "title": "Paper information/JSON with tags",
+        "order": 10090.5,
+        "allow_if": "manager",
+        "function": "+GetJson_ListAction",
+        "has_attachments": false,
+        "include_tags": true
+    },
+    {
         "name": "get/jsonattach", "get": true,
         "title": "Paper information/JSON with attachments",
         "order": 10091,

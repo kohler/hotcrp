@@ -26,6 +26,8 @@ class SavePapers_Batch {
     /** @var bool */
     public $disable_users = false;
     /** @var bool */
+    public $ignore_tags = false;
+    /** @var bool */
     public $any_content_file = false;
     /** @var bool */
     public $reviews = false;
@@ -82,6 +84,7 @@ class SavePapers_Batch {
             $this->pidflags |= Paper_API::PIDFLAG_MATCH_TITLE;
         }
         $this->disable_users = isset($arg["disable-users"]);
+        $this->ignore_tags = isset($arg["ignore-tags"]);
         $this->any_content_file = isset($arg["any-content-file"]);
         $this->trust_document_metadata = isset($arg["trust-document-metadata"]);
         $this->add_topics = isset($arg["add-topics"]);
@@ -216,6 +219,7 @@ class SavePapers_Batch {
 
         $this->ps = $this->ps ?? (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
+            ->set_include_tags(!$this->ignore_tags)
             ->set_any_content_file($this->any_content_file)
             ->set_trust_document_metadata($this->trust_document_metadata)
             ->set_notify($this->notify)
@@ -393,6 +397,7 @@ class SavePapers_Batch {
             "trust-document-metadata Trust document hashes and CRCs and assume document content is already available",
             "ignore-pid Ignore `pid` JSON elements",
             "match-title Match papers by title if no `pid`",
+            "ignore-tags Ignore tag changes (submission classes are still saved)",
             "add-topics Add all referenced topics to conference",
             "json5,5 Allow JSON5 extensions",
             "q,quiet Don’t print progress information",

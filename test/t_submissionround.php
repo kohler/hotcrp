@@ -248,12 +248,14 @@ class SubmissionRound_Tester {
         xassert(!$this->conf->checked_paper_by_id($this->pid_other)->has_tag("sctag"));
 
         // ...including for new submissions
+        $old_overrides = $this->u_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
         $ps = new PaperStatus($this->u_chair);
         $pid = $ps->save_paper_json((object) [
             "pid" => "new", "title" => "Class paper", "abstract" => "Abstract",
             "authors" => [["name" => "Class Author", "email" => "classauthor@_.com"]],
             "status" => "draft", "reset_tags" => true, "submission_class" => "R2"
         ]);
+        $this->u_chair->set_overrides($old_overrides);
         xassert_paper_status($ps);
         xassert_eqq($this->sround($pid)->tag, "R2");
 
@@ -263,10 +265,27 @@ class SubmissionRound_Tester {
         xassert_eqq($ps->problem_status_at("submission_class"), MessageSet::WARNING);
         xassert($this->sround($this->pid_main)->unnamed);
 
-        // PC members who cannot change tags cannot change the class
+        // PC members who cannot change tags cannot change the class, and are
+        // warned about it unless the class is unchanged
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->save_paper_json((object) ["pid" => $this->pid_estrin, "submission_class" => ""]));
         xassert_eqq($this->sround($this->pid_estrin)->tag, "R2");
+        xassert_eqq($ps->problem_status_at("submission_class"), MessageSet::WARNING);
+        xassert(!$ps->has_problem_at("tags"));
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_estrin, "submission_class" => "r2"]));
+        xassert(!$ps->has_problem_at("submission_class"));
+        xassert(!$ps->has_problem_at("tags"));
+
+        // ignoring tags does not ignore the class
+        $ps = (new PaperStatus($this->u_chair))->set_include_tags(false);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "tags" => ["sctag2"], "submission_class" => "R2"]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->sround($this->pid_main)->tag, "R2");
+        xassert(!$this->conf->checked_paper_by_id($this->pid_main)->has_tag("sctag2"));
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => $this->pid_main, "submission_class" => ""]));
+        xassert_paper_status($ps);
     }
 
     function test_round_deadline_behavior() {

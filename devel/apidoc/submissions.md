@@ -47,6 +47,11 @@ instance, about permission errors or nonexistent submissions—are returned in
   are named in the response’s `overlong` and `truncated` keys.
 
     * default soft
+* param ?tags tags_mode: Which tags to include in the returned submission
+  object: true includes all tags you can see, false omits tags, and `public`
+  includes only public tags (no private, chair-only `~~`, or hidden tags).
+
+    * default true
 * param ?download boolean: True returns the bare submission object as a file
   (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?paper paper: The requested submission object.
@@ -148,8 +153,10 @@ include `-all` in `tags` to remove them at that point in the list; for
 instance, `{"reset_tags": true, "tags": ["a", "b"]}` replaces the user’s
 tags with `a` and `b`. Tags are changed after the submission is saved, so tag
 problems are reported as warnings. Tag changes from users who cannot change
-the submission’s tags are ignored. Tag changes appear in the change list as
-`tags` (including for dry runs), but are not reported to authors.
+the submission’s tags are ignored with a warning. The `tags` parameter can
+limit tag changes to public tags, or ignore them entirely. Tag changes appear
+in the change list as `tags` (including for dry runs), but are not reported to
+authors.
 
 A submission’s class is a tag, so the same users can change it by setting
 `submission_class` (or `sclass`) to a submission class tag, or to `unnamed`
@@ -208,6 +215,13 @@ existing submission, set the submission JSON’s `if_unmodified_since` to
   in the returned submission object.
 
     * default hard
+* param ?tags tags_mode: Which tags to change and return: true includes all
+  tags, false ignores tag changes and omits tags from the returned submission
+  object, and `public` changes and returns only public tags (no private,
+  chair-only `~~`, or hidden tags). With `public`, `reset_tags` and `-all`
+  remove only public tags. The submission class is changed regardless.
+
+    * default true
 * response ?dry_run boolean: True for `dry_run` requests.
 * response ?pid pid: ID of the modified or newly created submission.
 * response ?+valid boolean: True if and only if the modification was valid.
@@ -299,6 +313,11 @@ listed in a query, supply a `warn_missing=1` parameter.
 * param ?word_limit =soft|hard: Which word limit applies to long text fields.
 
     * default soft
+* param ?tags tags_mode: Which tags to include in the returned submission
+  objects: true includes all tags you can see, false omits tags, and `public`
+  includes only public tags (no private, chair-only `~~`, or hidden tags).
+
+    * default true
 * param ?download boolean: True returns a bare array of submission objects as a
   file (see [Downloads](#tag-submissions)) instead of the usual response envelope.
 * response ?papers [paper]: The matching submission objects.
@@ -379,6 +398,13 @@ be applied to all papers returned by the `q` search query.
   in the returned submission objects.
 
     * default hard
+* param ?tags tags_mode: Which tags to change and return: true includes all
+  tags, false ignores tag changes and omits tags from the returned submission
+  objects, and `public` changes and returns only public tags (no private,
+  chair-only `~~`, or hidden tags). With `public`, `reset_tags` and `-all`
+  remove only public tags. The submission class is changed regardless.
+
+    * default true
 * response ?papers [paper]: The modified submission objects.
 
     * condition !dry_run

@@ -379,6 +379,68 @@ class PaperAPI_Tester {
         xassert(!$this->conf->checked_paper_by_id(6)->has_tag("apidrytag"));
     }
 
+    function test_tags_parameter() {
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,tag\n6,tag,apitagpub#1\n6,tag,~apitagpriv\n6,tag,~~apitagchair\n");
+        xassert($aset->execute());
+        $privtag = "{$this->u_chair->contactId}~apitagpriv#0";
+
+        // `tags` selects which tags are returned
+        $jr = call_api("paper", $this->u_chair, ["p" => "6"]);
+        xassert_in_eqq("apitagpub#1", $jr->paper->tags);
+        xassert_in_eqq($privtag, $jr->paper->tags);
+        xassert_in_eqq("~~apitagchair#0", $jr->paper->tags);
+        $jr = call_api("paper", $this->u_chair, ["p" => "6", "tags" => "public"]);
+        xassert_in_eqq("apitagpub#1", $jr->paper->tags);
+        xassert(!in_array($privtag, $jr->paper->tags));
+        xassert(!in_array("~~apitagchair#0", $jr->paper->tags));
+        $jr = call_api("paper", $this->u_chair, ["p" => "6", "tags" => "0"]);
+        xassert(!isset($jr->paper->tags));
+        $jr = call_api("papers", $this->u_chair, ["q" => "6", "tags" => "public"]);
+        xassert_eqq(count($jr->papers), 1);
+        xassert_in_eqq("apitagpub#1", $jr->papers[0]->tags);
+        xassert(!in_array($privtag, $jr->papers[0]->tags));
+        $jr = call_api("paper", $this->u_chair, ["p" => "6", "tags" => "private"]);
+        xassert_eqq($jr->ok, false);
+
+        // ...and which tag changes are applied
+        $pj = (object) ["pid" => 6, "tags" => ["apitagnew", "~apitagnew", "~~apitagnew", "-~apitagpriv", "-~~apitagchair"]];
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json($pj, ["p" => 6, "tags" => "public"]));
+        xassert_eqq($jr->ok, true);
+        xassert_in_eqq("apitagnew#0", $jr->paper->tags);
+        xassert(!in_array($privtag, $jr->paper->tags));
+        $prow = $this->conf->checked_paper_by_id(6);
+        xassert($prow->has_tag("apitagnew"));
+        xassert(!$prow->has_tag("~~apitagnew"));
+        xassert($prow->has_tag("~~apitagchair"));
+        xassert($prow->has_tag($this->u_chair->contactId . "~apitagpriv"));
+        xassert(!$prow->has_tag($this->u_chair->contactId . "~apitagnew"));
+        $pj = (object) ["pid" => 6, "tags" => ["-apitagnew"]];
+        $jr = call_api("=paper", $this->u_chair, TestQreq::post_json($pj, ["p" => 6, "tags" => "no"]));
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, []);
+        xassert(!isset($jr->paper->tags));
+        xassert($this->conf->checked_paper_by_id(6)->has_tag("apitagnew"));
+
+        // Download > JSON omits tags; Download > JSON with tags has them all
+        $qreq = TestQreq::get(["p" => "6"]);
+        $ssel = SearchSelection::make_papers($qreq, $this->u_chair);
+        $la = ListAction::lookup("get/json", $this->u_chair, $qreq, $ssel);
+        $pj = json_decode($la->run($this->u_chair, $qreq, $ssel)->content_string());
+        xassert_eqq($pj->pid ?? null, 6);
+        xassert(!isset($pj->tags));
+        $la = ListAction::lookup("get/jsontags", $this->u_chair, $qreq, $ssel);
+        xassert($la instanceof ListAction);
+        $pj = json_decode($la->run($this->u_chair, $qreq, $ssel)->content_string());
+        xassert_in_eqq("apitagpub#1", $pj->tags);
+        xassert_in_eqq($privtag, $pj->tags);
+        xassert_in_eqq("~~apitagchair#0", $pj->tags);
+
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("paper,action,tag\n6,tag,apitagpub#clear\n6,tag,apitagnew#clear\n6,tag,~apitagpriv#clear\n6,tag,~~apitagchair#clear\n");
+        xassert($aset->execute());
+    }
+
     function test_save_submit_new_paper() {
         $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);

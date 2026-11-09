@@ -3631,14 +3631,71 @@ Phil Porras.");
         $ps = new PaperStatus($this->u_chair);
         xassert($ps->save_paper_json((object) ["pid" => 8, "title" => $title8]));
 
-        // users who cannot edit tags are ignored, like decisions
+        // tag changes by users who cannot edit tags are ignored with a warning
         $tags1 = $this->conf->checked_paper_by_id(1)->all_tags_text();
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->save_paper_json((object) ["pid" => 1, "tags" => ["pstagz"]]));
-        xassert(!$ps->has_problem_at("tags"));
+        xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+        xassert_eqq(count(iterator_to_array($ps->message_list_at("tags"), false)), 1);
+        xassert_eqq($ps->change_list(), []);
         xassert_eqq($this->conf->checked_paper_by_id(1)->all_tags_text(), $tags1);
+        // ...including chair tags and other users’ private tags
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "tags" => ["~~pstagz", "{$this->u_sally->contactId}~pstagz"]]));
+        xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+        xassert_eqq($this->conf->checked_paper_by_id(1)->all_tags_text(), $tags1);
+        // ...but an empty tag list changes nothing, so is not reported
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "tags" => []]));
+        xassert(!$ps->has_problem());
 
-        // new submissions can have tags
+        // `set_include_tags(false)` ignores tag changes entirely, even invalid ones
+        $tags8 = $this->conf->checked_paper_by_id(8)->all_tags_text();
+        $ps = (new PaperStatus($this->u_chair))->set_include_tags(false);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "reset_tags" => true, "tags" => ["pstagy", "bad tag"], "add_tags" => "pstagy", "remove_tags" => "pstage", "change_tags" => "pstagy"]));
+        xassert(!$ps->has_problem());
+        xassert_eqq($ps->change_list(), []);
+        xassert_eqq($this->conf->checked_paper_by_id(8)->all_tags_text(), $tags8);
+        $ps = (new PaperStatus($this->u_estrin))->set_include_tags(false);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "tags" => ["pstagz"]]));
+        xassert(!$ps->has_problem());
+
+        // exports can include all viewable tags, public tags, or no tags
+        $chairtag = "{$this->u_chair->contactId}~pstagchair#1";
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["~~pstagcc"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, $chairtag, "pstage#0", "~~pstagcc#0"]);
+        $pj = (new PaperExport($this->u_chair))->paper_json(8);
+        xassert_in_eqq($chairtag, $pj->tags);
+        xassert_in_eqq("~~pstagcc#0", $pj->tags);
+        $pj = (new PaperExport($this->u_chair))->set_include_tags("public")->paper_json(8);
+        xassert_in_eqq("pstage#0", $pj->tags);
+        xassert(!array_find($pj->tags, function ($t) { return str_contains($t, "~"); }));
+        $pj = (new PaperExport($this->u_chair))->set_include_tags(false)->paper_json(8);
+        xassert(!isset($pj->tags));
+
+        // `set_include_tags("public")` applies only changes to public tags,
+        // and `-all` removes only public tags
+        $ps = (new PaperStatus($this->u_chair))->set_include_tags("public");
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstagp", "~pstagp", "~~pstagp", "{$this->u_sally->contactId}~pstagp", "-~~pstagcc", "-~pstagchair"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, $chairtag, "pstage#0", "pstagp#0", "~~pstagcc#0"]);
+        $ps = (new PaperStatus($this->u_chair))->set_include_tags("public");
+        xassert($ps->save_paper_json((object) ["pid" => 8, "reset_tags" => true, "tags" => ["pstage"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, $chairtag, "pstage#0", "~~pstagcc#0"]);
+        $ps = (new PaperStatus($this->u_chair))->set_include_tags("public");
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["-all"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, $chairtag, "~~pstagcc#0"]);
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 8, "tags" => ["pstage", "-~~pstagcc"]]));
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags(8), [$sallytag, $chairtag, "pstage#0"]);
+
+        // new submissions can have tags if the creator overrides conflicts
+        $old_overrides = $this->u_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
         $ps = new PaperStatus($this->u_chair);
         $pid = $ps->save_paper_json((object) [
             "pid" => "new", "title" => "Tagged paper", "abstract" => "Abstract",
@@ -3648,6 +3705,43 @@ Phil Porras.");
         xassert_paper_status($ps);
         xassert($pid > 0);
         xassert_eqq($this->pstags($pid), ["pstagnew#5"]);
+        // ...even if the creator is an author
+        $ps = new PaperStatus($this->u_chair);
+        $pid = $ps->save_paper_json((object) [
+            "pid" => "new", "title" => "Chair tagged paper", "abstract" => "Abstract",
+            "authors" => [["name" => "Jane Chair", "email" => "chair@_.com"]],
+            "status" => "draft", "tags" => ["pstagnew#6"]
+        ]);
+        xassert_paper_status($ps);
+        xassert_eqq($this->pstags($pid), ["pstagnew#6"]);
+        $this->conf->checked_paper_by_id($pid)->delete_from_database($this->u_chair);
+        $this->u_chair->set_overrides($old_overrides);
+
+        // otherwise, the creator is provisionally the submission’s contact,
+        // so cannot change its tags; dry runs agree
+        foreach ([[$this->u_estrin, "estrin@usc.edu"],
+                  [$this->u_estrin, "pstagpcauthor@_.com"],
+                  [$this->u_chair, "chair@_.com"],
+                  [$this->u_chair, "pstagpcauthor@_.com"]] as $case) {
+            $pj = (object) [
+                "pid" => "new", "title" => "Conflicted tagged paper", "abstract" => "Abstract",
+                "authors" => [["name" => "Tag Author", "email" => $case[1]]],
+                "status" => "draft", "tags" => ["pstagpc"]
+            ];
+            $ps = new PaperStatus($case[0]);
+            xassert($ps->prepare_save_paper_json(clone $pj));
+            xassert_not_in_eqq("tags", $ps->change_list());
+            xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+            $ps->abort_save();
+            $ps = new PaperStatus($case[0]);
+            $pid = $ps->save_paper_json(clone $pj);
+            xassert($pid > 0);
+            xassert_not_in_eqq("tags", $ps->change_list());
+            xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
+            xassert_eqq(count(iterator_to_array($ps->message_list_at("tags"), false)), 1);
+            xassert_eqq($this->pstags($pid), []);
+            $this->conf->checked_paper_by_id($pid)->delete_from_database($this->u_chair);
+        }
 
         // tag changes are in the change list, but are not reported to authors
         MailChecker::clear();
@@ -3687,6 +3781,7 @@ Phil Porras.");
         xassert_eqq($ps->change_list(), []);
         xassert_eqq($ps->problem_status_at("tags"), MessageSet::WARNING);
         $ps->abort_save();
+        $old_overrides = $this->u_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
         $ps = new PaperStatus($this->u_chair);
         xassert($ps->prepare_save_paper_json((object) [
             "pid" => "new", "title" => "Dry tagged paper", "abstract" => "Abstract",
@@ -3694,6 +3789,7 @@ Phil Porras.");
             "status" => "draft", "tags" => ["pstagm"]
         ]));
         xassert_in_eqq("tags", $ps->change_list());
+        $this->u_chair->set_overrides($old_overrides);
         $ps->abort_save();
     }
 

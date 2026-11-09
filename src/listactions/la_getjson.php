@@ -5,10 +5,13 @@
 class GetJson_ListAction extends ListAction {
     /** @var bool */
     private $iszip;
+    /** @var bool */
+    private $include_tags;
     /** @var ?DocumentInfoSet */
     private $zipdoc;
     function __construct($conf, $fj) {
         $this->iszip = $fj->name === "get/jsonattach";
+        $this->include_tags = $fj->include_tags ?? false;
     }
     function document_callback($dj, DocumentInfo $doc, $dtype, PaperExport $pex) {
         if ($doc->ensure_content()) {
@@ -22,7 +25,8 @@ class GetJson_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $pj = [];
-        $pex = (new PaperExport($user))->set_ignore_soft_word_limits(true);
+        $pex = (new PaperExport($user))->set_ignore_soft_word_limits(true)
+            ->set_include_tags($this->include_tags);
         if ($this->iszip) {
             $this->zipdoc = new DocumentInfoSet($user->conf->download_prefix . "data.zip");
             $pex->on_document_export([$this, "document_callback"]);

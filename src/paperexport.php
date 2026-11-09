@@ -21,6 +21,9 @@ class PaperExport {
     /** @var bool
      * @readonly */
     public $include_permissions = true;
+    /** @var bool|'public'
+     * @readonly */
+    public $include_tags = true;
     /** @var bool
      * @readonly */
     public $include_ratings = true;
@@ -56,6 +59,16 @@ class PaperExport {
      * @suppress PhanAccessReadOnlyProperty */
     function set_include_document_content($x) {
         $this->include_document_content = $x;
+        return $this;
+    }
+
+    /** Set which tags to export: all tags the viewer can see (true), none
+     * (false), or only public tags (`public`; see `TagMap::is_public`).
+     * @param bool|'public' $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_include_tags($x) {
+        $this->include_tags = $x;
         return $this;
     }
 
@@ -277,8 +290,19 @@ class PaperExport {
 
     /** @param object $pj */
     function apply_paper_tags(PaperInfo $prow, $pj) {
-        if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
-            $pj->tags = Tagger::split($tlist);
+        if (!$this->include_tags
+            || !($tlist = $prow->sorted_viewable_tags($this->viewer))) {
+            return;
+        }
+        $tags = Tagger::split($tlist);
+        if ($this->include_tags === "public") {
+            $dt = $this->conf->tags();
+            $tags = array_values(array_filter($tags, function ($tv) use ($dt) {
+                return $dt->is_public(Tagger::tv_tag($tv));
+            }));
+        }
+        if (!empty($tags)) {
+            $pj->tags = $tags;
         }
     }
 
