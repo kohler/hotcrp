@@ -846,6 +846,19 @@ class DocumentBasics_Tester {
                 xassert_eqq($j["dt"], $x[1]);
                 xassert_eqq($j["attachment"] ?? null, $x[2]);
             }
+
+            // compound extensions are not part of the field name
+            foreach ([
+                ["paper1.tar.zst", DTYPE_SUBMISSION],
+                ["final1.csv.gz", DTYPE_FINAL],
+                ["paper1-appendix_2.tar.zst", 2],
+                ["paper1-paper_v_1.5_slides.tar.zst", 3],
+                ["paper1-d_1._pdf_paper.tar.gz", 1]
+            ] as $x) {
+                $j = (new DocumentRequest(["doc" => $x[0]], $user))->jsonSerialize();
+                xassert_eqq($j["pid"] ?? null, 1);
+                xassert_eqq($j["dt"] ?? null, $x[1]);
+            }
         } finally {
             if ($saved_options === null) {
                 $conf->save_refresh_setting("options", null);
