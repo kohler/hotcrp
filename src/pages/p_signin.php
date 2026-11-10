@@ -50,6 +50,7 @@ class Signin_Page {
      * @param bool $escape
      * @return void */
     static function print_signin_unavailable(Conf $conf, $page, $escape = false) {
+        $ml = [null];
         if ($page === "newaccount" && !$conf->allow_user_self_register()) {
             $m = "<0>User self-registration is disabled on this site.";
         } else if ($page !== "newaccount" && $conf->login_type()) {
@@ -57,8 +58,11 @@ class Signin_Page {
         } else {
             $mp = $page === "newaccount" ? "create accounts" : "send password reset email";
             $m = "<5>This site can’t {$mp} at the moment. Contact <a href=\"mailto:{:url}\">the site administrator</a> for help signing in.";
+            if ($conf->safe_baseurl() === null) {
+                $ml[] = MessageItem::warning_note("<5><em>Note for administrators:</em> <code>\$Opt[\"paperSite\"]</code> or <code>\$Opt[\"defaultPaperSite\"]</code> required.");
+            }
         }
-        $ml = [MessageItem::error($m, new FmtArg(0, $conf->site_contact()->email, 0))];
+        $ml[0] = MessageItem::error($m, new FmtArg(0, $conf->site_contact()->email, 0));
         if ($escape) {
             $ml[] = MessageItem::plain("<5>" . $conf->hotlink("Return home", "index"));
         }
