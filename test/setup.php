@@ -1290,8 +1290,15 @@ class TestRunner {
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
         }
+        if (!isset($arg["no-cdb"])
+            && $conf->opt("contactdbDsn")
+            && !@$conf->contactdb()) {
+            fwrite(STDERR, "* Contact database unavailable; skipping contactdb tests\n  (Create it with `lib/createdb.sh -c test/cdb-options.php --no-dbuser`.)\n");
+            $arg["no-cdb"] = true;
+        }
         if (isset($arg["no-cdb"])) {
-            Conf::$main->set_opt("contactdbDsn", null);
+            $conf->set_opt("contactdbDsn", null);
+            $conf->invalidate_caches("cdb");
             self::$original_opt["contactdbDsn"] = null;
         }
         if (isset($arg["reset"])) {
@@ -1505,21 +1512,33 @@ class TestRunner {
         $this->verbose_test = null;
     }
 
-    function set_verbose_test($ro, $m) {
+    /** @param string $name */
+    private function set_verbose_test($name) {
         if (!$this->verbose) {
             return;
         }
         $digits = sprintf("[%{$this->test_digits}d/%d]", $this->test_index, $this->test_count);
-        $method = $ro->getName() . "::" . $m->name;
-        $dots = str_repeat(".", max(0, $this->width - strlen($digits) - strlen($method) - 2));
-        if (strlen($digits) + 1 + strlen($method) < $this->width) {
+        $dots = str_repeat(".", max(0, $this->width - strlen($digits) - strlen($name) - 2));
+        if (strlen($digits) + 1 + strlen($name) < $this->width) {
             $dots = " " . $dots;
         }
         if ($this->color) {
-            $this->verbose_test = "\x1b[38;2;212;23;67m{$digits} \x1b[38;2;70;100;150m{$method}\x1b[1;90m{$dots}\x1b[m";
+            $this->verbose_test = "\x1b[38;2;212;23;67m{$digits} \x1b[38;2;70;100;150m{$name}\x1b[1;90m{$dots}\x1b[m";
         } else {
-            $this->verbose_test = $digits . " " . $method . $dots;
+            $this->verbose_test = $digits . " " . $name . $dots;
         }
+    }
+
+    private function print_verbose_skip() {
+        if (!$this->verbose) {
+            return;
+        }
+        if ($this->color) {
+            fwrite(STDERR, "\x1b[90m{$this->verbose_test} \x1b[1;90mSKIP\x1b[m\n");
+        } else {
+            fwrite(STDERR, "{$this->verbose_test} SKIP\n");
+        }
+        $this->verbose_test = null;
     }
 
     function report_fatal_error() {
@@ -1547,15 +1566,9 @@ class TestRunner {
             }
             $this->current_test = $ro->getName() . "::" . $m->name;
             $this->current_test_memory = memory_get_usage();
-            $this->set_verbose_test($ro, $m);
+            $this->set_verbose_test($this->current_test);
             if (!$this->check_test_attributes($m)) {
-                if ($this->verbose) {
-                    if ($this->color) {
-                        fwrite(STDERR, "\x1b[90m{$this->verbose_test} \x1b[1;90mSKIP\x1b[m\n");
-                    } else {
-                        fwrite(STDERR, "{$this->verbose_test} SKIP\n");
-                    }
-                }
+                $this->print_verbose_skip();
                 continue;
             }
             if (!$this->verbose) {
@@ -1648,9 +1661,8 @@ class TestRunner {
         $need_fresh = $this->need_fresh;
         $class = new ReflectionClass($test);
         if (!$this->check_test_attributes($class)) {
-            if (!$this->save_stack) {
-                Xassert::fail_with("!", "Cannot run `{$test}` due to requirement failure");
-            }
+            $this->set_verbose_test($test);
+            $this->print_verbose_skip();
             $this->need_fresh = $need_fresh;
             return;
         }
