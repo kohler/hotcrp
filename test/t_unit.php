@@ -2422,6 +2422,38 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0å"), "ab\xEF\xBF\xBDå");
     }
 
+    function test_utf8_invalid_offset() {
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset(""), false);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("abå亜𝄞"), false);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("\xff"), 0);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("abå\xff"), 4);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("ab\xc3"), 2);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("ab\xf0\x9d\x84"), 2);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("a\xc0\xafb"), 1); // overlong
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("a\xed\xa0\x80b"), 1); // surrogate
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset("a\xf4\x90\x80\x80b"), 1); // > U+10FFFF
+
+        // characters spanning a scan chunk boundary
+        $n = UnicodeHelper::INVALID_OFFSET_CHUNK;
+        foreach (["å", "亜", "𝄞"] as $ch) {
+            for ($k = 1; $k < strlen($ch); ++$k) {
+                $s = str_repeat("a", $n - $k) . $ch;
+                xassert_eqq(UnicodeHelper::utf8_invalid_offset("{$s}\xff"), strlen($s));
+                xassert_eqq(UnicodeHelper::utf8_invalid_offset("{$s}b\xff"), strlen($s) + 1);
+                xassert_eqq(UnicodeHelper::utf8_invalid_offset(substr($s, 0, -1)), $n - $k);
+            }
+        }
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset(str_repeat("a", $n) . "\xff"), $n);
+        xassert_eqq(UnicodeHelper::utf8_invalid_offset(str_repeat("a", $n - 1) . "\xffå"), $n - 1);
+
+        // long inputs work, though each repetition of the scanning regex
+        // counts toward `pcre.backtrack_limit` (with or without PCRE JIT)
+        foreach (["a", "å", "亜", "aå"] as $ch) {
+            $s = str_repeat($ch, intdiv(3 << 20, strlen($ch)));
+            xassert_eqq(UnicodeHelper::utf8_invalid_offset("{$s}\xff"), strlen($s));
+        }
+    }
+
     function test_utf8_entities() {
         xassert_eqq(UnicodeHelper::utf8_to_html_entities("<!á&"), "&lt;!&aacute;&amp;");
         xassert_eqq(UnicodeHelper::utf8_to_html_entities("<!á&", ENT_XML1), "&lt;!&#225;&amp;");

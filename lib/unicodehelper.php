@@ -1758,6 +1758,8 @@ class UnicodeClusters {
 }
 
 class UnicodeHelper {
+    const INVALID_OFFSET_CHUNK = 65536;
+
     /** @readonly */
     public static $f_ligature_map = [
         "ﬀ" => "ff", "ﬁ" => "fi", "ﬂ" => "fl", "ﬃ" => "ffi", "ﬄ" => "ffl"
@@ -2325,7 +2327,16 @@ class UnicodeHelper {
         if (preg_match('//u', $str)) {
             return false;
         }
-        preg_match('/\A(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*+\K/', $str, $m, PREG_OFFSET_CAPTURE);
-        return $m[0][1];
+        // Group repetitions can count toward the PCRE backtrack_limit, so scan
+        // in chunks
+        for ($pos = 0; ; ) {
+            $chunk = substr($str, $pos, self::INVALID_OFFSET_CHUNK);
+            preg_match('/\A(?:[\x00-\x7F]++|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*+/', $chunk, $m);
+            $n = strlen($m[0] ?? "");
+            if ($n < strlen($chunk) - 3 || $pos + strlen($chunk) >= strlen($str)) {
+                return $pos + $n;
+            }
+            $pos += $n;
+        }
     }
 }
