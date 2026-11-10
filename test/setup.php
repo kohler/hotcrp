@@ -1377,6 +1377,11 @@ class TestRunner {
 
         $mresult = Dbl::multi_q_raw($dblink, $query);
         $mresult->free_all();
+        if ($dblink->errno && !$rebuild) {
+            // table set changed without a version change
+            $mresult = Dbl::multi_q_raw($dblink, $s0);
+            $mresult->free_all();
+        }
         if ($dblink->errno) {
             error_log("* Error initializing database.\n{$dblink->error}");
             exit(1);

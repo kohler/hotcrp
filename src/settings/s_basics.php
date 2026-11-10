@@ -27,7 +27,7 @@ class Basics_SettingParser extends SettingParser {
             && $sv->conf->contactdb()) {
             $sv->register_cleanup_function("update_shortName", function () use ($sv) {
                 $conf = $sv->conf;
-                Dbl::ql($conf->contactdb(), "update Conferences set shortName=?, longName=? where dbName=?", $conf->short_name, $conf->long_name, $conf->dbname);
+                Dbl::ql($conf->contactdb(), "update Conferences set shortName=?, longName=? where confuid=?", $conf->short_name, $conf->long_name, $conf->cdb_confuid());
             });
         }
         return true;

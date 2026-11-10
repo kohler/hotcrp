@@ -452,6 +452,8 @@ class Cdb_Tester {
         xassert_eqq($rrow->contactId, $user_cengiz->contactId);
 
         // current user is logged in as both Cengiz and Sophia
+        $rev_open = $this->conf->setting("rev_open");
+        $this->conf->save_refresh_setting("rev_open", 1);
         $qsession = new MemoryQsession("dfnoafndwqf", ["us" => ["cengiz@isi.edu", "sophia@dros.nl"]]);
 
         // current user cannot edit Cengiz's review for some random user
@@ -467,6 +469,7 @@ class Cdb_Tester {
         $qreq = (new Qrequest("POST", ["p" => "3", "r" => "{$rrid}", "email" => "sophia@dros.nl"]))
             ->set_qsession($qsession);
         $result = RequestReview_API::claimreview($user_cengiz, $qreq, $paper3);
+        $this->conf->save_refresh_setting("rev_open", $rev_open);
         xassert_eqq($result->content["ok"], true);
         $user_sophia = $this->conf->checked_user_by_email("sophia@dros.nl");
         xassert(!!$user_sophia);
@@ -1135,5 +1138,22 @@ class Cdb_Tester {
         xassert(!!$ca->find($locala->token));
 
         $u->modify_data(function ($u) { $u->set_data("alerts", null); });
+    }
+
+    function test_cdb_user_sensitive_search_fails() {
+        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Sen', lastName='Sitive', email='sensitive@cdbonly.edu', password=''");
+        Dbl::free($result);
+        xassert(!maybe_user("sensitive@cdbonly.edu"));
+        $u = $this->conf->cdb_user_by_email("sensitive@cdbonly.edu");
+        xassert($u->cdb_confid !== 0);
+
+        $cc = $u->contact_counter();
+        xassert($cc->is_cdb);
+        xassert(!$cc->sensitive_search_account());
+        xassert_eqq(Dbl::fetch_ivalue($this->cdb, "select count(*) from ContactCounter where contactId=?", $u->contactDbId), 0);
+
+        // an imprecise search falls back to precise SQL without error
+        $u->invalidate_contact_counter();
+        xassert_eqq((new PaperSearch($u, "re:varghese@ccrc.wustl.edu"))->paper_ids(), []);
     }
 }

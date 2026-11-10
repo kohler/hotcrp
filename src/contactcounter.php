@@ -75,6 +75,11 @@ class ContactCounter {
         } else {
             $this->is_loaded = false;
         }
+        // sensitive searches are accounted per site; users without a
+        // local account always fall back
+        if ($is_cdb) {
+            $this->_sensitive_search = false;
+        }
     }
 
     /** @param bool $is_cdb
@@ -124,8 +129,7 @@ class ContactCounter {
         } else {
             $this->apiRefreshAmount2 = $this->conf->opt("apiRefreshAmount2") ?? 250;
         }
-        // CDB lacks these
-        if (isset($x->sensitiveSearchCount)) {
+        if (!$this->is_cdb) {
             $this->sensitiveSearchCount = (int) $x->sensitiveSearchCount;
             $this->sensitiveSearchFallbackCount = (int) $x->sensitiveSearchFallbackCount;
             $this->sensitiveSearchBase = (int) $x->sensitiveSearchBase;

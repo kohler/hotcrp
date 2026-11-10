@@ -7,29 +7,21 @@ CREATE TABLE `Capability` (
   `capabilityType` int NOT NULL,
   `contactId` int NOT NULL,
   `paperId` int NOT NULL,
-  `timeCreated` bigint NOT NULL,
-  `timeUsed` bigint NOT NULL DEFAULT 0,
-  `useCount` bigint NOT NULL DEFAULT 0,
-  `timeInvalid` bigint NOT NULL DEFAULT 0,
   `timeExpires` bigint NOT NULL,
   `salt` varbinary(255) NOT NULL,
-  `data` varbinary(8192) DEFAULT NULL,
+  `data` varbinary(16384) DEFAULT NULL,
+  `timeCreated` bigint NOT NULL,
+  `timeUsed` bigint NOT NULL DEFAULT 0,
+  `timeInvalid` bigint NOT NULL DEFAULT 0,
+  `outputData` longblob DEFAULT NULL,
+  `inputData` varbinary(16834) DEFAULT NULL,
+  `lookupKey` varbinary(255) DEFAULT NULL,
+  `inputDataOverflow` longblob DEFAULT NULL,
   `dataOverflow` longblob DEFAULT NULL,
+  `useCount` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
-
---
--- Table structure for table `Conferences`
---
-
-DROP TABLE IF EXISTS `Conferences`;
-CREATE TABLE `Conferences` (
-  `confid` int NOT NULL AUTO_INCREMENT,
-  `confuid` varbinary(64) DEFAULT NULL,
-  PRIMARY KEY (`confid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 --
@@ -42,6 +34,24 @@ CREATE TABLE `ConferenceUpdates` (
   `user_update_at` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+--
+-- Table structure for table `Conferences`
+--
+
+DROP TABLE IF EXISTS `Conferences`;
+CREATE TABLE `Conferences` (
+  `confid` int NOT NULL AUTO_INCREMENT,
+  `confuid` varbinary(64) DEFAULT NULL,
+  `dbname` varbinary(64) DEFAULT NULL,
+  `shortName` varchar(256) DEFAULT NULL,
+  `longName` varbinary(512) DEFAULT NULL,
+  `conf_flags` int NOT NULL DEFAULT 0,
+  PRIMARY KEY (`confid`),
+  UNIQUE KEY `confuid` (`confuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 
 --
@@ -60,12 +70,9 @@ CREATE TABLE `ContactCounter` (
   `apiBaseMtime2` bigint NOT NULL DEFAULT 0,
   `apiRefreshWindow2` int DEFAULT NULL,
   `apiRefreshAmount2` int DEFAULT NULL,
-  `sensitiveSearchCount` bigint NOT NULL DEFAULT 0,
-  `sensitiveSearchFallbackCount` bigint NOT NULL DEFAULT 0,
-  `sensitiveSearchBase` bigint NOT NULL DEFAULT 0,
-  `sensitiveSearchBaseMtime` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 
 --
@@ -105,7 +112,8 @@ DROP TABLE IF EXISTS `ContactPrimary`;
 CREATE TABLE `ContactPrimary` (
   `contactId` int NOT NULL,
   `primaryContactId` int NOT NULL,
-  PRIMARY KEY (`contactId`)
+  PRIMARY KEY (`contactId`),
+  KEY `primaryContactId` (`primaryContactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -120,8 +128,42 @@ CREATE TABLE `Roles` (
   `confid` int NOT NULL,
   `roles` tinyint NOT NULL DEFAULT 0,
   `activity_at` bigint NOT NULL DEFAULT 0,
-  PRIMARY KEY (`contactDbId`,`confid`)
+  PRIMARY KEY (`contactDbId`,`confid`),
+  KEY `confid` (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+--
+-- Table structure for table `SessionData`
+--
+
+DROP TABLE IF EXISTS `SessionData`;
+CREATE TABLE `SessionData` (
+  `sid` varbinary(128) NOT NULL,
+  `updated_at` bigint NOT NULL DEFAULT 0,
+  `expires_at` bigint NOT NULL DEFAULT 0,
+  `data` varbinary(32768) DEFAULT NULL,
+  `dataOverflow` longblob DEFAULT NULL,
+  `actionData` varbinary(16384) DEFAULT NULL,
+  PRIMARY KEY (`sid`),
+  KEY `expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+--
+-- Table structure for table `SessionUsers`
+--
+
+DROP TABLE IF EXISTS `SessionUsers`;
+CREATE TABLE `SessionUsers` (
+  `sid` varbinary(128) NOT NULL,
+  `contactDbId` int NOT NULL,
+  PRIMARY KEY (`sid`,`contactDbId`),
+  KEY `contactDbId` (`contactDbId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 
 --
@@ -135,6 +177,7 @@ CREATE TABLE `Settings` (
   `data` varbinary(32767) DEFAULT NULL,
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 
 --
