@@ -345,6 +345,7 @@ class Db_Batch {
         $args = (new Getopt)->long(
             "name:,n: =CONFID Set conference ID",
             "config:,c: =FILE Set configuration file [conf/options.php]",
+            "contactdb,cdb Access the contact database",
             "help,h !",
             "f:,file: =FILE Execute queries in FILE",
             "json,j Output query result as JSON array",
@@ -353,11 +354,12 @@ class Db_Batch {
             "totals Output query result column totals",
             "update-schema Update database schema before running"
         )->description("Access a HotCRP database.
-Usage: php batch/db.php [-n CONFID] [MYSQL-OPTS...]
-       php batch/db.php [-n CONFID] [MYSQL-OPTS...] -f SQLFILE
-       php batch/db.php [-n CONFID] [OPTS...] QUERY...
+Usage: php batch/db.php [-n CONFID] [--cdb] [MYSQL-OPTS...]
+       php batch/db.php [-n CONFID] [--cdb] [MYSQL-OPTS...] -f SQLFILE
+       php batch/db.php [-n CONFID] [--cdb] [OPTS...] QUERY...
 
 With no arguments, run an interactive `mysql` shell on the database.
+With `--cdb`, use the contact database (`contactdbDsn`) instead.
 With `-f`, pipe that file (or stdin, for `-`) to `mysql`.
 Otherwise, join arguments with spaces, execute the result as a single query,
 and print the result as CSV (or JSON).")
@@ -382,6 +384,11 @@ and print the result as CSV (or JSON).")
             throw new CommandLineException("Unknown option `{$args["-"][0]}`");
         }
 
+        $cdb = isset($args["contactdb"]);
+        if ($cdb && isset($args["update-schema"])) {
+            throw new CommandLineException("`--update-schema` incompatible with `--contactdb`");
+        }
+
         // Only connection parameters are needed; skipping Conf lets a broken
         // or empty database still be inspected. Constructing Conf updates
         // the schema as a side effect.
@@ -389,9 +396,13 @@ and print the result as CSV (or JSON).")
             $Opt["__no_main"] = true;
         }
         initialize_conf($args["config"] ?? null, $args["name"] ?? null);
-        $connp = Dbl::parse_connection_params($Opt);
+        if ($cdb) {
+            $connp = Conf::contactdb_connection_params($Opt);
+        } else {
+            $connp = Dbl::parse_connection_params($Opt);
+        }
         if (!$connp || ($connp->name ?? "") === "") {
-            throw new CommandLineException("Database not configured");
+            throw new CommandLineException($cdb ? "Contact database not configured" : "Database not configured");
         }
         return new Db_Batch($connp, $mode, $args);
     }
