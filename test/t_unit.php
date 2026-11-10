@@ -618,6 +618,17 @@ class Unit_Tester {
         xassert_eqq($csv->next_list(), null);
     }
 
+    function test_csv_landmark() {
+        $csv = new CsvParser("0,1,2\n3,4,5\n");
+        $csv->next_list();
+        xassert_eqq($csv->landmark(), "line 1");
+        $csv = new CsvParser("0,1,2\n3,4,5\n");
+        $csv->set_filename("x.csv");
+        $csv->next_list();
+        $csv->next_list();
+        xassert_eqq($csv->landmark(), "x.csv:2");
+    }
+
     function test_csv_next_map() {
         $csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
         xassert_array_eqq($csv->next_map(), ["0", "1", "2"]);

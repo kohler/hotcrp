@@ -371,11 +371,10 @@ class CsvParser implements Iterator {
     /** @return string */
     function landmark() {
         $l = $this->lpos + $this->loff;
-        if (($this->filename ?? "") !== "") {
+        if (($this->filename ?? "") === "") {
             return "line {$l}";
-        } else {
-            return "{$this->filename}:{$l}";
         }
+        return "{$this->filename}:{$l}";
     }
 
     /** @return string */
