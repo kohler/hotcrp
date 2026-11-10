@@ -195,8 +195,7 @@ $Opt["authorSharing"] = 0;
 // SESSIONS AND SECURITY
 //
 //   sessionName     Internal name used to distinguish conference sessions
-//                   running on the same server. NO SPACES ALLOWED. Defaults
-//                   to $Opt["dbName"].
+//                   running on the same server. Defaults to $Opt["dbName"].
 //   sessionSecure   If true, then set cookies and session cookies only on
 //                   secure connections. Defaults to false.
 //   sessionDomain   The domain scope for the session cookie. Defaults to the

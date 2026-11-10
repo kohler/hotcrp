@@ -78,7 +78,6 @@ class AdminHome_Page {
             $ml[] = MessageItem::urgent_note("<5>PHP’s <code>memory_limit</code> setting is smaller than its <code>post_max_size</code> setting. The <code>memory_limit</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file");
         }
         if ((int) ini_get("session.gc_maxlifetime") < ($conf->opt("sessionLifetime") ?? 86400)
-            && !isset($conf->opt["sessionHandler"])
             && !isset($conf->opt["qsessionFunction"])) {
             $ml[] = MessageItem::warning_note("<5>PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get("session.gc_maxlifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . ($conf->opt("sessionLifetime") ?? 86400) . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect");
         }
