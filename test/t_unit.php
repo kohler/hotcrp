@@ -2273,9 +2273,13 @@ class Unit_Tester {
         $e = str_repeat("é", 60);
         [$t] = $this->check_mark_substring("{$e}XYZ{$e}", 120, 123);
         xassert(str_starts_with($t, "…") && str_ends_with($t, "…"));
-        $z = str_repeat("👩‍👩‍👧", 100);
-        [$t] = $this->check_mark_substring("{$z}KEY{$z}", strlen($z), strlen($z) + 3);
-        xassert(str_starts_with($t, "…") && str_ends_with($t, "…"));
+        // PCRE2 before 10.44 joins adjacent emoji into one `\X` cluster,
+        // even without a zero-width joiner (PCRE2 GitHub issue #410)
+        if (version_compare(strtok(PCRE_VERSION, " "), "10.44", ">=")) {
+            $z = str_repeat("👩‍👩‍👧", 100);
+            [$t] = $this->check_mark_substring("{$z}KEY{$z}", strlen($z), strlen($z) + 3);
+            xassert(str_starts_with($t, "…") && str_ends_with($t, "…"));
+        }
         $c = str_repeat("e\u{0301}", 60);
         $this->check_mark_substring("{$c}\r\n{$c}KEY{$c}", 2 * strlen($c) + 2, 2 * strlen($c) + 5);
     }
