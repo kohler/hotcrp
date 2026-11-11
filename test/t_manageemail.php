@@ -282,6 +282,28 @@ class ManageEmail_Tester {
         $this->me_delete_users("mxfer%");
     }
 
+    function test_transferreview_error_capability_reviewer() {
+        $this->me_delete_users("mxfer%");
+        $this->me_make_user("mxfer0@_.com");
+        $this->me_make_user("mxfer1@_.com");
+        $rev = $this->me_make_user("mxfer2@_.com");
+        $chair = $this->conf->checked_user_by_email("chair@_.com");
+        xassert_assign($chair, "action,paper,email\nreview,4,mxfer2@_.com\n");
+
+        // mxfer0 can act on mxfer2's review via capability, but has no reviews of its own
+        list($u, $qreq) = $this->make_qreq_for(["mxfer0@_.com", "mxfer1@_.com"]);
+        $u->set_capability("@ra4", $rev->contactId);
+        xassert($u->is_reviewer());
+        $jr = (new ManageEmail_API($u, $qreq))
+            ->set_dstuser($this->conf->fresh_user_by_email("mxfer1@_.com"))
+            ->set_dry_run(true)
+            ->transferreview();
+        xassert(!$jr->ok());
+        xassert_eqq($jr->get("error_code"), "not_reviewer");
+
+        $this->me_delete_users("mxfer%");
+    }
+
     function test_transferreview_error_both_reviewed() {
         $this->me_delete_users("mxfer%");
         $a = $this->me_make_user("mxfer0@_.com");
@@ -326,6 +348,7 @@ class ManageEmail_Tester {
         $jr = (new ManageEmail_API($src2, $qreq2))->set_dstuser($dst2)->transferreview();
         xassert(!$jr->ok());
         xassert_eqq($jr->get("error_code"), "conflict");
+        xassert_eqq($jr->message_item(0)->message ?? null, "<0>Concurrent update conflict");
         xassert_not_in_eqq("PC status", $jr->get("change_list") ?? []);
         xassert_eqq($this->me_pc_roles("mxfer2@_.com"), 0);
 

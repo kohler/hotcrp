@@ -471,9 +471,13 @@ class ManageEmail_Page {
                 echo "<p>You can’t transfer reviews from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
             }
             $this->conf->feedback_msg($jr->get("message_list") ?? []);
-            if ($jr->ok()) {
+            $change_list = $jr->get("change_list") ?? [];
+            if ($jr->ok() && empty($change_list)) {
+                echo "<p>There is nothing to transfer from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
+                $this->print_step_actions("fail");
+            } else if ($jr->ok()) {
                 echo '<p>Confirming will transfer ',
-                    commajoin($jr->get("change_list")),
+                    commajoin($change_list),
                     " from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
                 $this->print_step_actions();
             } else {

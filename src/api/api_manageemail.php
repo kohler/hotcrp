@@ -256,9 +256,11 @@ class ManageEmail_API extends MessageSet {
             $this->warning_at("email", "<0>No changes");
             return null;
         }
+        // check database, not `is_reviewer()`, which counts review capabilities
         if ($this->user->contactId <= 0
-            || (!$this->user->is_reviewer()
-                && !$this->user->has_outstanding_request())) {
+            || (!$this->user->isPC
+                && !$this->user->has_outstanding_request()
+                && !$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId=? and reviewType>0) from dual", $this->user->contactId))) {
             $this->error_at("u", "<0>{$this->user->email} is not a reviewer on this site");
             return "not_reviewer";
         }
@@ -695,6 +697,13 @@ class ManageEmail_API extends MessageSet {
         } else {
             $jr = new JsonResult($ec ? 400 : 200);
         }
+        if ($ec && !$this->has_message()) {
+            if ($ec === "conflict") {
+                $this->append_item(MessageItem::error("<0>Concurrent update conflict"));
+            } else {
+                $this->append_item(MessageItem::error(null));
+            }
+        }
         foreach ($this->message_list() as $mi) {
             $jr->append_item($mi);
         }
@@ -706,13 +715,6 @@ class ManageEmail_API extends MessageSet {
         }
         if ($ec) {
             $jr->set("error_code", $ec);
-            if (!$this->has_message()) {
-                if ($ec === "conflict") {
-                    $this->append_item(MessageItem::error("<0>Concurrent update conflict"));
-                } else {
-                    $this->append_item(MessageItem::error(null));
-                }
-            }
         }
         foreach ($this->locks ?? [] as $l) {
             $this->conf->qe("select release_lock(?) from dual", $l);
