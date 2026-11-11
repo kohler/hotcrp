@@ -577,4 +577,36 @@ class PaperListView_Tester {
         }
         $this->conf->save_refresh_setting("pldisplay_default", $old === null ? null : 1, $old);
     }
+    function test_search_display_option_title_escaped() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "<b>Bold</b> field",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "checkbox"
+        ]);
+        xassert($sv->execute());
+        $opt = null;
+        foreach ($this->conf->options() as $o) {
+            if ($o->name === "<b>Bold</b> field")
+                $opt = $o;
+        }
+        xassert(!!$opt);
+        xassert((new PaperStatus($this->u_chair))->save_paper_json((object) ["id" => 1, $opt->json_key() => true]));
+
+        $sp = new Search_Page($this->u_chair, new SearchSelection);
+        $sp->pl = new PaperList("pl", new PaperSearch($this->u_chair, ["q" => "1", "t" => "s"]), ["sort" => true], $this->qreq());
+        $sp->pl->qopts["options"] = true;
+        (new ReflectionMethod($sp, "prepare_display_options"))->invoke($sp);
+        $html = join("", array_merge(...array_values($sp->items)));
+        xassert_str_contains($html, "&lt;b&gt;Bold&lt;/b&gt; field");
+        xassert_not_str_contains($html, "<b>Bold</b>");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $opt->id,
+            "sf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
+    }
 }

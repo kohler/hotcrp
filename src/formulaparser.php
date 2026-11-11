@@ -541,7 +541,7 @@ class FormulaParser {
             return $fex;
         }
         if (count($this->formula->lerrors) === $nerrors) {
-            $ff->lerror("<0>Submission field ‘{$opt->name}’ can’t be used in formulas");
+            $ff->lerror("<0>Submission field ‘{$opt->title()}’ can’t be used in formulas");
         }
         return $this->cerror($ff->pos1, $ff->pos2);
     }

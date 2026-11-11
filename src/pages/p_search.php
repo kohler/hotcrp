@@ -97,7 +97,7 @@ class Search_Page {
             if ($ox->search_keyword() !== false
                 && $ox->published(FieldRender::CFSUGGEST)
                 && $pl->has("opt{$ox->id}")) {
-                $this->checkbox_item(10, $ox->search_keyword(), $ox->name);
+                $this->checkbox_item(10, $ox->search_keyword(), $ox->title_html());
             }
         }
 
