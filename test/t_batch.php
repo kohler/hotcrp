@@ -182,6 +182,33 @@ class Batch_Tester {
         $this->delete_batch_users();
     }
 
+    function test_saveusers_disable_enable_all() {
+        $this->delete_batch_users();
+
+        // `--disable` applies to every CSV row, overriding a `disabled` column
+        $fn = $this->write_temp("email,roles,disabled\n"
+            . "csvbatch1@_.com,pc,no\n"
+            . "csvbatch2@_.com,pc,\n");
+        $su = new SaveUsers_Batch($this->conf->root_user(), ["_" => [$fn], "quiet" => true, "disable" => false]);
+        xassert_eqq($su->run(), 0);
+        xassert($this->conf->fresh_user_by_email("csvbatch1@_.com")->is_disabled());
+        xassert($this->conf->fresh_user_by_email("csvbatch2@_.com")->is_disabled());
+
+        // `--enable` applies to every JSON user
+        $su = new SaveUsers_Batch($this->conf->root_user(), [
+            "expression" => [json_encode([
+                ["email" => "csvbatch1@_.com", "disabled" => true],
+                ["email" => "csvbatch2@_.com"]
+            ])],
+            "quiet" => true, "enable" => false
+        ]);
+        xassert_eqq($su->run(), 0);
+        xassert(!$this->conf->fresh_user_by_email("csvbatch1@_.com")->is_disabled());
+        xassert(!$this->conf->fresh_user_by_email("csvbatch2@_.com")->is_disabled());
+
+        $this->delete_batch_users();
+    }
+
     function test_saveusers_csv_requires_email_header() {
         $fn = $this->write_temp("user,affiliation\nJohn Adams <csvbatch3@_.com>,UCB\n");
         $su = new SaveUsers_Batch($this->conf->root_user(), ["_" => [$fn], "quiet" => true]);

@@ -18,6 +18,8 @@ class SaveUsers_Batch {
     public $jexpr = [];
     /** @var bool */
     public $quiet;
+    /** @var ?bool */
+    public $disabled;
     /** @var string */
     public $filename;
     /** @var string */
@@ -34,6 +36,11 @@ class SaveUsers_Batch {
             $this->ustatus->set_save_mode(UserStatus::SAVE_EXISTING);
         }
         $this->quiet = isset($arg["quiet"]);
+        if (isset($arg["disable"])) {
+            $this->disabled = true;
+        } else if (isset($arg["enable"])) {
+            $this->disabled = false;
+        }
 
         if (isset($arg["expression"])) {
             $this->jexpr = $arg["expression"];
@@ -45,11 +52,6 @@ class SaveUsers_Batch {
             }
             if (isset($arg["user-name"])) {
                 $j->name = $arg["user-name"];
-            }
-            if (isset($arg["disable"])) {
-                $j->disabled = true;
-            } else if (isset($arg["enable"])) {
-                $j->disabled = false;
             }
             $this->jexpr[] = json_encode($j);
             $this->filename = "<user>";
@@ -109,6 +111,9 @@ class SaveUsers_Batch {
             $this->ustatus->clear_messages();
             $this->ustatus->start_update();
             $this->ustatus->parse_csv($line);
+            if ($this->disabled !== null) {
+                $this->ustatus->jval->disabled = $this->disabled;
+            }
             if ($this->ustatus->execute_update()) {
                 if ($this->quiet) {
                     // print nothing
@@ -146,8 +151,8 @@ class SaveUsers_Batch {
             "user:,u: =EMAIL Create or modify user EMAIL",
             "roles:,r: Set roles for `-u` user",
             "user-name:,uname: Set name for `-u` user",
-            "disable Disable `-u` user",
-            "enable Enable `-u` user",
+            "disable Disable all specified users",
+            "enable Enable all specified users",
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON",
             "notify,N Send email notifications (off by default)",
             "no-notify,no-email !",
@@ -158,17 +163,18 @@ class SaveUsers_Batch {
          ->description("Save HotCRP users as specified in JSON or CSV.
 Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
        php batch/saveusers.php [OPTION]... -e JSON [-e JSON]...
-       php batch/saveusers.php [OPTION]... -u EMAIL [--roles ROLES]
-                               [--disable | --enable]")
+       php batch/saveusers.php [OPTION]... -u EMAIL [--roles ROLES]")
          ->maxarg(1);
         $arg = $go->parse($argv);
 
         if ((!empty($arg["_"]) || isset($arg["expression"]))
             && isset($arg["user"])) {
             throw new CommandLineException("`-u` and `-e`/`FILE` are mutually exclusive", $go);
-        } else if ((isset($arg["roles"]) || isset($arg["user-name"]) || isset($arg["disable"]) || isset($arg["enable"]))
+        } else if ((isset($arg["roles"]) || isset($arg["user-name"]))
                    && !isset($arg["user"])) {
             throw new CommandLineException("`-u` required for those options", $go);
+        } else if (isset($arg["disable"]) && isset($arg["enable"])) {
+            throw new CommandLineException("`--disable` and `--enable` are mutually exclusive", $go);
         } else if (isset($arg["only-modify"]) && isset($arg["only-create"])) {
             throw new CommandLineException("`--only-create --only-modify` does nothing", $go);
         }
