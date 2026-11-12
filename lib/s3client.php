@@ -579,15 +579,20 @@ class S3Client {
 
     /** @param string $src_skey
      * @param string $dst_skey
+     * @param int $size  size of the object copied, or -1 if unknown
      * @param ?array{content_type:string} $user_data
      * @return S3Result<bool> */
-    function start_copy($src_skey, $dst_skey, $user_data = null) {
+    function start_copy($src_skey, $dst_skey, $size, $user_data = null) {
         $args = ["x-amz-copy-source" => "/{$this->s3_bucket}/{$src_skey}"];
         if ($user_data !== null) {
             $args["x-amz-metadata-directive"] = "REPLACE";
             $args = self::assign_user_data($args, $user_data);
         }
-        return $this->start($dst_skey, "PUT", $args);
+        $s3r = $this->start($dst_skey, "PUT", $args);
+        if ($s3r instanceof CurlS3Result) {
+            $s3r->set_server_size($size);
+        }
+        return $s3r;
     }
 
     /** @param string $skey
@@ -748,10 +753,11 @@ class S3Client {
 
     /** @param string $src_skey
      * @param string $dst_skey
+     * @param int $size  size of the object copied, or -1 if unknown
      * @param ?array{content_type:string} $user_data
      * @return bool */
-    function copy($src_skey, $dst_skey, $user_data = null) {
-        return $this->start_copy($src_skey, $dst_skey, $user_data)->finish();
+    function copy($src_skey, $dst_skey, $size, $user_data = null) {
+        return $this->start_copy($src_skey, $dst_skey, $size, $user_data)->finish();
     }
 
     /** @param string $prefix

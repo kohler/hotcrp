@@ -1131,7 +1131,7 @@ class DocumentInfo implements JsonSerializable {
         if ($extension === ".pdf" || $extension === "") {
             return false;
         }
-        return $s3->copy(substr($s3k, 0, -strlen($extension)), $s3k);
+        return $s3->copy(substr($s3k, 0, -strlen($extension)), $s3k, $this->size);
     }
 
     /** @return string|false */

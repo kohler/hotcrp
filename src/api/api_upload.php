@@ -979,7 +979,7 @@ class Upload_API {
             $doc = DocumentInfo::make_token($this->conf, $this->_cap);
             if ((!($this->_capd->replaced ?? false)
                  && $s3c->head_size($this->dest_s3_key()) === $this->_capd->size)
-                || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
+                || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $this->_capd->size, $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
                 $this->modify_capd(function ($d) {
                     $d->ready = true;
                     $d->status = max($d->status, 5);

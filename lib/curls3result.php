@@ -25,6 +25,8 @@ class CurlS3Result extends S3Result {
     private $_fsize;
     /** @var int */
     private $_xsize = 0;
+    /** @var int */
+    private $_ssize = 0;
     /** @var ?int */
     private $_timeout;
     /** @var int */
@@ -80,6 +82,17 @@ class CurlS3Result extends S3Result {
         return $this;
     }
 
+    /** Set the size of an object S3 processes without transferring, as in a
+     * copy. Such a request moves no data while S3 works, so it gets time
+     * based on the size and no low-speed limit. If $ssize < 0, assumes
+     * 20MiB.
+     * @param int $ssize
+     * @return $this */
+    function set_server_size($ssize) {
+        $this->_ssize = max($ssize < 0 ? 20 << 20 : $ssize, 0);
+        return $this;
+    }
+
     /** @param ?int $to
      * @return $this */
     function set_timeout($to) {
@@ -98,12 +111,36 @@ class CurlS3Result extends S3Result {
     }
 
     /** Return the number of seconds allowed for transferring this request’s
-     * bodies: about 0.5MB/sec for the request body, 4MB/sec for the response.
-     * Might return 0; that's ok, it is incremental on top of other timeout
-     * values.
+     * bodies and for S3’s own processing: about 0.5MB/sec for the request
+     * body, 4MB/sec for the response and for server-side processing. Might
+     * return 0; that's ok, it is incremental on top of other timeout values.
      * @return int */
     private function size_timeout() {
-        return ($this->_fsize >> 19) + ($this->_xsize >> 22);
+        return ($this->_fsize >> 19) + ($this->_xsize >> 22) + ($this->_ssize >> 22);
+    }
+
+    /** Return the timeout scale factor for retry number `$runindex` (≥ 2).
+     * @param int $runindex
+     * @return int */
+    private function retry_factor($runindex) {
+        if (!$this->observed_success_timeout && $runindex > 2) {
+            return 2;
+        }
+        return $runindex;
+    }
+
+    /** Return the timeout in seconds for attempt number `$attempt`, where 1
+     * is the first attempt and 2 the first retry. The default, 0, returns the
+     * default (first-attempt) timeout.
+     * @param int $attempt
+     * @return int */
+    function timeout($attempt = 0) {
+        if ($this->_timeout !== null) {
+            return $this->_timeout;
+        } else if ($attempt <= 1) {
+            return 6 + $this->size_timeout();
+        }
+        return 15 * $this->retry_factor($attempt) + $this->size_timeout();
     }
 
     function prepare() {
@@ -125,24 +162,19 @@ class CurlS3Result extends S3Result {
             $this->curlh = curl_init();
             curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->_hstream);
             curl_setopt($this->curlh, CURLOPT_FILE, $this->_dstream);
-            curl_setopt($this->curlh, CURLOPT_LOW_SPEED_LIMIT, self::LOW_SPEED_LIMIT);
-            curl_setopt($this->curlh, CURLOPT_LOW_SPEED_TIME, self::LOW_SPEED_TIME);
+            if ($this->_ssize === 0) {
+                curl_setopt($this->curlh, CURLOPT_LOW_SPEED_LIMIT, self::LOW_SPEED_LIMIT);
+                curl_setopt($this->curlh, CURLOPT_LOW_SPEED_TIME, self::LOW_SPEED_TIME);
+            }
         }
         ++$this->runindex;
         if ($this->runindex === 1) {
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT,
-                $this->_timeout ?? (6 + $this->size_timeout()));
         } else {
             curl_setopt($this->curlh, CURLOPT_FRESH_CONNECT, true);
-            $tf = $this->runindex;
-            if (!$this->observed_success_timeout && $tf > 2) {
-                $tf = 2;
-            }
-            curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $tf);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT,
-                $this->_timeout ?? (15 * $tf + $this->size_timeout()));
+            curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $this->retry_factor($this->runindex));
         }
+        curl_setopt($this->curlh, CURLOPT_TIMEOUT, $this->timeout($this->runindex));
         list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         curl_setopt($this->curlh, CURLOPT_URL, $this->url);
         // Set curl behavior (e.g. whether to wait for a response body), then

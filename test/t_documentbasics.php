@@ -132,6 +132,31 @@ class DocumentBasics_Tester {
         xassert_eqq(Conf::$blocked_time, $blocked);
     }
 
+    function test_curl_s3_copy_timeout() {
+        if (!function_exists("curl_init")) {
+            return;
+        }
+        $s3 = S3_Tester::make_offline()->set_result_class("CurlS3Result");
+
+        // S3 copies without sending data, so a copy’s timeout scales with
+        // the object’s size
+        $s3r = $s3->start_copy("src.pdf", "dst.pdf", 444 << 20);
+        assert($s3r instanceof CurlS3Result);
+        xassert_ge($s3r->timeout(), 100);
+        xassert_ge($s3r->timeout(2), 100);
+
+        $s3r = $s3->start_copy("src.pdf", "dst.pdf", 1000);
+        assert($s3r instanceof CurlS3Result);
+        xassert_eqq($s3r->timeout(), 6);
+
+        // unknown size gets more than the minimum
+        $s3r = $s3->start_copy("src.pdf", "dst.pdf", -1);
+        assert($s3r instanceof CurlS3Result);
+        xassert_gt($s3r->timeout(), 6);
+
+        $s3->set_result_class("Offline_S3Result");
+    }
+
     /** Sign the AWS SigV4 documentation example with $key and $secret.
      * @param string $key
      * @param string $secret
