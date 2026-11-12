@@ -33,24 +33,24 @@ class SubFieldCondition_SettingParser extends SettingParser {
         if ($opres === "none" || $npres === "none" || $osp->sfs->option_id <= 0) {
             $sel["none"] = "Hidden";
         }
+        $sel["custom"] = "Custom search";
+        $npres = isset($sel[$npres]) ? $npres : "custom";
         $sv->print_group_open("sf/{$osp->ctr}/condition", ["horizontal" => true]);
         echo $sv->label("sf/{$osp->ctr}/presence", "Condition", ["no_control_class" => true]),
             '<div class="entry">',
             $sv->feedback_at("sf/{$osp->ctr}/condition");
-        if (isset($sel[$npres])) {
-            $klass = null;
-            if ($osp->sfs->option_id === PaperOption::ABSTRACTID
-                || $osp->sfs->option_id === DTYPE_SUBMISSION
-                || $osp->sfs->option_id === DTYPE_FINAL) {
-                $klass = "uich js-settings-sf-wizard";
-            }
-            echo Ht::select("sf/{$osp->ctr}/presence", $sel, $npres, ["class" => $klass, "data-default-value" => $opres]);
-        } else {
-            echo "Custom search ‘", htmlspecialchars($osp->sfs->exists_if), "’";
-            if (($jpath = $sv->si("sf/{$osp->ctr}/condition")->json_path())) {
-                echo MessageSet::feedback_html([MessageItem::marked_note("<5>See " . $sv->conf->hotlink("advanced settings", "settings", ["group" => "json", "#" => "path=" . urlencode($jpath)]))]);
-            }
+        $klass = "uich js-settings-sf-condition-presence";
+        if ($osp->sfs->option_id === PaperOption::ABSTRACTID
+            || $osp->sfs->option_id === DTYPE_SUBMISSION
+            || $osp->sfs->option_id === DTYPE_FINAL) {
+            $klass .= " js-settings-sf-wizard";
         }
+        echo Ht::select("sf/{$osp->ctr}/presence", $sel, $npres,
+            ["class" => $klass, "data-default-value" => isset($sel[$opres]) ? $opres : "custom"]);
+        echo '<div class="settings-sf-custom-condition mt-2', $npres === "custom" ? '' : ' hidden', '">';
+        $sv->print_entry("sf/{$osp->ctr}/condition", ["class" => "w-entry-text need-tooltip",
+            "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"]);
+        echo '</div>';
         echo Ht::hidden("has_sf/{$osp->ctr}/condition", 1);
         $sv->print_group_close(["horizontal" => true]);
     }

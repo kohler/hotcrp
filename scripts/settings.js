@@ -359,7 +359,9 @@ function add_dialog() {
             ++next;
         }
         h = h.replace(/\/\$/g, "/" + next);
-        $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
+        const new_sf = $(h).removeClass("hidden").appendTo("#settings-sform");
+        new_sf.awaken();
+        sf_condition_builder(new_sf[0]);
         $$("sf/" + next + "/name").focus();
         sf_order();
         $pu.close();
@@ -392,6 +394,159 @@ function add_dialog() {
 
 handle_ui.on("js-settings-sf-add", add_dialog);
 
+// A simple condition builder for choice-valued submission fields. The result
+// is an ordinary HotCRP search expression; server-side validation remains
+// authoritative.
+function sf_condition_choices(sf) {
+    const result = [], form = sf.closest("form");
+    for (const other of form.querySelectorAll(".settings-sf")) {
+        if (other === sf || hasClass(other, "deleted"))
+            continue;
+        const prefix = other.id + "/",
+            id = form.elements[prefix + "id"],
+            name = form.elements[prefix + "name"],
+            type = form.elements[prefix + "type"];
+        if (!id || !/^\d+$/.test(id.value) || +id.value <= 0
+            || !name || !name.value.trim() || !type
+            || !/^(?:radio|dropdown|checkbox|checkboxes)$/.test(type.value))
+            continue;
+        result.push({id: id.value, name: name.value.trim(), type: type.value,
+            prefix: prefix});
+    }
+    return result;
+}
+function sf_condition_builder(sf) {
+    const form = sf.closest("form"), prefix = sf.id + "/",
+        presence = form && form.elements[prefix + "presence"],
+        custom = presence && presence.closest(".entry").querySelector(".settings-sf-custom-condition");
+    if (!custom || sf.dataset.hasChoiceBuilder)
+        return;
+    sf.dataset.hasChoiceBuilder = "1";
+    const wrapper = $e("div", "mb-2"),
+        label = $e("div", "f-d", "Show this field when"),
+        field = $e("select", {"class": "uich"}),
+        choice = $e("select", {"class": "uich"}),
+        apply = $e("button", {type: "button", "class": "btn btn-sm"}, "Use condition"),
+        help = $e("p", "f-d", "Choose another field and a value, or enter a custom search expression below.");
+    let sources = [];
+    function update_choices() {
+        choice.replaceChildren(make_option_element("", "Select a value…"));
+        const source = sources.find(x => x.id === field.value);
+        if (!source)
+            return;
+        if (source.type === "checkbox") {
+            choice.add(make_option_element("any", "Checked"));
+            choice.add(make_option_element("none", "Unchecked"));
+            return;
+        }
+        // Choices are edited as one newline-separated textarea.
+        const values_text = form.elements[source.prefix + "values_text"];
+        if (!values_text)
+            return;
+        for (const line of values_text.value.split(/\r?\n/)) {
+            const name = line.trim();
+            if (name)
+                choice.add(make_option_element(name, name));
+        }
+    }
+    function update_fields() {
+        const prev = field.value;
+        sources = sf_condition_choices(sf);
+        field.replaceChildren(make_option_element("", "Select a field…"));
+        for (const s of sources)
+            field.add(make_option_element(s.id, s.name));
+        field.value = sources.some(s => s.id === prev) ? prev : "";
+        update_choices();
+    }
+    // Re-read the available fields whenever the editor is opened: fields may
+    // have been added, removed, or renamed since this builder was initialized.
+    presence.addEventListener("change", function () {
+        if (presence.value === "custom")
+            update_fields();
+    });
+    field.addEventListener("focus", update_fields);
+    field.addEventListener("change", update_choices);
+    apply.addEventListener("click", function () {
+        if (!field.value || !choice.value)
+            return;
+        const source = sources.find(x => x.id === field.value),
+            condition = form.elements[prefix + "condition"];
+        if (!source || !condition)
+            return;
+        const keyword = "opt:" + source.name.replace(/\s+/g, "_");
+        const value_test = source.type === "checkbox"
+            ? keyword + ":" + choice.value
+            : keyword + "=" + JSON.stringify(choice.value);
+        const source_presence = form.elements[source.prefix + "presence"];
+        let parent_condition = "";
+        if (source_presence && source_presence.value === "custom") {
+            const parent_input = form.elements[source.prefix + "condition"];
+            parent_condition = parent_input && parent_input.value.trim();
+            if (!parent_condition) {
+                help.textContent = "The controlling field has an empty custom condition.";
+                return;
+            }
+        } else if (!source_presence || source_presence.value !== "all") {
+            // Phase-specific/hidden presence cannot be translated into a
+            // submission-field search expression by this simple builder.
+            help.textContent = "The controlling field must be always present or have a custom search condition.";
+            return;
+        }
+        // Reject a dependency on this field, including through intermediate
+        // fields with custom conditions. Otherwise the generated expression
+        // could create a circular dependency.
+        const target_name = form.elements[prefix + "name"].value.trim().replace(/\s+/g, "_").toLowerCase();
+        const all_fields = Array.from(form.querySelectorAll(".settings-sf"));
+        const visited = new Set();
+        function refers_to_target(expr) {
+            const references = /\bopt:([A-Za-z0-9_]+)(?=[:=<>!\s)]|$)/gi;
+            let match;
+            while ((match = references.exec(expr)) !== null) {
+                const referenced_name = match[1].toLowerCase();
+                if (referenced_name === target_name)
+                    return true;
+                const referenced_field = all_fields.find(other => {
+                    const name = form.elements[other.id + "/name"];
+                    return name && name.value.trim().replace(/\s+/g, "_").toLowerCase() === referenced_name;
+                });
+                if (referenced_field && !visited.has(referenced_field.id)) {
+                    visited.add(referenced_field.id);
+                    const pfx = referenced_field.id + "/";
+                    const p = form.elements[pfx + "presence"], c = form.elements[pfx + "condition"];
+                    if (p && p.value === "custom" && c && refers_to_target(c.value))
+                        return true;
+                }
+            }
+            return false;
+        }
+        if (parent_condition && refers_to_target(parent_condition)) {
+            help.textContent = "Cannot create a circular field condition.";
+            return;
+        }
+        condition.value = parent_condition
+            ? "(" + parent_condition + ") AND (" + value_test + ")"
+            : value_test;
+        help.textContent = "Choose another field and a value, or enter a custom search expression below.";
+        condition.dispatchEvent(new Event("change", {bubbles: true}));
+        check_form_differs(form);
+    });
+    wrapper.append(label, field, " is ", choice, " ", apply, help);
+    custom.prepend(wrapper);
+    if (presence.value === "custom")
+        update_fields();
+}
+$(document).on("hotcrpsettingssf", ".settings-sf", function () {
+    sf_condition_builder(this);
+});
+
+$(function () {
+    document.querySelectorAll(".settings-sf").forEach(sf_condition_builder);
+});
+handle_ui.on("change.js-settings-sf-condition-presence", function () {
+    const c = this.closest(".entry").querySelector(".settings-sf-custom-condition");
+    if (c)
+        toggleClass(c, "hidden", this.value !== "custom");
+});
 handle_ui.on("js-settings-sf-checkbox-required", function () {
     const fl = this.closest(".entry").lastChild,
         verb = fl.querySelector(".verb");
