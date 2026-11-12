@@ -100,7 +100,7 @@
     {
         "name": "submissions/updates", "order": 30,
         "print_function": "Submissions_SettingParser::print_updates",
-        "settings": ["submission_freeze"]
+        "settings": ["submission_freeze", "submission_withdrawal_condition"]
     },
     {
         "name": "submissions/classes", "order": 35,

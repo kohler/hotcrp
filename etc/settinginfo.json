@@ -1136,6 +1136,14 @@
         "tags": "submission"
     },
     {
+        "name": "submission_withdrawal_condition", "storage": "dat.sub_withdraw",
+        "title": "Author withdrawal condition",
+        "type": "string", "subtype": "search", "size": 30,
+        "placeholder": "(Default)",
+        "parser_class": "Submissions_SettingParser",
+        "tags": "submission"
+    },
+    {
         "name": "submission_grace", "storage": "sub_grace",
         "title": "Submission grace period",
         "type": "grace",
