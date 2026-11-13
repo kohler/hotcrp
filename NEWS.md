@@ -23,6 +23,7 @@ HotCRP NEWS
     * Submission JSON can change tags and submission classes, using the
       same `tags`, `add_tags`, `remove_tags`, `change_tags`, and `reset_tags`
       keys as user JSON.
+    * Author withdrawal can be restricted by a paper search condition, including submission-class deadlines.
 
 ## Version 3.5 – 27.Oct.2026
 

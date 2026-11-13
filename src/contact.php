@@ -4563,6 +4563,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
         $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
         return $rights->allow_author_edit()
+            && $this->conf->test_author_withdrawal_condition($prow)
             && ($sub_withdraw !== -1
                 || $prow->timeSubmitted == 0)
             && ($sub_withdraw !== 0
@@ -4570,6 +4571,20 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             && ($sub_withdraw === 2
                 || $prow->outcome_sign === 0
                 || ($display_only && !$prow->can_author_view_decision()));
+    }
+
+    /** @return bool */
+    function withdrawal_cutoff_blocks_paper(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
+        return !$rights->can_manage()
+            && $prow->timeWithdrawn <= 0
+            && !$this->conf->test_author_withdrawal_condition($prow)
+            && $rights->allow_author_edit()
+            && ($sub_withdraw !== -1 || $prow->timeSubmitted == 0)
+            && ($sub_withdraw !== 0 || !$prow->has_author_seen_any_review())
+            && ($sub_withdraw === 2 || $prow->outcome_sign === 0
+                || !$prow->can_author_view_decision());
     }
 
     /** @return ?FailureReason */
@@ -4581,12 +4596,27 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "");
         if ($rights->allow_author_edit()
             && !$rights->can_manage()) {
-            $whyNot["permission"] = "paper:withdraw";
-            $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
-            if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
-                $whyNot["reviewsSeen"] = true;
-            } else if ($prow->outcome_sign !== 0) {
-                $whyNot["decided"] = true;
+            if (!$this->conf->test_author_withdrawal_condition($prow)) {
+                $q = strtolower(trim($this->conf->setting_data("sub_withdraw") ?? ""));
+                $deadline = [
+                    "before:register" => "sub_reg",
+                    "before:submit" => "sub_sub",
+                    "before:resubmit" => "sub_resub"
+                ][$q] ?? null;
+                if ($deadline !== null) {
+                    $whyNot["deadline"] = $deadline;
+                    $whyNot["sclass"] = $prow->submission_round()->tag;
+                } else {
+                    $whyNot["permission"] = "paper:withdraw";
+                }
+            } else {
+                $whyNot["permission"] = "paper:withdraw";
+                $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
+                if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
+                    $whyNot["reviewsSeen"] = true;
+                } else if ($prow->outcome_sign !== 0) {
+                    $whyNot["decided"] = true;
+                }
             }
         }
         return $whyNot;
