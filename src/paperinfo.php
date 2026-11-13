@@ -1973,12 +1973,16 @@ class PaperInfo {
     }
 
     /** @param int|Contact $contact
+     * @param bool $require_accepted
      * @return bool */
-    function has_active_reviewer($contact) {
+    function has_active_reviewer($contact, $require_accepted = false) {
         $ci = $this->optional_contact_info($contact);
         return $ci
             && $ci->reviewType > 0
-            && $ci->review_status >= PaperContactInfo::CIRS_UNSUBMITTED;
+            && $ci->review_status >= PaperContactInfo::CIRS_UNSUBMITTED
+            && (!$require_accepted
+                || $ci->reviewType >= REVIEW_PC
+                || ($ci->rflags & ReviewInfo::RFM_NONEMPTY) !== 0);
     }
 
 

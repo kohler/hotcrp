@@ -103,6 +103,33 @@ class FollowAPI_Tester {
         xassert(in_array($this->u_varghese->email, $emails, true));
     }
 
+    function test_unaccepted_external_reviewer_does_not_follow() {
+        $as = new AssignmentSet($this->u_chair);
+        $as->parse("paper,action,user\n{$this->pid},external,extrev-follow@_.com");
+        xassert($as->execute());
+        $u_ext = $this->conf->checked_user_by_email("extrev-follow@_.com");
+        $prow = $this->conf->checked_paper_by_id($this->pid);
+        $rrow = $prow->review_by_user($u_ext);
+        xassert_eqq($rrow->reviewType, REVIEW_EXTERNAL);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_EMPTY);
+
+        // a requested external reviewer can see submission-thread comments,
+        // but does not follow them until accepting the review
+        xassert(!in_array($u_ext->email, $this->follower_emails(CommentInfo::CT_TOPIC_PAPER), true));
+        xassert(!in_array($u_ext->email, $this->follower_emails(CommentInfo::CT_TOPIC_REVIEW), true));
+        xassert(!$u_ext->following_reviews($prow, CommentInfo::CT_TOPIC_PAPER));
+        xassert(!$u_ext->following_reviews($prow, CommentInfo::CTM_TOPIC));
+        // but does hear about paper-level events, such as withdrawal
+        xassert($u_ext->following_reviews($prow, -1));
+
+        $jr = call_api("=acceptreview", $u_ext, ["r" => $rrow->reviewId], $prow);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($this->pid);
+        xassert_eqq($prow->review_by_user($u_ext)->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
+        xassert(in_array($u_ext->email, $this->follower_emails(CommentInfo::CT_TOPIC_PAPER), true));
+        xassert(in_array($u_ext->email, $this->follower_emails(CommentInfo::CT_TOPIC_REVIEW), true));
+    }
+
     function test_clearfollow_any_does_not_leak_followers() {
         // Confidentiality: an author who cannot manage the paper must not be
         // able to learn, from `clearfollow`/`any` error messages, which other

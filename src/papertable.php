@@ -1956,7 +1956,7 @@ class PaperTable {
 
         $this->_ps_start("follow");
         echo $this->papt('<label><span class="checkc">'
-                . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, -1), ["class" => "uich js-follow-change"])
+                . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, CommentInfo::CTM_TOPIC), ["class" => "uich js-follow-change"])
                 . '</span>Email notification</label>',
                 ["type" => "ps", "fnclass" => "checki"]),
             "<div class=\"pshint\">Select to receive email on updates to reviews and comments.</div></div>\n";

@@ -6781,7 +6781,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     // following / email notifications
 
     /** @param int $topic
-     * @return int */
+     * @return int
+     *
+     * `$topic` is a comment type, or -1 for paper-level events that concern
+     * every reviewer with a live assignment (including external reviewers who
+     * have not yet accepted). */
     function review_watch(PaperInfo $prow, $topic) {
         // use explicit watch if set
         $w = $prow->watch($this);
@@ -6796,9 +6800,10 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $w &= ~self::WATCH_REVIEW_MANAGED;
         }
         // if not author, reviewer, or commenter, remove REVIEW bit
+        // (external reviewers must first accept their review, unless $topic < 0)
         if (($w & self::WATCH_REVIEW) !== 0
             && !$prow->has_author($this)
-            && !$prow->has_active_reviewer($this)
+            && !$prow->has_active_reviewer($this, $topic >= 0)
             && !$prow->has_commenter($this)) {
             $w &= ~self::WATCH_REVIEW;
         }

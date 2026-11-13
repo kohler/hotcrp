@@ -292,7 +292,7 @@ class Status_Assigner extends Assigner {
         // email reviewers
         foreach ($prow->reviewers_as_display() as $minic) {
             if (!in_array($minic->contactId, $sent, true)
-                && $minic->following_reviews($prow, CommentInfo::CT_TOPIC_PAPER)
+                && $minic->following_reviews($prow, -1)
                 && ($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", $rest))) {
                 if (!$minic->can_view_review_identity($prow, null)) {
                     $p->unique_preparation = true;
