@@ -665,6 +665,69 @@ class Comments_Tester {
         MailChecker::clear();
     }
 
+    function test_author_comment_blindness() {
+        $old = [];
+        foreach (["sub_blind", "au_seedec"] as $s) {
+            $old[$s] = $this->conf->setting($s);
+        }
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $old_outcome = $paper1->outcome;
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,none\n");
+        $this->conf->save_refresh_setting("sub_blind", Conf::BLIND_ALWAYS);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($paper1->blind);
+
+        // stored type: the submission blindness setting overrides a stale
+        // `Paper.blind`
+        $cinfo = new CommentInfo($paper1);
+        $auct = CommentInfo::CT_BYAUTHOR | CommentInfo::CTVIS_AUTHOR | CommentInfo::CT_TOPIC_PAPER;
+        xassert_eqq($cinfo->fix_type($auct) & CommentInfo::CT_BLIND, CommentInfo::CT_BLIND);
+        xassert_eqq($cinfo->fix_type(CommentInfo::CT_RESPONSE) & CommentInfo::CT_BLIND, CommentInfo::CT_BLIND);
+        $this->conf->save_refresh_setting("sub_blind", Conf::BLIND_NEVER);
+        xassert($paper1->blind);
+        xassert_eqq($cinfo->fix_type($auct) & CommentInfo::CT_BLIND, 0);
+        xassert_eqq($cinfo->fix_type(CommentInfo::CT_RESPONSE) & CommentInfo::CT_BLIND, 0);
+        $this->conf->save_refresh_setting("sub_blind", Conf::BLIND_UNTILREVIEW);
+        xassert_eqq($cinfo->fix_type($auct) & CommentInfo::CT_BLIND, CommentInfo::CT_BLIND);
+
+        // `author_pseudonymous`: some viewer of the comment sees “Author”
+        $this->conf->qe("insert into PaperComment set paperId=1, contactId=?, timeModified=?, comment=?, commentType=?, commentRound=0, replyTo=0",
+            $this->u_floyd->contactId, Conf::$now, "An author comment",
+            $auct | CommentInfo::CT_BLIND);
+        $cid = $this->conf->dblink->insert_id;
+        $pseudonymous = function ($viewer) use ($cid) {
+            $prow = $this->conf->checked_paper_by_id(1);
+            $cmt = $prow->comment_by_id($cid);
+            xassert($viewer->can_view_comment_identity($prow, $cmt));
+            $cj = $cmt->unparse_json($viewer);
+            xassert_eqq($cj->author ?? null, "Sally Floyd");
+            return $cj->author_pseudonymous ?? false;
+        };
+
+        // blind until review: mgbaker has completed a review and sees Sally
+        // Floyd, but reviewers with incomplete reviews see “Author”
+        $this->ensure_paper1_review($this->conf->checked_paper_by_id(1));
+        xassert($pseudonymous($this->u_mgbaker));
+        // decision visible to authors: reviewers who cannot see the decision
+        // see “Author”
+        $this->conf->save_refresh_setting("sub_blind", Conf::BLIND_ALWAYS);
+        $this->conf->save_refresh_setting("au_seedec", 1);
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,accept\n");
+        xassert_eqq($this->conf->checked_paper_by_id(1)->blindness_state(false), 0);
+        xassert($pseudonymous($this->u_chair));
+        // not blind
+        $this->conf->save_refresh_setting("sub_blind", Conf::BLIND_NEVER);
+        xassert(!$pseudonymous($this->u_chair));
+        xassert(!$pseudonymous($this->u_mgbaker));
+
+        // cleanup
+        $this->conf->qe("delete from PaperComment where commentId=?", $cid);
+        $decname = $old_outcome === 0 ? "none" : $this->conf->decision_set()->get($old_outcome)->name;
+        xassert_assign($this->u_chair, "paper,action,decision\n1,decision,{$decname}\n");
+        $this->conf->save_refresh_setting("sub_blind", $old["sub_blind"]);
+        $this->conf->save_refresh_setting("au_seedec", $old["au_seedec"]);
+    }
+
     function test_comment_tags() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Tagged comment", "visibility" => "rev", "tags" => "hot fixme"], $paper1);

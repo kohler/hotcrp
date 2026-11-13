@@ -62,31 +62,33 @@ class CommentInfo {
     /** @var ?DocumentInfoSet base attachment set; non-null iff an attachment change is staged */
     private $_old_docs;
 
-    const CT_DRAFT = 0x01;
-    const CT_BLIND = 0x02;
-    const CT_RESPONSE = 0x04;
-    const CT_BYAUTHOR = 0x08;
-    const CTM_BYAUTHOR = 0x0C;
-    const CT_BYSHEPHERD = 0x10;
-    const CT_HASDOC = 0x20;
-    const CT_TOPIC_PAPER = 0x40;
-    const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
-    const CTM_TOPIC = 0x2C0;
-    const CTM_TOPIC_NONREVIEW = 0x240;
-    const CT_BYADMINISTRATOR = 0x100;
-    const CT_TOPIC_DECISION = 0x200;
-    const CT_BYMETAREVIEWER = 0x400;
+    const CT_DRAFT = 0x01;          // comment is draft (only set on responses)
+    const CT_BLIND = 0x02;          // comment intends to be blind
+    const CT_RESPONSE = 0x04;       // comment is a response
+    const CT_BYAUTHOR = 0x08;       // comment is by author (but not response)
+    const CT_BYSHEPHERD = 0x10;     // comment was made by assigned shepherd
+    const CT_HASDOC = 0x20;         // comment has at least one attachment
+    const CT_TOPIC_PAPER = 0x40;    // comment topic is paper
+    const CT_TOPIC_REVIEW = 0x80;   // comment topic is paper [NON DATABASE]
+    const CT_BYADMINISTRATOR = 0x100; // comment was made by administrator
+    const CT_TOPIC_DECISION = 0x200; // comment topic is decision
+    const CT_BYMETAREVIEWER = 0x400; // comment was made by metareviewer
     const CT_BOT = 0x800;           // this version was written by a bot
     const CT_BOT_PREVIOUS = 0x1000; // a previous version was written by a bot
-    const CTM_BOT = 0x1800;         // CT_BT | CT_BOT_PREVIOUS
-    const CT_FROZEN = 0x4000;
-    const CT_SUBMIT = 0x8000; // only used internally, not in database
+    const CT_FROZEN = 0x4000;       // comment is frozen (response on deleted round)
+    const CT_SUBMIT = 0x8000;       // only used internally, not in database
+
     const CTVIS_ADMINONLY = 0x00000;
     const CTVIS_PCONLY = 0x10000;
     const CTVIS_REVIEWER = 0x20000;
     const CTVIS_AUTHOR = 0x30000;
-    const CTM_VIS = 0xFFF0000; // no higher bits supported
-    const CT_DBMASK = 0xFFF7F7F;
+    const CTM_VIS = 0xFFF0000;      // NB: no higher bits supported
+
+    const CTM_BYAUTHOR = 0x0C;      // = CT_RESPONSE | CT_BYAUTHOR
+    const CTM_TOPIC = 0x2C0;        // mask of comment topics
+    const CTM_TOPIC_NONREVIEW = 0x240; // ... except CT_TOPIC_REVIEW
+    const CTM_BOT = 0x1800;         // = CT_BOT | CT_BOT_PREVIOUS
+    const CT_DBMASK = 0xFFF7F7F;    // CT bits stored in database
 
     /** @deprecated */
     const CT_BYAUTHOR_MASK = 0x0C;
@@ -206,18 +208,21 @@ class CommentInfo {
     /** @param int $ctype
      * @return int */
     function fix_type($ctype) {
-        if (($ctype & self::CT_RESPONSE) !== 0) {
-            return self::CT_RESPONSE
-                | self::CTVIS_AUTHOR
-                | ($this->prow->blind ? self::CT_BLIND : 0)
-                | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT | self::CTM_BOT));
-        } else if (($ctype & self::CTM_BYAUTHOR) !== 0) {
+        if (($ctype & self::CTM_BYAUTHOR) !== 0) {
+            // author-written comments are blind if the submission is
+            $blind = $this->prow->blindness_state(false) >= 0 ? self::CT_BLIND : 0;
+            if (($ctype & self::CT_RESPONSE) !== 0) {
+                return self::CT_RESPONSE
+                    | self::CTVIS_AUTHOR
+                    | $blind
+                    | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT | self::CTM_BOT));
+            }
             if (($ctype & self::CTM_VIS) !== self::CTVIS_ADMINONLY
                 && ($ctype & self::CTM_VIS) !== self::CTVIS_AUTHOR) {
                 $ctype = ($ctype & ~self::CTM_VIS) | self::CTVIS_AUTHOR;
             }
             return self::CT_BYAUTHOR
-                | ($this->prow->blind ? self::CT_BLIND : 0)
+                | $blind
                 | ($ctype & (self::CTM_TOPIC | self::CTM_VIS | self::CT_SUBMIT | self::CTM_BOT));
         }
         $rb = $this->conf->review_blindness();
@@ -615,7 +620,8 @@ class CommentInfo {
         if (($this->commentType & self::CTM_VIS) < self::CTVIS_PCONLY) {
             return false;
         } else if (($this->commentType & self::CTM_BYAUTHOR) !== 0) {
-            return $this->prow->blindness_state(true) > 0;
+            // blind to at least some potential viewers
+            return $this->prow->blindness_state(false) >= 0;
         } else if (($this->commentType & self::CTM_VIS) === self::CTVIS_AUTHOR) {
             return !$this->prow->author_user()->can_view_comment_identity($this->prow, $this);
         }
