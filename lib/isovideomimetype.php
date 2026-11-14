@@ -208,18 +208,19 @@ class ISOVideoMimetype implements JsonSerializable {
         if ($version === 0) {
             $timescale = Mimetype::be32at($data->s, $pos + 12 - $data->pos);
             $duration = Mimetype::be32at($data->s, $pos + 16 - $data->pos);
-            $mask = 0xFFFFFFFF;
+            $unknown = 0xFFFFFFFF;
         } else if ($version === 1) {
             $timescale = Mimetype::be32at($data->s, $pos + 20 - $data->pos);
+            // signed: all ones (unknown) reads as -1
             $duration = Mimetype::be64at($data->s, $pos + 24 - $data->pos);
-            $mask = 0xFFFFFFFFFFFFFFFF;
+            $unknown = -1;
         } else {
             return;
         }
         if ($timescale > 0) {
             $this->moov_timescale = $timescale;
         }
-        if (($duration & $mask) !== $mask) {
+        if ($duration !== $unknown && $duration >= 0) {
             $this->moov_duration = $duration;
         }
     }
@@ -259,16 +260,17 @@ class ISOVideoMimetype implements JsonSerializable {
         $track->flags = $vflags;
         if (($vflags & 0xFF000000) === 0) {
             $duration = Mimetype::be32at($data->s, $pos + 20 - $data->pos);
-            $mask = 0xFFFFFFFF;
+            $unknown = 0xFFFFFFFF;
             $xoff = 24;
         } else if (($vflags & 0xFF000000) === 0x01000000) {
+            // signed: all ones (unknown) reads as -1
             $duration = Mimetype::be64at($data->s, $pos + 28 - $data->pos);
-            $mask = 0xFFFFFFFFFFFFFFFF;
+            $unknown = -1;
             $xoff = 36;
         } else {
             return;
         }
-        if (($duration & $mask) !== $mask) {
+        if ($duration !== $unknown && $duration >= 0) {
             $track->duration = $duration;
         } else {
             $duration = null;
@@ -365,17 +367,17 @@ class ISOVideoMimetype implements JsonSerializable {
         }
 
         // parse max_duration, etc.
-        $max_duration = 0;
-        if (($this->flags & self::F_MVEX) !== 0) {
-            $max_duration = null;
-        }
+        // max_duration stays null unless an enabled track has a known
+        // duration; fragmented movies (`mvex`) ignore track durations
+        $max_duration = null;
+        $track_durations = ($this->flags & self::F_MVEX) === 0;
         foreach ($this->tracks as $tr) {
             if (($tr->flags & 1) === 0) {
                 continue;
             }
-            if ($max_duration !== null
+            if ($track_durations
                 && $tr->duration !== null
-                && $tr->duration > $max_duration) {
+                && ($max_duration === null || $tr->duration > $max_duration)) {
                 $max_duration = $tr->duration;
             }
             if ($tr->handler === 0x76696465 /* `vide` */) {

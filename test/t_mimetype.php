@@ -437,6 +437,77 @@ class Mimetype_Tester {
         xassert_lt(memory_get_usage() - $m0, 32 << 20);
     }
 
+    /** @param string $type
+     * @param string $content
+     * @return string */
+    static private function iso_box($type, $content) {
+        return pack("N", 8 + strlen($content)) . $type . $content;
+    }
+
+    /** An audio-only MP4 header. Durations are big-endian strings: 4 bytes
+     * for version 0 `mvhd`/`tkhd` boxes, 8 bytes for version 1.
+     * @param string $mvhd_duration
+     * @param string $tkhd_duration
+     * @param bool $mvex
+     * @return string */
+    static function mp4_header($mvhd_duration, $tkhd_duration, $mvex = false) {
+        if (strlen($mvhd_duration) === 4) {
+            $mvhd = "\0\0\0\0" . str_repeat("\0", 8);
+        } else {
+            $mvhd = "\x01\0\0\0" . str_repeat("\0", 16);
+        }
+        $mvhd .= pack("N", 1000) . $mvhd_duration . str_repeat("\0", 80);
+        if (strlen($tkhd_duration) === 4) {
+            $tkhd = "\0\0\0\x01" . str_repeat("\0", 16);
+        } else {
+            $tkhd = "\x01\0\0\x01" . str_repeat("\0", 24);
+        }
+        $tkhd .= $tkhd_duration . str_repeat("\0", 60);
+        $hdlr = self::iso_box("hdlr", "\0\0\0\0\0\0\0\0soun" . str_repeat("\0", 13));
+        $trak = self::iso_box("trak", self::iso_box("tkhd", $tkhd)
+            . self::iso_box("mdia", $hdlr));
+        return self::iso_box("ftyp", "isom\0\0\0\0")
+            . self::iso_box("moov", self::iso_box("mvhd", $mvhd)
+                . ($mvex ? self::iso_box("mvex", "") : "") . $trak);
+    }
+
+    /** @param string $s
+     * @return array */
+    static private function mp4_info($s) {
+        return ISOVideoMimetype::make_string($s)->content_info();
+    }
+
+    function test_mp4_duration() {
+        foreach ([["N", 4], ["J", 8]] as $vx) {
+            $known = pack($vx[0], 5000);
+            $other = pack($vx[0], 7000);
+            $zero = pack($vx[0], 0);
+            $unknown = str_repeat("\xFF", $vx[1]);
+
+            $ci = self::mp4_info(self::mp4_header($known, $unknown));
+            xassert_eqq($ci["type"] ?? null, "audio/mp4");
+            xassert_eq($ci["duration"] ?? null, 5);
+            xassert_eq(self::mp4_info(self::mp4_header($known, $other))["duration"] ?? null, 5);
+            xassert_eq(self::mp4_info(self::mp4_header($unknown, $other))["duration"] ?? null, 7);
+            xassert_eqq(self::mp4_info(self::mp4_header($zero, $other))["duration"] ?? null, 0);
+
+            // unknown everywhere: no duration
+            $ci = self::mp4_info(self::mp4_header($unknown, $unknown));
+            xassert_eqq($ci["type"] ?? null, "audio/mp4");
+            xassert(!array_key_exists("duration", $ci));
+
+            // fragmented movie: track durations are not used
+            xassert_eq(self::mp4_info(self::mp4_header($known, $other, true))["duration"] ?? null, 5);
+            $ci = self::mp4_info(self::mp4_header($unknown, $other, true));
+            xassert_eqq($ci["type"] ?? null, "audio/mp4");
+            xassert(!array_key_exists("duration", $ci));
+        }
+
+        // 64-bit durations with the high bit set are not durations
+        $ci = self::mp4_info(self::mp4_header("\x80" . str_repeat("\0", 7), "\xFE" . str_repeat("\xFF", 7)));
+        xassert(!array_key_exists("duration", $ci));
+    }
+
     function xxx_test_mp4() {
         foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
             $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);

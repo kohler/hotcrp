@@ -395,6 +395,21 @@ class DocumentBasics_Tester {
         xassert_eqq(count(array_unique($ufns)), 5000);
     }
 
+    function test_media_duration_prop() {
+        // a media document's duration is stored, in tenths of a second, as npages
+        $s = Mimetype_Tester::mp4_header(pack("J", 5000), pack("J", 7000));
+        $doc = DocumentInfo::make_content($this->conf, $s, "video/mp4");
+        xassert_eqq($doc->mimetype, "audio/mp4");
+        xassert_eqq($doc->prop_update(), ["npages" => 50]);
+
+        // an unknown duration is not stored
+        $unknown = str_repeat("\xFF", 8);
+        $s = Mimetype_Tester::mp4_header($unknown, $unknown);
+        $doc = DocumentInfo::make_content($this->conf, $s, "video/mp4");
+        xassert_eqq($doc->mimetype, "audio/mp4");
+        xassert_eqq($doc->prop_update(), []);
+    }
+
     function test_save_prop_columns_and_metadata() {
         $conf = $this->conf;
         $doc = DocumentInfo::make_content($conf, "%PDF-1.4\nsave_prop columns and metadata\n", "application/pdf")
