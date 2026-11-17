@@ -107,7 +107,7 @@ class OAuth_Page {
             "path" => self::redirect_uri_path($authi)
         ]);
         // smsg cookie will be consumed by our instance
-        $this->qreq->set_cookie_opt("hotcrp-smsg-" . $smsg, "1", [
+        $this->qreq->set_cookie_opt("hotcrp-smsg-" . $smsg, Conf::smsg_cookie_value(), [
             "expires" => Conf::$now + self::SIGNIN_LIFETIME + 60, "httponly" => true
         ]);
         $params = "client_id=" . urlencode($authi->client_id)

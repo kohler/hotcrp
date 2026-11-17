@@ -229,7 +229,9 @@ class Session_API {
 
     static function stashmessages(Contact $user, Qrequest $qreq) {
         if (isset($qreq->smsg)
-            && (strlen($qreq->smsg) < 10 || strlen($qreq->smsg) > 64 || !ctype_alnum($qreq->smsg))) {
+            && (strlen($qreq->smsg) < 10
+                || strlen($qreq->smsg) > 64
+                || !ctype_alnum($qreq->smsg))) {
             return JsonResult::make_parameter_error("smsg");
         }
         if (!isset($qreq->message_list)) {

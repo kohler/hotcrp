@@ -982,9 +982,7 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             }
             $qreq->unset_csession("msgs");
         }
-        if (($smsgs = $qreq->gsession("smsg"))) {
-            $this->_activate_smsg($qreq, $smsgs);
-        }
+        $this->conf->activate_smsgs($qreq);
 
         // maybe auto-create a user
         if (($this->_activated & self::ACTIVATED_ACTAS) === 0
@@ -1021,25 +1019,6 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
 
         return $this;
-    }
-
-    /** @param Qrequest $qreq */
-    function _activate_smsg($qreq, $smsgs) {
-        $nsmsgs = [];
-        foreach ($smsgs as $ml) {
-            if (isset($_COOKIE["hotcrp-smsg-{$ml[0]}"])) {
-                for ($i = 2; $i !== count($ml); ++$i) {
-                    Conf::msg_on($this->conf, $ml[$i][0], $ml[$i][1]);
-                }
-            } else if ($ml[1] >= Conf::$now - 30) {
-                $nsmsgs[] = $ml;
-            }
-        }
-        if (empty($nsmsgs)) {
-            $qreq->unset_gsession("smsg");
-        } else if (count($nsmsgs) !== count($smsgs)) {
-            $qreq->set_gsession("smsg", $nsmsgs);
-        }
     }
 
     /** @return ContactCounter */

@@ -173,6 +173,7 @@ class Paper_Page {
         $is_final = $this->prow->phase() === PaperInfo::PHASE_FINAL
             && $this->qreq["status:phase"] === "final";
         $this->useRequest = true;
+        $this->qreq->commit_session(); // saving can be slow
 
         // prepare save and check permissions
         $this->ps = new PaperStatus($this->user);
@@ -273,6 +274,7 @@ class Paper_Page {
     function handle_updatecontacts() {
         $conf = $this->conf;
         $this->useRequest = true;
+        $this->qreq->commit_session();
 
         if (!$this->user->can_manage($this->prow)
             && !$this->prow->has_author($this->user)) {

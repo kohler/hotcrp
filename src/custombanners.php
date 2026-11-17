@@ -342,7 +342,11 @@ class CustomBanners {
                 $this->active_bs[$bi[0]] = $bi[1];
             }
         }
-        if ($this->mcacheid > 0 && $this->session_invalid && $this->qreq) {
+        // The cache is advisory: skip it if this request committed the session
+        if ($this->mcacheid > 0
+            && $this->session_invalid
+            && $this->qreq
+            && $this->qreq->qsession()->is_writable()) {
             $this->session_deadline = $this->next_deadline();
             $this->qreq->set_csession("banners", (object) [
                 "v" => self::SVERSION, "mcid" => $this->mcacheid,

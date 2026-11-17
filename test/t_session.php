@@ -110,6 +110,177 @@ class Session_Tester {
         xassert_eqq($smsgs[1], ["mixsmsg01", Conf::$now, ["<5>yo", 1]]);
     }
 
+    /** @return Qrequest */
+    private function committed_session_qreq() {
+        $qs = TestQsession::start_request(null);
+        $qs->open();
+        $qs->commit();
+        return TestQreq::post()->set_user($this->u_chair)->set_qsession($qs);
+    }
+
+    /** Run `Conf::activate_smsgs` with the given cookies.
+     * @param array<string,string> $cookies
+     * @return list<array{string,int}> */
+    private function activate_smsgs_with(Qrequest $qreq, $cookies) {
+        $old_cookie = $_COOKIE;
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2; // collect messages rather than print them
+        $_COOKIE = $cookies;
+        try {
+            $this->conf->saved_messages_begin();
+            $this->conf->activate_smsgs($qreq);
+            return $this->conf->claim_saved_messages();
+        } finally {
+            $_COOKIE = $old_cookie;
+            Navigation::$test_mode = $old_test_mode;
+        }
+    }
+
+    function test_setting_smsg_reported_once() {
+        TestQsession::reset();
+        $qreq = $this->committed_session_qreq();
+        xassert(!$qreq->qsession()->is_writable());
+        $smsg = $this->conf->store_setting_smsg($qreq, [["<0>Saved", 1]]);
+        xassert(is_string($smsg) && ctype_alnum($smsg));
+        // the session itself is untouched
+        xassert_eqq(TestQsession::$store[$qreq->qsid()], ["v" => 2]);
+        // the in-memory row matches the database
+        $mem = [$this->conf->setting("__smsg.{$smsg}"), $this->conf->setting_data("__smsg.{$smsg}")];
+        xassert_eqq($mem[0], Conf::$now);
+        $this->conf->load_settings();
+        xassert_eqq([$this->conf->setting("__smsg.{$smsg}"), $this->conf->setting_data("__smsg.{$smsg}")], $mem);
+        // the session ID does not appear in the stored row
+        xassert_not_str_contains($this->conf->setting_data("__smsg.{$smsg}"), $qreq->qsid());
+
+        // an unknown ID reports nothing, and leaves the row alone
+        xassert_eqq($this->activate_smsgs_with($qreq, ["hotcrp-smsg-Nonexistent0" => "1"]), []);
+        xassert_eqq($this->conf->setting("__smsg.{$smsg}"), Conf::$now);
+
+        // the ID reports its messages exactly once
+        $ck = ["hotcrp-smsg-{$smsg}" => Conf::smsg_cookie_value()];
+        xassert_eqq($this->activate_smsgs_with($qreq, $ck), [["<0>Saved", 1]]);
+        xassert_eqq($this->activate_smsgs_with($qreq, $ck), []);
+        $this->conf->load_settings();
+        xassert_eqq($this->conf->setting("__smsg.{$smsg}"), null);
+    }
+
+    function test_setting_smsg_reported_only_by_deleter() {
+        // a concurrent request that loaded the row, but lost the race to
+        // delete it, reports nothing
+        TestQsession::reset();
+        $qreq = $this->committed_session_qreq();
+        $smsg = $this->conf->store_setting_smsg($qreq, [["<0>Raced", 1]]);
+        $this->conf->load_settings();
+        xassert_eqq($this->conf->setting("__smsg.{$smsg}"), Conf::$now);
+        $this->conf->qe("delete from Settings where name=?", "__smsg.{$smsg}");
+        xassert_eqq($this->activate_smsgs_with($qreq, ["hotcrp-smsg-{$smsg}" => "1"]), []);
+    }
+
+    function test_setting_smsg_dated_at_store_time() {
+        // a slow request (here, one that began 100s ago) dates its message
+        // from when it is stored, not from when the request began
+        // (Use real time: the suite's clock may run ahead of it.)
+        TestQsession::reset();
+        $old_unow = Conf::$unow;
+        $t0 = microtime(true);
+        Conf::set_current_time($t0 - 100);
+        try {
+            $qreq = $this->committed_session_qreq();
+            $smsg = $this->conf->store_setting_smsg($qreq, [["<0>Slow", 1]]);
+            $this->conf->load_settings();
+            xassert_ge($this->conf->setting("__smsg.{$smsg}"), (int) $t0);
+            xassert_eqq($this->activate_smsgs_with($qreq, ["hotcrp-smsg-{$smsg}" => Conf::smsg_cookie_value()]), [["<0>Slow", 1]]);
+        } finally {
+            Conf::set_current_time(max($old_unow, Conf::$unow));
+        }
+    }
+
+    function test_setting_smsg_expires_and_gcs() {
+        TestQsession::reset();
+        $qreq = $this->committed_session_qreq();
+        $smsg = $this->conf->store_setting_smsg($qreq, [["<0>Old", 1]]);
+        $old = Conf::$now - Conf::SMSG_LIFETIME - 1;
+        $this->conf->qe("update Settings set value=? where name=?", $old, "__smsg.{$smsg}");
+        $this->conf->load_settings();
+        // loading skipped the expired row and collected it
+        xassert_eqq($this->conf->setting("__smsg.{$smsg}"), null);
+        xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name=?", "__smsg.{$smsg}"), null);
+        xassert_eqq($this->activate_smsgs_with($qreq, ["hotcrp-smsg-{$smsg}" => "1"]), []);
+    }
+
+    function test_smsgs_merge_session_and_settings() {
+        // session and Settings messages report together, in cookie order;
+        // session entries without cookies stay unless expired
+        TestQsession::reset();
+        $qreq = $this->make_qreq();
+        Session_API::store_smsg($qreq, "sessionsmsg1", ["<0>Session first", 1]);
+        Session_API::store_smsg($qreq, "sessionsmsg2", ["<0>Session third", 1]);
+        Session_API::store_smsg($qreq, "unclaimedsm1", ["<0>Not yet", 1]);
+        $smsgs = $qreq->gsession("smsg");
+        $smsgs[] = ["expiredsmsg1", Conf::$now - Conf::SMSG_LIFETIME - 1, ["<0>Expired", 1]];
+        $qreq->set_gsession("smsg", $smsgs);
+        $smsg = $this->conf->store_setting_smsg($this->committed_session_qreq(), [["<0>Setting second", 1]]);
+        $this->conf->load_settings();
+
+        $ml = $this->activate_smsgs_with($qreq, [
+            "hotcrp-smsg-sessionsmsg2" => "1700000000300",
+            "hotcrp-smsg-{$smsg}" => "1700000000200",
+            "hotcrp-smsg-sessionsmsg1" => "1700000000100",
+            "hotcrp-smsg-expiredsmsg1" => "1700000000000",
+            "unrelated" => "1"
+        ]);
+        xassert_eqq($ml, [["<0>Session first", 1], ["<0>Setting second", 1], ["<0>Session third", 1]]);
+        $smsgs = $qreq->gsession("smsg");
+        xassert_eqq(count($smsgs), 1);
+        xassert_eqq($smsgs[0][0], "unclaimedsm1");
+
+        // the last claim removes the session entry entirely
+        xassert_eqq($this->activate_smsgs_with($qreq, ["hotcrp-smsg-unclaimedsm1" => "5"]), [["<0>Not yet", 1]]);
+        xassert_eqq($qreq->gsession("smsg"), null);
+    }
+
+    function test_saved_messages_commit_without_session() {
+        TestQsession::reset();
+        $old_test_mode = Navigation::$test_mode;
+        Navigation::$test_mode = 2; // collect messages rather than print them
+        try {
+            // committed session: messages go to Settings, not the session
+            $qreq = $this->committed_session_qreq();
+            $this->conf->saved_messages_begin();
+            Conf::msg_on($this->conf, "<0>Updated", 1);
+            $this->conf->saved_messages_commit($qreq);
+            xassert(!$qreq->qsession()->is_writable());
+            xassert_eqq(TestQsession::$store[$qreq->qsid()], ["v" => 2]);
+            $n = $this->conf->fetch_ivalue("select count(*) from Settings where name>'__smsg.' and name<'__smsg/' and data like ?", "%Updated%");
+            xassert_eqq($n, 1);
+
+            // writable session: messages go to the session, as before
+            $qs = TestQsession::start_request(null);
+            $qs->open();
+            $qreq = TestQreq::post()->set_user($this->u_chair)->set_qsession($qs);
+            $this->conf->saved_messages_begin();
+            Conf::msg_on($this->conf, "<0>Again", 1);
+            $this->conf->saved_messages_commit($qreq);
+            xassert_eqq(TestQsession::$store[$qs->sid][$this->conf->session_key]["msgs"] ?? null, [["<0>Again", 1]]);
+
+            // no session yet: open one, as before, rather than use Settings
+            $qs = TestQsession::start_request(null);
+            $qreq = TestQreq::post()->set_user($this->u_chair)->set_qsession($qs);
+            xassert(!$qs->is_readable());
+            $this->conf->saved_messages_begin();
+            Conf::msg_on($this->conf, "<0>Fresh", 1);
+            $this->conf->saved_messages_commit($qreq);
+            xassert($qs->sid !== null);
+            xassert_eqq(TestQsession::$store[$qs->sid][$this->conf->session_key]["msgs"] ?? null, [["<0>Fresh", 1]]);
+            $n = $this->conf->fetch_ivalue("select count(*) from Settings where name>'__smsg.' and name<'__smsg/' and data like ?", "%Fresh%");
+            xassert_eqq($n, 0);
+        } finally {
+            Navigation::$test_mode = $old_test_mode;
+            $this->conf->claim_saved_messages();
+            $this->conf->qe("delete from Settings where name>'__smsg.' and name<'__smsg/'");
+        }
+    }
+
     /** @param string $email
      * @param TestQsession $qs
      * @return Qrequest */

@@ -65,6 +65,12 @@ class Conf {
     const PB_HAS_COMPLEX_DECISION = 0x200;
     const PB_HIDE_CONFLICT_SUB = 0x400;
     const PB_EDIT_REVPREF = 0x800;
+
+    /** Lifetime of a stored `smsg` (in Settings or the session), seconds.
+     * These messages bridge a redirect, so are normally claimed within a
+     * second or two. */
+    const SMSG_LIFETIME = 120;
+
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seerev;
@@ -366,8 +372,14 @@ class Conf {
         }
         $this->_fmt_override_names = null;
 
+        $smsg_gc = false;
         $result = $this->q_raw("select name, value, data from Settings");
         while (($row = $result->fetch_row())) {
+            if (str_starts_with($row[0], "__smsg.")
+                && (int) $row[1] < Conf::$now - self::SMSG_LIFETIME) {
+                $smsg_gc = true;
+                continue;
+            }
             $this->settings[$row[0]] = (int) $row[1];
             if ($row[2] !== null) {
                 $this->settingTexts[$row[0]] = $row[2];
@@ -382,6 +394,11 @@ class Conf {
             }
         }
         Dbl::free($result);
+
+        // GC unclaimed `smsg`s
+        if ($smsg_gc) {
+            $this->qe("delete from Settings where name>'__smsg.' and name<'__smsg/' and value<?", Conf::$now - self::SMSG_LIFETIME);
+        }
 
         $this->sversion = $this->settings["allowPaperOption"] ?? 0;
     }
@@ -4359,11 +4376,121 @@ class Conf {
     /** @param Qrequest $qreq */
     function saved_messages_commit($qreq) {
         if ($this->_save_msgs) {
-            $qreq->open_session();
-            $qreq->set_csession("msgs", $this->_save_msgs);
+            // Committed sessions use Settings; this allows early session close
+            $qs = $qreq->qsession();
+            if ($qs->is_writable()
+                || !$qs->is_readable()
+                || $this->store_setting_smsg($qreq, $this->_save_msgs) === null) {
+                $qreq->open_session();
+                $qreq->set_csession("msgs", $this->_save_msgs);
+            }
             $this->_save_msgs = null;
         }
         $qreq->qsession()->commit();
+    }
+
+    /** Store messages to be shown after a redirect, without the session.
+     *
+     * Like `api/stashmessages`, this sets a `hotcrp-smsg-ID` cookie, but the
+     * messages live in Settings, under `__smsg.ID`, rather than the session;
+     * a request that has committed its session (to let other requests from
+     * the same browser proceed) need not reopen it. ID has 96 random bits,
+     * so only the cookie's holder can name the row, which expires after
+     * `SMSG_LIFETIME` seconds.
+     *
+     * @param Qrequest $qreq
+     * @param list<array{string,int}> $ml
+     * @return ?string */
+    function store_setting_smsg($qreq, $ml) {
+        $data = json_encode_db($ml);
+        if (strlen($data) > 32000) {
+            return null;
+        }
+        Conf::set_current_time(); // update current time
+        $k = base48_encode(random_bytes(12));
+        $sk = "__smsg.{$k}";
+        $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?)",
+            $sk, Conf::$now, $data);
+        if ($result->affected_rows !== 1) {
+            return null;
+        }
+        $this->settings[$sk] = Conf::$now;
+        $this->settingTexts[$sk] = $data;
+        $qreq->set_cookie_opt("hotcrp-smsg-{$k}", self::smsg_cookie_value(), [
+            "expires" => Conf::$now + self::SMSG_LIFETIME, "httponly" => true
+        ]);
+        return $k;
+    }
+
+    /** Return the value for a `hotcrp-smsg-` cookie set by the server: the
+     * current time in milliseconds, like the cookies `api/stashmessages`
+     * clients set, so that messages from either source sort together.
+     * @return string */
+    static function smsg_cookie_value() {
+        return (string) (int) (Conf::$unow * 1000);
+    }
+
+    function activate_smsgs(Qrequest $qreq) {
+        $want = $have = [];
+        foreach ($_COOKIE as $ck => $cv) {
+            // The value, a timestamp in milliseconds, orders messages.
+            // Server and client clocks can differ, but usually not by much.
+            if (!str_starts_with($ck, "hotcrp-smsg-")
+                || !ctype_digit($cv)) {
+                continue;
+            }
+            $k = substr($ck, 12);
+            $want[$k] = (float) $cv;
+
+            // extract smsgs from settings
+            $sk = "__smsg.{$k}";
+            if (isset($this->settings[$sk])
+                && is_array(($jm = json_decode($this->settingTexts[$sk] ?? "")))) {
+                // only display to the page load that deletes the setting
+                unset($this->settings[$sk], $this->settingTexts[$sk]);
+                if ($this->save_setting($sk, null, null)) {
+                    $have[$k] = $jm;
+                }
+            }
+        }
+
+        // extra smsgs from session
+        if (($cmsgs = $qreq->gsession("smsg"))) {
+            $ncmsgs = [];
+            foreach (is_array($cmsgs) ? $cmsgs : [] as $m) {
+                if (!is_array($m)
+                    || count($m) < 2
+                    || !is_string($m[0])
+                    || !is_int($m[1])
+                    || $m[1] < Conf::$now - Conf::SMSG_LIFETIME) {
+                    continue;
+                }
+                if (isset($want[$m[0]])) {
+                    for ($i = 2; $i !== count($m); ++$i) {
+                        $have[$m[0]][] = $m[$i];
+                    }
+                } else {
+                    $ncmsgs[] = $m;
+                }
+            }
+            if (empty($ncmsgs)) {
+                $qreq->unset_gsession("smsg");
+            } else if ($ncmsgs !== $cmsgs) {
+                $qreq->set_gsession("smsg", $ncmsgs);
+            }
+        }
+
+        asort($want);
+        foreach (array_keys($want) as $k) {
+            foreach ($have[$k] ?? [] as $x) {
+                if (is_array($x)
+                    && count($x) >= 2
+                    && is_string($x[0])
+                    && is_int($x[1])) {
+                    Conf::msg_on($this, $x[0], $x[1]);
+                }
+            }
+        }
     }
 
     /** @param ?string $url
