@@ -144,6 +144,27 @@ class MailSender {
         }
     }
 
+    /** @var array<string,array{string,string}> */
+    static private $header_settings = [
+        "cc" => ["email_default_cc", "emailCc"],
+        "reply-to" => ["email_default_reply_to", "emailReplyTo"]
+    ];
+
+    /** Test whether `$user` may override the default value of header
+     * `$field` (`cc` or `reply-to`). Overrides are disabled when the
+     * corresponding setting is not configurable.
+     * @param string $field
+     * @return bool */
+    static function can_edit_header(Contact $user, $field) {
+        // XXX should only apply to papers you administer
+        if (!$user->is_manager()
+            || !($sx = self::$header_settings[$field] ?? null)) {
+            return false;
+        }
+        $si = $user->conf->si($sx[0]);
+        return $si && $si->configurable;
+    }
+
     static function clean_request(Qrequest $qreq) {
         $conf = $qreq->conf();
         $null_mailer = self::null_mailer($qreq->user());
@@ -159,17 +180,13 @@ class MailSender {
             $tmpl = $conf->mail_template("generic");
             $qreq->body = $null_mailer->expand($tmpl->body, "body");
         }
-        if (isset($qreq->cc) && $qreq->user()->is_manager()) {
-            // XXX should only apply to papers you administer
-            $qreq->cc = simplify_whitespace($qreq->cc);
-        } else {
-            $qreq->cc = MimeText::expand_email_header_setting($conf, "emailCc");
-        }
-        if (isset($qreq["reply-to"]) && $qreq->user()->is_manager()) {
-            // XXX should only apply to papers you administer
-            $qreq["reply-to"] = simplify_whitespace($qreq["reply-to"]);
-        } else {
-            $qreq["reply-to"] = MimeText::expand_email_header_setting($conf, "emailReplyTo");
+        foreach (self::$header_settings as $field => $sx) {
+            if (isset($qreq[$field])
+                && self::can_edit_header($qreq->user(), $field)) {
+                $qreq[$field] = simplify_whitespace($qreq[$field]);
+            } else {
+                $qreq[$field] = MimeText::expand_email_header_setting($conf, $sx[1]);
+            }
         }
     }
 

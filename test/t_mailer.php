@@ -503,6 +503,40 @@ class Mailer_Tester {
         $conf->set_opt("emailCc", $old_cc);
     }
 
+    function test_unconfigurable_cc_reply_to_cannot_be_overridden() {
+        $conf = $this->conf;
+        $chair = $conf->checked_user_by_email("chair@_.com");
+        $old_cc = $conf->opt("emailCc");
+        $old_reply_to = $conf->opt("emailReplyTo");
+        $old_si = $conf->opt("settingInfo");
+        $conf->set_opt("emailCc", "archive@example.invalid");
+        $conf->set_opt("emailReplyTo", "chairs@example.invalid");
+        $args = ["cc" => "victim@example.invalid", "reply-to" => "spam@example.invalid"];
+
+        $qreq = (new Qrequest("POST", $args))->set_user($chair)->approve_token();
+        MailSender::clean_request($qreq);
+        xassert(MailSender::can_edit_header($chair, "cc"));
+        xassert_eqq($qreq->cc, "victim@example.invalid");
+        xassert_eqq($qreq["reply-to"], "spam@example.invalid");
+
+        $conf->set_opt("settingInfo", array_merge($old_si ?? [], ['[
+            {"name": "email_default_cc", "merge": true, "configurable": false},
+            {"name": "email_default_reply_to", "merge": true, "configurable": false}
+        ]']));
+        $conf->_setting_info = null;
+        xassert(!MailSender::can_edit_header($chair, "cc"));
+        xassert(!MailSender::can_edit_header($chair, "reply-to"));
+        $qreq = (new Qrequest("POST", $args))->set_user($chair)->approve_token();
+        MailSender::clean_request($qreq);
+        xassert_eqq($qreq->cc, "archive@example.invalid");
+        xassert_eqq($qreq["reply-to"], "chairs@example.invalid");
+
+        $conf->set_opt("settingInfo", $old_si);
+        $conf->_setting_info = null;
+        $conf->set_opt("emailCc", $old_cc);
+        $conf->set_opt("emailReplyTo", $old_reply_to);
+    }
+
     function test_cc_skips_users_who_cannot_receive_mail() {
         $conf = $this->conf;
         $sender = $conf->ensure_user_by_email("ccsender@confirmed.org", 0);

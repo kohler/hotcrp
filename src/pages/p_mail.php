@@ -409,16 +409,21 @@ class Mail_Page {
 
         // ** CC, REPLY-TO
         if ($this->viewer->is_manager()) {
-            foreach (Mailer::$email_fields as $lcfield => $field) {
-                if ($lcfield !== "to" && $lcfield !== "bcc") {
+            foreach (["cc" => "Cc", "reply-to" => "Reply-To"] as $lcfield => $field) {
+                $v = $this->qreq[$lcfield] ?? "";
+                if (MailSender::can_edit_header($this->viewer, $lcfield)) {
                     echo '<div class="', $this->recip->control_class($lcfield, "mail-field small"), '">',
                         "<label class=\"position-ta-adjust\" for=\"{$lcfield}\">{$field}:</label>",
                         '<div class="flex-fill-0">',
                         $this->recip->feedback_html_at($lcfield),
-                        Ht::textarea($lcfield, $this->qreq[$lcfield], [
+                        Ht::textarea($lcfield, $v, [
                             "id" => $lcfield, "rows" => 1, "data-submit-fn" => "false",
                             "class" => $this->recip->control_class($lcfield, "js-autosubmit need-autogrow w-100")
                         ]), "</div></div>\n";
+                } else if ($v !== "") {
+                    echo '<div class="mail-field small">',
+                        "<label>{$field}:</label>",
+                        '<div class="flex-fill-0">', htmlspecialchars($v), "</div></div>\n";
                 }
             }
         }
