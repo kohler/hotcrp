@@ -122,6 +122,12 @@ class Mailer {
      * @param string $out
      * @return string */
     function expand_user($contact, $out) {
+        // users who cannot receive mail are not copied
+        if (($this->field === "cc" || $this->field === "bcc")
+            && $contact instanceof Contact
+            && !$contact->can_receive_mail()) {
+            return "<hidden>";
+        }
         $r = Author::make_keyed($contact);
         if ($contact instanceof Contact) {
             $r->email = $contact->delivery_email();
@@ -994,7 +1000,9 @@ class Mailer {
                 continue;
             }
             if (($hdr = $mimetext->encode_email_header($field, $text))) {
-                $prep->headers[$lcfield] = $hdr . $this->eol;
+                if ($hdr !== "{$field}: ") {
+                    $prep->headers[$lcfield] = $hdr . $this->eol;
+                }
             } else {
                 $mimetext->mi->field = $lcfield;
                 $prep->append_item($mimetext->mi);

@@ -503,6 +503,31 @@ class Mailer_Tester {
         $conf->set_opt("emailCc", $old_cc);
     }
 
+    function test_cc_skips_users_who_cannot_receive_mail() {
+        $conf = $this->conf;
+        $sender = $conf->ensure_user_by_email("ccsender@confirmed.org", 0);
+        $victim = $conf->ensure_user_by_email("ccvictim@unconfirmed.org");
+        xassert(!$sender->is_unconfirmed());
+        xassert($victim->is_unconfirmed());
+        $old_seu = $conf->opt("sendEmailUnconfirmed");
+        $tmpl = ["subject" => "S", "body" => "hi"];
+        $rest = ["requester_contact" => $sender, "other_contact" => $victim, "no_error_quit" => true];
+
+        $conf->set_opt("sendEmailUnconfirmed", null);
+        $prep = HotCRPMailer::prepare_to($sender, $tmpl, $rest + ["cc" => "{{REQUESTER}}, {{OTHERUSER}}"]);
+        xassert_str_contains($prep->headers["cc"] ?? "", "ccvictim@unconfirmed.org");
+
+        $conf->set_opt("sendEmailUnconfirmed", false);
+        $prep = HotCRPMailer::prepare_to($sender, $tmpl, $rest + ["cc" => "{{REQUESTER}}, {{OTHERUSER}}"]);
+        xassert_str_contains($prep->headers["cc"] ?? "", "ccsender@confirmed.org");
+        xassert_not_str_contains($prep->headers["cc"] ?? "", "ccvictim");
+        $prep = HotCRPMailer::prepare_to($sender, $tmpl, $rest + ["bcc" => "{{OTHERUSER}}"]);
+        xassert(!isset($prep->headers["bcc"]));
+        xassert(!$prep->has_error());
+
+        $conf->set_opt("sendEmailUnconfirmed", $old_seu);
+    }
+
     function test_censored_comment_expansion() {
         $conf = $this->conf;
         $chair = $conf->checked_user_by_email("chair@_.com");
