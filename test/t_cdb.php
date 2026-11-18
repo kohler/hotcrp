@@ -363,6 +363,70 @@ class Cdb_Tester {
         xassert(!$u->is_disabled());
     }
 
+    function test_contactdb_confirm_option() {
+        $emails = ["confirm1@manchette.net", "confirm2@manchette.net", "confirm3@manchette.net", "confirm4@manchette.net", "confirm5@manchette.net"];
+        $this->conf->qe("delete from ContactInfo where email?a", $emails);
+        Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $emails);
+        Dbl::qe($this->cdb, "insert into ContactInfo (email, password, firstName, lastName, cflags) values
+            ('confirm1@manchette.net','','Ada','Confirmed',0),
+            ('confirm2@manchette.net','','Bea','Confirmed',0),
+            ('confirm3@manchette.net','','Cy','Confirmed',0),
+            ('confirm4@manchette.net','','Di','Confirmed',0),
+            ('confirm5@manchette.net','','Ed','Confirmed',0)");
+        foreach ($emails as $email) {
+            $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $email));
+            xassert(!$this->conf->fresh_cdb_user_by_email($email)->is_unconfirmed());
+        }
+
+        // by default, cdb confirmation is imported
+        $u = Contact::make_keyed($this->conf, ["email" => "confirm1@manchette.net"])->store();
+        xassert(!$u->is_unconfirmed());
+        xassert(!$this->conf->fresh_user_by_email("confirm1@manchette.net")->is_unconfirmed());
+
+        // with `contactdbConfirm` false, local accounts need local confirmation
+        $old_cc = $this->conf->opt("contactdbConfirm");
+        $this->conf->set_opt("contactdbConfirm", false);
+        $u = Contact::make_keyed($this->conf, ["email" => "confirm2@manchette.net"])->store();
+        xassert($u->is_unconfirmed());
+        $u = $this->conf->fresh_user_by_email("confirm2@manchette.net");
+        xassert($u->is_unconfirmed());
+        xassert_eqq($u->firstName, "Bea");
+        $old_seu = $this->conf->opt("sendEmailUnconfirmed");
+        $this->conf->set_opt("sendEmailUnconfirmed", false);
+        xassert(!$u->can_receive_mail());
+        $this->conf->set_opt("sendEmailUnconfirmed", $old_seu);
+
+        $u = $this->conf->cdb_user_by_email("confirm3@manchette.net");
+        $u->ensure_account_here();
+        xassert($this->conf->fresh_user_by_email("confirm3@manchette.net")->is_unconfirmed());
+
+        // a signed-in cdb user creates a confirmed local account
+        $u = $this->conf->cdb_user_by_email("confirm4@manchette.net");
+        $u = $u->activate(TestQreq::get_page("index"), true);
+        xassert(!$u->has_account_here());
+        $u->ensure_account_here();
+        xassert(!$this->conf->fresh_user_by_email("confirm4@manchette.net")->is_unconfirmed());
+
+        // but a token-authenticated cdb user does not
+        $u = $this->conf->cdb_user_by_email("confirm5@manchette.net");
+        $u->set_bearer_authorized();
+        $u = $u->activate(TestQreq::get_page("index"), true);
+        $u->ensure_account_here();
+        xassert($this->conf->fresh_user_by_email("confirm5@manchette.net")->is_unconfirmed());
+
+        // local activation confirms
+        $u = $this->conf->fresh_user_by_email("confirm2@manchette.net");
+        xassert($u->activate_placeholder(true));
+        xassert(!$this->conf->fresh_user_by_email("confirm2@manchette.net")->is_unconfirmed());
+
+        // cdb users remain confirmed
+        foreach ($emails as $email) {
+            xassert(!$this->conf->fresh_cdb_user_by_email($email)->is_unconfirmed());
+        }
+
+        $this->conf->set_opt("contactdbConfirm", $old_cc);
+    }
+
     function test_pc_json() {
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
         xassert_eqq($pc_json->pc[0]->email, "anne1@dudfield.org");

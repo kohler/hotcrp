@@ -2704,8 +2704,12 @@ final class Contact extends ContactPermissions implements JsonSerializable {
         }
 
         // unconfirmed import is special
-        // source is confirmed: this is confirmed
-        if (($src->cflags & self::CF_UNCONFIRMED) === 0) {
+        // source is confirmed: this is confirmed, unless this is a local
+        // user and `$Opt["contactdbConfirm"]` is false
+        if (($src->cflags & self::CF_UNCONFIRMED) === 0
+            && ($src->cdb_confid === 0
+                || $this->cdb_confid !== 0
+                || ($this->conf->opt("contactdbConfirm") ?? true))) {
             $this->set_prop("cflags", $this->cflags & ~self::CF_UNCONFIRMED);
         }
     }
@@ -2755,6 +2759,11 @@ final class Contact extends ContactPermissions implements JsonSerializable {
             $this->conf->invalidate_user($this);
             $this->cdb_confid = $this->contactDbId = 0;
             $this->_cdb_user = false;
+            // a signed-in user (not actas, not token) confirms themselves
+            if (!($this->conf->opt("contactdbConfirm") ?? true)
+                && ($this->_activated & self::ACTIVATED_TYPE_MASK) !== self::ACTIVATED_YES) {
+                $this->cflags |= self::CF_UNCONFIRMED;
+            }
         }
 
         // look up cdb account
