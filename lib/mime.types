@@ -9,6 +9,7 @@ application/vnd.ms-powerpoint			ppt PPT
 application/vnd.apple.keynote			key
 application/vnd.openxmlformats-officedocument.presentationml.presentation	pptx PPTX
 video/mp4					mp4 mpg4
+audio/mp4					m4a
 video/x-msvideo					avi
 application/json				json
 image/jpeg					jpg jpeg jpe jfif JPG JPEG
@@ -21,6 +22,7 @@ image/webp					webp
 #!! application/powerpoint			application/vnd.ms-powerpoint
 #!! application/x-mspowerpoint			application/vnd.ms-powerpoint
 #!! application/x-iwork-keynote-sffkey		application/vnd.apple.keynote
+#!! audio/x-m4a				audio/mp4
 
 # other known types
 application/gzip				gz tgz

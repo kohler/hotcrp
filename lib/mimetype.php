@@ -57,7 +57,8 @@ class Mimetype {
         self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE | self::FLAG_ZIPLIKE | self::FLAG_SLIDES, "application/x-iwork-keynote-sffkey"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
                               [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE | self::FLAG_SLIDES],
-        "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],
+        "video/mp4" =>        [".mp4", null, self::FLAG_INLINE | self::FLAG_INCOMPRESSIBLE],
+        "audio/mp4" =>        [".m4a", null, self::FLAG_INLINE | self::FLAG_INCOMPRESSIBLE, "audio/x-m4a"],
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
         self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
@@ -423,12 +424,52 @@ class Mimetype {
                 return self::TAR_TYPE;
             } else if (str_starts_with($content, "PK\x03\x04")) {
                 return self::ZIP_TYPE;
+            } else if (self::is_mp4_content($content)) {
+                return "video/mp4";
             }
             self::$finfo = self::$finfo ?? new finfo(FILEINFO_MIME_TYPE);
             $type = self::$finfo->buffer(substr($content, 0, 2048));
         }
         // type obtained, or octet-stream if nothing else works
         return self::type($type ? : self::BIN_TYPE);
+    }
+
+    /** ISO base media brands that indicate MP4 content. */
+    private const MP4_BRANDS = [
+        "isom" => true, "iso2" => true, "iso3" => true, "iso4" => true,
+        "iso5" => true, "iso6" => true, "iso7" => true, "iso8" => true,
+        "iso9" => true, "mp41" => true, "mp42" => true, "mp71" => true,
+        "avc1" => true, "dash" => true, "M4V " => true, "M4VH" => true,
+        "M4VP" => true, "MSNV" => true, "f4v " => true, "mmp4" => true,
+        "M4A " => true
+    ];
+
+    /** Test whether `$content` starts like an MP4 file: an ISO base media
+     * `ftyp` box whose major or compatible brands include an MP4 brand.
+     * (QuickTime, HEIF, and AVIF files also start with `ftyp`, but use
+     * other brands.) Used only for content of unknown type. A declared MP4
+     * type is trusted, as for JPEG; `content_info` may switch it between
+     * `video/mp4` and `audio/mp4` based on its tracks, but does not reject
+     * non-MP4 content.
+     * @param string $content
+     * @return bool */
+    static function is_mp4_content($content) {
+        $len = strlen($content);
+        if ($len < 16 || substr_compare($content, "ftyp", 4, 4) !== 0) {
+            return false;
+        }
+        $sz = unpack("N", $content)[1];
+        if ($sz < 16 || $sz > 4096 || $sz % 4 !== 0) {
+            return false;
+        }
+        // major brand at 8, minor version at 12, compatible brands from 16
+        $end = min($sz, $len);
+        for ($p = 8; $p + 4 <= $end; $p += ($p === 8 ? 8 : 4)) {
+            if (isset(self::MP4_BRANDS[substr($content, $p, 4)])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @param ?string $content
@@ -456,7 +497,7 @@ class Mimetype {
             return self::gif_content_info($content);
         } else if ($type === self::WEBP_TYPE) {
             return self::webp_content_info($content);
-        } else if ($type === "video/mp4") {
+        } else if ($type === "video/mp4" || $type === "audio/mp4") {
             if ($doc
                 && strlen($content) !== $doc->size()
                 && ($file = $doc->content_file())) {

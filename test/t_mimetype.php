@@ -477,6 +477,52 @@ class Mimetype_Tester {
         return ISOVideoMimetype::make_string($s)->content_info();
     }
 
+    function test_mp4_sniff() {
+        $ftyp = self::iso_box("ftyp", "isom\0\0\0\0isommp42");
+        xassert(Mimetype::is_mp4_content($ftyp));
+        xassert_eqq(Mimetype::content_type($ftyp . self::iso_box("free", "")), "video/mp4");
+        xassert_eqq(Mimetype::content_type($ftyp . self::iso_box("free", ""), Mimetype::BIN_TYPE), "video/mp4");
+        // an MP4 brand may appear only among the compatible brands
+        xassert(Mimetype::is_mp4_content(self::iso_box("ftyp", "XYZW\0\0\0\0XYZWmp41")));
+        xassert(Mimetype::is_mp4_content(self::iso_box("ftyp", "M4A \0\0\0\0M4A ")));
+        // other `ftyp` files, and bad `ftyp` boxes, are not MP4
+        xassert(!Mimetype::is_mp4_content(self::iso_box("ftyp", "qt  \0\0\0\0qt  ")));
+        xassert(!Mimetype::is_mp4_content(self::iso_box("ftyp", "heic\0\0\0\0mif1heic")));
+        xassert(!Mimetype::is_mp4_content("\0\0\0\x07ftypisom\0\0\0\0"));
+        xassert(!Mimetype::is_mp4_content(substr($ftyp, 0, 12)));
+        // declared MP4 types are trusted
+        $html = "<html><head></head><body>video</body></html>";
+        xassert_eqq(Mimetype::content_type($html, "video/mp4"), "video/mp4");
+        xassert_eqq(Mimetype::content_type($html, "audio/mp4"), "audio/mp4");
+        xassert_neqq(Mimetype::content_type($html), "video/mp4");
+        // MP4 is served inline; AVI is not
+        xassert(Mimetype::disposition_inline("video/mp4"));
+        xassert(Mimetype::disposition_inline("audio/mp4"));
+        xassert(!Mimetype::disposition_inline("video/x-msvideo"));
+        xassert_eqq(Mimetype::type(".m4a"), "audio/mp4");
+        // macOS browsers report `.m4a` uploads as `audio/x-m4a`
+        xassert_eqq(Mimetype::type("audio/x-m4a"), "audio/mp4");
+        xassert_eqq(Mimetype::content_type($html, "audio/x-m4a"), "audio/mp4");
+        xassert(Mimetype::disposition_inline("audio/x-m4a"));
+    }
+
+    function test_mp4_tracks_set_type() {
+        $audio = self::mp4_header(pack("N", 5000), pack("N", 5000));
+        $video = str_replace("soun", "vide", $audio);
+        $m4a = str_replace("isom\0\0\0\0", "M4A \0\0\0\0", $audio);
+        xassert_eqq(strlen($video), strlen($audio));
+        xassert_eqq(strlen($m4a), strlen($audio));
+        // undeclared: sniffed, then typed by tracks
+        xassert_eqq(Mimetype::content_info($audio)["type"] ?? null, "audio/mp4");
+        xassert_eqq(Mimetype::content_info($video)["type"] ?? null, "video/mp4");
+        xassert_eqq(Mimetype::content_info($m4a)["type"] ?? null, "audio/mp4");
+        // declared: either MP4 type is analyzed and corrected by tracks
+        xassert_eqq(Mimetype::content_info($audio, "video/mp4")["type"] ?? null, "audio/mp4");
+        xassert_eqq(Mimetype::content_info($video, "audio/mp4")["type"] ?? null, "video/mp4");
+        xassert_eqq(Mimetype::content_info($m4a, "audio/mp4")["type"] ?? null, "audio/mp4");
+        xassert_eq(Mimetype::content_info($m4a, "audio/mp4")["duration"] ?? null, 5);
+    }
+
     function test_mp4_duration() {
         foreach ([["N", 4], ["J", 8]] as $vx) {
             $known = pack($vx[0], 5000);
