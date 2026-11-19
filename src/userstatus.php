@@ -1039,8 +1039,8 @@ class UserStatus extends MessageSet {
         }
         if ($user->is_pc_member()
             && $us->conf->has_topics()
-            && !$user->topic_interest_map()
-            && !$us->conf->opt("allowNoTopicInterests")) {
+            && !$us->conf->opt("allowNoTopicInterests")
+            && !$user->topic_interest_map()) {
             $us->warning_at("topics", "<0>Please enter your topic interests");
             $us->inform_at("topics", "<0>We use topic interests to improve the paper assignment process.");
         }

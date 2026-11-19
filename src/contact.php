@@ -6850,7 +6850,9 @@ final class Contact extends ContactPermissions implements JsonSerializable {
     static function profilecheck_pc(Contact $user) {
         return $user->has_review()
             || ($user->collaborators()
-                && (!$user->conf->has_topics() || $user->topic_interest_map()));
+                && (!$user->conf->has_topics()
+                    || $user->conf->opt("allowNoTopicInterests")
+                    || $user->topic_interest_map()));
     }
 
 
