@@ -77,6 +77,9 @@ class Conf {
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seedec;
+    /** @var ?SearchTerm
+     * @readonly */
+    public $_sub_withdraw_condition;
     /** @var int
      * @readonly */
     public $ext_subreviews;
@@ -510,6 +513,7 @@ class Conf {
         $this->_oauth_providers = null;
         $this->_au_seerev = null;
         $this->_au_seedec = null;
+        $this->_sub_withdraw_condition = null;
 
         // digested settings
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
@@ -558,6 +562,11 @@ class Conf {
         }
         if ($this->_au_seedec instanceof False_SearchTerm) {
             $this->_au_seedec = null;
+        }
+        if (($q = $this->settingTexts["sub_withdraw"] ?? null) !== null
+            && $q !== "") {
+            $srch = new PaperSearch($this->root_user(), $q);
+            $this->_sub_withdraw_condition = $srch->full_term();
         }
     }
 
@@ -3779,6 +3788,12 @@ class Conf {
     function time_all_author_view_decision() {
         return $this->_au_seedec instanceof True_SearchTerm;
     }
+    /** @return bool */
+    function test_author_withdrawal_condition(PaperInfo $prow) {
+        return $this->_sub_withdraw_condition === null
+            || $this->_sub_withdraw_condition->test($prow, null);
+    }
+
     /** @param bool $pc
      * @param bool $conflicted
      * @return bool */

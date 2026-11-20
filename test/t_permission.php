@@ -2830,6 +2830,31 @@ class Permission_Tester {
         xassert($paper16->timeWithdrawn <= 0);
     }
 
+    function test_withdraw_condition() {
+        $old_sub_sub = $this->conf->setting("sub_sub");
+        $old_sub_grace = $this->conf->setting("sub_grace");
+        $old_sub_withdraw = $this->conf->setting("sub_withdraw");
+        $old_sub_withdraw_data = $this->conf->setting_data("sub_withdraw");
+        try {
+            // Ignore review-seen state so this test isolates the cutoff.
+            $this->conf->save_refresh_setting("sub_withdraw", 1, "before:submit");
+            $this->conf->save_refresh_setting("sub_grace", 60);
+            $this->conf->save_refresh_setting("sub_sub", Conf::$now - 30);
+            $paper16 = $this->u_mogul->checked_paper_by_id(16);
+            xassert($this->u_mogul->can_withdraw_paper($paper16));
+
+            $this->conf->save_refresh_setting("sub_sub", Conf::$now - 120);
+            $paper16 = $this->u_mogul->checked_paper_by_id(16);
+            xassert(!$this->u_mogul->can_withdraw_paper($paper16));
+            xassert($this->u_chair->can_withdraw_paper($paper16));
+            $whyNot = $this->u_mogul->perm_withdraw_paper($paper16);
+            xassert_eqq($whyNot["deadline"], "sub_sub");
+        } finally {
+            $this->conf->save_refresh_setting("sub_withdraw", $old_sub_withdraw, $old_sub_withdraw_data);
+            $this->conf->save_refresh_setting("sub_grace", $old_sub_grace);
+            $this->conf->save_refresh_setting("sub_sub", $old_sub_sub);
+        }
+    }
     function test_withdraw_reason_normalized() {
         // like PaperStatus, store at most 1024 bytes of valid UTF-8
         $reason = str_repeat("é ", 40000);

@@ -36,6 +36,25 @@ class Submissions_SettingParser extends SettingParser {
             0 => "Allow updates until the submission deadline (usually the best choice)",
             1 => "Authors must freeze the final version of each submission"
         ]);
+        $q = $sv->vstr("submission_withdrawal_condition");
+        $opts = [
+            "" => "No additional restriction",
+            "before:register" => "Until the registration deadline",
+            "before:submit" => "Until the submission deadline",
+            "before:resubmit" => "Until the resubmission deadline",
+            "phase:review" => "Until the final-version phase"
+        ];
+        if ($q !== "" && !isset($opts[$q])) {
+            $opts[$q] = "Custom search: {$q}";
+        }
+        $hint = "This is an additional restriction on authors. Deadline choices use each submission's class and grace period; an unset deadline imposes no cutoff. Administrators can still withdraw submissions.";
+        if (($jpath = $sv->si("submission_withdrawal_condition")->json_path())) {
+            $hint .= " " . $sv->conf->hotlink("Use Advanced settings for a custom paper search condition.", "settings", [
+                "group" => "json", "#" => "path=" . urlencode($jpath)
+            ]);
+        }
+        $sv->print_select_group("submission_withdrawal_condition",
+            "Author withdrawal cutoff", $opts, ["hint" => $hint]);
     }
     static function print_blind(SettingValues $sv) {
         $sv->print_radio_table("author_visibility", [
@@ -71,6 +90,23 @@ class Submissions_SettingParser extends SettingParser {
                 $sv->check_date_before("submission_done", "submission_resubmission");
             }
             return true;
+        } else if ($si->name === "submission_withdrawal_condition"
+                   && $sv->has_req($si->name)) {
+            $sv->save($si, $sv->base_parse_req($si));
+            $sv->request_validate($si);
+            return true;
+        }
+        return false;
+    }
+    function validate(Si $si, SettingValues $sv) {
+        if ($si->name === "submission_withdrawal_condition") {
+            $q = $sv->newv($si->name) ?? "";
+            if ($q !== "") {
+                $srch = new PaperSearch($sv->conf->root_user(), $q);
+                foreach ($srch->message_list() as $mi) {
+                    $sv->append_item_at($si->name, $mi);
+                }
+            }
         }
     }
 

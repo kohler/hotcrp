@@ -2316,6 +2316,13 @@ class PaperTable {
                 $b = [$b, "(admin only)"];
             }
             $buttons[] = $b;
+        } else if ($this->user->withdrawal_cutoff_blocks_paper($this->prow)) {
+            $tooltip = "Author withdrawal is currently disabled. "
+                . "Please contact the Program Chairs if you wish to withdraw this paper.";
+            // The wrapper remains hoverable when the button is disabled.
+            $buttons[] = '<span class="need-tooltip" tabindex="0" data-tooltip="'
+                . htmlspecialchars($tooltip, ENT_QUOTES, "UTF-8") . '">'
+                . Ht::button("Withdraw", ["disabled" => true]) . '</span>';
         }
 
         return $buttons;
