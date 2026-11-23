@@ -12,9 +12,12 @@ class XlsxGenerator {
     private $sst = [];
     private $nsst = 0;
     private $nsheets = 0;
-    private $any_headers = false;
     private $done = false;
     private $widths;
+    /** @var list<string> */
+    private $sheet_names = [];
+    /** @var list<array{bold?:bool,fill?:string}> */
+    private $styles = [[]];
 
     function __construct($downloadname) {
         $this->zip = new DocumentInfoSet($downloadname);
@@ -61,20 +64,33 @@ class XlsxGenerator {
         }
     }
 
+    /** @param array{bold?:bool,fill?:string}
+     * @return int */
+    function define_style($style) {
+        $id = array_search($style, $this->styles, true);
+        if ($id === false) {
+            $this->styles[] = $style;
+            $id = count($this->styles) - 1;
+        }
+        return $id;
+    }
+
     /** @param list<null|int|float|string> $header
-     * @param list<list<null|int|float|string>> $rows */
-    function add_sheet($header, $rows) {
+     * @param list<list<null|int|float|string>> $rows
+     * @param string|null $name
+     * @param array<int,int|float> $col_widths 
+     * @param array<int,int> $row_styles */
+    function add_sheet($header, $rows, $name = null, $col_widths = [], $row_styles = []) {
         assert(!$this->done);
         $extra = "";
         $rout = [];
         $this->widths = [];
         if ($header) {
-            $rout[] = $this->row_data(count($rout) + 1, $header, 1);
-            $this->any_headers = true;
+            $rout[] = $this->row_data(count($rout) + 1, $header, $this->define_style(["bold" => true]));
             $extra = "<sheetViews><sheetView workbookViewId=\"0\"><pane topLeftCell=\"A2\" ySplit=\"1.0\" state=\"frozen\" activePane=\"bottomLeft\"/></sheetView></sheetViews>\n";
         }
-        foreach ($rows as $row) {
-            $rout[] = $this->row_data(count($rout) + 1, $row, 0);
+        foreach ($rows as $i => $row) {
+            $rout[] = $this->row_data(count($rout) + 1, $row, $row_styles[$i] ?? 0);
         }
         for ($c = $numcol = 0; $numcol !== count($this->widths); ++$c) {
             if (isset($this->widths[$c])) {
@@ -83,6 +99,10 @@ class XlsxGenerator {
                 ++$numcol;
             }
         }
+        foreach ($col_widths as $c => $w) {
+            $this->widths[$c] = "<col min=\"" . ($c + 1) . "\" max=\"" . ($c + 1) . "\" width=\"{$w}\"/>";
+        }
+        ksort($this->widths);
         $t = self::PROCESSING . "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\">\n"
             . $extra
             . "<sheetFormatPr customHeight=\"1\" defaultRowHeight=\"15.75\"/>"
@@ -90,13 +110,21 @@ class XlsxGenerator {
             . "<sheetData>" . join("", $rout) . "</sheetData>\n"
             . "</worksheet>\n";
         ++$this->nsheets;
+        $this->sheet_names[] = $name ?? "Sheet" . $this->nsheets;
         $this->zip->add_string_as($t, "xl/worksheets/sheet" . $this->nsheets . ".xml");
+    }
+
+    /** 
+     * @param string $s
+     * @return string */
+    static function xml_clean($s) {
+        return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', "", $s);
     }
 
     private function add_sst() {
         $t = [self::PROCESSING, "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"$this->nsst\" uniqueCount=\"$this->nsst\">\n"];
         foreach ($this->sst as $k => $v)
-            $t[] = "<si><t>" . htmlspecialchars($k) . "</t></si>";
+            $t[] = "<si><t>" . htmlspecialchars(self::xml_clean($k)) . "</t></si>";
         $t[] = "</sst>\n";
         $this->zip->add_string_as(join("", $t), "xl/sharedStrings.xml");
     }
@@ -104,7 +132,7 @@ class XlsxGenerator {
     private function add_workbook() {
         $t = [self::PROCESSING, "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\">\n", "<sheets>\n"];
         for ($i = 1; $i <= $this->nsheets; ++$i)
-            $t[] = "<sheet sheetId=\"$i\" name=\"Sheet$i\""
+            $t[] = "<sheet sheetId=\"$i\" name=\"" . htmlspecialchars(self::xml_clean($this->sheet_names[$i - 1])) . "\""
                 . ($i == 1 ? " state=\"visible\"" : "")
                 . " r:id=\"rId" . ($i + 2) . "\"/>";
         $t[] = "</sheets>\n</workbook>\n";
@@ -113,14 +141,30 @@ class XlsxGenerator {
 
     private function add_styles() {
         $t = [self::PROCESSING, "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\">\n"];
-        if ($this->any_headers) {
+        if (count($this->styles) > 1) {
+            $fills = ["<patternFill patternType=\"none\"/>", "<patternFill patternType=\"gray125\"/>"];
+            $xfs = ["<xf fontId=\"0\" />"];
+            foreach (array_slice($this->styles, 1) as $style) {
+                $xf = "<xf applyFont=\"1\" fontId=\"" . (empty($style["bold"]) ? 0 : 1) . "\"";
+                if (isset($style["fill"])) {
+                    $fill = "<patternFill patternType=\"solid\"><fgColor rgb=\"FF{$style["fill"]}\"/><bgColor rgb=\"FF{$style["fill"]}\"/></patternFill>";
+                    $fillid = array_search($fill, $fills, true);
+                    if ($fillid === false) {
+                        $fills[] = $fill;
+                        $fillid = count($fills) - 1;
+                    }
+                    $xf .= " applyFill=\"1\" fillId=\"{$fillid}\"";
+                }
+                $xfs[] = $xf . " />";
+            }
             $t[] = "<fonts count=\"2\"><font><sz val=\"10.0\"/><name val=\"Arial\"/></font><font><sz val=\"10.0\"/><name val=\"Arial\"/><b/></font></fonts>\n";
-            $t[] = "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>\n";
+            $t[] = "<fills count=\"" . count($fills) . "\">";
+            foreach ($fills as $fill) {
+                $t[] = "<fill>{$fill}</fill>";
+            }
+            $t[] = "</fills>\n";
             $t[] = "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>\n";
-            $t[] = "<cellXfs count=\"2\">\n";
-            $t[] = "<xf fontId=\"0\" />\n";
-            $t[] = "<xf applyFont=\"1\" fontId=\"1\" />\n";
-            $t[] = "</cellXfs>\n";
+            $t[] = "<cellXfs count=\"" . count($xfs) . "\">\n" . join("\n", $xfs) . "\n</cellXfs>\n";
         }
         $t[] = "</styleSheet>\n";
         $this->zip->add_string_as(join("", $t), "xl/styles.xml");
