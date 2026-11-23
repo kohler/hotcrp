@@ -59,6 +59,10 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
 paper’s tags, or “", $hth->search_link("show:#tagname"), "” to see a particular tag
 as a column.</p>
 
+<p>Comments can also be tagged. While writing a comment, use the comment editor’s
+tag entry to add tags such as “#foo”. To search for papers with comments tagged
+“#foo”, search for “", $hth->search_link("cmt:#foo"), "”.</p>
+
 <p>Tags are only shown to PC members and administrators. ";
         if ($this->user->isPC) {
             if ($this->conf->pc_can_view_conflicted_tags()) {
