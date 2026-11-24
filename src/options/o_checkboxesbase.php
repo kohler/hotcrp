@@ -76,8 +76,17 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         }
     }
 
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
+    /** @return list<int> */
+    function sorted_value_list(PaperValue $ov) {
         $vs = $ov->value_list();
+        if (count($vs) > 1) {
+            $this->topic_set()->sort($vs);
+        }
+        return $vs;
+    }
+
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
+        $vs = $this->sorted_value_list($ov);
         if (!empty($vs)) {
             $tmap = $this->topic_set();
             $vs = array_map(function ($t) use ($tmap) { return $tmap[$t]; }, $vs);
@@ -255,11 +264,11 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $vs = $ov->value_list();
+        $vs = $this->sorted_value_list($ov);
         if (empty($vs)) {
             return;
         } else if ($fr->want(FieldRender::CFTEXT)) {
-            $this->render_text($fr, $ov);
+            $this->render_text($fr, $vs);
             return;
         }
         $interests = $this->interests($fr->user);
@@ -285,11 +294,11 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         $fr->value_long = true;
     }
 
-    private function render_text(FieldRender $fr, PaperValue $ov) {
-        $interests = $this->interests($fr->user);
+    /** @param list<int> $vs */
+    private function render_text(FieldRender $fr, $vs) {
         $ts = [];
         $topicset = $this->topic_set();
-        foreach ($ov->value_list() as $tid) {
+        foreach ($vs as $tid) {
             $ts[] = $topicset->name($tid);
         }
         $fr->set_text(join("\n", $ts));

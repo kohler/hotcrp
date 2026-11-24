@@ -238,7 +238,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param list<int> &$ids */
     function sort(&$ids) {
         usort($ids, function ($a, $b) {
-            return $this->_order[$a] - $this->_order[$b];
+            return ($this->_order[$a] ?? PHP_INT_MAX) <=> ($this->_order[$b] ?? PHP_INT_MAX);
         });
     }
 

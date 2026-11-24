@@ -1702,6 +1702,18 @@ Phil Porras.");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1, 5]);
         $this->conf->topic_set()->set_auto_add(false);
+
+        // rendering uses topic order, not value order
+        $topt = $this->conf->option_by_id(PaperOption::TOPICSID);
+        $ov = PaperValue::make_multi($nprow1, $topt, [3, 1, 2], [null, null, null]);
+        $fr = new FieldRender(FieldRender::CFTEXT, $this->u_estrin);
+        $topt->render($fr, $ov);
+        xassert_eqq($fr->value, "Architecture\nCloud computing\nSecurity");
+        $fr = new FieldRender(FieldRender::CFHTML, $this->u_estrin);
+        $topt->render($fr, $ov);
+        xassert_eqq(preg_replace('/<[^>]*>/', "|", $fr->value), "|||Architecture||||Cloud computing||||Security|||");
+        xassert_eqq($topt->value_export_json($ov, new PaperExport($this->u_estrin)),
+                    ["Architecture", "Cloud computing", "Security"]);
     }
 
     /** @param PaperInfo $prow
