@@ -225,21 +225,47 @@ if ! $force && test -z "$grants"; then
 fi
 
 
+remote_host=false
+if $has_host; then
+    case "$DBHOST" in
+    localhost|127.0.0.1|::1) ;;
+    *) remote_host=true;;
+    esac
+fi
+
+remote_host_message () {
+    echo "* The database user can only access the database locally, but this script is"
+    echo "* connecting over the network. Unless HotCRP will run on the database"
+    echo "* server, add \`--grant-host=HOST\` arguments, where HOST is this machine's"
+    echo "* name or IP address (or \`%\` for any host)."
+}
+
+if $batch && $remote_host && test -z "$granthosts"; then
+    echo 1>&2
+    remote_host_message 1>&2
+    echo 1>&2
+    exit 1
+fi
+
 if ! $batch; then
     if $dbuser_existing; then
         echo "Creating the database for your conference."
     else
         echo "Creating the database and database user for your conference."
     fi
-    if test -z "$granthosts"; then
+    if test -z "$granthosts" && $remote_host; then
+        remote_host_message
+        while true; do
+            echo_n "Continue anyway? [y/N] "
+            read OK
+            expr "$OK" : "[yY].*" >/dev/null && break
+            if test -z "$OK" || expr "$OK" : "[nNqQ].*" >/dev/null; then
+                echo "* Quitting." 1>&2
+                exit 1
+            fi
+        done
+    elif test -z "$granthosts"; then
         echo "* Access for the database user is allowed only from the local host."
-        if test "$has_host" = true; then
-            echo
-            echo "* Since you are running MySQL on a remote host, it will likely"
-            echo "* cause problems that HotCRP is restricting the database user"
-            echo "* to localhost access only. Add \`--grant-host=HOST\` arguments"
-            echo "* to also allow access from other hosts."
-        fi
     fi
     echo
 fi
@@ -295,7 +321,7 @@ while true; do
 
     test -z "$DBNAME" -a -n "$default_dbname" && DBNAME="$default_dbname"
     x="`echo_dbname | tr -d a-zA-Z0-9_.-`"
-    c="`echo_dbname | wc -c`"
+    c="`echo_dbname | tr -d '\n' | wc -c`"
     if test -z "$DBNAME"; then
         echo "* Quitting." 1>&2
         exit 1
@@ -305,12 +331,12 @@ while true; do
         echo "* The database name can be at most 64 characters long." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
         echo "* The database name must not start with a period." 1>&2
-    elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
+    elif test "$DBNAME" = mysql -o "$DBNAME" = sys || expr "$DBNAME" : '.*_schema$' >/dev/null; then
         echo "* Database name '$DBNAME' is reserved." 1>&2
     elif ! $dbuser_existing && test "$DBNAME" = "$default_dbname" -a -n "$default_dbuser"; then
         DBUSER="$default_dbuser"; break
-    elif ! $dbuser_existing && test "$c" -gt 16; then
-        echo "* Database user names can be at most 16 characters long." 1>&2
+    elif ! $dbuser_existing && test "$c" -gt 32; then
+        echo "* Database user names can be at most 32 characters long." 1>&2
         echo "* Either choose a shorter database name, or use --dbuser." 1>&2
     else
         break
@@ -328,6 +354,19 @@ __EOF__
 }
 
 test -z "$DBUSER" && DBUSER="$DBNAME"
+if expr "x$DBUSER" : "x.*['\\\\]" >/dev/null; then
+    echo "* The database user name must not contain quotes or backslashes." 1>&2
+    exit 1
+fi
+case "$DBUSER" in
+root|mysql|debian-sys-maint|mysql.*|mariadb.*)
+    echo "* The database user name '$DBUSER' is reserved." 1>&2
+    exit 1;;
+esac
+if test -n "$MYCREATEDB_USER" -a "$DBUSER" = "$MYCREATEDB_USER"; then
+    echo "* The database user must differ from the administrator account." 1>&2
+    exit 1
+fi
 default_dbpass=
 x="`getdbopt dbPassword 2>/dev/null`"
 x="`eval "echo $x"`"
@@ -416,6 +455,16 @@ if [ "$createdb" = y ]; then
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
+# Database-level grants treat `_` and `%` as wildcards; escape them, unless
+# MySQL's `partial_revokes` is on (then they are literal)
+partial_revokes=`echo "show global variables like 'partial\\_revokes';" | \
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS -N 2>/dev/null | awk '{print $2}'`
+if [ "x$partial_revokes" = xON ]; then
+    GRANT_DBNAME="$DBNAME"
+else
+    GRANT_DBNAME="`echo_dbname | sed 's/[_%]/\\\\&/g'`"
+fi
+
 defaulthosts=""
 if $default_granthosts; then
     defaulthosts="localhost 127.0.0.1 ::1"
@@ -467,23 +516,23 @@ grant_access () {
         cat <<__EOF__
 . GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
 .     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
-.     ON \`$DBNAME\`.* TO '$DBUSER'@'$1';
+.     ON \`$GRANT_DBNAME\`.* TO '$DBUSER'@'$1';
 . GRANT RELOAD ON *.* TO '$DBUSER'@'$1';
 __EOF__
     fi
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
     REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES
-    ON \`$DBNAME\`.* TO '$DBUSER'@'$1';
+    ON \`$GRANT_DBNAME\`.* TO '$DBUSER'@'$1';
 GRANT RELOAD ON *.* TO '$DBUSER'@'$1';
 __EOF__
 }
 
 if [ "$createdb" = y -o "$createuser" = y ]; then
     $qecho "Granting $DBUSER access to $DBNAME..."
-    $verbose && echo ". DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';"
+    $verbose && echo ". DELETE FROM db WHERE db IN ('$DBNAME', '$GRANT_DBNAME') AND User='$DBUSER';"
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
+DELETE FROM db WHERE db IN ('$DBNAME', '$GRANT_DBNAME') AND User='$DBUSER';
 __EOF__
     # GRANT fails if the user does not exist at a host; existing users
     # (`--dbuser`) are not created at new hosts
@@ -554,20 +603,9 @@ __EOF__
 { if (p) print }' < "${ETCDIR}${distoptions_file}"
 }
 
-is_group_member () {
-    u="$1"; g="$2"
-    if test -x /usr/bin/dsmemberutil; then
-        if expr "$u" : '[0-9]*$' >/dev/null; then ua="-u"; else ua="-U"; fi
-        if expr "$g" : '[0-9]*$' >/dev/null; then ga="-g"; else ga="-G"; fi
-        /usr/bin/dsmemberutil checkmembership $ua "$u" $ga "$g" 2>/dev/null | grep "is a member" >/dev/null
-    else
-        members="`grep "^$group" /etc/group | sed 's/.*:.*:.*:/,/'`"
-        echo "$members," | grep ",$u," >/dev/null
-    fi
-}
-
 expected_options="`findoptions expected`"
 current_options="`findoptions`"
+created_options=
 if findoptions >/dev/null; then
     echo
     echo "* Your $current_options file already exists."
@@ -581,13 +619,19 @@ if findoptions >/dev/null; then
 elif [ -r "${ETCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
     $qecho
     $qecho "Creating $expected_options..."
-    create_options > "$expected_options"
-    if [ -n "$SUDO_USER" ]; then
-        $qecho + chown $SUDO_USER "$expected_options"
-        chown $SUDO_USER "$expected_options"
+    # The file contains a password: make it unreadable by others, and
+    # refuse to overwrite an existing file (`set -C`), so we never write
+    # through a planted symbolic link
+    if ! (umask 027; set -C; create_options > "$expected_options"); then
+        echo "* Cannot create $expected_options." 1>&2
+        exit 1
     fi
-    chmod o-rwx "$expected_options"
+    if [ -n "$SUDO_USER" ]; then
+        $qecho + chown -h $SUDO_USER "$expected_options"
+        chown -h $SUDO_USER "$expected_options"
+    fi
     current_options="$expected_options"
+    created_options=y
     $qecho
     $qecho "* Done!"
 else
@@ -596,27 +640,67 @@ else
     current_options=
 fi
 
-if test -n "$current_options"; then
-    # warn about unreadable options file
-    group="`ls -l "$current_options" | awk '{print $4}'`"
+## Warn if the web server cannot read the options file. This only advises;
+## it never changes the file.
 
-    httpd_user="`ps axho user,comm | grep -E 'httpd|apache|nginx' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
+# Print the uid of the web server likely to run HotCRP: the uid of the
+# non-root php-fpm processes, or failing that of the non-root Apache
+# processes, if they all have the same uid. Print nothing otherwise. Since
+# any user can give a process one of these names, the result is only used
+# for advice that names the user.
+find_web_server_uid () {
+    ps axo uid=,comm= 2>/dev/null | awk '
+function kind(c) {
+    sub(/.*\//, "", c)
+    if (c ~ /^php-fpm/) return 1
+    if (c ~ /^(httpd|apache2?)$/) return 2
+    return 0
+}
+{
+    k = kind($2)
+    if (k && $1 + 0 != 0 && !seen[k, $1 + 0]++) {
+        n[k]++; u[k] = $1 + 0
+    }
+}
+END {
+    for (i = 1; i <= 2; ++i) {
+        if (n[i]) {
+            if (n[i] == 1) print u[i]
+            exit
+        }
+    }
+}'
+}
 
-    if test -z "$httpd_user"; then
-        echo
-        echo "* The $current_options file contains important, sensitive data."
-        echo "* You may need to change its group and mode so the Web server can read it."
-        echo
-    elif ! is_group_member "$httpd_user" "$group"; then
-        if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
-            $qecho "Making $current_options readable by the Web server..."
-            $qecho + chgrp "$httpd_user" "$current_options"
-        else
-            echo
-            echo "* The $current_options file contains important data, but the Web server"
-            echo "* cannot read it. Use 'chgrp GROUP $current_options' to change its group."
-            echo
+# Usage: web_can_read UID FILE
+web_can_read () {
+    wuid="$1"
+    set -- `ls -lnd "$2"`
+    if [ "$3" = "$wuid" ]; then
+        expr "x$1" : 'x.r' >/dev/null
+    elif id -G "$wuid" 2>/dev/null | tr ' ' '\n' | grep -x "$4" >/dev/null; then
+        expr "x$1" : 'x....r' >/dev/null
+    else
+        expr "x$1" : 'x.......r' >/dev/null
+    fi
+}
+
+if test -n "$current_options" && test -f "$current_options"; then
+    web_uid="`find_web_server_uid`"
+    if test -z "$web_uid"; then
+        if test -n "$created_options"; then
+            $qecho
+            $qecho "* $current_options contains the database password. Make sure the"
+            $qecho "* web server can read it, but other users cannot."
         fi
+    elif ! web_can_read "$web_uid" "$current_options"; then
+        web_user="`id -nu "$web_uid" 2>/dev/null || echo "$web_uid"`"
+        web_group="`id -gn "$web_uid" 2>/dev/null || echo GROUP`"
+        echo 1>&2
+        echo "* $current_options contains the database password, but the web server" 1>&2
+        echo "* (user $web_user) cannot read it. Potential fix:" 1>&2
+        echo "*     chgrp $web_group $current_options" 1>&2
+        echo "*     chmod g+r $current_options" 1>&2
     fi
 fi
 

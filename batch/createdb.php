@@ -16,6 +16,8 @@ class CreateDB_Batch {
     public $password;
     /** @var ?\mysqli */
     public $dblink;
+    /** @var ?string */
+    public $admin_user;
 
     /** @var bool */
     public $write_config;
@@ -32,17 +34,28 @@ class CreateDB_Batch {
     public $dbpass;
     /** @var ?string */
     public $dbhost;
+    /** @var ?string */
+    public $dbsocket;
+    /** @var ?int */
+    public $dbport;
     /** @var list<string> */
-    public $grant_host;
-    /** @var list<string> */
-    public $all_hosts;
+    public $grant_host = [];
+    /** @var bool */
+    public $default_grant_hosts;
+    /** @var ?list<string> */
+    private $default_hosts;
     /** @var ?\mysqli */
     public $hcrp_dblink;
+
+    /** @var ?bool */
+    private $partial_revokes;
 
     /** @var bool */
     public $had_db;
     /** @var bool */
     public $had_dbuser;
+    /** @var list<string> */
+    public $dbuser_hosts = [];
 
     /** @var bool */
     public $grant;
@@ -67,6 +80,8 @@ class CreateDB_Batch {
     public $verbose;
     /** @var bool */
     public $interactive;
+    /** @var bool */
+    public $force;
 
     /** @param array<string,mixed> $arg
      * @param bool $interactive */
@@ -104,10 +119,18 @@ class CreateDB_Batch {
             $this->dbuser = substr($arg["dbuser"], 0, $comma);
             $this->dbpass = substr($arg["dbuser"], $comma + 1);
         }
-        $this->dbhost = $arg["host"] ?? "localhost";
-        $this->grant_host = $arg["grant-host"] ?? [];
-        $main_hosts = $this->dbhost === "localhost" ? ["localhost", "127.0.0.1", "localhost.localdomain"] : [$this->dbhost];
-        $this->all_hosts = array_merge($main_hosts, $this->grant_host);
+        foreach ($arg["grant-host"] ?? [] as $h) {
+            if (!preg_match('/\A[-a-zA-Z0-9.%_\/:]+\z/', $h)) {
+                throw new CommandLineException("Bad `--grant-host` {$h}");
+            }
+            if (!in_array($h, $this->grant_host, true)) {
+                $this->grant_host[] = $h;
+            }
+        }
+        $this->default_grant_hosts = !isset($arg["no-default-grant-hosts"]);
+        if (!$this->default_grant_hosts && empty($this->grant_host)) {
+            throw new CommandLineException("`--no-default-grant-hosts` given without `--grant-host`, so no host\nwould be granted database access");
+        }
 
         $this->minimal = isset($arg["minimal"]);
         $this->schema = !isset($arg["no-schema"]);
@@ -116,13 +139,32 @@ class CreateDB_Batch {
         $this->batch = !$interactive || isset($arg["batch"]);
         $this->replace = isset($arg["replace"]);
         $this->replace_user = isset($arg["replace-user"]);
+        if (!$this->grant && $this->replace_user) {
+            throw new CommandLineException("`--no-grant` and `--replace-user` contradict");
+        }
         $this->quiet = isset($arg["quiet"]);
         $this->verbose = isset($arg["verbose"]);
         $this->interactive = $interactive;
+        $this->force = isset($arg["force"]);
 
         if ($this->configfile !== null && file_exists($this->configfile)) {
             $this->read_configopt();
         }
+        // read database host from configuration file, unless given on
+        // command line
+        $dbhost = $arg["host"] ?? $this->configopt["dbHost"] ?? null;
+        $this->dbhost = is_string($dbhost) && $dbhost !== "" ? $dbhost : "localhost";
+        $dbsocket = $arg["socket"] ?? $this->configopt["dbSocket"] ?? null;
+        $this->dbsocket = is_string($dbsocket) && $dbsocket !== "" ? $dbsocket : null;
+        if (isset($arg["port"])
+            && (!ctype_digit($arg["port"]) || (int) $arg["port"] < 1 || (int) $arg["port"] > 65535)) {
+            throw new CommandLineException("Bad `--port`");
+        }
+        $dbport = $arg["port"] ?? $this->configopt["dbPort"] ?? null;
+        if (is_string($dbport) && ctype_digit($dbport)) {
+            $dbport = (int) $dbport;
+        }
+        $this->dbport = is_int($dbport) && $dbport > 0 ? $dbport : null;
     }
 
     function read_configopt() {
@@ -169,9 +211,8 @@ class CreateDB_Batch {
             return preg_replace('/\\\\([\\\\\'])/', '$1', substr($s, 1, -1));
         } else if (strpos($s, ".") === false && strpos($s, "E") === false && strpos($s, "e") === false) {
             return intval($s, 0);
-        } else {
-            return floatval($s);
         }
+        return floatval($s);
     }
 
 
@@ -199,64 +240,145 @@ class CreateDB_Batch {
 
 
 
+    /** @return never */
+    static function quit_on_eof() {
+        fwrite(STDOUT, "\n");
+        fwrite(STDERR, "* Quitting.\n");
+        exit(1);
+    }
+
+    /** Prompt for and return a line of input. Exits on end of file.
+     * @param string $prompt
+     * @return string */
+    function read_line($prompt) {
+        fwrite(STDOUT, $prompt);
+        $s = fgets(STDIN);
+        if ($s === false) {
+            self::quit_on_eof();
+        }
+        return trim($s);
+    }
+
+    /** Prompt for and return a line of input without echoing it. Exits on
+     * end of file or interrupt.
+     * @param string $prompt
+     * @return string */
+    function read_secret($prompt) {
+        if (!stream_isatty(STDIN)) {
+            return $this->read_line($prompt);
+        }
+        fwrite(STDOUT, $prompt);
+        // restore echo if interrupted
+        $pcntl = function_exists("pcntl_signal") && function_exists("pcntl_async_signals");
+        if ($pcntl) {
+            $async = pcntl_async_signals(true);
+            pcntl_signal(SIGINT, function () {
+                system("stty echo");
+                fwrite(STDOUT, "\n");
+                exit(130);
+            }, false);
+        }
+        system("stty -echo");
+        if ($pcntl) {
+            // wait in `stream_select`, which (unlike `fgets`) returns on
+            // interrupt, letting the signal handler run
+            $r = [STDIN];
+            $w = $e = null;
+            @stream_select($r, $w, $e, null);
+        }
+        $s = fgets(STDIN);
+        system("stty echo");
+        fwrite(STDOUT, "\n");
+        if ($pcntl) {
+            pcntl_signal(SIGINT, SIG_DFL);
+            pcntl_async_signals($async);
+        }
+        if ($s === false) {
+            self::quit_on_eof();
+        }
+        return trim($s);
+    }
+
     function read_password() {
         if (PHP_SAPI !== "cli" || !$this->interactive) {
             throw new CommandLineException("Password required");
         }
-        fwrite(STDOUT, "Enter MySQL password: ");
-        if (posix_isatty(STDIN)) {
-            system("stty -echo");
-        }
-        $this->password = trim(fgets(STDIN));
-        if (posix_isatty(STDIN)) {
-            system("stty echo");
-            fwrite(STDOUT, "\n");
-        }
+        $this->password = $this->read_secret("Enter MySQL password: ");
         if ($this->password === "") {
             fwrite(STDERR, "* Quitting.\n");
             exit(1);
         }
     }
 
+    /** @param ?string $user
+     * @param ?string $password
+     * @param string $name
+     * @return Dbl_ConnectionParams */
+    function make_cp($user, $password, $name) {
+        $cp = new Dbl_ConnectionParams;
+        $cp->host = $this->dbhost;
+        $cp->port = $this->dbport;
+        $cp->socket = $this->dbsocket;
+        $cp->user = $user;
+        $cp->password = $password;
+        $cp->name = $name;
+        $cp->apply_defaults();
+        return $cp;
+    }
+
+    /** Return the default administrator user name. Like the `mysql` client,
+     * this is the name of the current OS user.
+     * @return ?string */
+    static function default_admin_user() {
+        if (($u = ini_get("mysqli.default_user")) !== false && $u !== "") {
+            return $u;
+        }
+        if (function_exists("posix_geteuid")) {
+            $uid = posix_geteuid();
+            if ($uid === 0) {
+                return "root";
+            } else if (($pw = posix_getpwuid($uid)) && ($pw["name"] ?? "") !== "") {
+                return $pw["name"];
+            }
+        }
+        foreach (["USER", "LOGNAME"] as $k) {
+            if (($u = getenv($k)) !== false && $u !== "") {
+                return $u;
+            }
+        }
+        return null;
+    }
+
     /** @return \mysqli */
     function dblink() {
-        global $Opt;
         if ($this->dblink) {
             return $this->dblink;
         }
         if ($this->need_password && $this->password === null) {
             $this->read_password();
         }
-        $cp = new Dbl_ConnectionParams;
-        $cp->host = $this->dbhost;
-        $cp->user = $this->user;
-        $cp->password = $this->password;
-        $cp->socket = $Opt["dbSocket"] ?? null;
-        $cp->name = "mysql";
-        $cp->apply_defaults();
-        $this->dblink = $cp->connect();
+        $cp = $this->make_cp($this->user ?? self::default_admin_user(), $this->password, "mysql");
+        $this->admin_user = $cp->user;
+        $this->dblink = @$cp->connect();
         if (!$this->dblink) {
-            throw new CommandLineException("Cannot connect to administrator database");
+            $msg = "Cannot connect to administrator database as `{$cp->user}`: {$cp->connect_error}";
+            if ($cp->connect_errno === 1045 || $cp->connect_errno === 1698) {
+                $msg .= "\nTry `sudo`, or supply `--user` and `--password` for a database administrator.";
+            }
+            throw new CommandLineException($msg);
         }
         return $this->dblink;
     }
 
     /** @return \mysqli */
     function hcrp_dblink() {
-        global $Opt;
         if ($this->hcrp_dblink) {
             return $this->hcrp_dblink;
         }
-        $cp = new Dbl_ConnectionParams;
-        $cp->host = $this->dbhost;
-        $cp->user = $this->dbuser;
-        $cp->password = $this->dbpass;
-        $cp->socket = $Opt["dbSocket"] ?? null;
-        $cp->name = $this->name;
-        $cp->apply_defaults();
-        $this->hcrp_dblink = $cp->connect();
+        $cp = $this->make_cp($this->dbuser, $this->dbpass, $this->name);
+        $this->hcrp_dblink = @$cp->connect();
         if (!$this->hcrp_dblink) {
-            throw new CommandLineException("Cannot connect to database {$this->name}");
+            throw new CommandLineException("Cannot connect to database `{$this->name}` as `{$this->dbuser}`: {$cp->connect_error}");
         }
         return $this->hcrp_dblink;
     }
@@ -284,14 +406,14 @@ class CreateDB_Batch {
     }
 
     const DBNAME_CHARS_REGEX = '/\A[-a-zA-Z0-9_.]*\z/';
-    const DBNAME_REGEX = '/\A(?!mysql\z|.*_schema\z)[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/';
+    const DBNAME_REGEX = '/\A(?!(?i:mysql|sys|.*_schema)\z)[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/';
+    const DBUSER_RESERVED_REGEX = '/\A(?:root|mysql|debian-sys-maint|mysql\..*|mariadb\..*)\z/is';
 
     function read_name() {
         $defname = $this->configopt["dbName"] ?? null;
         while (true) {
-            fwrite(STDOUT, "Enter database name (NO SPACES)"
+            $this->name = $this->read_line("Enter database name (NO SPACES)"
                 . ($defname === null ? "" : " [default {$defname}]") . ": ");
-            $this->name = trim(fgets(STDIN));
             if ($this->name === "" && $defname !== null) {
                 $this->name = $defname;
                 $defname = null;
@@ -341,12 +463,13 @@ class CreateDB_Batch {
         return $found;
     }
 
+    const DBUSER_MAXLEN = 32;
+
     function read_dbuser() {
-        $defuser = $this->configopt["dbUser"] ?? substr($this->name, 0, 16);
+        $defuser = $this->configopt["dbUser"] ?? substr($this->name, 0, self::DBUSER_MAXLEN);
         while (true) {
-            fwrite(STDOUT, "Enter username for database user"
+            $this->dbuser = $this->read_line("Enter username for database user"
                 . ($defuser === null ? "" : " [default {$defuser}]") . ": ");
-            $this->dbuser = trim(fgets(STDIN));
             if ($this->dbuser === "" && $defuser !== null) {
                 $this->dbuser = $defuser;
                 $defuser = null;
@@ -356,12 +479,26 @@ class CreateDB_Batch {
                 exit(1);
             } else if ($this->check_dbuser()) {
                 return;
-            } else if (strlen($this->dbuser) > 16) {
-                fwrite(STDERR, "* Database user names can be at most 16 bytes long.\n");
             } else {
-                fwrite(STDERR, "* Database user name `{$this->dbuser}` is reserved.\n");
+                fwrite(STDERR, "* " . $this->dbuser_problem() . ".\n");
             }
         }
+    }
+
+    /** @return ?string */
+    function dbuser_problem() {
+        if (($this->dbuser ?? "") === "") {
+            return "Database user required";
+        } else if (preg_match('/[\000\']/', $this->dbuser)) {
+            return "Database user names must not contain single quotes or null characters";
+        } else if (strlen($this->dbuser) > self::DBUSER_MAXLEN) {
+            return "Database user names can be at most " . self::DBUSER_MAXLEN . " bytes long";
+        } else if (preg_match(self::DBUSER_RESERVED_REGEX, $this->dbuser)) {
+            return "Database user name `{$this->dbuser}` is reserved";
+        } else if ($this->dbuser === $this->admin_user) {
+            return "The database user must differ from the administrator account `{$this->admin_user}`";
+        }
+        return null;
     }
 
     /** @return bool */
@@ -370,23 +507,64 @@ class CreateDB_Batch {
             if (isset($this->configopt["dbUser"]) && $this->batch) {
                 $this->dbuser = $this->configopt["dbUser"];
             } else if ($this->batch) {
-                $this->dbuser = substr($this->name, 0, 16);
+                $this->dbuser = substr($this->name, 0, self::DBUSER_MAXLEN);
             } else {
                 $this->read_dbuser();
             }
         }
-        return ($this->dbuser ?? "") !== ""
-            && !preg_match('/[\000\']/', $this->dbuser)
-            && strlen($this->dbuser) <= 16;
+        return $this->dbuser_problem() === null;
+    }
+
+    /** @return list<string> */
+    function load_dbuser_hosts() {
+        if (!$this->check_dbuser()) {
+            throw new CommandLineException($this->dbuser_problem() ?? "Bad database user");
+        }
+        $this->dbuser_hosts = Dbl::fetch_first_columns($this->dblink(), "SELECT Host FROM user WHERE User=?", $this->dbuser);
+        return $this->dbuser_hosts;
+    }
+
+    /** Return the default hosts granted database access: the local host
+     * under its various names, unless `--no-default-grant-hosts`.
+     * @return list<string> */
+    function default_hosts() {
+        if ($this->default_hosts === null) {
+            $this->default_hosts = [];
+            if ($this->default_grant_hosts) {
+                $hosts = ["localhost", "127.0.0.1", "::1"];
+                // Also include `localhost.localdomain` (for backward
+                // compatibility), but only if `skip_name_resolve` is off
+                if (Dbl::fetch_ivalue($this->dblink(), "SELECT @@global.skip_name_resolve") !== 1) {
+                    $hosts[] = "localhost.localdomain";
+                }
+                foreach ($hosts as $h) {
+                    if (!in_array($h, $this->grant_host, true)) {
+                        $this->default_hosts[] = $h;
+                    }
+                }
+            }
+        }
+        return $this->default_hosts;
+    }
+
+    /** @return list<string> */
+    function all_hosts() {
+        return array_merge($this->grant_host, $this->default_hosts());
     }
 
     /** @return bool */
-    function dbuser_exists() {
-        if (!$this->check_dbuser()) {
-            throw new CommandLineException("Bad database user");
+    function reuse_dbuser() {
+        return $this->had_dbuser && !$this->replace_user;
+    }
+
+    /** Check that an existing database user exists at every `--grant-host`.
+     * (Existing users are not created at new hosts.) */
+    function check_existing_dbuser_hosts() {
+        foreach ($this->grant_host as $h) {
+            if (!in_array($h, $this->dbuser_hosts, true)) {
+                throw new CommandLineException("The requested database user '{$this->dbuser}'@'{$h}' does not exist");
+            }
         }
-        $exists = Dbl::fetch_value($this->dblink(), "SELECT User FROM user WHERE User=? LIMIT 1", $this->dbuser);
-        return !!$exists;
     }
 
     function check_dbpass() {
@@ -396,13 +574,100 @@ class CreateDB_Batch {
         }
     }
 
-    /** @param string $prompt
+    /** @param ?string $password
      * @return bool */
-    function confirm($prompt) {
+    function test_dbuser_password($password) {
+        $cp = $this->make_cp($this->dbuser, $password, "information_schema");
+        if (!($dblink = @$cp->connect())) {
+            return false;
+        }
+        $dblink->close();
+        return true;
+    }
+
+    /** Ensure `$this->dbpass` is the password for existing database user
+     * `$this->dbuser`. */
+    function check_existing_dbpass() {
+        if ($this->dbpass !== null) {
+            if ($this->test_dbuser_password($this->dbpass)) {
+                return;
+            } else if ($this->batch) {
+                throw new CommandLineException("Incorrect password for existing database user `{$this->dbuser}`");
+            }
+            fwrite(STDERR, "* Incorrect password for existing database user `{$this->dbuser}`.\n");
+        } else if ($this->batch) {
+            throw new CommandLineException("Database user `{$this->dbuser}` already exists\nSupply its password with `--dbuser={$this->dbuser},PASSWORD`, or use `--replace-user`.");
+        } else {
+            fwrite(STDOUT, "Database user `{$this->dbuser}` already exists.\n");
+        }
         while (true) {
-            fwrite(STDOUT, $prompt);
-            $s = strtolower(trim(fgets(STDIN)));
-            if ($s === "" || str_starts_with($s, "y")) {
+            $this->dbpass = $this->read_secret("Enter password for database user `{$this->dbuser}`: ");
+            if ($this->dbpass === "") {
+                fwrite(STDERR, "* Quitting. (Use `--replace-user` to replace an existing database user.)\n");
+                exit(1);
+            } else if ($this->test_dbuser_password($this->dbpass)) {
+                return;
+            }
+            fwrite(STDERR, "* Incorrect password.\n");
+        }
+    }
+
+    /** Prompt for the password of a new database user. An empty response
+     * keeps the current `$this->dbpass` (from the configuration file), or,
+     * if there is none, generates a random password. */
+    function read_new_dbpass() {
+        $default = $this->dbpass !== null ? "from `{$this->configfile}`" : "random";
+        while (true) {
+            $pw = $this->read_secret("Enter password for new database user `{$this->dbuser}` [default {$default}]: ");
+            if ($pw === "") {
+                return;
+            } else if (strpos($pw, "\0") === false) {
+                $this->dbpass = $pw;
+                return;
+            }
+            fwrite(STDERR, "* Database passwords must not contain null characters.\n");
+        }
+    }
+
+    /** Return true if `SHOW GRANTS` output `$grants` includes a global
+     * CREATE privilege.
+     * @param list<string> $grants
+     * @return bool */
+    static function grants_allow_create($grants) {
+        foreach ($grants as $g) {
+            if (preg_match('/\AGRANT\s+(.*?)\s+ON\s+\*\.\*\s+TO\b/is', $g, $m)) {
+                foreach (preg_split('/\s*,\s*/', strtoupper($m[1])) as $priv) {
+                    if ($priv === "ALL" || $priv === "ALL PRIVILEGES" || $priv === "CREATE") {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Check that the administrator account can create databases. This
+     * checks only direct grants (not grants via roles); `--force` skips it.
+     * @return bool */
+    function has_create_privilege() {
+        return self::grants_allow_create(Dbl::fetch_first_columns($this->dblink(), "SHOW GRANTS"));
+    }
+
+    function check_create_privilege() {
+        if (!$this->force && !$this->has_create_privilege()) {
+            throw new CommandLineException("This account doesn’t appear to have the privilege to create databases\nTry `sudo`, or supply `--user` and `--password` for a database administrator.\nIf you think this message is in error, use `--force`.");
+        }
+    }
+
+    /** @param string $prompt
+     * @param bool $default
+     * @return bool */
+    function confirm($prompt, $default = true) {
+        while (true) {
+            $s = strtolower($this->read_line($prompt));
+            if ($s === "") {
+                return $default;
+            } else if (str_starts_with($s, "y")) {
                 return true;
             } else if (str_starts_with($s, "n")) {
                 return false;
@@ -414,21 +679,13 @@ class CreateDB_Batch {
     }
 
     function check_replace() {
-        $replacing = [];
-        if ($this->interactive && $this->had_db) {
-            fwrite(STDERR, "* Database {$this->name} already exists!\n");
-            $replacing[] = "database";
-        }
-        if ($this->had_dbuser && $this->replace_user) {
-            $replacing[] = "user";
-        }
         if ($this->replace) {
             return;
         } else if ($this->batch) {
-            throw new CommandLineException("`--replace` required in batch mode");
-        } else {
-            $this->replace = $this->confirm("Delete and replace " . join(" and ", $replacing) . "? [Y/n] ");
+            throw new CommandLineException("Database `{$this->name}` already exists\n`--replace` required in batch mode");
         }
+        fwrite(STDERR, "* Database `{$this->name}` already exists!\n");
+        $this->replace = $this->confirm("Delete and replace database? [Y/n] ");
     }
 
     /** @return bool */
@@ -442,49 +699,69 @@ class CreateDB_Batch {
         }
     }
 
+    /** Return the database name as written in a database-level GRANT.
+     * `_` and `%` are wildcards there, as in LIKE patterns, so escape them,
+     * unless MySQL’s `partial_revokes` is on (then they are literal).
+     * (`DBNAME_REGEX` allows `_` but none of the other characters
+     * `Dbl::escape_like` escapes.)
+     * @return string */
+    function grant_dbname() {
+        if ($this->partial_revokes === null) {
+            $row = Dbl::fetch_first_row($this->dblink(), "SHOW GLOBAL VARIABLES LIKE 'partial\\_revokes'");
+            $this->partial_revokes = $row && strcasecmp($row[1], "ON") === 0;
+        }
+        if ($this->partial_revokes) {
+            return $this->name;
+        }
+        return Dbl::escape_like($this->name);
+    }
+
+    /** Return the forms of the database name that might appear in the
+     * `mysql.db` privilege table.
+     * @return list<string> */
+    function privilege_dbnames() {
+        return array_values(array_unique([$this->name, $this->grant_dbname()]));
+    }
+
     function create_database() {
         if (!$this->quiet) {
             fwrite(STDOUT, "\nCreating database {$this->name}...\n");
         }
         if ($this->had_db) {
-            $this->vqe("DELETE FROM db WHERE Db=?", $this->name); // revoke privileges on database
-            $this->vqe("DROP DATABASE IF EXISTS {$this->name}");
+            $this->vqe("DELETE FROM db WHERE Db?a", $this->privilege_dbnames()); // revoke privileges on database
+            $this->vqe("DROP DATABASE IF EXISTS `{$this->name}`");
             $this->vqe("FLUSH PRIVILEGES");
         }
-        $this->vqe("CREATE DATABASE {$this->name} DEFAULT CHARACTER SET " . Dbl::utf8_charset($this->dblink()));
+        $this->vqe("CREATE DATABASE `{$this->name}` DEFAULT CHARACTER SET " . Dbl::utf8_charset($this->dblink()));
     }
 
     function create_dbuser() {
-        $want_hosts = $this->all_hosts;
-        if ($this->had_dbuser && $this->replace_user) {
-            $result = $this->qe("SELECT Host FROM user WHERE User=? AND Host?a", $this->dbuser, $want_hosts);
-            while (($row = $result->fetch_row())) {
-                $this->vqe("DROP USER ?@?", $this->dbuser, $row[0]);
-            }
-            $result->close();
-            $this->vqe("FLUSH PRIVILEGES");
-        }
-        if ($this->had_dbuser) {
-            $result = $this->qe("SELECT Host FROM user WHERE User=?", $this->dbuser);
-            while (($row = $result->fetch_row())) {
-                if (($i = array_search($row[0], $want_hosts)) !== false) {
-                    array_splice($want_hosts, $i, 1);
-                }
-            }
-            $result->close();
-        }
-        if (empty($want_hosts)) {
+        if ($this->reuse_dbuser()) {
             return;
         }
+        $all_hosts = $this->all_hosts();
         if (!$this->quiet) {
             fwrite(STDOUT, "Creating database user {$this->dbuser}...\n");
         }
+        if ($this->had_dbuser) {
+            foreach ($all_hosts as $h) {
+                if (in_array($h, $this->dbuser_hosts, true)) {
+                    $this->vqe("DROP USER ?@?", $this->dbuser, $h);
+                }
+            }
+            $this->vqe("FLUSH PRIVILEGES");
+        }
         $this->dbpass = $this->dbpass ?? hotcrp_random_password(18);
-        foreach ($this->all_hosts as $h) {
+        foreach ($all_hosts as $h) {
             if ($this->verbose) {
                 fwrite(STDOUT, Dbl::format_query($this->dblink(), "- CREATE USER ?@? IDENTIFIED BY <redacted>;\n", $this->dbuser, $h));
             }
-            $this->qe("CREATE USER ?@? IDENTIFIED BY ?", $this->dbuser, $h, $this->dbpass);
+            // `Dbl::qx` does not log failed queries, which would expose the
+            // password
+            $result = Dbl::qx($this->dblink(), "CREATE USER ?@? IDENTIFIED BY ?", $this->dbuser, $h, $this->dbpass);
+            if (Dbl::is_error($result)) {
+                throw new CommandLineException("Cannot create database user '{$this->dbuser}'@'{$h}': " . $this->dblink()->error);
+            }
         }
         $this->vqe("FLUSH PRIVILEGES");
     }
@@ -494,10 +771,18 @@ class CreateDB_Batch {
             fwrite(STDOUT, "Granting access on {$this->name} to user {$this->dbuser}...\n");
         }
         if ($this->had_db && !$this->replace) {
-            $this->vqe("DELETE FROM db WHERE Db=? AND User=?", $this->name, $this->dbuser);
+            $this->vqe("DELETE FROM db WHERE Db?a AND User=?", $this->privilege_dbnames(), $this->dbuser);
         }
-        foreach ($this->all_hosts as $h) {
-            $this->vqe("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES ON `{$this->name}`.* TO ?@?", $this->dbuser, $h);
+        foreach ($this->all_hosts() as $h) {
+            // GRANT fails if the user does not exist at a host; existing
+            // users are not created at new hosts
+            if ($this->reuse_dbuser() && !in_array($h, $this->dbuser_hosts, true)) {
+                if (!$this->quiet) {
+                    fwrite(STDOUT, "Not granting '{$this->dbuser}'@'{$h}' access: no such user\n");
+                }
+                continue;
+            }
+            $this->vqe("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, REFERENCES, ALTER, LOCK TABLES, CREATE TEMPORARY TABLES ON `{$this->grant_dbname()}`.* TO ?@?", $this->dbuser, $h);
             $this->vqe("GRANT RELOAD ON *.* TO ?@?", $this->dbuser, $h);
         }
         $this->vqe("FLUSH PRIVILEGES");
@@ -524,14 +809,35 @@ class CreateDB_Batch {
     }
 
     /** @return string */
+    /** Return `$s` as a double-quoted PHP string literal. Escapes `\`, `"`,
+     * and `$` with backslashes and control characters as octal escapes, so
+     * the shell scripts’ `getdbopt` (`lib/dbhelper.sh`) decodes it the same
+     * way PHP does. (`getdbopt` does not handle escapes in single-quoted
+     * strings.)
+     * @param string $s
+     * @return string */
+    static function php_dqstring($s) {
+        return "\"" . preg_replace_callback('/[\\\\"$\x00-\x1f\x7f]/', function ($m) {
+            $ch = ord($m[0]);
+            return $ch < 32 || $ch === 127 ? sprintf("\\%03o", $ch) : "\\{$m[0]}";
+        }, $s) . "\"";
+    }
+
+    /** @return string */
     function database_options() {
-        $s = "\$Opt[\"dbName\"] = " . json_encode($this->name) . ";\n"
-            . "\$Opt[\"dbUser\"] = " . json_encode($this->dbuser) . ";\n";
+        $s = "\$Opt[\"dbName\"] = " . self::php_dqstring($this->name) . ";\n"
+            . "\$Opt[\"dbUser\"] = " . self::php_dqstring($this->dbuser) . ";\n";
         if ($this->dbpass !== null) {
-            $s .= "\$Opt[\"dbPassword\"] = " . json_encode($this->dbpass) . ";\n";
+            $s .= "\$Opt[\"dbPassword\"] = " . self::php_dqstring($this->dbpass) . ";\n";
         }
         if ($this->dbhost !== "localhost") {
-            $s .= "\$Opt[\"dbHost\"] = " . json_encode($this->dbhost) . ";\n";
+            $s .= "\$Opt[\"dbHost\"] = " . self::php_dqstring($this->dbhost) . ";\n";
+        }
+        if ($this->dbport !== null) {
+            $s .= "\$Opt[\"dbPort\"] = {$this->dbport};\n";
+        }
+        if ($this->dbsocket !== null) {
+            $s .= "\$Opt[\"dbSocket\"] = " . self::php_dqstring($this->dbsocket) . ";\n";
         }
         return $s;
     }
@@ -568,26 +874,168 @@ class CreateDB_Batch {
             $t[] = $this->database_options();
         }
         $txt = join("", $t);
-        $umask = umask();
-        umask($umask | 07);
-        if (file_put_contents($this->configfile, $txt) !== strlen($txt)) {
-            throw new CommandLineException("Error while writing `{$this->configfile}`");
+        // The file contains a password, so make it unreadable by others.
+        // Never write through a planted symbolic link: write a temporary
+        // file, then hard-link it into place (`link` fails if the name
+        // exists, even as a dangling symlink; PHP’s `fopen` mode "x" does
+        // not, since PHP resolves symlinks before opening).
+        $fn = $this->configfile;
+        $dir = dirname($fn);
+        $tmp = @tempnam($dir, ".createdb");
+        if ($tmp === false) {
+            throw new CommandLineException("Cannot create `{$fn}`");
         }
-        umask($umask);
+        try {
+            if (realpath(dirname($tmp)) !== realpath($dir)
+                || file_put_contents($tmp, $txt) !== strlen($txt)
+                || !chmod($tmp, 0666 & ~(umask() | 027))) {
+                throw new CommandLineException("Error while writing `{$fn}`");
+            }
+            if (!@link($tmp, $fn)) {
+                throw new CommandLineException(file_exists($fn) || is_link($fn) ? "`{$fn}` already exists" : "Cannot create `{$fn}`");
+            }
+        } finally {
+            @unlink($tmp);
+        }
+        // `lchown` does not follow symbolic links
         if (($sudo_user = getenv("SUDO_USER"))) {
-            chown($this->configfile, $sudo_user);
+            lchown($this->configfile, $sudo_user);
+        }
+    }
+
+    /** @param string $comm
+     * @return ?int */
+    static function web_server_kind($comm) {
+        $comm = basename($comm);
+        if (preg_match('/\Aphp-fpm/', $comm)) {
+            return 0;
+        } else if (preg_match('/\A(?:httpd|apache2?)\z/', $comm)) {
+            return 1;
+        }
+        return null;
+    }
+
+    /** Return the uid of the web server likely to run HotCRP, or null if
+     * none is found or the answer is ambiguous. Looks for non-root PHP-FPM
+     * processes, or failing that non-root Apache processes, and succeeds if
+     * they all have the same uid. Since any user can give a process one of
+     * these names, the result is only used for advice that names the user,
+     * never to change permissions.
+     * @return ?int */
+    static function find_web_server_uid() {
+        $ps = shell_exec("ps axo uid=,comm= 2>/dev/null");
+        if (!is_string($ps)) {
+            return null;
+        }
+        $found = [];
+        foreach (explode("\n", $ps) as $line) {
+            if (preg_match('/\A\s*(\d+)\s+(.*?)\s*\z/', $line, $m)
+                && (int) $m[1] !== 0
+                && ($kind = self::web_server_kind($m[2])) !== null) {
+                $found[$kind][(int) $m[1]] = true;
+            }
+        }
+        foreach ([0, 1] as $kind) {
+            if (!empty($found[$kind])) {
+                return count($found[$kind]) === 1 ? array_key_first($found[$kind]) : null;
+            }
+        }
+        return null;
+    }
+
+    /** Return true if the user described by `$pw` (from `posix_getpwuid`)
+     * can read a file with `stat` result `$st`.
+     * @param array $pw
+     * @param array $st
+     * @return bool */
+    static function user_can_read($pw, $st) {
+        if ($st["uid"] === $pw["uid"]) {
+            return ($st["mode"] & 0400) !== 0;
+        }
+        $gr = posix_getgrgid($st["gid"]);
+        if ($st["gid"] === $pw["gid"]
+            || ($gr && in_array($pw["name"], $gr["members"], true))) {
+            return ($st["mode"] & 0040) !== 0;
+        }
+        return ($st["mode"] & 0004) !== 0;
+    }
+
+    /** Warn if the web server appears unable to read the configuration
+     * file. Does not change the file.
+     * @param bool $created */
+    function check_config_readable($created) {
+        $fn = $this->configfile;
+        $uid = function_exists("posix_getpwuid") ? self::find_web_server_uid() : null;
+        $pw = $uid !== null ? posix_getpwuid($uid) : false;
+        $st = @stat($fn);
+        if (!$pw || !$st) {
+            if ($created && !$this->quiet) {
+                fwrite(STDOUT, "\n* `{$fn}` contains the database password. Make sure the\n"
+                    . "* web server can read it, but other users cannot.\n");
+            }
+            return;
+        }
+        if (self::user_can_read($pw, $st)) {
+            return;
+        }
+        $wgr = posix_getgrgid($pw["gid"]);
+        $gname = $wgr ? $wgr["name"] : (string) $pw["gid"];
+        fwrite(STDERR, "\n* `{$fn}` contains the database password, but the web server\n"
+            . "* (user {$pw["name"]}) cannot read it. Try:\n"
+            . "*     chgrp {$gname} {$fn}\n"
+            . "*     chmod g+r {$fn}\n");
+    }
+
+    /** Check that the database user will be able to connect. With a remote
+     * database host, default grant hosts (the database server itself) are
+     * unlikely to suffice. */
+    function check_remote_dbhost() {
+        if (!$this->grant
+            || !empty($this->grant_host)
+            || in_array($this->dbhost, ["localhost", "127.0.0.1", "::1"], true)) {
+            return;
+        }
+        $msg = "* The database user can only access the database locally, but this script is\n"
+            . "* connecting over the network. Unless HotCRP will run on the database\n"
+            . "* server, add `--grant-host=HOST` arguments, where HOST is this machine's\n"
+            . "* name or IP address (or `%` for any host).\n";
+        if ($this->batch) {
+            fwrite(STDERR, $msg);
+            throw new CommandLineException("`--grant-host` required for remote database host");
+        }
+        fwrite(STDERR, $msg);
+        if (!$this->confirm("Continue anyway? [y/N] ", false)) {
+            fwrite(STDERR, "* Quitting.\n");
+            exit(1);
         }
     }
 
     /** @return int */
     function run() {
+        $this->check_remote_dbhost();
         $this->dblink();
+        $this->check_create_privilege();
         $this->check_name();
         $this->had_db = $this->database_exists();
-        if ($this->grant) {
-            $this->check_dbuser();
-            $this->had_dbuser = $this->grant && $this->dbuser_exists();
+        // the database user is needed to grant access, to install the
+        // schema, and to write the configuration file
+        if ($this->grant
+            || $this->schema
+            || ($this->write_config && !file_exists($this->configfile))) {
+            $this->had_dbuser = !empty($this->load_dbuser_hosts());
+            $explicit_dbpass = $this->dbpass !== null;
             $this->check_dbpass();
+            if (!$this->grant && !$this->had_dbuser) {
+                throw new CommandLineException("Database user `{$this->dbuser}` does not exist\n`--no-grant` requires an existing database user.");
+            }
+            if ($this->reuse_dbuser()) {
+                if ($this->grant) {
+                    $this->check_existing_dbuser_hosts();
+                }
+                $this->check_existing_dbpass();
+            } else if ($this->grant && !$this->batch && !$explicit_dbpass) {
+                $this->read_new_dbpass();
+            }
         }
         if ($this->had_db) {
             $this->check_replace();
@@ -609,13 +1057,16 @@ class CreateDB_Batch {
             if (file_exists($this->configfile)) {
                 if (!$this->quiet
                     && $this->interactive
+                    && $this->dbuser !== null
                     && (($this->configopt["dbName"] ?? null) !== $this->name
                         || ($this->configopt["dbUser"] ?? null) !== $this->dbuser
                         || ($this->configopt["dbPassword"] ?? null) !== $this->dbpass)) {
                     fwrite(STDOUT, "\n* Configuration file `{$this->configfile}` already exists.\n* Edit it to use the correct database name, user, and password:\n" . preg_replace('/^/m', '    ', $this->database_options()));
                 }
+                $this->check_config_readable(false);
             } else {
                 $this->write_config();
+                $this->check_config_readable(true);
             }
         }
         return 0;
@@ -639,9 +1090,13 @@ class CreateDB_Batch {
             "no-grant Do not create user or grant privileges for HotCRP database access",
             "dbuser: =USER,PASS Specify database USER and PASS for HotCRP database access",
             "host: =HOST Specify database host [localhost]",
-            "grant-host[] =HOST Grant access to HOST as well as `--host`",
+            "port: =PORT Specify database port",
+            "socket:,S: =SOCKET Specify database socket",
+            "grant-host[] =HOST Grant database access to HOST as well as localhost",
+            "no-default-grant-hosts Do not grant database access to localhost",
             "no-schema Do not load database with initial schema",
             "no-setup-phase Don’t give special treatment to first account",
+            "force Skip check for database administrator privileges",
             "verbose,V Be verbose",
             "quiet,q Be quiet",
             "help !"
