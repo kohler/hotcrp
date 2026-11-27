@@ -59,13 +59,19 @@ class OAuth_Page {
         $smsg = base48_encode(substr($random_bytes, 12, 6));
         $pkce_bytes = substr($random_bytes, 12 + 6);
 
+        $site_uri = $this->conf->baseurl();
         $tokdata = [
             "authtype" => $authi->name,
             "session" => $this->qreq->qsid(),
-            "site_uri" => $this->conf->baseurl(),
+            "site_uri" => $site_uri,
             "nonce" => base48_encode($nonce_bytes),
             "smsg" => $smsg
         ];
+        // `site_trusted`: `site_uri` is the configured site URL
+        if (($safe_uri = $this->conf->safe_baseurl()) !== null
+            && self::normalize_site_uri($safe_uri) === self::normalize_site_uri($site_uri)) {
+            $tokdata["site_trusted"] = true;
+        }
         if ($reauth) {
             $tokdata["reauth"] = $this->viewer->email;
             // Fix the freshness window here rather than reading it back off
@@ -101,10 +107,10 @@ class OAuth_Page {
         if (!$tok->stored()) {
             return MessageItem::error("<0>Authentication attempt failed");
         }
-        // nonce cookie will be consumed by the OAuth-handling instance
+        // nonce cookie will be consumed by the site that processes the response
         $this->qreq->set_cookie_opt("hotcrp-oauth-nonce-" . $tokdata["nonce"], "1", [
             "expires" => Conf::$now + self::SIGNIN_LIFETIME, "httponly" => true,
-            "path" => self::redirect_uri_path($authi)
+            "path" => self::nonce_cookie_path($authi, $tokdata)
         ]);
         // smsg cookie will be consumed by our instance
         $this->qreq->set_cookie_opt("hotcrp-smsg-" . $smsg, Conf::smsg_cookie_value(), [
@@ -139,18 +145,74 @@ class OAuth_Page {
         throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
     }
 
-    /** Path scope for the nonce cookie: the directory holding the
-     * `redirect_uri`, which is where the provider will return. That need not
-     * be this site—one site's `redirect_uri` may name another on the same
-     * host—and a cookie scoped to the starting site would not be sent back.
-     * The return leg deletes the cookie using its own `base_path`, which is
-     * this same directory, since `oauth` sits directly under a site's root.
+    /** Return the path scope for a sign-in request’s nonce cookie: the
+     * directory of the site that will process the response. That is the
+     * requesting site if the response can be forwarded there (`site_trusted`),
+     * and otherwise the site named by `redirect_uri`.
      * @param OAuthProvider $authi
+     * @param array<string,mixed> $tokdata
      * @return string */
-    static private function redirect_uri_path($authi) {
+    static function nonce_cookie_path($authi, $tokdata) {
+        if ($tokdata["site_trusted"] ?? false) {
+            $path = parse_url($tokdata["site_uri"], PHP_URL_PATH);
+            if (!is_string($path) || $path === "") {
+                return "/";
+            }
+            return str_ends_with($path, "/") ? $path : "{$path}/";
+        }
         $path = parse_url($authi->redirect_uri, PHP_URL_PATH);
         $slash = is_string($path) ? strrpos($path, "/") : false;
         return $slash === false ? "/" : substr($path, 0, $slash + 1);
+    }
+
+    /** @param string $u
+     * @return string */
+    static private function normalize_site_uri($u) {
+        $u = str_ends_with($u, "/") ? $u : "{$u}/";
+        if (preg_match('/\A([a-z][-+.a-z0-9]*:\/\/[^\/]*)(.*)\z/is', $u, $m)) {
+            $u = strtolower($m[1]) . $m[2];
+        }
+        return $u;
+    }
+
+    /** Parameters of a provider’s authorization response that are forwarded
+     * to the site that made the request. */
+    const FORWARD_PARAMS = ["code", "state", "error", "error_description", "error_uri", "iss"];
+
+    /** If this authorization response answers a sign-in request made by a
+     * different site, redirect it, unprocessed, to that site’s `oauth` page.
+     * This lets several sites share one `redirect_uri` registered with the
+     * provider: each request is then handled by the site that made it, with
+     * that site’s accounts and session. The sites must share a contact
+     * database, where sign-in requests are stored. The destination comes
+     * from the stored request, never from this request, and must be a
+     * configured site URL (`site_trusted`).
+     * @return ?string */
+    function forward_response() {
+        if (isset($this->qreq->forwarded)
+            || !is_string($this->qreq->state)) {
+            // a forwarded response is handled here, even if this site’s URL
+            // looks different from the one the request recorded
+            return null;
+        }
+        $tok = TokenInfo::find_from($this->qreq->state, $this->conf, !!$this->conf->contactdb());
+        if (!$tok
+            || !$tok->is_active()
+            || $tok->capabilityType !== TokenInfo::OAUTHSIGNIN
+            || $tok->data("site_trusted") !== true
+            || !is_string(($site_uri = $tok->data("site_uri")))
+            || !preg_match('/\Ahttps?:\/\//i', $site_uri)
+            || self::normalize_site_uri($site_uri) === self::normalize_site_uri($this->conf->baseurl())) {
+            return null;
+        }
+        $param = [];
+        foreach (self::FORWARD_PARAMS as $k) {
+            if (is_string($this->qreq->$k)) {
+                $param[$k] = $this->qreq->$k;
+            }
+        }
+        $param["forwarded"] = "1";
+        return self::normalize_site_uri($site_uri) . "oauth?" . http_build_query($param, "", "&", PHP_QUERY_RFC3986);
     }
 
     /** @return MessageItem|list<MessageItem> */
@@ -185,8 +247,15 @@ class OAuth_Page {
      * @param string $state
      * @return null|MessageItem|list<MessageItem> */
     private function response_for($tok, $state) {
-        // set redirection information from token
-        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
+        // set redirection information from token (an untrusted site URL
+        // must name this site)
+        $site_uri = $tok->data("site_uri");
+        if (is_string($site_uri)
+            && ($tok->data("site_trusted") === true
+                || (is_string($this->site_uri)
+                    && self::normalize_site_uri($site_uri) === self::normalize_site_uri($this->site_uri)))) {
+            $this->site_uri = $site_uri;
+        }
         if (!str_ends_with($this->site_uri, "/")) {
             $this->site_uri .= "/";
         }
@@ -301,10 +370,14 @@ class OAuth_Page {
         if ($ev !== true
             && $ev !== "true"
             && !$authi->allow_unverified_email) {
-            return [
+            $ml = [
                 MessageItem::error("<0>The {$authi->title()} authenticator hasn’t verified your email"),
                 MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
             ];
+            if ($this->show_admin_notes($jid->email)) {
+                $ml[] = MessageItem::inform("<5><em>Note for administrators:</em> The " . htmlspecialchars($authi->title()) . " authenticator did not report that this email is verified. If its email addresses are trustworthy as reported, set <code>allow_unverified_email</code> to <code>true</code> in its <code>\$Opt[\"oAuthProviders\"]</code> entry.");
+            }
+            return $ml;
         }
         $this->email = $jid->email;
 
@@ -313,6 +386,20 @@ class OAuth_Page {
             return $this->instance_reauth($authi, $tok, $jid);
         }
         return $this->instance_signin($authi, $tok, $jid);
+    }
+
+    /** Return true if a sign-in failure for `$email` should include notes
+     * on configuring HotCRP: the site is still being set up, or `$email`
+     * belongs to a site administrator here. (`$email` may not be verified,
+     * so these notes must reveal nothing sensitive.)
+     * @param string $email
+     * @return bool */
+    private function show_admin_notes($email) {
+        if ($this->conf->setting("setupPhase")) {
+            return true;
+        }
+        $u = $this->conf->user_by_email($email);
+        return $u && $u->privChair && !$u->is_disabled();
     }
 
     /** @param OAuthProvider $authi
@@ -523,6 +610,9 @@ class OAuth_Page {
         $oap = new OAuth_Page($user, $qreq);
         $redirect = false;
         if (isset($qreq->state)) {
+            if (($fwd = $oap->forward_response())) {
+                throw new Redirection($fwd);
+            }
             $oap->resolve($oap->response());
         } else if ($qreq->qsid()) {
             $oap->resolve($oap->start());

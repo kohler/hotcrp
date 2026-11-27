@@ -3117,6 +3117,232 @@ class Authorize_Tester {
         }
     }
 
+    /** Several sites can share one `redirect_uri`: the site it names forwards
+     * each authorization response, unprocessed, to the site that made the
+     * request, which signs the user in under its own rules. */
+    function test_inbound_signin_forwarded() {
+        $origin = "https://conf.example.com/conf28/";
+        $shared = "https://conf.example.com/shared/";
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "{$shared}oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $old_paper_site = $this->conf->opt("paperSite");
+        $email = "oauth-forwarded@hotcrp-oauth.org";
+        $nonces = [];
+
+        // start a sign-in at `$origin`; return the provider's parameters
+        $start = function () use ($origin, &$nonces) {
+            $this->conf->set_opt("paperSite", $origin);
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])
+                ->set_page("oauth");
+            Qrequest::set_main_request($q1);
+            $ap = [];
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                parse_str(parse_url($redir->url, PHP_URL_QUERY) ?? "", $ap);
+            }
+            $nonces[] = $ap["nonce"] ?? "";
+            return [$ap, $q1->qsession()];
+        };
+        // deliver a provider response to `$shared`; return where it redirects
+        $deliver = function ($param, $qs) use ($shared) {
+            $this->conf->set_opt("paperSite", $shared);
+            $q = TestQreq::user_get($this->u_empty, $param, $qs)->set_page("oauth");
+            Qrequest::set_main_request($q);
+            try {
+                HotCRP\OAuth_Page::go($this->u_empty, $q);
+            } catch (Redirection $redir) {
+                return $redir->url;
+            }
+            return null;
+        };
+
+        try {
+            list($ap, $qs) = $start();
+            $tok = TokenInfo::find_from($ap["state"], $this->conf, !!$this->conf->contactdb());
+            xassert_eqq(rtrim($tok->data("site_uri"), "/") . "/", $origin);
+
+            // the shared site forwards the response to the origin, untouched;
+            // parameters outside the response are not forwarded
+            $url = $deliver(["code" => "CODE", "state" => $ap["state"], "extra" => "x"], $qs);
+            xassert_eqq($url, "{$origin}oauth?code=CODE&state=" . urlencode($ap["state"]) . "&forwarded=1");
+            $tok = TokenInfo::find_from($ap["state"], $this->conf, !!$this->conf->contactdb());
+            xassert($tok && $tok->is_active());
+            xassert_eqq($this->conf->fresh_user_by_email($email), null);
+
+            // a response marked as forwarded is not forwarded again
+            $this->conf->set_opt("paperSite", $shared);
+            $q = TestQreq::user_get($this->u_empty, ["code" => "CODE", "state" => $ap["state"], "forwarded" => "1"], $qs)->set_page("oauth");
+            xassert_eqq((new HotCRP\OAuth_Page($this->u_empty, $q))->forward_response(), null);
+
+            // the origin signs the user in
+            HotCRP\OAuth_Page::$fetch_function = function ($authi, $param) use ($ap, $email) {
+                xassert_eqq($param["redirect_uri"] ?? null, "https://conf.example.com/shared/oauth");
+                $idt = HotCRP\JWTParser::make_plaintext((object) [
+                    "iss" => "https://idp.example.com", "aud" => "C",
+                    "exp" => Conf::$now + 600, "iat" => Conf::$now,
+                    "nonce" => $ap["nonce"], "sub" => "u2",
+                    "email" => $email, "email_verified" => true
+                ]);
+                return [200, json_encode(["id_token" => $idt])];
+            };
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? "", $fp);
+            $_COOKIE["hotcrp-oauth-nonce-" . $ap["nonce"]] = "1";
+            $this->conf->set_opt("paperSite", $origin);
+            $q2 = TestQreq::user_get($this->u_empty, $fp, $qs)->set_page("oauth");
+            Qrequest::set_main_request($q2);
+            xassert_eqq((new HotCRP\OAuth_Page($this->u_empty, $q2))->forward_response(), null);
+            $oap = new HotCRP\OAuth_Page($this->u_empty, $q2);
+            $oap->response();
+            xassert($oap->success);
+            xassert_eqq($oap->email, $email);
+            xassert_neqq($this->conf->fresh_user_by_email($email), null);
+
+            // provider errors are forwarded too
+            list($ap, $qs) = $start();
+            $url = $deliver(["error" => "access_denied", "error_description" => "No way", "state" => $ap["state"]], $qs);
+            xassert_eqq($url, "{$origin}oauth?state=" . urlencode($ap["state"]) . "&error=access_denied&error_description=No%20way&forwarded=1");
+
+            // a response for this site, or for no known request, is handled here
+            list($ap, $qs) = $start();
+            $q = TestQreq::user_get($this->u_empty, ["code" => "CODE", "state" => $ap["state"]], $qs)->set_page("oauth");
+            xassert_eqq((new HotCRP\OAuth_Page($this->u_empty, $q))->forward_response(), null);
+            $this->conf->set_opt("paperSite", $shared);
+            $q = TestQreq::user_get($this->u_empty, ["code" => "CODE", "state" => "hcoaNOSUCHTOKEN"], $qs)->set_page("oauth");
+            xassert_eqq((new HotCRP\OAuth_Page($this->u_empty, $q))->forward_response(), null);
+        } finally {
+            HotCRP\OAuth_Page::$fetch_function = null;
+            foreach ($nonces as $n) {
+                unset($_COOKIE["hotcrp-oauth-nonce-{$n}"]);
+            }
+            $this->conf->set_opt("paperSite", $old_paper_site);
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A sign-in request whose site URL came from the request's `Host`
+     * header, rather than from configuration, is never forwarded: an
+     * attacker could forge that header to receive a victim's authorization
+     * code. Nor is it a redirect destination for another site. */
+    function test_inbound_signin_not_forwarded_to_host_header_site() {
+        $shared = "https://conf.example.com/shared/";
+        $nav_site = "https://hotcrp-test.invalid/"; // the test request's host
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "issuer" => "https://idp.example.com",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "{$shared}oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        $old_paper_site = $this->conf->opt("paperSite");
+        $old_default_site = $this->conf->opt("defaultPaperSite");
+        $nonces = [];
+
+        // start a sign-in with no `paperSite`, so its URL comes from the request
+        $start = function ($default_site) use (&$nonces) {
+            $this->conf->set_opt("paperSite", null);
+            $this->conf->set_opt("defaultPaperSite", $default_site);
+            $q1 = TestQreq::user_get($this->u_empty, ["authtype" => "p"])->set_page("oauth");
+            Qrequest::set_main_request($q1);
+            $ap = [];
+            try {
+                (new HotCRP\OAuth_Page($this->u_empty, $q1))->start();
+            } catch (Redirection $redir) {
+                parse_str(parse_url($redir->url, PHP_URL_QUERY) ?? "", $ap);
+            }
+            $nonces[] = $ap["nonce"] ?? "";
+            return $ap;
+        };
+
+        try {
+            // the request's host differs from the configured site URL
+            // (as with a forged `Host`): the request is not trusted
+            $ap = $start("https://conf.example.com/conf28/");
+            $tok = TokenInfo::find_from($ap["state"], $this->conf, !!$this->conf->contactdb());
+            xassert_eqq(rtrim($tok->data("site_uri"), "/") . "/", $nav_site);
+            xassert_eqq($tok->data("site_trusted"), null);
+            // (in tests, every request shares one host; make the forged one
+            // differ from the shared site's)
+            $tok->change_data("site_uri", "https://attacker.example/conf28")->update();
+
+            // a victim's browser delivers a response to the shared site,
+            // in the victim's own session: it is not forwarded, and the
+            // redirect that follows stays off the request's host
+            $this->conf->set_opt("paperSite", $shared);
+            $q = TestQreq::user_get($this->u_empty, ["code" => "VICTIMCODE", "state" => $ap["state"]])->set_page("oauth");
+            Qrequest::set_main_request($q);
+            xassert_eqq((new HotCRP\OAuth_Page($this->u_empty, $q))->forward_response(), null);
+            $url = null;
+            $old_test_mode = Navigation::$test_mode;
+            Navigation::$test_mode = 2;
+            ob_start();
+            try {
+                HotCRP\OAuth_Page::go($this->u_empty, $q);
+            } catch (Redirection $redir) {
+                $url = $redir->url;
+            } finally {
+                ob_end_clean();
+                Navigation::$test_mode = $old_test_mode;
+                $this->conf->claim_saved_messages();
+            }
+            xassert_neqq($url, null);
+            xassert(!str_contains($url ?? "", "VICTIMCODE"));
+            xassert(!str_contains($url ?? "", "attacker.example"));
+
+            // a request URL that matches the configured site URL is trusted
+            $ap = $start($nav_site);
+            $tok = TokenInfo::find_from($ap["state"], $this->conf, !!$this->conf->contactdb());
+            xassert_eqq($tok->data("site_trusted"), true);
+            $this->conf->set_opt("paperSite", $shared);
+            $q = TestQreq::user_get($this->u_empty, ["code" => "CODE", "state" => $ap["state"]])->set_page("oauth");
+            xassert_str_starts_with((new HotCRP\OAuth_Page($this->u_empty, $q))->forward_response() ?? "", "{$nav_site}oauth?");
+        } finally {
+            foreach ($nonces as $n) {
+                unset($_COOKIE["hotcrp-oauth-nonce-{$n}"]);
+            }
+            $this->conf->set_opt("paperSite", $old_paper_site);
+            $this->conf->set_opt("defaultPaperSite", $old_default_site);
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
+    /** A sign-in's nonce cookie is scoped to the site that will process the
+     * response: the requesting site if the response can be forwarded there,
+     * and otherwise the site named by `redirect_uri`. */
+    function test_oauth_nonce_cookie_path() {
+        $this->conf->set_opt("oAuthProviders", [(object) [
+            "name" => "p", "client_id" => "C", "client_secret" => "S",
+            "auth_uri" => "https://idp.example.com/auth",
+            "token_uri" => "https://idp.example.com/token",
+            "redirect_uri" => "https://conf.example.com/shared/oauth"
+        ]]);
+        $this->conf->refresh_settings();
+        try {
+            $authi = HotCRP\OAuthProvider::find($this->conf, "p");
+            $path = function ($tokdata) use ($authi) {
+                return HotCRP\OAuth_Page::nonce_cookie_path($authi, $tokdata);
+            };
+            xassert_eqq($path(["site_uri" => "https://conf.example.com/conf28", "site_trusted" => true]), "/conf28/");
+            xassert_eqq($path(["site_uri" => "https://conf.example.com/conf28/", "site_trusted" => true]), "/conf28/");
+            xassert_eqq($path(["site_uri" => "https://conf28.example.com", "site_trusted" => true]), "/");
+            // an untrusted request's response is processed where it arrives
+            xassert_eqq($path(["site_uri" => "https://conf.example.com/conf28"]), "/shared/");
+            xassert_eqq($path(["site_uri" => "https://conf.example.com/shared"]), "/shared/");
+        } finally {
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+        }
+    }
+
     /** Pages that authenticate a user or authorize a client must not be
      * framable (RFC 9700 §4.16). A site that sets its own
      * `httpContentSecurityPolicy` — for a `script-src`, say — must not thereby
@@ -3803,6 +4029,36 @@ class Authorize_Tester {
             $this->conf->set_opt("oAuthProviders", null);
             $this->conf->refresh_settings();
             $this->conf->qe("delete from ContactInfo where email=?", $email);
+        }
+    }
+
+    /** When an unverified email blocks a sign-in, a site that is still being
+     * set up, or a site administrator, also learns how to configure the
+     * provider to accept such emails. Others do not. */
+    function test_oauth_unverified_email_admin_note() {
+        $note = function ($email) {
+            [$ok, , , $ml] = $this->oauth_signin($email, [], null, null, ["email_verified" => null]);
+            xassert(!$ok);
+            xassert_str_contains(json_encode($ml), "verified email");
+            return str_contains(json_encode($ml), "allow_unverified_email");
+        };
+        $nobody = "unverified-nobody@hotcrp-oauth.org";
+        $old_setup = $this->conf->setting("setupPhase");
+        try {
+            $this->set_test_oauth_provider();
+            xassert($this->u_chair->privChair);
+            xassert($note($this->u_chair->email));
+            xassert(!$this->u_mgbaker->privChair);
+            xassert(!$note($this->u_mgbaker->email));
+            xassert(!$note($nobody));
+
+            $this->conf->save_setting("setupPhase", 1);
+            xassert($note($nobody));
+        } finally {
+            $this->conf->save_setting("setupPhase", $old_setup);
+            $this->conf->set_opt("oAuthProviders", null);
+            $this->conf->refresh_settings();
+            $this->conf->qe("delete from ContactInfo where email=?", $nobody);
         }
     }
 

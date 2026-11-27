@@ -133,6 +133,18 @@ cryptographically signed by a public key corresponding to the provider. That
 is, it trusts that the TLS connection to the provider is secure, and does not
 access the provider’s JSON Web Key Set.
 
+### Sharing a redirect URI
+
+A group of HotCRP sites that share a contact database can also share a
+`redirect_uri`, so a new site (say, next year’s conference) needs no
+new registration. Give every site the same provider configuration,
+with `redirect_uri` naming the `oauth` page of some one of them (the
+“router”).  When the provider returns to the router, the router finds
+the sign-in request in the contact database and can redirect that
+response to the requesting site for processing. (This only works when
+sites explicitly set `$Opt["paperSite"]` or `$Opt["defaultPaperSite"]`
+in their options.)
+
 ### Disabling other authentication sources
 
 Set `$Opt["loginType"]` to `"oauth"` to use *only* OAuth to authenticate

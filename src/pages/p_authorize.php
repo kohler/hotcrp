@@ -544,9 +544,9 @@ class Authorize_Page {
         $this->conf->report_saved_messages();
     }
 
-    /** Print the domains involved for a client that registered itself. Such a client is not registered with this site, and its name
-     * is whatever it chose to call itself, so show the user the domains
-     * actually involved. */
+    /** Print the domains involved for a client that registered itself. Such
+     * a client is not registered with this site, and its name is whatever
+     * it chose to call itself, so show the user the domains involved. */
     private function print_self_registered_identity() {
         $ruri = $this->token->data("redirect_uri") ?? "";
         $rhost = parse_url($ruri, PHP_URL_HOST) ?? $ruri;
